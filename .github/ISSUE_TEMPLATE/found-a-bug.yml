@@ -1,0 +1,33 @@
+name: Found a bug?
+description: Please report bug so we can improve Superbacked
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Hey 👋
+
+        Thanks for reporting bug.
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: "What operating system are you using?"
+      placeholder: "Examples: macOS Ventura 13.1 or Tails 5.8"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Superbacked version
+      description: "What version of Superbacked are you using?"
+      placeholder: "Example: 1.0.54"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What isn’t working?
+    validations:
+      required: true
