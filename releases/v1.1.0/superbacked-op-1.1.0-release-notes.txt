@@ -1,0 +1,5 @@
+Implemented optional user-enabled debugging
+Implemented arm64 AppImage build
+Handled invalid or missing scanner source gracefully
+Handled missing default printer gracefully
+Fixed broken screen capture on Wayland

@@ -8,8 +8,11 @@
 $ ls
 SHA256SUMS
 SHA256SUMS.asc
-superbacked-std-1.0.57.AppImage
-superbacked-std-1.0.57.dmg
+superbacked-std-1.1.0-release-notes.txt
+superbacked-std-arm64-1.1.0.AppImage
+superbacked-std-universal-1.1.0.dmg
+superbacked-std-universal-1.1.0.dmg.blockmap
+superbacked-std-x64-1.1.0.AppImage
 ```
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using [GnuPG](https://gnupg.org/)
@@ -32,7 +35,7 @@ gpg: depth: 0  valid:   2  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 2u
 
 $ gpg --verify SHA256SUMS.asc
 gpg: assuming signed data in 'SHA256SUMS'
-gpg: Signature made Thu Jan  5 05:31:11 2023 EST
+gpg: Signature made Tue 31 Jan 09:16:41 2023 EST
 gpg:                using EDDSA key 9C7887E1B5FCBCE2DFED0E1C02C43AD072D57783
 gpg: Good signature from "Sun Knudsen <hello@sunknudsen.com>" [unknown]
 gpg: WARNING: This key is not certified with a trusted signature!
@@ -55,17 +58,21 @@ Primary key fingerprint: E786 274B C92B 47C2 3C1C  F44B 8C9C A674 C47C A060
 
 ```console
 $ cat SHA256SUMS
-c4e1377fb55b1c41edde42cfa16e9d4d529e50898a7ceb7b1972ea4dc6020647  ./superbacked-op-1.0.57-release-notes.txt
-abe1883c232906e9ee884ec9ee00404a4c51cebc412db1199195337a371756e5  ./superbacked-op-1.0.57.dmg
-30fccfae15982b05f8c47d93d049048324cfd24fd439ce2a3ed37f9b00951eca  ./superbacked-op-1.0.57.dmg.blockmap
-c4e1377fb55b1c41edde42cfa16e9d4d529e50898a7ceb7b1972ea4dc6020647  ./superbacked-std-1.0.57-release-notes.txt
-06e951043be8b7235c584628f62b2b99f79dcaf67b29a8a606805e4ac17dd831  ./superbacked-std-1.0.57.AppImage
-8a8a24ce096d32596d3d3951832d061632db86a9c2b0618eae6040247a411fa0  ./superbacked-std-1.0.57.dmg
-8f969dc0f718337c116d2db6f09220abb1cda6295a39f3e1957dbaf4b0f3cabd  ./superbacked-std-1.0.57.dmg.blockmap
+e83cad55fe46255e2e9016f61e06c777cabdc9c3d37be3ef3036ef0e03a587bc  ./superbacked-op-1.1.0-release-notes.txt
+87f37d6e8f174f7dd1688d9224dd9673a94264c7858e24e017562c6b97188b7b  ./superbacked-op-arm64-1.1.0.dmg
+abb6adad04407ce0a36c1750cf028e2640a45bbf146cd21ccf38e9b7add5bd8c  ./superbacked-op-arm64-1.1.0.dmg.blockmap
+e83cad55fe46255e2e9016f61e06c777cabdc9c3d37be3ef3036ef0e03a587bc  ./superbacked-std-1.1.0-release-notes.txt
+ff211337c1e8b98b018042f06515fe426fdce688f53567e486db1758a7afe5e4  ./superbacked-std-arm64-1.1.0.AppImage
+06f42d9820b34e964d52610ad6d673fadb36b13290f7c2a2d4dbc854db22bbb4  ./superbacked-std-universal-1.1.0.dmg
+7509d60f8330d9ae2b5cc62c0ef523c165b875704ee8181f60665b2c78b43e22  ./superbacked-std-universal-1.1.0.dmg.blockmap
+450cd9af693883adefda1f26ee12a2a0cc8dcfdb184a24fbac714a76d194f609  ./superbacked-std-x64-1.1.0.AppImage
 
 $ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
-./superbacked-std-1.0.57.AppImage: OK
-./superbacked-std-1.0.57.dmg: OK
+./superbacked-std-1.1.0-release-notes.txt: OK
+./superbacked-std-arm64-1.1.0.AppImage: OK
+./superbacked-std-universal-1.1.0.dmg: OK
+./superbacked-std-universal-1.1.0.dmg.blockmap: OK
+./superbacked-std-x64-1.1.0.AppImage: OK
 ```
 
 OK
