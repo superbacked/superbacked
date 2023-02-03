@@ -1,8 +1,8 @@
 760baf4f158fbb14472926fca6b888085a4273f69284575822430ebfb54b8a2a  ./superbacked-op-1.1.1-release-notes.txt
 a765d5b24bd812cdc4ba56feeada3c5f9f30d6679bdc46e8efd32d6d63ef19cc  ./superbacked-op-arm64-1.1.1.dmg
 e4bbe7791abec4a2586c4dea3f9b402a4556bad021a82babb43c76c367b8cd0c  ./superbacked-op-arm64-1.1.1.dmg.blockmap
-b8d4ad83927f5653737289b0538326702fd223827e813dfa2455b2dd7565ad1d  ./superbacked-os-amd64-1.1.1.img.zip
-0bbb4d13e29b54c17eb9913d796c64013a2616d908477abf605be1f0700d8321  ./superbacked-os-arm64-raspi-1.1.1.img.zip
+b292953a32e4ca477ef1304da1043cb3c9e2c63598f7c759450fd7cd0366ee75  ./superbacked-os-amd64-1.1.1.img.xz
+5c997b4f3a14c3ab2ef24f098de27e2f7c90722e6fdd0441a84e6fdf656c3244  ./superbacked-os-arm64-raspi-1.1.1.img.xz
 760baf4f158fbb14472926fca6b888085a4273f69284575822430ebfb54b8a2a  ./superbacked-std-1.1.1-release-notes.txt
 4bffe3e536f1865825bb8bb0249de10a34151147a9e0fddb4624d636d289584d  ./superbacked-std-arm64-1.1.1.AppImage
 61fb26be36532558600d2a4242bcbba48af1cf774945329105ccbdedff401193  ./superbacked-std-universal-1.1.1.dmg
