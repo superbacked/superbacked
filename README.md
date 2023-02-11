@@ -50,8 +50,6 @@ Primary key fingerprint: E786 274B C92B 47C2 3C1C  F44B 8C9C A674 C47C A060
 
 ### Step 3: verify integrity of release
 
-> Heads-up: latest `std` release checksums are pinned on https://twitter.com/superbacked.
-
 ```console
 $ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
 ./superbacked-std-universal-1.1.3.dmg: OK
