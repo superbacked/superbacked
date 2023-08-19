@@ -1,0 +1,6 @@
+Implemented partial mnemonic warning
+Implemented language switching (app is now available in English and French)
+Implemented distributed hidden secrets (same as standard backups but for distributed backups)
+Improved scanner making screen recording optional
+Improved user experience
+Updated dependencies

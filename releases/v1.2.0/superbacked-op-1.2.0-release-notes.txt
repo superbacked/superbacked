@@ -1,0 +1,6 @@
+Implemented partial mnemonic warning
+Implemented language switching (app is now available in English and French)
+Implemented signed operator package release, operator configuration and macOS computer wiping
+Improved scanner making screen recording optional
+Improved user experience
+Updated dependencies
