@@ -1,0 +1,1 @@
+Fixed Tails argon2 binary dependency regression
