@@ -1,0 +1,5 @@
+Disabled code minimization
+Upgraded dependencies
+Implemented demo mode
+Implemented transactions
+Implemented booklet

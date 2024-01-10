@@ -2,13 +2,13 @@
 
 ## How to verify integrity of release
 
-### Step 1: download [release](./releases/) `SHA256SUMS` and `SHA256SUMS.asc` to same folder as release (`superbacked-std-universal-1.3.4.dmg` in example below).
+### Step 1: download [release](./releases/) `SHA256SUMS` and `SHA256SUMS.asc` to same folder as release (`superbacked-std-universal-1.4.0.dmg` in example below).
 
 ```console
 $ ls
 SHA256SUMS
 SHA256SUMS.asc
-superbacked-std-universal-1.3.4.dmg
+superbacked-std-universal-1.4.0.dmg
 ```
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using [GnuPG](https://gnupg.org/)
@@ -21,17 +21,16 @@ superbacked-std-universal-1.3.4.dmg
 $ curl https://sunknudsen.com/sunknudsen.asc | gpg --import
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-100  2070  100  2070    0     0   4627      0 --:--:-- --:--:-- --:--:--  4704
+100  2070  100  2070    0     0   6044      0 --:--:-- --:--:-- --:--:--  6160
 gpg: key 0x8C9CA674C47CA060: 1 signature not checked due to a missing key
 gpg: key 0x8C9CA674C47CA060: public key "Sun Knudsen <hello@sunknudsen.com>" imported
 gpg: Total number processed: 1
 gpg:               imported: 1
-gpg: marginals needed: 3  completes needed: 1  trust model: pgp
-gpg: depth: 0  valid:   2  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 2u
+gpg: no ultimately trusted keys found
 
 $ gpg --verify SHA256SUMS.asc
 gpg: assuming signed data in 'SHA256SUMS'
-gpg: Signature made Tue Nov 28 17:33:48 2023 EST
+gpg: Signature made Sat Jan  6 08:24:03 2024 EST
 gpg:                using EDDSA key 9C7887E1B5FCBCE2DFED0E1C02C43AD072D57783
 gpg: Good signature from "Sun Knudsen <hello@sunknudsen.com>" [unknown]
 gpg: WARNING: This key is not certified with a trusted signature!
@@ -52,7 +51,7 @@ Primary key fingerprint: E786 274B C92B 47C2 3C1C  F44B 8C9C A674 C47C A060
 
 ```console
 $ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
-./superbacked-std-universal-1.3.4.dmg: OK
+./superbacked-std-universal-1.4.0.dmg: OK
 ```
 
 OK
