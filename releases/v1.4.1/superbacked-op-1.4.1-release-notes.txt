@@ -1,0 +1,2 @@
+Fixed issue when no default printer is present
+Updated dependencies
