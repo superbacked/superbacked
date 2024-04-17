@@ -2,13 +2,13 @@
 
 ## How to verify integrity of release
 
-### Step 1: download [release](./releases/) `SHA256SUMS` and `SHA256SUMS.asc` to same folder as release (`superbacked-std-universal-1.4.1.dmg` in example below).
+### Step 1: download [release](./releases/) `SHA256SUMS` and `SHA256SUMS.asc` to same folder as release (`superbacked-std-universal-1.4.2.dmg` in example below).
 
 ```console
 $ ls
 SHA256SUMS
 SHA256SUMS.asc
-superbacked-std-universal-1.4.1.dmg
+superbacked-std-universal-1.4.2.dmg
 ```
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using [GnuPG](https://gnupg.org/)
@@ -30,7 +30,7 @@ gpg: no ultimately trusted keys found
 
 $ gpg --verify SHA256SUMS.asc
 gpg: assuming signed data in 'SHA256SUMS'
-gpg: Signature made Mon Apr  8 09:48:12 2024 EDT
+gpg: Signature made Sun Apr 14 07:02:44 2024 EDT
 gpg:                using EDDSA key 9C7887E1B5FCBCE2DFED0E1C02C43AD072D57783
 gpg: Good signature from "Sun Knudsen <hello@sunknudsen.com>" [unknown]
 gpg: WARNING: This key is not certified with a trusted signature!
@@ -51,7 +51,7 @@ Primary key fingerprint: E786 274B C92B 47C2 3C1C  F44B 8C9C A674 C47C A060
 
 ```console
 $ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
-./superbacked-std-universal-1.4.1.dmg: OK
+./superbacked-std-universal-1.4.2.dmg: OK
 ```
 
 OK
