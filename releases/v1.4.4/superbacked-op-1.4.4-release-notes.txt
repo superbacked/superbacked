@@ -1,0 +1,5 @@
+Fixed broken YubiKey modal issue
+Implemented escape only QR code modal
+Switched to Brother HL-L2460DW
+Updated disclaimer copy
+Updated dependencies

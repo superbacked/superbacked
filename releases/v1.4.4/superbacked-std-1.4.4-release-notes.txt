@@ -1,0 +1,3 @@
+Switched to Brother HL-L2460DW
+Updated disclaimer copy
+Updated dependencies
