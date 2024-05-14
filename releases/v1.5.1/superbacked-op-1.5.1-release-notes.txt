@@ -1,0 +1,3 @@
+Hardened networking
+Implemented DNS-over-HTTPS
+Updated dependencies

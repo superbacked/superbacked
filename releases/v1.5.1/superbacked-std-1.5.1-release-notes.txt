@@ -1,0 +1,3 @@
+Disabled DNS-over-HTTPS bootstrap requests
+Hardened networking
+Updated dependencies
