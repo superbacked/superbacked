@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <!-- https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_security_cs_allow-jit -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <!-- https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_security_cs_allow-dyld-environment-variables -->
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    <!-- https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_security_device_camera -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
+  </dict>
+</plist>
