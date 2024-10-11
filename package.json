@@ -61,7 +61,7 @@
     "@zxcvbn-ts/language-common": "^3.0.4",
     "@zxcvbn-ts/language-en": "^3.0.2",
     "bip39": "^3.1.0",
-    "blockcrypt": "^0.0.1-beta.21",
+    "blockcrypt": "^0.0.1-beta.22",
     "commander": "^11.1.0",
     "electron-store": "^8.2.0",
     "got": "^12.6.1",
