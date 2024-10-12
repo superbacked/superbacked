@@ -1,7 +1,7 @@
 {
   "name": "superbacked",
   "productName": "Superbacked",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "description": "Superbacked is a secret management platform used to back up and pass on sensitive data in the context of succession planning.",
   "main": ".webpack/main",
   "scripts": {
