@@ -8,7 +8,7 @@ Superbacked is a secret management platform used to back up and pass on sensitiv
 
 **Do not** use Superbacked on computer that isn’t [air-gapped](https://superbacked.com/faq/air-gapped) and [exclusively used](https://superbacked.com/faq/hardware) for secret management unless secret is already present on computer.
 
-Superbacked, Inc., along with its employees, operators, partners, and shareholders, and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets. **USE AT YOUR OWN RISK.**
+Superbacked, Inc., along with its employees, operators, and shareholders, and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets. **USE AT YOUR OWN RISK.**
 
 ## End-user license agreement
 

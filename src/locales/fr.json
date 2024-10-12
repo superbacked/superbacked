@@ -43,7 +43,7 @@
   "and": "et",
   "exclusivelyUsed": "utilisé exclusivement",
   "forSecretManagementUnlessSecret": "pour la gestion de secret, à moins que le secret soit déjà présent sur l’ordinateur.",
-  "superbackedIncCannotBeHeldResponsible": "Superbacked, Inc., ainsi que ses actionnaires, employés, opérateurs et partenaires, et les contributeurs et mainteneurs de son code source, ne peuvent être tenus responsables des secrets perdus ou volés.",
+  "superbackedIncCannotBeHeldResponsible": "Superbacked, Inc., ainsi que ses actionnaires, employés et opérateurs, et les contributeurs et mainteneurs de son code source, ne peuvent être tenus responsables des secrets perdus ou volés.",
   "useAtYourOwnRisk": "UTILISER À VOS PROPRES RISQUES.",
   "agree": "J’accepte les termes ci-dessus et les risques sous-jacents",
   "useSuperbacked": "Utiliser Superbacked",
