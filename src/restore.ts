@@ -30,13 +30,20 @@ export default async (
 ): Promise<Result> => {
   try {
     const concatenatedPassphrases = concatenatePassphrases(passphrases)
+    const salt = Buffer.from(payload.salt, "base64")
+    const iv = Buffer.from(payload.iv, "base64")
+    const headers = Buffer.from(payload.headers, "base64")
+    const data = Buffer.from(payload.data, "base64")
     const message = await decrypt(
       concatenatedPassphrases,
-      Buffer.from(payload.salt, "base64"),
-      Buffer.from(payload.iv, "base64"),
-      Buffer.from(payload.headers, "base64"),
-      Buffer.from(payload.data, "base64"),
+      salt,
+      iv,
+      headers,
+      data,
       argon2
+    ).catch(() =>
+      // Try legacy mode
+      decrypt(concatenatedPassphrases, salt, iv, headers, data, argon2, true)
     )
     const shamirBuffer = Buffer.from("shamir:")
     const shamirBufferLength = shamirBuffer.length
