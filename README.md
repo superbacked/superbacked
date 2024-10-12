@@ -20,6 +20,32 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 Copyright (c) Superbacked, Inc. — All rights reserved
 
+## Usage guide (macOS)
+
+### Step 1: download (and, optionally, [verify](#how-to-verify-integrity-of-release)) [latest release](https://github.com/superbacked/superbacked/releases/latest), double-click `.dmg` file and drag “Superbacked” app to “Applications” folder
+
+### Step 2: open “Applications” folder and double-click “Superbacked” app
+
+## Usage guide (Tails)
+
+### Step 1: download (and, optionally, [verify](#how-to-verify-integrity-of-release)) [latest release](https://github.com/superbacked/superbacked/releases/latest)
+
+### Step 2: right-click `.AppImage` file and select “Run”
+
+## Usage guide (Ubuntu)
+
+### Step 1: download (and, optionally, [verify](#how-to-verify-integrity-of-release)) [latest release](https://github.com/superbacked/superbacked/releases/latest)
+
+### Step 2: install dependencies
+
+```console
+$ sudo apt install --yes curl libfuse2 zbar-tools
+```
+
+### Step 3: right-click `.AppImage` file and select “Run as a program”
+
+> Heads-up: Ubuntu Desktop 24.04 LTS has AppArmor enabled by default so running `.AppImage` file using terminal with `--no-sandbox` flag might be necessary.
+
 ## Contribution guide (macOS)
 
 Before contributing and submitting a [signed](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) [PR](https://github.com/superbacked/superbacked/pulls), please create or join [discussion](https://github.com/superbacked/superbacked/discussions) to discuss changes.
@@ -66,7 +92,7 @@ $ npm run code
 
 ## How to verify integrity of release
 
-### Step 1: download [release](https://github.com/superbacked/superbacked/releases)’s `SHA256SUMS` and `SHA256SUMS.asc` to same folder as app (`superbacked-std-universal-1.6.0.dmg` in example below).
+### Step 1: download [release](https://github.com/superbacked/superbacked/releases)’s `SHA256SUMS` and `SHA256SUMS.asc` to same folder as app (`superbacked-std-universal-1.6.0.dmg` in example below)
 
 ```console
 $ ls
