@@ -103,7 +103,7 @@ superbacked-std-universal-1.6.0.dmg
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using [GnuPG](https://gnupg.org/)
 
-> Heads-up: integrity of Sun’s PGP public key can be confirmed using fingerprint published on https://sunknudsen.com/, https://github.com/sunknudsen/pgp-public-key, https://twitter.com/sunknudsen and https://www.youtube.com/sunknudsen/about.
+> Heads-up: integrity of Sun’s PGP public key can be confirmed using fingerprint published on https://sunknudsen.com/contact, https://github.com/sunknudsen/pgp-public-key, https://twitter.com/sunknudsen and https://www.youtube.com/sunknudsen/about.
 
 > Heads-up: “1 signature not checked due to a missing key” warning can be ignored as it refers to Sun’s [legacy](https://github.com/sunknudsen/pgp-public-key/tree/master/legacy) PGP public key.
 
@@ -154,4 +154,4 @@ Superbacked was created by [Sun Knudsen](https://sunknudsen.com/), a privacy and
 
 This project would have never been possible without the support of generous patrons (thank you).
 
-If you love Superbacked, please star repo and consider [supporting](https://sunknudsen.com/donate) the project.
+If you love Superbacked, please star the [repo](https://github.com/superbacked/superbacked) and consider [supporting](https://sunknudsen.com/donate) the project.
