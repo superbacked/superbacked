@@ -150,7 +150,7 @@ OK
 
 ## Support this project
 
-Superbacked was created by [Sun Knudsen](https://sunknudsen.com/), a privacy and security researcher and [YouTuber](https://www.youtube.com/sunknudsen), and is now maintained by [Sun Knudsen](https://sunknudsen.com/) and [Christoffer Carlsson](https://christofferc.com/).
+Superbacked was created by [Sun Knudsen](https://sunknudsen.com/), a privacy and security researcher and [YouTuber](https://www.youtube.com/sunknudsen), and is now maintained by [Sun Knudsen](https://sunknudsen.com/) and [Christoffer Carlsson](https://christoffercarlsson.se/).
 
 This project would have never been possible without the support of generous patrons (thank you).
 
