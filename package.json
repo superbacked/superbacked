@@ -2,7 +2,7 @@
   "name": "superbacked",
   "productName": "Superbacked",
   "version": "1.6.0",
-  "description": "Superbacked is a secret management platform used to back up and pass on sensitive data in the context of succession planning.",
+  "description": "Superbacked is a secret management platform used to back up and pass on sensitive data from one generation to the next.",
   "main": ".webpack/main",
   "scripts": {
     "code": "export ENV=development; electron-forge start",

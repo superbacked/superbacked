@@ -2,7 +2,7 @@
 
 ## Do not loose your secrets
 
-Superbacked is a secret management platform used to back up and pass on sensitive data in the context of succession planning.
+Superbacked is a secret management platform used to back up and pass on sensitive data from one generation to the next.
 
 ## Disclaimer
 
