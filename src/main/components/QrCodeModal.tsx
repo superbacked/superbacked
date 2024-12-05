@@ -1,7 +1,7 @@
-import React, { FunctionComponent } from "react"
-import { styled } from "styled-components"
 import { Modal } from "@mantine/core"
 import { QRCodeSVG } from "qrcode.react"
+import React, { FunctionComponent } from "react"
+import { styled } from "styled-components"
 
 const size = 320
 
@@ -35,8 +35,9 @@ const QrCodeModal: FunctionComponent<QrCodeModalProps> = (props) => {
     >
       <ModalContainer>
         <StyledQRXCodeSVG
-          includeMargin={true}
+          boostLevel={false}
           level="L"
+          marginSize={0}
           size={size}
           value={props.value}
         />

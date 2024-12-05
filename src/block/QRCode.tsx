@@ -1,6 +1,6 @@
+import { QRCodeSVG } from "qrcode.react"
 import React, { FunctionComponent } from "react"
 import { styled } from "styled-components"
-import { QRCodeSVG } from "qrcode.react"
 
 const StyledQRXCodeSVG = styled(QRCodeSVG)`
   width: 100%;
@@ -14,8 +14,9 @@ interface QRCodeProps {
 const QRCode: FunctionComponent<QRCodeProps> = (props) => {
   return (
     <StyledQRXCodeSVG
-      includeMargin={false}
+      boostLevel={false}
       level="L"
+      marginSize={0}
       size={1024}
       value={props.value}
     />
