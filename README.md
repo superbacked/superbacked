@@ -44,7 +44,7 @@ $ sudo apt install --yes libfuse2 zbar-tools
 
 ### Step 3: right-click `.AppImage` file and select “Run as a program”
 
-> Heads-up: Ubuntu Desktop 24.04 LTS has AppArmor enabled by default so running `.AppImage` file using terminal with `--no-sandbox` flag might be necessary.
+> Heads-up: Ubuntu Desktop 24.04.1 LTS has AppArmor enabled by default so running `.AppImage` file using terminal with `--no-sandbox` flag might be necessary.
 
 ## Contribution guide (macOS)
 

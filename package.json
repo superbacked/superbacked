@@ -8,7 +8,7 @@
     "code": "export ENV=development; electron-forge start",
     "build": "export ENV=production; electron-forge make && electron-builder --config ./builder.config.js --linux --mac",
     "build:staging": "export ENV=production STAGING=true; electron-forge make && electron-builder --config ./builder.config.js --mac",
-    "sign-dependencies": "find ./bin -type f -print0 | sort -z | xargs -0 shasum --algorithm 256 > SHA256SUMS; gpg --armor --detach-sig --output SHA256SUMS.asc SHA256SUMS",
+    "sign-dependencies": "find ./{bin,superbacked-os/*.img,superbacked-os-utilities/sedutil-cli} -type f -print0 | sort -z | xargs -0 shasum --algorithm 256 > SHA256SUMS; gpg --armor --detach-sig --output SHA256SUMS.asc SHA256SUMS",
     "sign-release": "cd dist; find . -name 'superbacked-*' -type f -print0 | sort -z | xargs -0 shasum --algorithm 256 > SHA256SUMS; gpg --armor --detach-sig --output SHA256SUMS.asc SHA256SUMS; cd -",
     "lint": "eslint --ext .ts,.tsx --format=visualstudio .",
     "ncu": "ncu --reject @vercel/webpack-asset-relocator-loader --target minor --upgrade",

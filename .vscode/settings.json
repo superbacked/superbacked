@@ -1,11 +1,21 @@
 {
   "cSpell.words": [
+    "dconf",
     "fontsource",
+    "gsettings",
     "leven",
+    "losetup",
     "mantine",
+    "overlayroot",
+    "qrcode",
+    "raspi",
+    "sedutil",
     "shamir",
     "superbacked",
-    "Superbacked",
+    "tmpfs",
+    "vfat",
+    "yubikey",
+    "zerofree",
     "zxcvbn"
   ]
 }

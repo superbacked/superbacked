@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Superbacked
+Exec=/home/superbacked/.local/superbacked/superbacked.AppImage
+Icon=/home/superbacked/.local/superbacked/superbacked.icns
+Terminal=false
