@@ -1,6 +1,6 @@
 # Superbacked
 
-## Do not loose your secrets
+## Don’t lose your secrets
 
 Superbacked is a secret management platform used to back up and pass on sensitive data from one generation to the next.
 
