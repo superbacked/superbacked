@@ -43,7 +43,7 @@
   "and": "and",
   "exclusivelyUsed": "exclusively used",
   "forSecretManagementUnlessSecret": "for secret management unless secret is already present on computer.",
-  "superbackedIncCannotBeHeldResponsible": "Superbacked, Inc., along with its employees, operators, and shareholders, and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets.",
+  "superbackedIncCannotBeHeldResponsible": "Superbacked, Inc., along with its employees, operators and shareholders and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets.",
   "useAtYourOwnRisk": "USE AT YOUR OWN RISK.",
   "agree": "I agree to above terms and accept underlying risks",
   "useSuperbacked": "Use Superbacked",
