@@ -27,7 +27,7 @@ read -r answer
 if [ "$answer" = "y" ]; then
   printf "%s\n" "Purging Superbacked OS images…"
 
-  find ./dist -type f \( -name "*.img" -o -name "*.img.xz.part*" \) -delete
+  find ./dist -type f \( -name "*.img*" \) -delete
 
   printf "%s\n" "Check if Docker is running…"
 
@@ -56,7 +56,9 @@ if [ "$answer" = "y" ]; then
 
   printf "%s\n" "Compressing Superbacked OS (amd64)…"
 
-  xz -1 --stdout --threads 4 dist/superbacked-os-amd64-${version}.img | split \
+  xz -1 --threads 4 dist/superbacked-os-amd64-${version}.img
+
+  cat dist/superbacked-os-amd64-${version}.img.xz | split \
     -b 2147483647B - dist/superbacked-os-amd64-${version}.img.xz.part
 
   number=1
@@ -64,8 +66,6 @@ if [ "$answer" = "y" ]; then
     mv "$file" "dist/superbacked-os-amd64-${version}.img.xz.part$number"
     number=$((number + 1))
   done
-
-  rm dist/superbacked-os-amd64-${version}.img
 
   printf "%s\n" "Building Superbacked OS (arm64-raspi)…"
 
@@ -88,7 +88,9 @@ if [ "$answer" = "y" ]; then
 
   printf "%s\n" "Compressing Superbacked OS (arm64-raspi)…"
 
-  xz -1 --stdout --threads 4 dist/superbacked-os-arm64-raspi-${version}.img | split \
+  xz -1 --threads 4 dist/superbacked-os-arm64-raspi-${version}.img
+
+  cat dist/superbacked-os-arm64-raspi-${version}.img.xz | split \
     -b 2147483647B - dist/superbacked-os-arm64-raspi-${version}.img.xz.part
 
   number=1
@@ -96,8 +98,6 @@ if [ "$answer" = "y" ]; then
     mv "$file" "dist/superbacked-os-arm64-raspi-${version}.img.xz.part$number"
     number=$((number + 1))
   done
-
-  rm dist/superbacked-os-arm64-raspi-${version}.img
 fi
 
 code dist/superbacked-${version}-release-notes.txt
