@@ -49,15 +49,6 @@ chown 1000:1000 /mnt/root/home/superbacked/.config/autostart/superbacked-autosta
 
 cp /superbacked-os-assets/superbacked.profile /mnt/root/etc/apparmor.d/superbacked.profile
 
-cp /superbacked-os-utilities/sedutil-cli /mnt/root/usr/local/sbin/sedutil-cli
-chmod +x /mnt/root/usr/local/sbin/sedutil-cli
-
-cp /superbacked-os-utilities/superbacked-os-clone.sh /mnt/root/usr/local/sbin/superbacked-os-clone.sh
-chmod +x /mnt/root/usr/local/sbin/superbacked-os-clone.sh
-
-cp /superbacked-os-utilities/superbacked-os-configure-opal.sh /mnt/root/usr/local/sbin/superbacked-os-configure-opal.sh
-chmod +x /mnt/root/usr/local/sbin/superbacked-os-configure-opal.sh
-
 umount /dev/loop0p2
 
 zerofree /dev/loop0p2

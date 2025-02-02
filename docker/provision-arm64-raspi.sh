@@ -49,9 +49,6 @@ chown 1002:1002 /mnt/root/home/superbacked/.config/autostart/superbacked-autosta
 
 cp /superbacked-os-assets/superbacked.profile /mnt/root/etc/apparmor.d/superbacked.profile
 
-cp /superbacked-os-utilities/superbacked-os-clone.sh /mnt/root/usr/local/sbin/superbacked-os-clone.sh
-chmod +x /mnt/root/usr/local/sbin/superbacked-os-clone.sh
-
 umount /dev/loop0p2
 
 zerofree /dev/loop0p2

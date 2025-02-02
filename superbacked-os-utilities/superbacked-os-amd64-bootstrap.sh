@@ -35,6 +35,10 @@ printf "%s\n" "Installing dependencies…"
 
 sudo apt install --yes curl libfuse2 overlayroot zbar-tools
 
+printf "%s\n" "Upgrade packages…"
+
+sudo apt upgrade -y
+
 printf "%s\n" "Configuring fstab…"
 
 sudo sed --in-place 's/ext4 defaults/ext4 defaults,noload,ro/g' /etc/fstab
@@ -56,6 +60,23 @@ sudo sed --in-place 's/overlayroot=""/overlayroot="tmpfs"/g' /etc/overlayroot.co
 printf "%s\n" "Disabling automatic updates…"
 
 sudo apt remove --yes unattended-upgrades update-manager update-notifier
+
+printf "%s\n" "Disable networking…"
+
+sudo systemctl enable nftables
+sudo systemctl start nftables
+sudo nft flush ruleset
+sudo nft add table inet filter
+sudo nft add chain inet filter input '{ type filter hook input priority 0; policy drop; }'
+sudo nft add chain inet filter forward '{ type filter hook forward priority 0; policy drop; }'
+sudo nft add chain inet filter output '{ type filter hook output priority 0; policy drop; }'
+sudo nft add rule inet filter input iif lo accept
+sudo nft add rule inet filter output oif lo accept
+sudo nft list ruleset | sudo tee /etc/nftables.conf
+
+printf "%s\n" "Disable sudo…"
+
+sudo deluser superbacked sudo
 
 printf "%s\n" "Clearing Bash history…"
 
