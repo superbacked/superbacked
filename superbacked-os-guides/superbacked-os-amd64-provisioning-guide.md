@@ -6,9 +6,9 @@
 
 ### Step 3: using GParted, delete all partitions, apply changes and create `msdos` partition table
 
-### Step 4: install Ubuntu 24.04.1 LTS
+### Step 4: install Ubuntu 24.04.1 LTS while connected to the Internet
 
-#### Select “Interactive installation”, “Default selection”, do not install recommended proprietary software, select “Manual installation”, select “Device for boot loader installation”, change size of FAT32 partition to 536870912B and create 10737418240B Ext4 partition with `/` mount point
+#### Select “Interactive installation”, “Default selection”, do not install recommended proprietary software, select “Manual installation”, select “Device for boot loader installation”, change size of FAT32 partition to `536870912B` and create `10737418240B` `Ext4` partition with `/` mount point
 
 #### Set name to “Superbacked”, computer name to “superbacked-os”, username and password to “superbacked” and disable “Required my password to log in”
 

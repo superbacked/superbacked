@@ -2,13 +2,13 @@
 
 ### Step 1: download [Ubuntu 24.04.1 LTS](https://ubuntu.com/download/raspberry-pi) to `~/Downloads/patch` and double-click `ubuntu-24.04.1-preinstalled-desktop-arm64+raspi.img.xz` and move `ubuntu-24.04.1-preinstalled-desktop-arm64+raspi.img` to ~/Downloads/patch folder
 
-### Step 2: patch Ubuntu 24.04.1 LTS using `./patch-fstab.sh`
+### Step 2: patch Ubuntu 24.04.1 LTS using `./patch-growroot-disabled.sh`
 
 ### Step 3: write patched OS to microSD card using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 
 ### Step 4: boot Ubuntu 24.04.1 LTS (Intel) and select “Try Ubuntu”
 
-### Step 5: open GParted, insert microSD card, refresh devices and grow `ext4` partition to 10240MiB
+### Step 5: open GParted, insert microSD card, refresh devices and grow `ext4` partition to `10240MiB`
 
 ### Step 6: boot Ubuntu 24.04.1 LTS (Raspberry Pi 4 or 5, 4GB recommended)
 

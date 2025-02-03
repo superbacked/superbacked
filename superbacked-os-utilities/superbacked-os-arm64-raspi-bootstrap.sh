@@ -46,10 +46,6 @@ printf "%s\n" "Installing dependencies…"
 
 sudo apt install --yes curl libfuse2 overlayroot zbar-tools zlib1g-dev
 
-printf "%s\n" "Upgrade packages…"
-
-sudo apt upgrade -y
-
 printf "%s\n" "Disabling Bluetooth and Wi-Fi…"
 
 cat << "EOF" | sudo tee -a /boot/firmware/config.txt

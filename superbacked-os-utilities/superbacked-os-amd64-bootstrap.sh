@@ -35,10 +35,6 @@ printf "%s\n" "Installing dependencies…"
 
 sudo apt install --yes curl libfuse2 overlayroot zbar-tools
 
-printf "%s\n" "Upgrade packages…"
-
-sudo apt upgrade -y
-
 printf "%s\n" "Configuring fstab…"
 
 sudo sed --in-place 's/ext4 defaults/ext4 defaults,noload,ro/g' /etc/fstab
