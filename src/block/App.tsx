@@ -1,12 +1,11 @@
-import React from "react"
+import "@fontsource/roboto-mono/latin-400.css"
+import "@fontsource/roboto-mono/latin-700.css"
 import { MantineProvider } from "@mantine/core"
 import { useTranslation } from "react-i18next"
 import { createGlobalStyle, styled } from "styled-components"
-import "@fontsource/roboto-mono/latin-400.css"
-import "@fontsource/roboto-mono/latin-700.css"
 import { setLocale } from "../i18n"
-import { BlockApi } from "./preload"
 import Logo from "./logo.svg"
+import { BlockApi } from "./preload"
 import QRCode from "./QRCode"
 
 import { GlobalWorkerOptions, getDocument } from "pdfjs-dist"
@@ -38,16 +37,17 @@ const Container = styled.div`
   position: absolute;
   top: 0;
   left: 0;
+  width: 4in;
+  height: 6in;
   display: flex;
   align-items: center;
   flex-direction: column;
   justify-content: center;
-  width: 4in;
-  height: 6in;
   padding: 0.5in;
 `
 
 const Hash = styled.div`
+  font-size: 0.15625in;
   font-weight: bold;
   text-align: center;
   margin-top: 0.5in;
@@ -58,22 +58,21 @@ const Recover = styled.div`
   position: absolute;
   top: 3in;
   right: 0.125in;
-  transform: translateY(-50%) rotate(180deg);
-  writing-mode: vertical-rl;
   font-size: 0.09375in;
   text-align: center;
-  /* font-weight: bold; */
+  transform: translateY(-50%) rotate(180deg);
+  writing-mode: vertical-rl;
 `
 
 const Disclaimer = styled.div`
   position: absolute;
   right: 2in;
   bottom: 0.125in;
-  font-size: 0.09375in;
-  transform: translateX(50%);
-  text-align: center;
-  font-weight: bold;
   width: 2.5in;
+  font-size: 0.09375in;
+  font-weight: bold;
+  text-align: center;
+  transform: translateX(50%);
 `
 
 const LogoContainer = styled.div`

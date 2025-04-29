@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useEffect, useRef, useState } from "react"
+import { FunctionComponent, useEffect, useRef, useState } from "react"
 import QrCodeModal from "./components/QrCodeModal"
 
 const ShowSelectionAsQrCode: FunctionComponent = () => {

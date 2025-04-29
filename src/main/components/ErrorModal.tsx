@@ -1,6 +1,6 @@
-import React, { FunctionComponent } from "react"
-import { useTranslation } from "react-i18next"
 import { Modal } from "@mantine/core"
+import { FunctionComponent } from "react"
+import { useTranslation } from "react-i18next"
 
 interface ErrorModalProps {
   error: string

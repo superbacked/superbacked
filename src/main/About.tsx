@@ -1,5 +1,5 @@
-import React, { FunctionComponent, useEffect, useState } from "react"
 import { Center, Modal, Space, Text, Title } from "@mantine/core"
+import { FunctionComponent, useEffect, useState } from "react"
 import SuperbackedIcon from "./superbacked.svg"
 
 const About: FunctionComponent = () => {

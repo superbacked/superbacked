@@ -1,18 +1,19 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron"
 import { getDataLength } from "blockcrypt"
-import { CustomDesktopCapturerSource } from "../index"
+import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron"
+import create, { Result as CreateResult } from "../create"
+import duplicate, { Result as DuplicateResult } from "../duplicate"
 import { Locale } from "../i18n"
+import { CustomDesktopCapturerSource } from "../index"
+import { disableModes, enableModes } from "../menu"
+import openExternalUrl from "../openExternalUrl"
+import restore, { restoreReset, Result as RestoreResult } from "../restore"
 import {
   generateMnemonic,
   validateMnemonic,
   wordlist,
 } from "../utilities/bip39"
 import { ColorScheme } from "../utilities/config"
-import passphrase from "../utilities/passphrase"
-import { enableModes, disableModes } from "../menu"
-import openExternalUrl from "../openExternalUrl"
-import create, { Result as CreateResult } from "../create"
-import duplicate, { Result as DuplicateResult } from "../duplicate"
+import generatePassphrase from "../utilities/passphrase"
 import {
   getDefaultPrinter,
   getPrinters,
@@ -27,7 +28,6 @@ import {
   decode as zbarDecode,
   installed as zbarInstalled,
 } from "../utilities/zbarimg"
-import restore, { restoreReset, Result as RestoreResult } from "../restore"
 
 export type InsertType = "mnemonic" | "passphrase"
 
@@ -60,7 +60,7 @@ export interface Api {
   validateMnemonic: typeof validateMnemonic
   getDataLength: typeof getDataLength
   wordlist: () => typeof wordlist
-  passphrase: typeof passphrase
+  generatePassphrase: typeof generatePassphrase
   create: typeof create
   duplicate: typeof duplicate
   getDefaultPrinter: typeof getDefaultPrinter
@@ -77,7 +77,7 @@ export interface Api {
 
 const api: Api = {
   colorSchemeChange: (callback) => {
-    const listener = (event: IpcRendererEvent, colorScheme: ColorScheme) => {
+    const listener = (_event: IpcRendererEvent, colorScheme: ColorScheme) => {
       callback(colorScheme)
     }
     ipcRenderer.on("theme:colorSchemeChanged", listener)
@@ -89,7 +89,7 @@ const api: Api = {
     return ipcRenderer.sendSync("theme:getColorScheme")
   },
   localeChange: (callback) => {
-    const listener = (event: IpcRendererEvent, locale: Locale) => {
+    const listener = (_event: IpcRendererEvent, locale: Locale) => {
       callback(locale)
     }
     ipcRenderer.on("app:localeChange", listener)
@@ -133,7 +133,7 @@ const api: Api = {
     }
   },
   menuTriggeredRoute: (callback) => {
-    const listener = (event: IpcRendererEvent, to: string) => {
+    const listener = (_event: IpcRendererEvent, to: string) => {
       callback(to)
     }
     ipcRenderer.on("menu:triggeredRoute", listener)
@@ -142,7 +142,7 @@ const api: Api = {
     }
   },
   menuInsert: (callback) => {
-    const listener = (event: IpcRendererEvent, type: InsertType) => {
+    const listener = (_event: IpcRendererEvent, type: InsertType) => {
       callback(type)
     }
     ipcRenderer.on("menu:insert", listener)
@@ -151,7 +151,7 @@ const api: Api = {
     }
   },
   menuShowHiddenSecrets: (callback) => {
-    const listener = (event: IpcRendererEvent, state: boolean) => {
+    const listener = (_event: IpcRendererEvent, state: boolean) => {
       callback(state)
     }
     ipcRenderer.on("menu:showHiddenSecrets", listener)
@@ -201,8 +201,8 @@ const api: Api = {
   wordlist: () => {
     return ipcRenderer.sendSync("bip39:wordlist")
   },
-  passphrase: async (...args) => {
-    const passphrase = await ipcRenderer.invoke("passphrase", ...args)
+  generatePassphrase: async (...args) => {
+    const passphrase = await ipcRenderer.invoke("generatePassphrase", ...args)
     return passphrase
   },
   create: async (...args) => {

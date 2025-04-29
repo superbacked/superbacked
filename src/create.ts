@@ -1,5 +1,5 @@
+import { Secret as BlockcryptSecret, encrypt } from "blockcrypt"
 import { BrowserWindow } from "electron"
-import { encrypt, Secret as BlockcryptSecret } from "blockcrypt"
 import argon2 from "./utilities/argon2"
 import { concatenatePassphrases, hash, shortHash } from "./utilities/crypto"
 import { generateShares } from "./utilities/shamir"
@@ -52,7 +52,7 @@ export interface Result {
 
 const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
   return new Promise((resolve) => {
-    blockWindow.webContents.on("ipc-message", async (event, channel) => {
+    blockWindow.webContents.on("ipc-message", async (_event, channel) => {
       if (channel === "ready") {
         resolve()
       }
@@ -62,7 +62,7 @@ const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
 
 const jpegIpcMessage = async (blockWindow: BrowserWindow): Promise<string> => {
   return new Promise((resolve) => {
-    blockWindow.webContents.on("ipc-message", async (event, channel, data) => {
+    blockWindow.webContents.on("ipc-message", async (_event, channel, data) => {
       if (channel === "jpg") {
         resolve(data)
       }

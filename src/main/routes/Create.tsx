@@ -1,16 +1,3 @@
-import React, {
-  Fragment,
-  FunctionComponent,
-  ReactNode,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react"
-import { useNavigate } from "react-router-dom"
-import { useTranslation } from "react-i18next"
-import { styled } from "styled-components"
-import { transparentize } from "polished"
 import {
   ActionIcon,
   Badge,
@@ -33,17 +20,30 @@ import {
   useMantineTheme,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
+import leven from "leven"
+import { transparentize } from "polished"
+import {
+  Fragment,
+  FunctionComponent,
+  ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react"
+import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router-dom"
+import { styled } from "styled-components"
 import {
   ArrowsRandom as ArrowsRandomIcon,
   Printer as PrinterIcon,
 } from "tabler-icons-react"
-import leven from "leven"
 import { Qr, Secret } from "../../create"
 import ErrorModal from "../components/ErrorModal"
+import Scanner, { play } from "../Scanner"
 import { extract, ExtractionType } from "../utilities/regexp"
 import sleep from "../utilities/sleep"
 import zxcvbn, { ZxcvbnTranslationKey } from "../utilities/zxcvbn"
-import Scanner, { play } from "../Scanner"
 
 const maxDataLength = 1024
 const maxLabelLength = 64
@@ -186,7 +186,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     )
     setLengthPercentage(percentage)
     const { start, end } = captureSelection()
-    const results = extract(otherProps.value as string)
+    const results = await extract(otherProps.value as string)
     const marks: Mark[] = []
     for (const result of results) {
       let selected = false
@@ -788,10 +788,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   useEffect(() => {
     const removeListener = window.api.menuInsert(async (type) => {
       if (type === "mnemonic") {
-        const mnemonic = window.api.generateMnemonic()
+        const mnemonic = await window.api.generateMnemonic()
         insertAtCursor(mnemonic)
       } else if (type === "passphrase") {
-        const passphrase = await window.api.passphrase()
+        const passphrase = await window.api.generatePassphrase()
         insertAtCursor(passphrase)
       } else if (type === "scanQrCode") {
         const selection = captureSelection()
@@ -860,7 +860,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             required
             spellCheck={false}
             generatePassphrase={async () => {
-              const passphrase = await window.api.passphrase(
+              const passphrase = await window.api.generatePassphrase(
                 5,
                 "eff_short_wordlist_1"
               )
@@ -933,7 +933,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             required
             spellCheck={false}
             generatePassphrase={async () => {
-              const passphrase = await window.api.passphrase(
+              const passphrase = await window.api.generatePassphrase(
                 5,
                 "eff_short_wordlist_1"
               )

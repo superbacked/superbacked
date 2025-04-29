@@ -1,14 +1,3 @@
-import React, {
-  Fragment,
-  FunctionComponent,
-  ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from "react"
-import { useNavigate } from "react-router-dom"
-import { useTranslation } from "react-i18next"
-import { styled } from "styled-components"
 import {
   Button,
   Dialog,
@@ -24,10 +13,21 @@ import {
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
+import {
+  Fragment,
+  FunctionComponent,
+  ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
+import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router-dom"
+import { styled } from "styled-components"
 import { Eye as EyeIcon, EyeOff as EyeOffIcon } from "tabler-icons-react"
+import { Payload } from "../../create"
 import Scanner, { play, Start, Stop } from "../Scanner"
 import { extract } from "../utilities/regexp"
-import { Payload } from "../../create"
 
 const Container = styled.div`
   position: absolute;
@@ -464,7 +464,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     return (
       <Container>
         <Scanner
-          handleCode={async (code, imageDateUrl, start, stop) => {
+          handleCode={async (code, _imageDateUrl, start, stop) => {
             if (doneRef.current === false) {
               codeValueRef.current = code
               startRef.current = start

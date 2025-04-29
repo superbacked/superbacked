@@ -1,5 +1,5 @@
 import { QRCodeSVG } from "qrcode.react"
-import React, { FunctionComponent } from "react"
+import { FunctionComponent } from "react"
 import { styled } from "styled-components"
 
 const StyledQRXCodeSVG = styled(QRCodeSVG)`

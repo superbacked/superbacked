@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron"
-import { Locale } from "../i18n"
 import { Data } from "../create"
+import { Locale } from "../i18n"
 
 export interface BlockApi {
   locale: () => Locale
@@ -13,7 +13,7 @@ export interface BlockApi {
 
 let data: Data
 
-ipcRenderer.on("data", (event, _data: typeof data) => {
+ipcRenderer.on("data", (_event, _data: typeof data) => {
   data = _data
 })
 
@@ -29,7 +29,7 @@ const blockApi: BlockApi = {
     ipcRenderer.send("ready")
   },
   pdf: (callback) => {
-    ipcRenderer.on("pdf", (event, buffer) => {
+    ipcRenderer.on("pdf", (_event, buffer) => {
       callback(buffer)
     })
   },

@@ -1,6 +1,6 @@
 import { Modal } from "@mantine/core"
 import { QRCodeSVG } from "qrcode.react"
-import React, { FunctionComponent } from "react"
+import { FunctionComponent } from "react"
 import { styled } from "styled-components"
 
 const size = 320

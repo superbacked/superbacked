@@ -1,6 +1,6 @@
 import { BrowserWindow, dialog } from "electron"
-import { join } from "path"
 import { writeFile } from "fs-extra"
+import { join } from "path"
 import { Qr } from "../create"
 
 export type Format = "jpg" | "pdf"

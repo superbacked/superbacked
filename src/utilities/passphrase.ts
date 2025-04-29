@@ -1,6 +1,6 @@
 import { app } from "electron"
-import { join } from "path"
 import { readFile } from "fs-extra"
+import { join } from "path"
 import { getRandomInt } from "./crypto"
 
 const wordlistDir = join(app.getAppPath(), "wordlists").replace(
@@ -14,10 +14,10 @@ export type Wordlist =
   | "eff_short_wordlist_2_0"
 
 /**
- * Generate mnemonic
+ * Generate passphrase
  * @param length length, defaults to `7`
  * @param wordlist wordlist, defaults to `eff_large_wordlist`
- * @returns mnemonic
+ * @returns passphrase
  */
 export default async (
   length = 7,

@@ -1,3 +1,5 @@
+import { getDataLength } from "blockcrypt"
+import { program as cli, Argument as CommanderArgument } from "commander"
 import {
   app,
   BrowserWindow,
@@ -9,15 +11,20 @@ import {
   WebFrameMain,
 } from "electron"
 import { URL } from "url"
-import { Argument as CommanderArgument, program as cli } from "commander"
-import { getDataLength } from "blockcrypt"
+import create from "./create"
+import duplicate from "./duplicate"
+import {
+  defaultLocale,
+  Locale,
+  locales,
+  setLocale as setLocaleI18n,
+} from "./i18n"
+import { disableModes, enableModes, setMenu, showHiddenSecrets } from "./menu"
+import openExternalUrl from "./openExternalUrl"
+import restore, { restoreReset } from "./restore"
 import { generateMnemonic, validateMnemonic, wordlist } from "./utilities/bip39"
 import { get as getConfig, set as setConfig } from "./utilities/config"
-import passphrase from "./utilities/passphrase"
-import {
-  decode as zbarDecode,
-  installed as zbarInstalled,
-} from "./utilities/zbarimg"
+import generatePassphrase from "./utilities/passphrase"
 import {
   getDefaultPrinter,
   getPrinters,
@@ -26,17 +33,10 @@ import {
 } from "./utilities/print"
 import save from "./utilities/save"
 import { generateToken } from "./utilities/totp"
-import { enableModes, disableModes, setMenu, showHiddenSecrets } from "./menu"
-import create from "./create"
-import duplicate from "./duplicate"
-import restore, { restoreReset } from "./restore"
-import openExternalUrl from "./openExternalUrl"
 import {
-  defaultLocale,
-  Locale,
-  locales,
-  setLocale as setLocaleI18n,
-} from "./i18n"
+  decode as zbarDecode,
+  installed as zbarInstalled,
+} from "./utilities/zbarimg"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -63,14 +63,14 @@ cli
   })
 
 // see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
-app.on("web-contents-created", (event, contents) => {
+app.on("web-contents-created", (_event, contents) => {
   contents.on("will-navigate", (event) => {
     event.preventDefault()
   })
 })
 
 // see https://www.electronjs.org/docs/latest/tutorial/security#14-disable-or-limit-creation-of-new-windows
-app.on("web-contents-created", (event, contents) => {
+app.on("web-contents-created", (_event, contents) => {
   contents.setWindowOpenHandler(() => {
     return { action: "deny" }
   })
@@ -348,12 +348,12 @@ cli
     )
 
     ipcMain.handle(
-      "passphrase",
-      async (event, ...args: Parameters<typeof passphrase>) => {
+      "generatePassphrase",
+      async (event, ...args: Parameters<typeof generatePassphrase>) => {
         if (validateSender(event.senderFrame) !== true) {
           return
         }
-        return passphrase(...args)
+        return generatePassphrase(...args)
       }
     )
 

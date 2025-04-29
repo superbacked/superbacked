@@ -1,18 +1,18 @@
-import React, { Fragment, useEffect, useState } from "react"
-import { MemoryRouter, Routes, Route } from "react-router-dom"
-import { MantineProvider } from "@mantine/core"
 import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
-import { Api } from "./preload"
+import { MantineProvider } from "@mantine/core"
+import { Fragment, useEffect, useState } from "react"
+import { MemoryRouter, Route, Routes } from "react-router-dom"
+import { setLocale } from "../i18n"
 import About from "./About"
 import Disclaimer from "./Disclaimer"
 import MenuEvents, { MenuEventsContextConsumer } from "./MenuEvents"
 import ShowSelectionAsQrCode from "./ShowSelectionAsQrCode"
 import TitleBar from "./TitleBar"
+import { Api } from "./preload"
 import Create from "./routes/Create"
 import Duplicate from "./routes/Duplicate"
 import Restore from "./routes/Restore"
-import { setLocale } from "../i18n"
 
 setLocale(window.api.locale())
 

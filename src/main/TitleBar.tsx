@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useEffect, useState } from "react"
+import { FunctionComponent, useEffect, useState } from "react"
 import { styled } from "styled-components"
 
 const TitleBarContainer = styled.div`

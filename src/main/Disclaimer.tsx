@@ -1,6 +1,3 @@
-import React, { Fragment, FunctionComponent, MouseEvent } from "react"
-import { useTranslation } from "react-i18next"
-import { styled } from "styled-components"
 import {
   Anchor,
   Button,
@@ -10,6 +7,9 @@ import {
   useMantineTheme,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
+import { Fragment, FunctionComponent, MouseEvent } from "react"
+import { useTranslation } from "react-i18next"
+import { styled } from "styled-components"
 
 const CustomOverlay = styled.div`
   position: absolute;

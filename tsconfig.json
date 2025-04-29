@@ -7,6 +7,8 @@
     "module": "esnext",
     "moduleResolution": "node",
     "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "outDir": "dist",
     "paths": {
       "*": ["node_modules/*"]

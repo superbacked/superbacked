@@ -1,8 +1,8 @@
 import { decrypt } from "blockcrypt"
+import { Payload } from "./create"
 import argon2 from "./utilities/argon2"
 import { concatenatePassphrases } from "./utilities/crypto"
 import { combineShares } from "./utilities/shamir"
-import { Payload } from "./create"
 
 export interface Result {
   error: string

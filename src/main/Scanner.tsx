@@ -1,13 +1,3 @@
-import React, {
-  forwardRef,
-  Fragment,
-  FunctionComponent,
-  useEffect,
-  useRef,
-  useState,
-} from "react"
-import { useTranslation } from "react-i18next"
-import { styled } from "styled-components"
 import {
   ActionIcon,
   Avatar,
@@ -20,6 +10,17 @@ import {
   Text,
   useMantineTheme,
 } from "@mantine/core"
+import jsQr from "jsqr"
+import {
+  forwardRef,
+  Fragment,
+  FunctionComponent,
+  useEffect,
+  useRef,
+  useState,
+} from "react"
+import { useTranslation } from "react-i18next"
+import { styled } from "styled-components"
 import {
   DeviceDesktop as DeviceDesktopIcon,
   Refresh as RefreshIcon,
@@ -27,7 +28,6 @@ import {
   Video as VideoIcon,
   X as XIcon,
 } from "tabler-icons-react"
-import jsQr from "jsqr"
 import { CustomDesktopCapturerSource } from "../index"
 import ErrorModal from "./components/ErrorModal"
 import confirmationSound from "./confirmation.wav"
@@ -343,9 +343,8 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
           } as MediaTrackConstraints,
         }
       }
-      mediaStreamRef.current = await navigator.mediaDevices.getUserMedia(
-        constraints
-      )
+      mediaStreamRef.current =
+        await navigator.mediaDevices.getUserMedia(constraints)
       setLoading(false)
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStreamRef.current
@@ -438,8 +437,8 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
               </ActionIcon>
             }
             value={
-              deviceValue ??
-              (sourceRef.current && sourceRef.current.type === "device")
+              (deviceValue ??
+              (sourceRef.current && sourceRef.current.type === "device"))
                 ? sourceRef.current.id
                 : null
             }
@@ -480,8 +479,8 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
               </ActionIcon>
             }
             value={
-              sourceValue ??
-              (sourceRef.current && sourceRef.current.type === "source")
+              (sourceValue ??
+              (sourceRef.current && sourceRef.current.type === "source"))
                 ? sourceRef.current.id
                 : null
             }
