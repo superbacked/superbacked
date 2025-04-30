@@ -201,8 +201,7 @@ cli
             // #if process.env.ENV === "production"
             details.url.match(/^file:\/\//) === undefined &&
             // #endif
-            details.url.match(/^https:\/\/cloud\.superbacked\.com/) ===
-              undefined
+            details.url.match(/^https:\/\/superbacked\.com/) === undefined
           ) {
             callback({ cancel: true })
           } else {
