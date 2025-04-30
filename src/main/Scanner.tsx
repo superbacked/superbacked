@@ -261,7 +261,6 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
       const detectedBarcodes = await barcodeDetector.detect(imageData)
       if (detectedBarcodes.length > 0) {
         code = detectedBarcodes[0].rawValue
-        console.log("here yo", code)
       }
     } else if (zbarInstalled) {
       // Use zbar when available (currently Linux-only, see https://github.com/mchehab/zbar)
