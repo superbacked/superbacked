@@ -15,7 +15,7 @@ module.exports = async function (context) {
 
   console.log(`Notarizing ${appId} found at ${appPath}…`)
 
-  // Create “App Manager” API key using https://appstoreconnect.apple.com/access/api and run `xcrun notarytool store-credentials superbacked-notarytool` to create credentials
+  // Create “App Manager” API key using https://appstoreconnect.apple.com/access/integrations/api and run `xcrun notarytool store-credentials superbacked-notarytool` to create credentials
   await electronNotarize.notarize({
     appPath: appPath,
     keychainProfile: "superbacked-notarytool",
