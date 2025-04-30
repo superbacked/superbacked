@@ -33,6 +33,15 @@ export const getDefaultPrinter = async (): Promise<Printer | null> => {
   return null
 }
 
+export const getPrinterPageSizes = async (printer: string): Promise<string> => {
+  const { stdout } = await spawn("lpoptions", ["-p", printer, "-l"])
+  const lines = stdout.split("\n")
+  const pageSizeLine = lines.find((line) =>
+    line.startsWith("PageSize/Media Size:")
+  )
+  return pageSizeLine.replace("PageSize/Media Size:", "").trim()
+}
+
 /**
  * Print base64-encoded JPEG or PDF
  * @param printer printer name
@@ -44,6 +53,9 @@ export const print = async (
   data: string,
   copies: number
 ): Promise<string> => {
+  const pageSizes = await getPrinterPageSizes(printer)
+  const printersSupportsCustomPageSize =
+    pageSizes.indexOf("Custom.WIDTHxHEIGHT") !== -1
   const execaArguments: string[] = [
     "-d",
     printer,
@@ -52,16 +64,21 @@ export const print = async (
     "-o",
     "Duplex=None",
     "-o",
-    "fit-to-page",
-    "-o",
     "MediaType=stationery-heavyweight",
     "-o",
     "Quality=High",
+    "-o",
+    "fit-to-page",
   ]
   if (printer === "Brother_HL_L2460DW") {
-    execaArguments.push(...["-o", "PageSize=Custom.102x152mm"])
+    // Handle recommended printer
+    execaArguments.push(...["-o", "media=Custom.102x152mm"])
+  } else if (printersSupportsCustomPageSize === true) {
+    // Handle printers that support custom page size
+    execaArguments.push(...["-o", "media=Custom.4x6in"])
   } else {
-    execaArguments.push(...["-o", "PageSize=A6"])
+    // Default to A6 page size
+    execaArguments.push(...["-o", "media=A6"])
   }
   const { stdout } = await spawn("lp", execaArguments, {
     input: Buffer.from(data, "base64"),
