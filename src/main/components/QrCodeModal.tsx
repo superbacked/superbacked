@@ -37,7 +37,7 @@ const QrCodeModal: FunctionComponent<QrCodeModalProps> = (props) => {
         <StyledQRXCodeSVG
           boostLevel={false}
           level="L"
-          marginSize={0}
+          marginSize={4}
           size={size}
           value={props.value}
         />
