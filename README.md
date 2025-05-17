@@ -71,9 +71,9 @@ $ uname -m | grep arm64 && echo 'export PATH=$PATH:/opt/homebrew/bin' >> ~/.zshr
 ### Step 3: install [Node.js](https://nodejs.org/en)
 
 ```console
-$ brew install node@20
+$ brew install node@22
 
-$ echo 'export PATH=$PATH:/opt/homebrew/opt/node@20/bin' >> ~/.zshrc && source ~/.zshrc
+$ echo 'export PATH=$PATH:/opt/homebrew/opt/node@22/bin' >> ~/.zshrc && source ~/.zshrc
 ```
 
 ### Step 4: install [Visual Studio Code](https://code.visualstudio.com/)
