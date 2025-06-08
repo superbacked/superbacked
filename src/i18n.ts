@@ -2,6 +2,8 @@ import { changeLanguage, use } from "i18next"
 import { initReactI18next } from "react-i18next"
 import en from "./locales/en.json"
 import fr from "./locales/fr.json"
+import pt from "./locales/pt.json"
+
 
 export const resources = {
   en: {
@@ -11,6 +13,10 @@ export const resources = {
   fr: {
     label: "Français",
     translation: fr,
+  },
+  pt: {
+    label: "Português",
+    translation: pt,
   },
 }
 
