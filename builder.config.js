@@ -31,17 +31,20 @@ module.exports = {
   },
   mac: {
     entitlements: "build/entitlements.mac.plist",
-    entitlementsInherit: "build/entitlements.mac.plist",
     files: [
       {
-        from: "./bin/darwin",
-        to: "./bin/darwin",
+        from: "./bin/darwin/${arch}",
+        to: "./bin/darwin/${arch}",
       },
     ],
     hardenedRuntime: true, // default, see https://www.electron.build/configuration/mac.html and https://developer.apple.com/documentation/security/hardened_runtime
     target: [
       {
-        arch: "universal",
+        arch: "arm64",
+        target: "dmg",
+      },
+      {
+        arch: "x64",
         target: "dmg",
       },
     ],
