@@ -22,14 +22,14 @@
   "license": "UNLICENSED",
   "private": true,
   "devDependencies": {
-    "@electron-forge/cli": "^7.8.0",
-    "@electron-forge/maker-zip": "^7.8.0",
-    "@electron-forge/plugin-webpack": "^7.8.0",
+    "@electron-forge/cli": "^7.8.1",
+    "@electron-forge/maker-zip": "^7.8.1",
+    "@electron-forge/plugin-webpack": "^7.8.1",
     "@electron/notarize": "^2.5.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.6.0",
     "@svgr/webpack": "^8.1.0",
-    "@types/react": "^18.3.20",
-    "@types/react-dom": "^18.3.6",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
     "@types/styled-components": "^5.1.34",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
@@ -37,7 +37,7 @@
     "css-loader": "^6.11.0",
     "dotenv-webpack": "^8.1.0",
     "electron": "^28.3.3",
-    "electron-builder": "^26.0.12",
+    "electron-builder": "^26.0.17",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-react-hooks": "^4.6.2",
@@ -52,7 +52,7 @@
     "typescript": "~5.8.3"
   },
   "dependencies": {
-    "@fontsource/roboto-mono": "^5.2.5",
+    "@fontsource/roboto-mono": "^5.2.6",
     "@mantine/core": "^5.10.5",
     "@mantine/form": "^5.10.5",
     "@mantine/hooks": "^5.10.5",
@@ -74,10 +74,10 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^11.18.6",
-    "react-router-dom": "^6.30.0",
-    "styled-components": "^6.1.17",
+    "react-router-dom": "^6.30.1",
+    "styled-components": "^6.1.19",
     "tabler-icons-react": "^1.56.0",
-    "zod": "^3.24.3"
+    "zod": "^3.25.67"
   },
   "prettier": {
     "endOfLine": "lf",
