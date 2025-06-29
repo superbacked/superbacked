@@ -27,7 +27,7 @@ Running Superbacked OS on flash drive with signed firmware and write protection 
 
 Go to https://www.raspberrypi.com/software/, download and install Raspberry Pi Imager.
 
-#### Ubuntu (or other Debian-based OS)
+#### Ubuntu
 
 > Heads-up: depends on [Qt](https://www.qt.io/).
 
@@ -45,7 +45,7 @@ $ sudo apt install -y rpi-imager
 $ defaults write org.raspberrypi.Imager.plist telemetry -bool NO
 ```
 
-#### Ubuntu (or other Debian-based OS)
+#### Ubuntu
 
 ```shell-session
 $ mkdir -p ~/.config/Raspberry\ Pi
@@ -60,7 +60,27 @@ EOF
 
 > Heads-up: for additional security, [verify](https://github.com/superbacked/superbacked?tab=readme-ov-file#how-to-verify-integrity-of-release) Superbacked OS release.
 
-https://superbacked.com/api/download/v${latestRelease}/superbacked-os-arm64-raspi-${latestRelease}.img.xz
+#### macOS or Ubuntu
+
+```shell-session
+$ cd ~/Downloads
+
+$ for number in $(seq 1 2); do curl --fail --location "https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-arm64-raspi-${latestRelease}.img.xz.part$number" || break; done | cat > superbacked-os-arm64-raspi-${latestRelease}.img.xz
+```
+
+#### Windows
+
+> Heads-up: requires WSL to be [installed](https://learn.microsoft.com/en-us/windows/wsl/install) first using `wsl --install` (if applicable).
+
+> Heads-up: replace `Sun Knudsen` with your username.
+
+```shell-session
+$ wsl
+
+$ cd /mnt/c/Users/Sun\ Knudsen/Downloads
+
+$ for number in $(seq 1 2); do curl --fail --location "https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-arm64-raspi-${latestRelease}.img.xz.part$number" || break; done | cat > superbacked-os-arm64-raspi-${latestRelease}.img.xz
+```
 
 ### Step 4: copy Superbacked OS to USB flash drive
 
