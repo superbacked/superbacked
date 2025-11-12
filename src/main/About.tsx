@@ -20,7 +20,7 @@ const About: FunctionComponent = () => {
       onClose={() => {
         setShowAbout(false)
       }}
-      sx={{ zIndex: 500 }}
+      zIndex={400}
     >
       <Center>
         <SuperbackedIcon style={{ width: "25%" }} />
