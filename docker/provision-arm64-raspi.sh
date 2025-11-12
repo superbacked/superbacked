@@ -10,7 +10,7 @@ function detach()
 
 trap detach ERR INT
 
-mknod /dev/loop0p2 b 259 1
+mknod /dev/loop0p2 b 259 2
 
 losetup --find --partscan /dist/$2
 
