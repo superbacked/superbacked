@@ -1,6 +1,12 @@
-module.exports = {
+import type { ForgeConfig } from "@electron-forge/shared-types"
+
+import { mainConfig } from "./webpack.main.config"
+import { rendererConfig } from "./webpack.renderer.config"
+
+const config: ForgeConfig = {
   makers: [
     {
+      config: {},
       name: "@electron-forge/maker-zip",
     },
   ],
@@ -9,9 +15,9 @@ module.exports = {
       name: "@electron-forge/plugin-webpack",
       config: {
         devServer: { hot: true, liveReload: false },
-        mainConfig: "./webpack.main.config.js",
+        mainConfig: mainConfig,
         renderer: {
-          config: "./webpack.renderer.config.js",
+          config: rendererConfig,
           entryPoints: [
             {
               html: "./src/index.html",
@@ -35,3 +41,5 @@ module.exports = {
     },
   ],
 }
+
+export default config

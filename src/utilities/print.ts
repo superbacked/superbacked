@@ -1,5 +1,6 @@
 import { BrowserWindow } from "electron"
-import spawn from "./spawn"
+
+import spawn from "@/src/utilities/spawn"
 
 export interface Printer {
   name: string
@@ -11,13 +12,24 @@ export type PrinterStatus = "printing" | "standby"
 
 export const getPrinters = async (): Promise<Printer[]> => {
   const window = BrowserWindow.getFocusedWindow()
+  if (!window) {
+    // This should never happen, but tracking edge case (required by TypeScript type check)
+    throw new Error("Could not get focussed window")
+  }
   const printers = await window.webContents.getPrintersAsync()
+
+  const { stdout } = await spawn("lpstat", ["-d"])
+  const defaultPrinterName =
+    stdout !== "no system default destination"
+      ? stdout.replace("system default destination: ", "").trim()
+      : null
+
   const sanitizedPrinters: Printer[] = []
   for (const printer of printers) {
     sanitizedPrinters.push({
       name: printer.name,
       displayName: printer.displayName,
-      isDefault: printer.isDefault,
+      isDefault: printer.name === defaultPrinterName,
     })
   }
   return sanitizedPrinters
@@ -39,6 +51,9 @@ export const getPrinterPageSizes = async (printer: string): Promise<string> => {
   const pageSizeLine = lines.find((line) =>
     line.startsWith("PageSize/Media Size:")
   )
+  if (!pageSizeLine) {
+    throw new Error("Could not determine printer page sizes")
+  }
   return pageSizeLine.replace("PageSize/Media Size:", "").trim()
 }
 

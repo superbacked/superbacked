@@ -6,9 +6,11 @@ import {
   MenuItemConstructorOptions,
   systemPreferences,
 } from "electron"
+
 import { t } from "i18next"
-import { locales, resources } from "./i18n"
-import { locale, setLocale } from "./index"
+
+import { locales, resources } from "@/src/i18n"
+import { locale, setLocale } from "@/src/index"
 
 if (process.platform === "darwin") {
   systemPreferences.setUserDefault(
@@ -27,20 +29,6 @@ type Mode = "insert" | "select"
 
 const enabledModes: Set<Mode> = new Set()
 
-export const enableModes = (modes: Mode[]) => {
-  for (const mode of modes) {
-    enabledModes.add(mode)
-  }
-  setMenu()
-}
-
-export const disableModes = (modes: Mode[]) => {
-  for (const mode of modes) {
-    enabledModes.delete(mode)
-  }
-  setMenu()
-}
-
 export let showHiddenSecrets = false
 
 export const setMenu = () => {
@@ -53,7 +41,7 @@ export const setMenu = () => {
       type: "checkbox",
       checked: chooseLanguageSubmenuLocale === locale ? true : false,
       async click() {
-        setLocale(chooseLanguageSubmenuLocale)
+        await setLocale(chooseLanguageSubmenuLocale)
         setMenu()
       },
     })
@@ -66,7 +54,9 @@ export const setMenu = () => {
           label: `${t("menu.superbacked.about")} ${app.getName()}`,
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:about")
+            if (focusedWindow) {
+              focusedWindow.webContents.send("menu:about")
+            }
           },
         },
         { type: "separator", visible: runningMacOS },
@@ -90,7 +80,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Shift+Command+C" : "Shift+Ctrl+C",
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:triggeredRoute", "/")
+            if (focusedWindow) {
+              focusedWindow.webContents.send("menu:triggeredRoute", "/")
+            }
           },
         },
         {
@@ -98,7 +90,12 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Shift+Command+D" : "Shift+Ctrl+D",
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:triggeredRoute", "/duplicate")
+            if (focusedWindow) {
+              focusedWindow.webContents.send(
+                "menu:triggeredRoute",
+                "/duplicate"
+              )
+            }
           },
         },
         {
@@ -106,7 +103,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Shift+Command+R" : "Shift+Ctrl+R",
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:triggeredRoute", "/restore")
+            if (focusedWindow) {
+              focusedWindow.webContents.send("menu:triggeredRoute", "/restore")
+            }
           },
         },
         { type: "separator" },
@@ -123,7 +122,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Command+W" : "Ctrl+W",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.close()
+            if (focusedWindow) {
+              focusedWindow.close()
+            }
           },
         },
       ],
@@ -136,7 +137,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Command+Z" : "Ctrl+Z",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.undo()
+            if (focusedWindow) {
+              focusedWindow.webContents.undo()
+            }
           },
         },
         {
@@ -144,7 +147,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Shift+Command+Z" : "Shift+Ctrl+Z",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.redo()
+            if (focusedWindow) {
+              focusedWindow.webContents.redo()
+            }
           },
         },
         { type: "separator" },
@@ -153,7 +158,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Command+X" : "Ctrl+X",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.cut()
+            if (focusedWindow) {
+              focusedWindow.webContents.cut()
+            }
           },
         },
         {
@@ -161,7 +168,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Command+C" : "Ctrl+C",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.copy()
+            if (focusedWindow) {
+              focusedWindow.webContents.copy()
+            }
           },
         },
         {
@@ -169,7 +178,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Command+V" : "Ctrl+V",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.paste()
+            if (focusedWindow) {
+              focusedWindow.webContents.paste()
+            }
           },
         },
         {
@@ -177,7 +188,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Command+A" : "Ctrl+A",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.selectAll()
+            if (focusedWindow) {
+              focusedWindow.webContents.selectAll()
+            }
           },
         },
       ],
@@ -191,7 +204,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Shift+Command+M" : "Shift+Ctrl+M",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:insert", "mnemonic")
+            if (focusedWindow) {
+              focusedWindow.webContents.send("menu:insert", "mnemonic")
+            }
           },
         },
         {
@@ -200,7 +215,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Shift+Command+P" : "Shift+Ctrl+P",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:insert", "passphrase")
+            if (focusedWindow) {
+              focusedWindow.webContents.send("menu:insert", "passphrase")
+            }
           },
         },
         {
@@ -209,7 +226,9 @@ export const setMenu = () => {
           accelerator: runningMacOS ? "Shift+Command+S" : "Shift+Ctrl+S",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:insert", "scanQrCode")
+            if (focusedWindow) {
+              focusedWindow.webContents.send("menu:insert", "scanQrCode")
+            }
           },
         },
       ],
@@ -229,10 +248,12 @@ export const setMenu = () => {
           click(menuItem) {
             showHiddenSecrets = menuItem.checked
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send(
-              "menu:showHiddenSecrets",
-              showHiddenSecrets
-            )
+            if (focusedWindow) {
+              focusedWindow.webContents.send(
+                "menu:showHiddenSecrets",
+                showHiddenSecrets
+              )
+            }
             setMenu()
           },
         },
@@ -242,7 +263,9 @@ export const setMenu = () => {
           label: t("menu.view.showSelectionAsQrCode"),
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
-            focusedWindow.webContents.send("menu:showSelectionAsQrCode")
+            if (focusedWindow) {
+              focusedWindow.webContents.send("menu:showSelectionAsQrCode")
+            }
           },
         },
         {
@@ -276,4 +299,30 @@ export const setMenu = () => {
     }
   })
   Menu.setApplicationMenu(Menu.buildFromTemplate(filteredTemplate))
+}
+
+export const enableModes = (modes: Mode[]) => {
+  let changed = false
+  for (const mode of modes) {
+    if (enabledModes.has(mode) === false) {
+      enabledModes.add(mode)
+      changed = true
+    }
+  }
+  if (changed === true) {
+    setMenu()
+  }
+}
+
+export const disableModes = (modes: Mode[]) => {
+  let changed = false
+  for (const mode of modes) {
+    if (enabledModes.has(mode) === true) {
+      enabledModes.delete(mode)
+      changed = true
+    }
+  }
+  if (changed === true) {
+    setMenu()
+  }
 }

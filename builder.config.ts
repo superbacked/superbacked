@@ -1,3 +1,5 @@
+import type { Configuration } from "electron-builder"
+
 const files = [
   {
     from: "./out/Superbacked-darwin-arm64/Superbacked.app/Contents/Resources/app",
@@ -12,8 +14,8 @@ const files = [
   },
 ]
 
-module.exports = {
-  appId: `com.superbacked`,
+const config: Configuration = {
+  appId: "com.superbacked",
   artifactName: "superbacked-${arch}-${version}.${ext}",
   productName: "Superbacked",
   dmg: {
@@ -30,6 +32,7 @@ module.exports = {
     },
   },
   mac: {
+    notarize: false,
     entitlements: "build/entitlements.mac.plist",
     files: [
       {
@@ -37,7 +40,7 @@ module.exports = {
         to: "./bin/darwin/${arch}",
       },
     ],
-    hardenedRuntime: true, // default, see https://www.electron.build/configuration/mac.html and https://developer.apple.com/documentation/security/hardened_runtime
+    hardenedRuntime: true,
     target: [
       {
         arch: "arm64",
@@ -53,3 +56,5 @@ module.exports = {
   asarUnpack: ["**/bin/**/*", "**/wordlists/**/*", "!**/node_modules/**/*"],
   afterSign: process.env.STAGING !== "true" ? "notarize.js" : undefined,
 }
+
+export default config

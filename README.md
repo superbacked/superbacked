@@ -78,6 +78,8 @@ $ echo 'export PATH=$PATH:/opt/homebrew/opt/node@22/bin' >> ~/.zshrc && source ~
 
 ### Step 4: install [Visual Studio Code](https://code.visualstudio.com/)
 
+> Heads-up: installing [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) and [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) extensions is recommended.
+
 ### Step 5: install dependencies
 
 ```console

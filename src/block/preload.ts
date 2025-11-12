@@ -1,40 +1,31 @@
-import { contextBridge, ipcRenderer } from "electron"
-import { Data } from "../create"
-import { Locale } from "../i18n"
+import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron"
+
+import { Data } from "@/src/create"
+import { Locale } from "@/src/i18n"
 
 export interface BlockApi {
   locale: () => Locale
   platform: string
-  data: () => Data
+  dataChange: (callback: (data: Data) => void) => () => void
   ready: () => void
-  pdf: (callback: (buffer: Buffer) => void) => void
-  jpg: (data: string) => void
 }
-
-let data: Data
-
-ipcRenderer.on("data", (_event, _data: typeof data) => {
-  data = _data
-})
 
 const blockApi: BlockApi = {
   locale: () => {
     return ipcRenderer.sendSync("app:getLocale")
   },
   platform: process.platform,
-  data: () => {
-    return data
+  dataChange: (callback) => {
+    const listener = (_event: IpcRendererEvent, data: Data) => {
+      callback(data)
+    }
+    ipcRenderer.on("dataChange", listener)
+    return () => {
+      ipcRenderer.removeListener("dataChange", listener)
+    }
   },
   ready: () => {
     ipcRenderer.send("ready")
-  },
-  pdf: (callback) => {
-    ipcRenderer.on("pdf", (_event, buffer) => {
-      callback(buffer)
-    })
-  },
-  jpg: (data: string) => {
-    ipcRenderer.send("jpg", data)
   },
 }
 

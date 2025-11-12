@@ -1,15 +1,17 @@
+import styled from "@emotion/styled"
 import {
   Anchor,
   Button,
+  darken,
   Space,
   Switch,
   Text,
+  useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { Fragment, FunctionComponent, MouseEvent } from "react"
 import { useTranslation } from "react-i18next"
-import { styled } from "styled-components"
 
 const CustomOverlay = styled.div`
   position: absolute;
@@ -58,6 +60,7 @@ interface DisclaimerProps {
 const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
   const { t } = useTranslation()
   const theme = useMantineTheme()
+  const { colorScheme } = useMantineColorScheme()
   const form = useForm({
     initialValues: {
       accept: false,
@@ -67,15 +70,15 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
     <Fragment>
       <CustomOverlay>
         <CustomInnerOverlay
-          color={theme.colorScheme === "dark" ? theme.colors.dark[7] : "#fff"}
+          color={colorScheme === "dark" ? theme.colors.dark[7] : "#fff"}
         />
       </CustomOverlay>
       <Container>
         <Text>
           <Text
+            fw="bold"
             gradient={{ from: "#fdc0ee", to: "#fbd6cd", deg: 45 }}
             variant="gradient"
-            weight="bold"
             span
           >
             {t("doNot")}
@@ -84,7 +87,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
           <Anchor
             onClick={(event: MouseEvent<HTMLAnchorElement>) => {
               event.preventDefault()
-              window.api.openExternalUrl(
+              void window.api.openExternalUrl(
                 `${process.env.SUPERBACKED_WEBSITE_BASE_URI}/faq/air-gapped`
               )
             }}
@@ -95,7 +98,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
           <Anchor
             onClick={(event: MouseEvent<HTMLAnchorElement>) => {
               event.preventDefault()
-              window.api.openExternalUrl(
+              void window.api.openExternalUrl(
                 `${process.env.SUPERBACKED_WEBSITE_BASE_URI}/faq/hardware`
               )
             }}
@@ -108,9 +111,9 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
         <Text>
           {t("superbackedIncCannotBeHeldResponsible")}{" "}
           <Text
+            fw="bold"
             gradient={{ from: "#fdc0ee", to: "#fbd6cd", deg: 45 }}
             variant="gradient"
-            weight="bold"
             span
           >
             {t("useAtYourOwnRisk")}
@@ -121,6 +124,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
           <Switch
             checked={form.values.accept}
             label={t("agree")}
+            withThumbIndicator={false}
             {...form.getInputProps("accept", { withFocus: false })}
           />
           <Space h="lg" />
@@ -133,15 +137,15 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
             onClick={() => {
               props.close()
             }}
-            sx={(theme) => ({
+            sx={{
               "&:disabled": {
-                color: theme.fn.darken("#fff", 0.25),
-                backgroundImage: `linear-gradient(45deg, ${theme.fn.darken(
+                color: darken("#fff", 0.25),
+                backgroundImage: `linear-gradient(45deg, ${darken(
                   "#fdc0ee",
                   0.25
-                )} 0%, ${theme.fn.darken("#fbd6cd", 0.25)} 100%)`,
+                )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
               },
-            })}
+            }}
           >
             {t("useSuperbacked")}
           </Button>

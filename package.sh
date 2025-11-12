@@ -14,6 +14,8 @@ if [ "$answer" = "y" ]; then
 
   printf "%s\n" "Building Superbacked app…"
 
+  npm run lint
+
   npm run build
 
   for file in dist/*.AppImage; do

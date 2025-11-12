@@ -1,5 +1,5 @@
+import styled from "@emotion/styled"
 import { FunctionComponent, useEffect, useState } from "react"
-import { styled } from "styled-components"
 
 const TitleBarContainer = styled.div`
   position: relative;

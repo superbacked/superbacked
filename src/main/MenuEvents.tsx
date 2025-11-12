@@ -2,13 +2,12 @@ import React, {
   FunctionComponent,
   createContext,
   useEffect,
-  useRef,
   useState,
 } from "react"
-import { NavigateFunction, useLocation, useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 
 const MenuEventsContext = createContext({
-  key: Date.now(),
+  key: 0,
 })
 
 export const MenuEventsContextConsumer = MenuEventsContext.Consumer
@@ -19,30 +18,23 @@ interface MenuEventsProps {
 
 const MenuEvents: FunctionComponent<MenuEventsProps> = function (props) {
   const location = useLocation()
-  const currentPathname = useRef<string>(null)
-  const navigateFunction = useRef<NavigateFunction>(null)
-  const [key, setKey] = useState(Date.now())
-  navigateFunction.current = useNavigate()
-  useEffect(() => {
-    currentPathname.current = location.pathname
-  }, [location.pathname])
+  const navigate = useNavigate()
+  const [key, setKey] = useState(0)
+
   useEffect(() => {
     const removeListener = window.api.menuTriggeredRoute((to: string) => {
-      setKey(Date.now())
-      if (to !== currentPathname.current) {
-        navigateFunction.current(to)
+      setKey((prev) => prev + 1)
+      if (to !== location.pathname) {
+        void navigate(to)
       }
     })
     return () => {
       removeListener()
     }
-  }, [])
+  }, [location.pathname, navigate])
+
   return (
-    <MenuEventsContext.Provider
-      value={{
-        key: key,
-      }}
-    >
+    <MenuEventsContext.Provider value={{ key }}>
       {props.children}
     </MenuEventsContext.Provider>
   )

@@ -1,23 +1,21 @@
+import { css, Global } from "@emotion/react"
+import styled from "@emotion/styled"
+import { MantineProvider } from "@mantine/core"
+import { emotionTransform, MantineEmotionProvider } from "@mantine/emotion"
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+
+import { emotionCache } from "@/emotion-cache"
+import QRCode from "@/src/block/components/QRCode"
+import Logo from "@/src/block/logo.svg"
+import { BlockApi } from "@/src/block/preload"
+import { Data } from "@/src/create"
+import { setLocale } from "@/src/i18n"
 import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
-import { MantineProvider } from "@mantine/core"
-import { useTranslation } from "react-i18next"
-import { createGlobalStyle, styled } from "styled-components"
-import { setLocale } from "../i18n"
-import Logo from "./logo.svg"
-import { BlockApi } from "./preload"
-import QRCode from "./QRCode"
+import "@mantine/core/styles.css"
 
-import { GlobalWorkerOptions, getDocument } from "pdfjs-dist"
-
-GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString()
-
-setLocale(window.blockApi.locale())
-
-const data = window.blockApi.data()
+await setLocale(window.blockApi.locale())
 
 declare global {
   interface Window {
@@ -25,15 +23,11 @@ declare global {
   }
 }
 
-const GlobalStyle = createGlobalStyle`
-  html {
-    @page {
-      size: 4in 6in;
-    }
-  }
-`
+interface ContainerProps {
+  scale: Data["scale"]
+}
 
-const Container = styled.div`
+const Container = styled.div<ContainerProps>`
   position: absolute;
   top: 0;
   left: 0;
@@ -44,6 +38,8 @@ const Container = styled.div`
   flex-direction: column;
   justify-content: center;
   padding: 0.5in;
+  transform: ${(props) => `scale(${props.scale})`};
+  transform-origin: top left;
 `
 
 const Hash = styled.div`
@@ -85,86 +81,92 @@ const LogoContainer = styled.div`
 
 const App = () => {
   const { t } = useTranslation()
-  // setTimeout required to fix font swap timing issue
-  setTimeout(() => {
-    window.blockApi.ready()
-    window.blockApi.pdf(async (buffer) => {
-      const doc = await getDocument(buffer).promise
-      const page = await doc.getPage(1)
-      const scale = 4
-      const viewport = page.getViewport({ scale: scale })
-      const canvas = document.createElement("canvas")
-      const context = canvas.getContext("2d")
-      canvas.height = viewport.height
-      canvas.width = viewport.width
-      await page.render({
-        canvasContext: context,
-        viewport: viewport,
-      }).promise
-      const dataUrl = canvas.toDataURL("image/jpeg", 100)
-      window.blockApi.jpg(dataUrl)
-    })
-  }, 100)
-  return (
-    <MantineProvider
-      theme={{
-        colors: {
-          dark: [
-            "#d5d7e0",
-            "#acaebf",
-            "#8c8fa3",
-            "#666980",
-            "#4d4f66",
-            "#34354a",
-            "#2b2c3d",
-            "#1c1b24",
-            "#1c1b24",
-            "#1c1b24",
-          ],
-          pink: [
-            "#fafafa",
-            "#faf4f9",
-            "#fbedf7",
-            "#fbe7f6",
-            "#fbe0f5",
-            "#fcdaf3",
-            "#fcd3f2",
-            "#fccdf1",
-            "#fdc6ef",
-            "#fdc0ee",
-          ],
-        },
-        colorScheme: "light",
-        fontFamily: "'Roboto Mono', monospace",
-        fontFamilyMonospace: "'Roboto Mono', monospace",
-        headings: {
-          fontFamily: "'Roboto Mono', monospace",
-        },
-        primaryColor: "pink",
-        globalStyles: () => ({
-          body: {
-            userSelect: "none",
-          },
-        }),
-      }}
-      withGlobalStyles
-      withNormalizeCSS
-    >
-      <GlobalStyle />
-      <Container>
-        <QRCode value={data.payloadText} />
-        <Hash>
-          {data.shortHash}
-          {data.label ? ` ${data.label}` : null}
-        </Hash>
-        <Disclaimer>{t("block.importantDocumentDoNotDiscard")}</Disclaimer>
-        <Recover>superbacked.com/recover</Recover>
-        <LogoContainer>
-          <Logo width="0.5in" height="0.5in" />
-        </LogoContainer>
-      </Container>
-    </MantineProvider>
-  )
+  const [data, setData] = useState<Data | null>(null)
+  useEffect(() => {
+    const removeListener = window.blockApi.dataChange(setData)
+    return () => {
+      removeListener()
+    }
+  }, [])
+  useEffect(() => {
+    if (data) {
+      void document.fonts.ready.then(() => {
+        requestAnimationFrame(() => {
+          window.blockApi.ready()
+        })
+      })
+    }
+  }, [data])
+  if (data) {
+    return (
+      <MantineEmotionProvider cache={emotionCache}>
+        <MantineProvider
+          defaultColorScheme="light"
+          stylesTransform={emotionTransform}
+          theme={{
+            colors: {
+              dark: [
+                "#d5d7e0",
+                "#acaebf",
+                "#8c8fa3",
+                "#666980",
+                "#4d4f66",
+                "#34354a",
+                "#2b2c3d",
+                "#1c1b24",
+                "#1c1b24",
+                "#1c1b24",
+              ],
+              pink: [
+                "#fafafa",
+                "#faf4f9",
+                "#fbedf7",
+                "#fbe7f6",
+                "#fbe0f5",
+                "#fcdaf3",
+                "#fcd3f2",
+                "#fccdf1",
+                "#fdc6ef",
+                "#fdc0ee",
+              ],
+            },
+            fontFamily: "'Roboto Mono', monospace",
+            fontFamilyMonospace: "'Roboto Mono', monospace",
+            headings: {
+              fontFamily: "'Roboto Mono', monospace",
+            },
+            primaryColor: "pink",
+          }}
+        >
+          <Global
+            styles={css`
+              html {
+                @page {
+                  size: 4in 6in;
+                }
+              }
+              body {
+                user-select: none;
+              }
+            `}
+          />
+          <Container scale={data.scale}>
+            <QRCode value={data.payloadText} />
+            <Hash>
+              {data.shortHash}
+              {data.label ? ` ${data.label}` : null}
+            </Hash>
+            <Disclaimer>{t("block.importantDocumentDoNotDiscard")}</Disclaimer>
+            <Recover>superbacked.com/recover</Recover>
+            <LogoContainer>
+              <Logo width="0.5in" height="0.5in" />
+            </LogoContainer>
+          </Container>
+        </MantineProvider>
+      </MantineEmotionProvider>
+    )
+  }
+  return null
 }
 
 export default App

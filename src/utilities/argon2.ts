@@ -1,6 +1,7 @@
 import { app } from "electron"
 import { join } from "path"
-import spawn from "./spawn"
+
+import spawn from "@/src/utilities/spawn"
 
 const binDir = join(
   app.getAppPath(),

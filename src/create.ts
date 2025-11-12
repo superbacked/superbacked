@@ -1,8 +1,10 @@
-import { Secret as BlockcryptSecret, encrypt } from "blockcrypt"
 import { BrowserWindow } from "electron"
-import argon2 from "./utilities/argon2"
-import { concatenatePassphrases, hash, shortHash } from "./utilities/crypto"
-import { generateShares } from "./utilities/shamir"
+
+import { Secret as BlockcryptSecret, encrypt } from "blockcrypt"
+
+import argon2 from "@/src/utilities/argon2"
+import { concatenatePassphrases, hash, shortHash } from "@/src/utilities/crypto"
+import { generateShares } from "@/src/utilities/shamir"
 
 declare const BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const BLOCK_WINDOW_WEBPACK_ENTRY: string
@@ -17,7 +19,7 @@ export interface ShamirBlockcryptSecret {
 }
 
 export interface Metadata {
-  label: string
+  label?: string
   challenge?: string
 }
 
@@ -33,7 +35,7 @@ export interface Qr {
   payload: Payload
   hash: string
   shortHash: string
-  label: string
+  label?: string
   jpg: string
   pdf: string
   copies: number
@@ -42,13 +44,13 @@ export interface Qr {
 export interface Data {
   payloadText: string
   shortHash: string
-  label: string
+  label?: string
+  scale: number
 }
 
-export interface Result {
-  error: string
-  qrs: Qr[]
-}
+export type Result =
+  | { success: false; error: string }
+  | { success: true; qrs: Qr[] }
 
 const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
   return new Promise((resolve) => {
@@ -60,17 +62,10 @@ const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
   })
 }
 
-const jpegIpcMessage = async (blockWindow: BrowserWindow): Promise<string> => {
-  return new Promise((resolve) => {
-    blockWindow.webContents.on("ipc-message", async (_event, channel, data) => {
-      if (channel === "jpg") {
-        resolve(data)
-      }
-    })
-  })
-}
-
-export const compute = async (payload: Payload, label: string): Promise<Qr> => {
+export const compute = async (
+  payload: Payload,
+  label?: string
+): Promise<Qr> => {
   const payloadText = JSON.stringify(payload, null, 2)
   const payloadHash = hash(payloadText)
   const payloadShortHash = shortHash(payloadText)
@@ -78,33 +73,38 @@ export const compute = async (payload: Payload, label: string): Promise<Qr> => {
     payloadText: payloadText,
     shortHash: payloadShortHash,
     label: label,
+    scale: 1,
   }
+  const windowWidth = 384
+  const windowHeight = 576
   const blockWindow = new BrowserWindow({
-    height: 576,
-    width: 384,
+    width: windowWidth,
+    height: windowHeight,
     darkTheme: false,
-    resizable: false,
     webPreferences: {
       contextIsolation: true, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
       nodeIntegration: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
       nodeIntegrationInWorker: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
+      offscreen: true,
       preload: BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY,
       sandbox: true,
     },
     show: false,
   })
-  blockWindow.webContents.send("data", data)
-  blockWindow.loadURL(BLOCK_WINDOW_WEBPACK_ENTRY)
+  await blockWindow.loadURL(BLOCK_WINDOW_WEBPACK_ENTRY)
+  blockWindow.webContents.send("dataChange", data)
   await readyIpcMessage(blockWindow)
-  const buffer = await blockWindow.webContents.printToPDF({
+  const pdfBuffer = await blockWindow.webContents.printToPDF({
     margins: { top: 0, right: 0, bottom: 0, left: 0 },
     preferCSSPageSize: true,
-    scale: 4 / 3,
   })
-  const pdf = buffer.toString("base64")
-  blockWindow.webContents.send("pdf", buffer)
-  const dataUrl = await jpegIpcMessage(blockWindow)
-  const jpg = dataUrl.replace("data:image/jpeg;base64,", "")
+  const pdf = pdfBuffer.toString("base64")
+  const scale = 2
+  blockWindow.setSize(windowWidth * scale, windowHeight * scale)
+  blockWindow.webContents.send("dataChange", { ...data, scale: scale })
+  await readyIpcMessage(blockWindow)
+  const image = await blockWindow.webContents.capturePage()
+  const jpg = image.toJPEG(100).toString("base64")
   blockWindow.close()
   return {
     payload: payload,
@@ -117,14 +117,28 @@ export const compute = async (payload: Payload, label: string): Promise<Qr> => {
   }
 }
 
-export default async (
+export default async function create(
+  secrets: Secret[],
+  dataLength: number,
+  label: string | undefined,
+  shamir: true,
+  numberOfShares: number,
+  threshold: number
+): Promise<Result>
+export default async function create(
+  secrets: Secret[],
+  dataLength: number,
+  label?: string,
+  shamir?: false
+): Promise<Result>
+export default async function create(
   secrets: Secret[],
   dataLength: number,
   label?: string,
   shamir?: boolean,
   numberOfShares?: number,
   threshold?: number
-): Promise<Result> => {
+): Promise<Result> {
   try {
     if (
       shamir === true &&
@@ -198,13 +212,13 @@ export default async (
       qrs.push(qr)
     }
     return {
-      error: null,
       qrs: qrs,
+      success: true,
     }
   } catch (error) {
     return {
-      error: error.message,
-      qrs: null,
+      error: error instanceof Error ? error.message : "Could not create block",
+      success: false,
     }
   }
 }

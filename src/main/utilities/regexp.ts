@@ -24,20 +24,20 @@ interface ResultBase {
   end: number
 }
 
-interface Bip39MnemonicResult extends ResultBase {
+export interface Bip39MnemonicResult extends ResultBase {
   type: "validBip39Mnemonic"
   properties: {
     words: string[]
   }
 }
 
-interface TotpUriResult extends ResultBase {
+export interface TotpUriResult extends ResultBase {
   type: "totpUri"
   properties: {
-    label: string
-    username: string
+    label?: string
+    username?: string
     secret: string
-    issuer: string
+    issuer?: string
     algorithm: string
     digits: string
     period: string
@@ -49,12 +49,12 @@ type Result = Bip39MnemonicResult | TotpUriResult
 export const extract = (secret: string) => {
   const results: Result[] = []
   // Extract valid BIP39 mnemonics
-  let mnemonicWordExecArray: RegExpExecArray
-  let lastWordIndex: number
+  let mnemonicWordExecArray: null | RegExpExecArray
+  let lastWordIndex: number = -1
   while ((mnemonicWordExecArray = mnemonicWordRegExp.exec(secret))) {
     const firstWord = mnemonicWordExecArray[0]
     const firstWordIndex = mnemonicWordExecArray.index
-    if (lastWordIndex && firstWordIndex < lastWordIndex) {
+    if (lastWordIndex !== -1 && firstWordIndex < lastWordIndex) {
       continue
     }
     const remainder = secret.substring(mnemonicWordRegExp.lastIndex)
@@ -77,8 +77,13 @@ export const extract = (secret: string) => {
     }
   }
   // Extract TOTP URIs
-  let totpUriExecArray: RegExpExecArray
+  let totpUriExecArray: null | RegExpExecArray
   while ((totpUriExecArray = totpUriRegExp.exec(secret))) {
+    const totpUriExecArraySecret = totpUriExecArray[5]
+    if (!totpUriExecArraySecret) {
+      // This should never happen (required by TypeScript type check)
+      continue
+    }
     const properties = {
       label: totpUriExecArray[2]
         ? decodeURIComponent(totpUriExecArray[2])
@@ -86,7 +91,7 @@ export const extract = (secret: string) => {
       username: totpUriExecArray[4]
         ? decodeURIComponent(totpUriExecArray[4])
         : undefined,
-      secret: totpUriExecArray[5],
+      secret: totpUriExecArraySecret,
       issuer: totpUriExecArray[6]
         ? decodeURIComponent(totpUriExecArray[6])
         : undefined,

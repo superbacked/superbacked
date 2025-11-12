@@ -1,7 +1,9 @@
 import { app } from "electron"
-import { readFile } from "fs-extra"
 import { join } from "path"
-import { getRandomInt } from "./crypto"
+
+import { readFile } from "fs-extra"
+
+import { getRandomInt } from "@/src/utilities/crypto"
 
 const wordlistDir = join(app.getAppPath(), "wordlists").replace(
   "app.asar",

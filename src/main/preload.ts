@@ -1,19 +1,21 @@
-import { getDataLength } from "blockcrypt"
 import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron"
-import create, { Result as CreateResult } from "../create"
-import duplicate, { Result as DuplicateResult } from "../duplicate"
-import { Locale } from "../i18n"
-import { CustomDesktopCapturerSource } from "../index"
-import { disableModes, enableModes } from "../menu"
-import openExternalUrl from "../openExternalUrl"
-import restore, { restoreReset, Result as RestoreResult } from "../restore"
+
+import { getDataLength } from "blockcrypt"
+
+import create, { Result as CreateResult } from "@/src/create"
+import duplicate, { Result as DuplicateResult } from "@/src/duplicate"
+import { Locale } from "@/src/i18n"
+import { CustomDesktopCapturerSource } from "@/src/index"
+import { disableModes, enableModes } from "@/src/menu"
+import openExternalUrl from "@/src/openExternalUrl"
+import restore, { restoreReset, Result as RestoreResult } from "@/src/restore"
 import {
   generateMnemonic,
   validateMnemonic,
   wordlist,
-} from "../utilities/bip39"
-import { ColorScheme } from "../utilities/config"
-import generatePassphrase from "../utilities/passphrase"
+} from "@/src/utilities/bip39"
+import { ColorScheme } from "@/src/utilities/config"
+import generatePassphrase from "@/src/utilities/passphrase"
 import {
   getDefaultPrinter,
   getPrinters,
@@ -21,13 +23,13 @@ import {
   print,
   Printer,
   PrinterStatus,
-} from "../utilities/print"
-import save from "../utilities/save"
-import { generateToken } from "../utilities/totp"
+} from "@/src/utilities/print"
+import save from "@/src/utilities/save"
+import { generateToken } from "@/src/utilities/totp"
 import {
   decode as zbarDecode,
   installed as zbarInstalled,
-} from "../utilities/zbarimg"
+} from "@/src/utilities/zbarimg"
 
 export type InsertType = "mnemonic" | "passphrase"
 
@@ -40,7 +42,7 @@ export interface Api {
   colorScheme: () => ColorScheme
   localeChange: (callback: (locale: Locale) => void) => () => void
   locale: () => Locale
-  getSources: () => Promise<CustomDesktopCapturerSource[]>
+  getDesktopCapturerSources: () => Promise<CustomDesktopCapturerSource[]>
   platform: NodeJS.Platform
   systemVersion: string
   version: () => number
@@ -100,9 +102,9 @@ const api: Api = {
   locale: () => {
     return ipcRenderer.sendSync("app:getLocale")
   },
-  getSources: async () => {
+  getDesktopCapturerSources: async () => {
     const sources: CustomDesktopCapturerSource[] = await ipcRenderer.invoke(
-      "desktopCapturer:getSources"
+      "desktopCapturer:getDesktopCapturerSources"
     )
     return sources
   },
@@ -112,16 +114,16 @@ const api: Api = {
     return ipcRenderer.sendSync("app:getVersion")
   },
   openExternalUrl: (...args) => {
-    ipcRenderer.invoke("app:openExternalUrl", ...args)
+    return ipcRenderer.invoke("app:openExternalUrl", ...args)
   },
   enableModes: (...args) => {
-    ipcRenderer.invoke("menu:enableModes", ...args)
+    return ipcRenderer.invoke("menu:enableModes", ...args)
   },
   disableModes: (...args) => {
-    ipcRenderer.invoke("menu:disableModes", ...args)
+    return ipcRenderer.invoke("menu:disableModes", ...args)
   },
   toggleMaximize: () => {
-    ipcRenderer.invoke("window:toggleMaximize")
+    return ipcRenderer.invoke("window:toggleMaximize")
   },
   menuAbout: (callback) => {
     const listener = () => {
@@ -205,6 +207,7 @@ const api: Api = {
     const passphrase = await ipcRenderer.invoke("generatePassphrase", ...args)
     return passphrase
   },
+  // @ts-expect-error Required so function overloads are preserved
   create: async (...args) => {
     const result: CreateResult = await ipcRenderer.invoke("create", ...args)
     return result

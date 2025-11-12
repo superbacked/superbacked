@@ -1,26 +1,28 @@
+import styled from "@emotion/styled"
 import {
   ActionIcon,
   Avatar,
+  ComboboxItem,
   Dialog,
   Group,
   Loader,
   Select,
-  SelectItem,
   Space,
   Text,
-  useMantineTheme,
+  useMantineColorScheme,
 } from "@mantine/core"
-import jsQr from "jsqr"
+import decodeQR from "qr/decode.js"
 import {
-  forwardRef,
   Fragment,
-  FunctionComponent,
   useEffect,
   useRef,
   useState,
+  useCallback,
+  useImperativeHandle,
+  forwardRef,
+  useMemo,
 } from "react"
 import { useTranslation } from "react-i18next"
-import { styled } from "styled-components"
 import {
   DeviceDesktop as DeviceDesktopIcon,
   Refresh as RefreshIcon,
@@ -28,14 +30,16 @@ import {
   Video as VideoIcon,
   X as XIcon,
 } from "tabler-icons-react"
-import { CustomDesktopCapturerSource } from "../index"
-import ErrorModal from "./components/ErrorModal"
+
+import { CustomDesktopCapturerSource } from "@/src/index"
+import ErrorModal from "@/src/main/components/ErrorModal"
+
 import confirmationSound from "./confirmation.wav"
 
 const audio = new Audio(confirmationSound)
 
-export const play = () => {
-  audio.play()
+const play = async () => {
+  await audio.play()
 }
 
 const maxFrameRate = 24
@@ -80,13 +84,6 @@ const Video = styled.video<VideoProps>`
   width: 100%;
   height: 100%;
   z-index: -1;
-  ${(props) => {
-    if (props.radius) {
-      return `
-        border-radius: ${props.radius}px;
-      `
-    }
-  }};
 `
 
 const OverlayContainer = styled.div`
@@ -123,13 +120,6 @@ export const Image = styled.img<ImageProps>`
   justify-content: center;
   object-fit: cover;
   z-index: -1;
-  ${(props) => {
-    if (props.radius) {
-      return `
-        border-radius: ${props.radius}px;
-      `
-    }
-  }};
 `
 
 interface Source {
@@ -141,40 +131,52 @@ export interface Code {
   value: string
 }
 
-export type Start = () => void
-
-export type Stop = () => void
-
-export type HandleCode = (
-  code: string,
-  imageDataUrl: string,
-  start: Start,
-  stop: Stop
-) => void
-
-interface ScannerProps {
-  handleCode?: HandleCode
-  radius?: number
+export interface ScannerRef {
+  beep: () => void
+  start: () => void
+  stop: () => void
 }
 
-const Scanner: FunctionComponent<ScannerProps> = (props) => {
+interface ScannerProps {
+  handleCode: (code: string, imageDataUrl?: string) => void
+  autoBeep?: boolean
+  autoStop?: boolean
+}
+
+/**
+ * Scanner component for detecting QR codes using camera or screen capture
+ *
+ * @param handleCode - Callback function when QR code is detected (required)
+ * @param autoBeep - Whether to play confirmation sound (optional, defaults to true)
+ * @param autoStop - Whether to automatically stop scanning after detecting code (optional, defaults to true)
+ *
+ * @example
+ * ```tsx
+ * const scannerRef = useRef<ScannerRef>(null)
+ *
+ * <Scanner
+ *   ref={scannerRef}
+ *   handleCode={(code) => console.log(code)}
+ * />
+ * ```
+ */
+const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const { t } = useTranslation()
-  const theme = useMantineTheme()
-  const startRef = useRef<() => void>(null)
-  const stopRef = useRef<() => void>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const mediaStreamRef = useRef<MediaStream>(null)
-  const imageDataRef = useRef<ImageData>(null)
-  const imageDataUrlRef = useRef<string>(null)
-  const sourceRef = useRef<Source>(null)
+  const { colorScheme } = useMantineColorScheme()
+  const videoRef = useRef<null | HTMLVideoElement>(null)
+  const mediaStreamRef = useRef<null | MediaStream>(null)
+  const imageDataUrlRef = useRef<null | string>(null)
+  const sourceRef = useRef<null | Source>(null)
   const computingRef = useRef(false)
+  const handleCodeRef = useRef(props.handleCode)
   const [showSourceSettings, setShowSourceSettings] = useState(false)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
-  const [deviceValue, setDeviceValue] = useState<string>(null)
-  const [sourceValue, setSourceValue] = useState<string>(null)
+  const [deviceValue, setDeviceValue] = useState<null | string>(null)
+  const [sourceValue, setSourceValue] = useState<null | string>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<
+    | null
     | "pleaseConnectCameraAndAllowCameraAccess"
     | "cameraDoesNotMeetMinimumRequirementOf720p"
     | "pleaseAllowScreenRecording"
@@ -182,13 +184,27 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
   >(null)
   const [showError, setShowError] = useState(false)
   const [streaming, setStreaming] = useState(false)
-  startRef.current = () => {
-    if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {
-      setStreaming(true)
-      capture()
+  const { handleCode, autoBeep = true, autoStop = true } = props
+
+  const updateDevices = useCallback(async () => {
+    const enumerateDevices = await navigator.mediaDevices.enumerateDevices()
+    const videoInputDevices: MediaDeviceInfo[] = []
+    for (const enumerateDevice of enumerateDevices) {
+      if (enumerateDevice.kind === "videoinput") {
+        videoInputDevices.push(enumerateDevice)
+      }
     }
+    setDevices(videoInputDevices)
+    return videoInputDevices
+  }, [])
+
+  const updateSources = async () => {
+    const desktopCapturerSources = await window.api.getDesktopCapturerSources()
+    setSources(desktopCapturerSources)
+    return desktopCapturerSources
   }
-  stopRef.current = () => {
+
+  const stop = useCallback(() => {
     setStreaming(false)
     if (mediaStreamRef.current) {
       for (const track of mediaStreamRef.current.getTracks()) {
@@ -201,114 +217,106 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
     if (videoRef.current) {
       videoRef.current.srcObject = null
     }
-  }
-  useEffect(() => {
-    startRef.current()
-    return () => {
-      stopRef.current()
-    }
   }, [])
-  const compute = async (imageData?: ImageData) => {
-    computingRef.current = true
-    let canvas: HTMLCanvasElement
-    if (typeof imageData === "undefined" && videoRef.current) {
-      if (
-        videoRef.current.videoWidth === 0 ||
-        videoRef.current.videoHeight === 0
-      ) {
-        // Wait for video to be ready
+
+  const zbarInstalled = useMemo(async () => {
+    return await window.api.zbarInstalled()
+  }, [])
+
+  const compute = useCallback(
+    async (imageData?: ImageData) => {
+      computingRef.current = true
+      let canvas: null | HTMLCanvasElement = null
+      if (!imageData && videoRef.current) {
+        if (
+          videoRef.current.videoWidth === 0 ||
+          videoRef.current.videoHeight === 0
+        ) {
+          // Wait for video to be ready
+          computingRef.current = false
+          return
+        }
+        canvas = document.createElement("canvas")
+        canvas.width = videoRef.current.videoWidth
+        canvas.height = videoRef.current.videoHeight
+        const canvas2d = canvas.getContext("2d")
+        if (!canvas2d) {
+          // This should never happen, but tracking edge case (required by TypeScript type check)
+          throw new Error("Could not get canvas context")
+        }
+        const ratio = canvas.width / canvas.height
+        let height: number, width: number
+        if (ratio > 1) {
+          height = canvas.height
+          width = height * ratio
+          if (width > canvas.width) {
+            width = canvas.width
+            height = width / ratio
+          }
+        } else {
+          width = canvas.width
+          height = width / ratio
+          if (height > canvas.height) {
+            height = canvas.height
+            width = height * ratio
+          }
+        }
+        const x = -(width - canvas.width) / 2
+        const y = -(height - canvas.height) / 2
+        canvas2d.drawImage(videoRef.current, x, y, width, height)
+        imageData = canvas2d.getImageData(x, y, width, height)
+      }
+      if (!imageData) {
+        // Wait for image data
         computingRef.current = false
         return
       }
-      canvas = document.createElement("canvas")
-      canvas.width = videoRef.current.videoWidth
-      canvas.height = videoRef.current.videoHeight
-      const canvas2d = canvas.getContext("2d")
-      const ratio = canvas.width / canvas.height
-      let height: number, width: number
-      if (ratio > 1) {
-        height = canvas.height
-        width = height * ratio
-        if (width > canvas.width) {
-          width = canvas.width
-          height = width / ratio
-        }
+      // Useful for debugging
+      // console.log(canvas.toDataURL("image/jpeg", 100))
+      let code: null | string = null
+      if (BarcodeDetector) {
+        // Use BarcodeDetector when available (currently macOS-only, see https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector)
+        const barcodeDetector = new BarcodeDetector({ formats: ["qr_code"] })
+        const detectedBarcodes = await barcodeDetector.detect(imageData)
+        code = detectedBarcodes[0]?.rawValue ?? null
+      } else if (await zbarInstalled) {
+        // Use zbar when available (see https://github.com/mchehab/zbar)
+        code = await window.api.zbarDecode({
+          width: imageData.width,
+          height: imageData.height,
+          data: Array.from(imageData.data),
+        })
       } else {
-        width = canvas.width
-        height = width / ratio
-        if (height > canvas.height) {
-          height = canvas.height
-          width = height * ratio
+        // Use qr as fallback (see https://github.com/paulmillr/qr)
+        try {
+          code = decodeQR(imageData)
+        } catch {
+          // QR code not found, continue scanning
         }
       }
-      const x = -(width - canvas.width) / 2
-      const y = -(height - canvas.height) / 2
-      canvas2d.drawImage(videoRef.current, x, y, width, height)
-      imageData = canvas2d.getImageData(x, y, width, height)
-    }
-    if (!imageData) {
-      // Wait for image data
-      computingRef.current = false
-      return
-    }
-    // Useful for debugging
-    // console.log(canvas.toDataURL("image/jpeg", 100))
-    let code: string
-    const zbarInstalled = await window.api.zbarInstalled()
-    if (typeof BarcodeDetector !== "undefined") {
-      // Use BarcodeDetector when available (currently macOS-only, see https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector)
-      const barcodeDetector = new BarcodeDetector({ formats: ["qr_code"] })
-      const detectedBarcodes = await barcodeDetector.detect(imageData)
-      if (detectedBarcodes.length > 0) {
-        code = detectedBarcodes[0].rawValue
-      }
-    } else if (zbarInstalled) {
-      // Use zbar when available (currently Linux-only, see https://github.com/mchehab/zbar)
-      code = await window.api.zbarDecode(canvas.toDataURL("image/jpeg", 100))
-    } else {
-      const qrCode = jsQr(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "dontInvert",
-      })
-      code = qrCode ? qrCode.data : null
-    }
-    if (code) {
-      if (canvas) {
-        imageDataRef.current = imageData
+      if (canvas && code) {
         imageDataUrlRef.current = canvas.toDataURL("image/png", 100)
+        handleCodeRef.current(code)
+        if (autoBeep) {
+          void play()
+        }
+        if (autoStop) {
+          stop()
+        }
       }
-      props.handleCode(
-        code,
-        imageDataUrlRef.current,
-        startRef.current,
-        stopRef.current
-      )
-    }
-    computingRef.current = false
-  }
-  const updateDevices = async () => {
-    const devices = await navigator.mediaDevices.enumerateDevices()
-    const videoInputDevices: MediaDeviceInfo[] = []
-    for (const device of devices) {
-      if (device.kind === "videoinput") {
-        videoInputDevices.push(device)
-      }
-    }
-    setDevices(videoInputDevices)
-    return videoInputDevices
-  }
-  const updateSources = async () => {
-    const sources = await window.api.getSources()
-    setSources(sources)
-    return sources
-  }
-  const capture = async () => {
+      computingRef.current = false
+    },
+    [zbarInstalled, autoBeep, autoStop, stop]
+  )
+
+  const capture = useCallback(async () => {
     try {
       setError(null)
       setShowError(false)
       setLoading(true)
       const updatedDevices = await updateDevices()
       if (!sourceRef.current) {
-        if (updatedDevices.length !== 0) {
+        if (updatedDevices[0]) {
           sourceRef.current = {
             id: updatedDevices[0].deviceId,
             type: "device",
@@ -347,34 +355,35 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
       setLoading(false)
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStreamRef.current
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play()
+        videoRef.current.onloadedmetadata = async () => {
+          await videoRef.current?.play()
         }
-        videoRef.current.ontimeupdate = () => {
+        videoRef.current.ontimeupdate = async () => {
           if (computingRef.current === false) {
-            compute()
+            await compute()
           }
         }
       }
-    } catch (error) {
+    } catch (captureError) {
       setLoading(false)
       if (
-        error.message.match(/no device available/i) ||
-        (sourceRef.current &&
-          sourceRef.current.type === "device" &&
-          error.name === "NotReadableError")
+        (captureError instanceof Error &&
+          captureError.message.match(/no device available/i)) ||
+        (sourceRef.current?.type === "device" &&
+          captureError instanceof Error &&
+          captureError.name === "NotReadableError")
       ) {
         setError("pleaseConnectCameraAndAllowCameraAccess")
       } else if (
-        sourceRef.current &&
-        sourceRef.current.type === "device" &&
-        error.name === "OverconstrainedError"
+        sourceRef.current?.type === "device" &&
+        captureError instanceof Error &&
+        captureError.name === "OverconstrainedError"
       ) {
         setError("cameraDoesNotMeetMinimumRequirementOf720p")
       } else if (
-        sourceRef.current &&
-        sourceRef.current.type === "source" &&
-        error.name === "NotReadableError"
+        sourceRef.current?.type === "source" &&
+        captureError instanceof Error &&
+        captureError.name === "NotReadableError"
       ) {
         setError("pleaseAllowScreenRecording")
       } else {
@@ -382,13 +391,49 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
       }
       setShowError(true)
     }
-  }
+  }, [updateDevices, compute])
+
+  const start = useCallback(() => {
+    if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {
+      setStreaming(true)
+      void capture()
+    }
+  }, [capture])
+
+  const beep = useCallback(() => {
+    void play()
+  }, [])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      beep,
+      start,
+      stop,
+    }),
+    [beep, start, stop]
+  )
+
+  useEffect(() => {
+    handleCodeRef.current = handleCode
+  }, [handleCode])
+
+  useEffect(() => {
+    start()
+    return () => {
+      stop()
+    }
+  }, [start, stop])
+
   if (showSourceSettings === true) {
-    const deviceData: SelectItem[] = []
+    const deviceData: ComboboxItem[] = []
     for (const device of devices) {
       deviceData.push({ label: device.label, value: device.deviceId })
     }
-    const sourceData: SelectItem[] = []
+    interface CustomComboboxItem extends ComboboxItem {
+      thumbnailDataUrl: string
+    }
+    const sourceData: CustomComboboxItem[] = []
     for (const source of sources) {
       sourceData.push({
         label: source.label,
@@ -396,49 +441,33 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
         value: source.id,
       })
     }
-    interface SelectItemProps {
-      label: string
-      thumbnailDataUrl: string
-    }
-    const Source = forwardRef<HTMLDivElement, SelectItemProps>(
-      ({ label, thumbnailDataUrl, ...otherProps }: SelectItemProps, ref) => (
-        <Text ref={ref} {...otherProps}>
-          <Group noWrap>
-            <Avatar src={thumbnailDataUrl} />
-            <Text>{label}</Text>
-          </Group>
-        </Text>
-      )
-    )
     return (
       <Fragment>
         <Container>
           <Select
-            allowDeselect
             data={deviceData}
             defaultValue={
-              sourceRef.current && sourceRef.current.type === "device"
-                ? sourceRef.current.id
-                : null
+              sourceRef.current?.type === "device" ? sourceRef.current.id : null
             }
             disabled={deviceData.length === 0}
-            icon={<VideoIcon size={16} />}
+            leftSection={<VideoIcon size={16} />}
             label={t("device")}
             maxDropdownHeight={240}
             placeholder={`${t("selectDevice")}…`}
             rightSection={
               <ActionIcon
-                onClick={async () => {
-                  await updateDevices()
+                onClick={() => {
+                  void updateDevices()
                 }}
+                variant="transparent"
               >
                 <RefreshIcon size={16} />
               </ActionIcon>
             }
+            rightSectionPointerEvents="auto"
             value={
-              (deviceValue ??
-              (sourceRef.current && sourceRef.current.type === "device"))
-                ? sourceRef.current.id
+              (deviceValue ?? sourceRef.current?.type === "device")
+                ? sourceRef.current?.id
                 : null
             }
             onChange={(value) => {
@@ -450,37 +479,40 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
                 setDeviceValue(value)
               }
               setShowSourceSettings(false)
-              startRef.current()
+              start()
             }}
           />
           <Space h="lg" />
           <Select
-            allowDeselect
             data={sourceData}
             defaultValue={
-              sourceRef.current && sourceRef.current.type === "source"
-                ? sourceRef.current.id
-                : null
+              sourceRef.current?.type === "source" ? sourceRef.current.id : null
             }
             disabled={sourceData.length === 0}
-            icon={<DeviceDesktopIcon size={16} />}
-            itemComponent={Source}
+            leftSection={<DeviceDesktopIcon size={16} />}
             label={t("source")}
             maxDropdownHeight={240}
             placeholder={`${t("selectSource")}…`}
+            renderOption={({ option }) => (
+              <Group wrap="nowrap">
+                <Avatar src={(option as CustomComboboxItem).thumbnailDataUrl} />
+                <Text>{option.label}</Text>
+              </Group>
+            )}
             rightSection={
               <ActionIcon
-                onClick={async () => {
-                  await updateSources()
+                onClick={() => {
+                  void updateSources()
                 }}
+                variant="transparent"
               >
                 <RefreshIcon size={16} />
               </ActionIcon>
             }
+            rightSectionPointerEvents="auto"
             value={
-              (sourceValue ??
-              (sourceRef.current && sourceRef.current.type === "source"))
-                ? sourceRef.current.id
+              (sourceValue ?? sourceRef.current?.type === "source")
+                ? sourceRef.current?.id
                 : null
             }
             onChange={(value) => {
@@ -492,7 +524,7 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
                 setSourceValue(value)
               }
               setShowSourceSettings(false)
-              startRef.current()
+              start()
             }}
           />
         </Container>
@@ -503,7 +535,7 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
             variant="filled"
             onClick={() => {
               setShowSourceSettings(false)
-              startRef.current()
+              start()
             }}
           >
             <XIcon size={16} />
@@ -514,12 +546,12 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
   } else {
     return (
       <Fragment>
-        <Video ref={videoRef} radius={props.radius} />
+        <Video ref={videoRef} />
         {loading === true ? (
           <Fragment>
             <Container>
               <Loader
-                color={theme.colorScheme === "dark" ? "white" : "dark"}
+                color={colorScheme === "dark" ? "white" : "dark"}
                 size="sm"
               />
             </Container>
@@ -540,32 +572,36 @@ const Scanner: FunctionComponent<ScannerProps> = (props) => {
           </OverlayContainer>
         ) : null}
         {loading === false && streaming === false && imageDataUrlRef.current ? (
-          <Image radius={props.radius} src={imageDataUrlRef.current} />
+          <Image src={imageDataUrlRef.current} />
         ) : null}
         <TopRightContainer>
           <ActionIcon
             color="dark"
             radius="xl"
             variant="filled"
-            onClick={async () => {
+            onClick={() => {
               setShowSourceSettings(true)
-              stopRef.current()
+              stop()
             }}
           >
             <SettingsIcon size={16} />
           </ActionIcon>
         </TopRightContainer>
-        <ErrorModal
-          error={t(error)}
-          opened={showError}
-          onClose={() => {
-            setShowError(false)
-            setShowSourceSettings(true)
-          }}
-        />
+        {error ? (
+          <ErrorModal
+            error={t(error)}
+            opened={showError}
+            onClose={() => {
+              setShowError(false)
+              setShowSourceSettings(true)
+            }}
+          />
+        ) : null}
       </Fragment>
     )
   }
-}
+})
+
+Scanner.displayName = "Scanner"
 
 export default Scanner

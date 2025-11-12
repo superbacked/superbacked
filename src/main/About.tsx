@@ -1,5 +1,6 @@
 import { Center, Modal, Space, Text, Title } from "@mantine/core"
 import { FunctionComponent, useEffect, useState } from "react"
+
 import SuperbackedIcon from "./superbacked.svg"
 
 const About: FunctionComponent = () => {
@@ -19,22 +20,21 @@ const About: FunctionComponent = () => {
       onClose={() => {
         setShowAbout(false)
       }}
-      overlayBlur={4}
       sx={{ zIndex: 500 }}
     >
       <Center>
         <SuperbackedIcon style={{ width: "25%" }} />
       </Center>
       <Space h="lg" />
-      <Title align="center">Superbacked</Title>
-      <Text align="center" color="dimmed">
+      <Title ta="center">Superbacked</Title>
+      <Text c="dimmed" ta="center">
         Version: {window.api.version()}
       </Text>
       <Space h="lg" />
-      <Text align="center" size="sm" weight="bold">
+      <Text fw="bold" size="sm" ta="center">
         Copyright (c) Superbacked, Inc.
       </Text>
-      <Text align="center" size="sm" weight="bold">
+      <Text fw="bold" size="sm" ta="center">
         All rights reserved
       </Text>
       <Space h="xl" />

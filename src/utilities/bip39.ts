@@ -1,12 +1,12 @@
 import {
   generateMnemonic as _generateMnemonic,
   validateMnemonic as _validateMnemonic,
-  wordlists,
-} from "bip39"
+} from "@scure/bip39"
+import { wordlist } from "@scure/bip39/wordlists/english.js"
+
+export { wordlist }
 
 export type Strength = 128 | 256
-
-export const wordlist = wordlists["english"]
 
 /**
  * Generate mnemonic
@@ -17,7 +17,7 @@ export const generateMnemonic = (strength: Strength = 256): string => {
   if ([128, 256].includes(strength) !== true) {
     throw new Error("Invalid strength")
   }
-  const mnemonic = _generateMnemonic(strength)
+  const mnemonic = _generateMnemonic(wordlist, strength)
   return mnemonic
 }
 

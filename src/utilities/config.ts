@@ -16,7 +16,7 @@ const schema: Schema<Store> = {
 const config = new store<Store>({
   name: process.env.ENV === "development" ? `config.development` : undefined,
   schema: schema,
-  serialize: (value) => {
+  serialize: (value: object) => {
     return JSON.stringify(value, null, 2)
   },
 })

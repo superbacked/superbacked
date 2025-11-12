@@ -34,15 +34,19 @@ export default async (
       const spawned = spawn(command, args, otherOptions)
       let stdout = ""
       let stderr = ""
-      spawned.stdout.on("data", (data) => {
-        stdout += data.toString()
-      })
-      spawned.stderr.on("data", (data) => {
-        stderr += data.toString()
-      })
+      if (spawned.stdout) {
+        spawned.stdout.on("data", (data) => {
+          stdout += data.toString()
+        })
+      }
+      if (spawned.stderr) {
+        spawned.stderr.on("data", (data) => {
+          stderr += data.toString()
+        })
+      }
       spawned.on("close", () => {
         const exitCode = spawned.exitCode
-        if (exitCode !== 0) {
+        if (exitCode && exitCode !== 0) {
           const error = new Error(stderr) as SpawnError
           error.exitCode = exitCode
           reject(error)
@@ -53,7 +57,7 @@ export default async (
           })
         }
       })
-      if (typeof input !== "undefined") {
+      if (spawned.stdin) {
         spawned.stdin.end(input)
       }
     } catch (error) {

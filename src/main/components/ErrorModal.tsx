@@ -15,13 +15,7 @@ const ErrorModal: FunctionComponent<ErrorModalProps> = (props) => {
       centered
       onClose={props.onClose}
       opened={props.opened}
-      overlayBlur={4}
       title={t("headsUp")}
-      styles={{
-        title: {
-          fontWeight: "bold",
-        },
-      }}
     >
       {props.error}
     </Modal>

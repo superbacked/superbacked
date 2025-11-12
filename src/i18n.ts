@@ -1,5 +1,6 @@
-import { changeLanguage, use } from "i18next"
+import { changeLanguage, use as i18nextUse } from "i18next"
 import { initReactI18next } from "react-i18next"
+
 import en from "./locales/en.json"
 import fr from "./locales/fr.json"
 import pt from "./locales/pt.json"
@@ -37,7 +38,7 @@ export const setLocale = async (locale: Locale) => {
   await changeLanguage(locale)
 }
 
-use(initReactI18next).init({
+await i18nextUse(initReactI18next).init({
   lng: defaultLocale,
   interpolation: {
     escapeValue: false,

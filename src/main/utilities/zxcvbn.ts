@@ -68,10 +68,12 @@ export default (passphrase: string): Result => {
     base = Math.round(seconds / month)
   } else if (display.match(/^year(s)?$/)) {
     base = Math.round(seconds / year)
+  } else {
+    base = 0
   }
   return {
-    base: base,
     ...result,
+    base: base,
     strength: computeStrength(seconds),
   }
 }

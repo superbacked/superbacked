@@ -1,14 +1,18 @@
+import styled from "@emotion/styled"
 import {
   Button,
+  darken,
   Dialog,
   Mark,
   Modal,
   PasswordInput,
   Popover,
   PopoverProps,
+  rgba,
   RingProgress,
   Space,
   Text,
+  useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
@@ -20,14 +24,19 @@ import {
   useEffect,
   useRef,
   useState,
+  useCallback,
 } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { styled } from "styled-components"
 import { Eye as EyeIcon, EyeOff as EyeOffIcon } from "tabler-icons-react"
-import { Payload } from "../../create"
-import Scanner, { play, Start, Stop } from "../Scanner"
-import { extract } from "../utilities/regexp"
+
+import { Payload } from "@/src/create"
+import Scanner, { ScannerRef } from "@/src/main/Scanner"
+import {
+  extract,
+  Bip39MnemonicResult,
+  TotpUriResult,
+} from "@/src/main/utilities/regexp"
 
 const Container = styled.div`
   position: absolute;
@@ -72,20 +81,19 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
       },
     },
   })
-  const handleUnlock = () => {
+  const handleUnlock = useCallback(() => {
     const validation = form.validate()
     if (validation.hasErrors === false) {
       const passphrases = [form.values.passphrase]
       props.onSubmit(passphrases)
       form.reset()
     }
-  }
+  }, [form, props])
   return (
     <Modal
       centered
       onClose={() => props.onClose()}
       opened={true}
-      overlayBlur={4}
       title={`${t("enterPassphrase")}${
         form.values.dualPassphrase === true ? "s" : ""
       }`}
@@ -103,15 +111,11 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
           disabled={props.unlocking}
           label={t("passphrase")}
           placeholder={t("typePassphrase")}
-          spellCheck={false}
-          visibilityToggleIcon={({ reveal, size }) =>
-            reveal === true ? (
-              <EyeOffIcon size={size} />
-            ) : (
-              <EyeIcon size={size} />
-            )
-          }
           required
+          spellCheck={false}
+          visibilityToggleIcon={({ reveal }) =>
+            reveal === true ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />
+          }
           {...form.getInputProps("passphrase", { withFocus: false })}
         />
         <Space h="lg" />
@@ -121,15 +125,15 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
           loading={props.unlocking}
           onClick={handleUnlock}
           variant="gradient"
-          sx={(theme) => ({
+          sx={{
             "&:disabled": {
-              color: theme.fn.darken("#fff", 0.25),
-              backgroundImage: `linear-gradient(45deg, ${theme.fn.darken(
+              color: darken("#fff", 0.25),
+              backgroundImage: `linear-gradient(45deg, ${darken(
                 "#fdc0ee",
                 0.25
-              )} 0%, ${theme.fn.darken("#fbd6cd", 0.25)} 100%)`,
+              )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
             },
-          })}
+          }}
         >
           {props.unlocking === true ? t("unlocking") : t("unlock")}
         </Button>
@@ -146,6 +150,7 @@ interface SmartPopoverProps {
 
 const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
   const theme = useMantineTheme()
+  const { colorScheme } = useMantineColorScheme()
   const [opened, { close, open }] = useDisclosure(false)
   return (
     <Popover opened={opened} position="bottom" width={props.width} withArrow>
@@ -154,14 +159,14 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
           onMouseEnter={open}
           onMouseLeave={close}
           sx={{
-            backgroundColor: theme.fn.rgba(theme.colors.pink[8], 0.35),
-            color: theme.colorScheme === "dark" ? theme.colors.dark[0] : "#000",
+            backgroundColor: rgba(theme.colors.pink[8], 0.35),
+            color: colorScheme === "dark" ? theme.colors.dark[0] : "#000",
             cursor: "default",
             overflowWrap: "anywhere",
             whiteSpace: "pre-wrap",
             transition: "background-color 0.15s",
             "&:hover": {
-              backgroundColor: theme.fn.rgba(theme.colors.pink[8], 0.7),
+              backgroundColor: rgba(theme.colors.pink[8], 0.7),
             },
           }}
         >
@@ -169,7 +174,7 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
         </Mark>
       </Popover.Target>
       <Popover.Dropdown sx={{ pointerEvents: "none" }}>
-        <Text align="center" size="sm">
+        <Text size="sm" ta="center">
           {props.dropdown}
         </Text>
       </Popover.Dropdown>
@@ -177,8 +182,31 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
   )
 }
 
+interface Bip39MnemonicAppletProps {
+  words: Bip39MnemonicResult["properties"]["words"]
+}
+
+const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
+  props
+) => {
+  const nodes: ReactNode[] = []
+  for (const [index, word] of props.words.entries()) {
+    nodes.push(
+      <Fragment key={`dropdown-node-${nodes.length}`}>
+        <Text sx={{ display: "inline-block" }}>
+          <Text c="dimmed" span>
+            {index + 1}.{" "}
+          </Text>
+          {word}
+        </Text>{" "}
+      </Fragment>
+    )
+  }
+  return nodes
+}
+
 interface TotpAppletProps {
-  secret: string
+  secret: TotpUriResult["properties"]["secret"]
 }
 
 const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
@@ -193,7 +221,7 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
   )
   const [timeRemaining, setTimeRemaining] = useState<number>(getTimeRemaining())
   useEffect(() => {
-    let previousTimeRemaining: number = null
+    let previousTimeRemaining: null | number = null
     const timer = setInterval(() => {
       const nextTimeRemaining = getTimeRemaining()
       if (previousTimeRemaining && previousTimeRemaining > nextTimeRemaining) {
@@ -237,79 +265,74 @@ interface RestoreProps {
 const Restore: FunctionComponent<RestoreProps> = (props) => {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const scannerRef = useRef<ScannerRef>(null)
   const passphrasesRef = useRef<string[]>([])
   const codeValueRef = useRef<string>(null)
-  const startRef = useRef<Start>(null)
-  const stopRef = useRef<Stop>(null)
   const doneRef = useRef<boolean>(false)
   const [showPassphraseModal, setShowPassphraseModal] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [showScanNextBlockDialog, setShowScanNextBlockDialog] = useState(false)
-  const [secret, setSecret] = useState<string>(null)
+  const [secret, setSecret] = useState<null | string>(null)
   const [showCopied, setShowCopied] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
-  const restoreStart = () => {
-    startRef.current()
-  }
-  useEffect(() => {
-    window.addEventListener("restore:start", restoreStart)
-    return () => {
-      window.removeEventListener("restore:start", restoreStart)
-    }
-  }, [])
   useEffect(() => {
     return () => {
       window.api.restoreReset()
     }
   }, [])
-  const compute = async (audio: boolean) => {
-    let payload: Payload
+  const compute = async (beep: boolean) => {
+    let payload: null | Payload = null
     try {
-      payload = JSON.parse(codeValueRef.current)
-      if (!payload.salt || !payload.iv || !payload.headers || !payload.data) {
+      if (codeValueRef.current) {
+        payload = JSON.parse(codeValueRef.current)
+      }
+      if (!payload) {
+        // Payload null
+        return
+      } else if (
+        !payload.salt ||
+        !payload.iv ||
+        !payload.headers ||
+        !payload.data
+      ) {
         // Payload not Superbacked-compatible
         return
       }
-    } catch (error) {
+    } catch {
       // Payload not valid JSON
       return
     }
-    if (audio === true) {
-      play()
+    if (beep === true) {
+      scannerRef.current?.beep()
     }
     if (
       (props.importMode === true || props.exportMode === true) &&
       props.handlePayload
     ) {
-      stopRef.current()
-      props.handlePayload(payload)
+      scannerRef.current?.stop()
+      await props.handlePayload(payload)
       return
     }
-    const { error, message } = await window.api.restore(
-      passphrasesRef.current,
-      payload
-    )
+    const result = await window.api.restore(passphrasesRef.current, payload)
     setUnlocking(false)
     if (doneRef.current === true) {
       // Payload already computed
       return
     }
-    if (error) {
-      if (error.match(/shares did not combine to a valid secret/i)) {
-        startRef.current()
+    if (result.success === false) {
+      if (result.error.match(/shares did not combine to a valid secret/i)) {
+        scannerRef.current?.start()
         setShowScanNextBlockDialog(true)
         setShowPassphraseModal(false)
       } else {
-        stopRef.current()
+        scannerRef.current?.stop()
         setShowScanNextBlockDialog(false)
         setShowPassphraseModal(true)
       }
-    } else if (message) {
+    } else if (result.success === true) {
       doneRef.current = true
-      stopRef.current()
-      setSecret(message.toString())
-    } else {
-      startRef.current()
+      scannerRef.current?.stop()
+      setSecret(result.message.toString())
     }
   }
   if (secret) {
@@ -329,23 +352,12 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
             for (const result of results) {
               lineNodes.push(line.substring(startIndex, result.start))
               if (result.type === "validBip39Mnemonic") {
-                const dropdownNodes: ReactNode[] = []
-                for (const [index, word] of result.properties.words.entries()) {
-                  dropdownNodes.push(
-                    <Fragment key={`dropdown-node-${dropdownNodes.length}`}>
-                      <Text sx={{ display: "inline-block" }}>
-                        <Text color="dimmed" span>
-                          {index + 1}.{" "}
-                        </Text>
-                        {word}
-                      </Text>{" "}
-                    </Fragment>
-                  )
-                }
                 lineNodes.push(
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}
-                    dropdown={dropdownNodes}
+                    dropdown={
+                      <Bip39MnemonicApplet words={result.properties.words} />
+                    }
                     target={line.substring(result.start, result.end)}
                     width="440px"
                   />
@@ -371,13 +383,13 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         <Fragment>
           <Container>
             <Text
-              align="left"
               sx={{
                 fontSize: "14px",
                 overflowWrap: "anywhere",
                 whiteSpace: "pre-wrap",
                 width: "100%",
               }}
+              ta="left"
             >
               {nodes}
             </Text>
@@ -385,8 +397,8 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
             <Button.Group sx={{ display: "inline-block" }}>
               <Button
                 variant="default"
-                onClick={() => {
-                  navigator.clipboard.writeText(secret)
+                onClick={async () => {
+                  await navigator.clipboard.writeText(secret)
                   setShowCopied(true)
                 }}
               >
@@ -395,7 +407,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               <Button
                 variant="default"
                 onClick={() => {
-                  navigate("/")
+                  void navigate("/")
                 }}
               >
                 {t("done")}
@@ -421,8 +433,8 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
             <Button.Group sx={{ display: "inline-block" }}>
               <Button
                 variant="default"
-                onClick={() => {
-                  navigator.clipboard.writeText(secret)
+                onClick={async () => {
+                  await navigator.clipboard.writeText(secret)
                   setShowCopied(true)
                 }}
               >
@@ -440,7 +452,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               <Button
                 variant="default"
                 onClick={() => {
-                  navigate("/")
+                  void navigate("/")
                 }}
               >
                 {t("done")}
@@ -464,14 +476,15 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     return (
       <Container>
         <Scanner
-          handleCode={async (code, _imageDateUrl, start, stop) => {
+          ref={scannerRef}
+          handleCode={async (code) => {
             if (doneRef.current === false) {
               codeValueRef.current = code
-              startRef.current = start
-              stopRef.current = stop
-              compute(true)
+              await compute(true)
             }
           }}
+          autoBeep={false}
+          autoStop={false}
         />
         {showScanNextBlockDialog === true ? (
           <Dialog
@@ -489,12 +502,12 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           <PasswordModal
             onClose={() => {
               setShowPassphraseModal(false)
-              startRef.current()
+              scannerRef.current?.start()
             }}
-            onSubmit={(passphrases) => {
+            onSubmit={async (passphrases) => {
               setUnlocking(true)
               passphrasesRef.current = passphrases
-              compute(false)
+              await compute(false)
             }}
             unlocking={unlocking}
           />

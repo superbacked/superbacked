@@ -1,22 +1,33 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
     "jsx": "react-jsx",
-    "module": "esnext",
-    "moduleResolution": "node",
+    "lib": ["DOM", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "outDir": "dist",
     "paths": {
-      "*": ["node_modules/*"]
+      "@/*": ["./*"]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
     "sourceMap": true,
-    "target": "esnext"
+    "target": "ES2022",
+    "useDefineForClassFields": true
   },
-  "include": ["src/**/*"]
+  "include": ["*.ts", "src/**/*"],
+  "exclude": [".webpack", "dist", "node_modules", "out"]
 }
