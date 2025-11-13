@@ -33,8 +33,7 @@ import {
 
 import { CustomDesktopCapturerSource } from "@/src/index"
 import ErrorModal from "@/src/main/components/ErrorModal"
-
-import confirmationSound from "./confirmation.wav"
+import confirmationSound from "@/src/main/confirmation.wav"
 
 const audio = new Audio(confirmationSound)
 

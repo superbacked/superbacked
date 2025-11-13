@@ -1,7 +1,7 @@
 import { Center, Modal, Space, Text, Title } from "@mantine/core"
 import { FunctionComponent, useEffect, useState } from "react"
 
-import SuperbackedIcon from "./superbacked.svg"
+import SuperbackedIcon from "@/src/main/superbacked.svg"
 
 const About: FunctionComponent = () => {
   const [showAbout, setShowAbout] = useState(false)

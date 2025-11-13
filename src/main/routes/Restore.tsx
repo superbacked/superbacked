@@ -31,7 +31,7 @@ import { useNavigate } from "react-router-dom"
 import { Eye as EyeIcon, EyeOff as EyeOffIcon } from "tabler-icons-react"
 
 import { Payload } from "@/src/create"
-import Scanner, { ScannerRef } from "@/src/main/Scanner"
+import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import {
   extract,
   Bip39MnemonicResult,

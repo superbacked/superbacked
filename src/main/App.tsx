@@ -6,15 +6,17 @@ import { MemoryRouter, Route, Routes } from "react-router-dom"
 
 import { emotionCache } from "@/emotion-cache"
 import { setLocale } from "@/src/i18n"
-import About from "@/src/main/About"
-import Disclaimer from "@/src/main/Disclaimer"
-import MenuEvents, { MenuEventsContextConsumer } from "@/src/main/MenuEvents"
+import About from "@/src/main/components/About"
+import Disclaimer from "@/src/main/components/Disclaimer"
+import MenuEvents, {
+  MenuEventsContextConsumer,
+} from "@/src/main/components/MenuEvents"
+import ShowSelectionAsQrCode from "@/src/main/components/ShowSelectionAsQrCode"
+import TitleBar from "@/src/main/components/TitleBar"
 import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
 import Duplicate from "@/src/main/routes/Duplicate"
 import Restore from "@/src/main/routes/Restore"
-import ShowSelectionAsQrCode from "@/src/main/ShowSelectionAsQrCode"
-import TitleBar from "@/src/main/TitleBar"
 import { ColorScheme } from "@/src/utilities/config"
 
 import "@fontsource/roboto-mono/latin-400.css"

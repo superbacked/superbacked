@@ -29,8 +29,8 @@ import { Printer as PrinterIcon } from "tabler-icons-react"
 import { Qr, Secret, Result } from "@/src/create"
 import ErrorModal from "@/src/main/components/ErrorModal"
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
+import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import SecretTextareaWithLength from "@/src/main/components/SecretTextareaWithLength"
-import Scanner, { ScannerRef } from "@/src/main/Scanner"
 import {
   SelectionWithElement,
   captureSelection,
