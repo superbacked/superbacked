@@ -366,6 +366,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     })
     return () => {
       removeListener()
+      // Disable insert mode before component is unmounted
+      window.api.disableModes(["insert"])
     }
   }, [])
   useEffect(() => {
