@@ -4,7 +4,7 @@ import QrCodeModal from "@/src/main/components/QrCodeModal"
 
 const ShowSelectionAsQrCode: FunctionComponent = () => {
   const [showQrCodeModal, setShowQrCodeModal] = useState(false)
-  const [value, setValue] = useState<string | null>(null)
+  const [value, setValue] = useState<string>("")
 
   const handleSelectionChange = useCallback(() => {
     const selection = document.getSelection()
@@ -37,13 +37,10 @@ const ShowSelectionAsQrCode: FunctionComponent = () => {
     }
   }, [handleSelectionChange, handleShowModal])
 
-  if (!value) {
-    return null
-  }
-
   return (
     <QrCodeModal
-      opened={showQrCodeModal}
+      // Using value !== "" to avoid race condition where modal is opened before value is set
+      opened={showQrCodeModal ? value !== "" : false}
       onClose={() => setShowQrCodeModal(false)}
       value={value}
     />
