@@ -320,7 +320,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         result = await window.api.create(secrets, maxDataLength, label)
       }
       if (result.success === false) {
-        form.reset()
         setError(
           showHiddenSecrets === true
             ? "couldNotEncryptSecrets"
