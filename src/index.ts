@@ -89,12 +89,6 @@ app.on("web-contents-created", (_event, contents) => {
   })
 })
 
-export interface CustomDesktopCapturerSource {
-  id: string
-  label: string
-  thumbnailDataUrl: string
-}
-
 export let locale: Locale = defaultLocale
 
 const preferredSystemLanguages = app.getPreferredSystemLanguages()
@@ -185,6 +179,19 @@ interface DefaultOptions {
   inspect: number
 }
 
+export interface CustomDesktopCapturerSource {
+  id: string
+  label: string
+  thumbnailDataUrl: string
+}
+
+export type GetDesktopCapturerSourcesResult =
+  | {
+      customDesktopCapturerSources: CustomDesktopCapturerSource[]
+      success: true
+    }
+  | { error: string; success: false }
+
 // Run Electron app
 cli
   // See https://www.electronjs.org/docs/latest/tutorial/debugging-main-process
@@ -261,9 +268,9 @@ cli
 
     ipcMain.handle(
       "desktopCapturer:getDesktopCapturerSources",
-      async (event) => {
+      async (event): Promise<GetDesktopCapturerSourcesResult> => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         try {
           const sources = await desktopCapturer.getSources({
@@ -277,11 +284,18 @@ cli
               thumbnailDataUrl: source.thumbnail.toDataURL(),
             })
           }
-          return customDesktopCapturerSources
+          return {
+            customDesktopCapturerSources: customDesktopCapturerSources,
+            success: true,
+          }
         } catch (error) {
-          // Handle this gracefully
-          console.error("there yo", error)
-          return []
+          return {
+            error:
+              error instanceof Error
+                ? error.message
+                : "Could not get desktop capturer sources",
+            success: false,
+          }
         }
       }
     )

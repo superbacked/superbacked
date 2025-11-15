@@ -1,5 +1,4 @@
-import { useState, useCallback } from "react"
-import { useTranslation } from "react-i18next"
+import { useState, useCallback, Fragment } from "react"
 
 import { Qr } from "@/src/create"
 import ErrorModal from "@/src/main/components/ErrorModal"
@@ -7,10 +6,9 @@ import Create from "@/src/main/routes/Create"
 import Restore, { HandlePayload } from "@/src/main/routes/Restore"
 
 const Duplicate = () => {
-  const { t } = useTranslation()
-  const [error, setError] = useState<"couldNotDuplicateBlock">()
+  const [error, setError] = useState<null | "couldNotDuplicateBlock">(null)
   const [showError, setShowError] = useState(false)
-  const [qr, setQr] = useState<Qr | null>(null)
+  const [qr, setQr] = useState<null | Qr>(null)
 
   const handlePayload: HandlePayload = useCallback(async (payload) => {
     const result = await window.api.duplicate(payload)
@@ -27,17 +25,16 @@ const Duplicate = () => {
     return <Create exportMode qrs={[qr]} />
   }
 
-  if (error && showError) {
-    return (
+  return (
+    <Fragment>
+      <Restore exportMode handlePayload={handlePayload} />
       <ErrorModal
-        error={t(error)}
+        error={error}
         opened={showError}
         onClose={() => setShowError(false)}
       />
-    )
-  }
-
-  return <Restore exportMode handlePayload={handlePayload} />
+    </Fragment>
+  )
 }
 
 export default Duplicate

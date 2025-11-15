@@ -5,7 +5,7 @@ import { getDataLength } from "blockcrypt"
 import create, { Result as CreateResult } from "@/src/create"
 import duplicate, { Result as DuplicateResult } from "@/src/duplicate"
 import { Locale } from "@/src/i18n"
-import { CustomDesktopCapturerSource } from "@/src/index"
+import { GetDesktopCapturerSourcesResult } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
 import openExternalUrl from "@/src/openExternalUrl"
 import restore, { restoreReset, Result as RestoreResult } from "@/src/restore"
@@ -42,7 +42,7 @@ export interface Api {
   colorScheme: () => ColorScheme
   localeChange: (callback: (locale: Locale) => void) => () => void
   locale: () => Locale
-  getDesktopCapturerSources: () => Promise<CustomDesktopCapturerSource[]>
+  getDesktopCapturerSources: () => Promise<GetDesktopCapturerSourcesResult>
   platform: NodeJS.Platform
   systemVersion: string
   version: () => number
@@ -103,10 +103,10 @@ const api: Api = {
     return ipcRenderer.sendSync("app:getLocale")
   },
   getDesktopCapturerSources: async () => {
-    const sources: CustomDesktopCapturerSource[] = await ipcRenderer.invoke(
+    const result: GetDesktopCapturerSourcesResult = await ipcRenderer.invoke(
       "desktopCapturer:getDesktopCapturerSources"
     )
-    return sources
+    return result
   },
   platform: process.platform,
   systemVersion: process.getSystemVersion(),

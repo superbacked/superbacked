@@ -5,10 +5,6 @@ import argon2 from "@/src/utilities/argon2"
 import { concatenatePassphrases } from "@/src/utilities/crypto"
 import { combineShares } from "@/src/utilities/shamir"
 
-export type Result =
-  | { message: string; success: true }
-  | { error: string; success: false }
-
 const shamirShares: Buffer[] = []
 
 const duplicateShamirShare = (additionalShamirShare: Buffer) => {
@@ -23,6 +19,10 @@ const duplicateShamirShare = (additionalShamirShare: Buffer) => {
 export const restoreReset = () => {
   shamirShares.length = 0
 }
+
+export type Result =
+  | { message: string; success: true }
+  | { error: string; success: false }
 
 export default async (
   passphrases: string[],

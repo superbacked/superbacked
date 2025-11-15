@@ -1,8 +1,8 @@
 import { compute, Payload, Qr } from "@/src/create"
 
 export type Result =
-  | { success: false; error: string }
-  | { success: true; qr: Qr }
+  | { error: string; success: false }
+  | { qr: Qr; success: true }
 
 export default async (payload: Payload): Promise<Result> => {
   try {

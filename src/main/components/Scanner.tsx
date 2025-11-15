@@ -198,9 +198,14 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   }, [])
 
   const updateSources = async () => {
-    const desktopCapturerSources = await window.api.getDesktopCapturerSources()
-    setSources(desktopCapturerSources)
-    return desktopCapturerSources
+    const result = await window.api.getDesktopCapturerSources()
+    if (result.success === false) {
+      setError("pleaseAllowScreenRecording")
+      setShowError(true)
+      return []
+    }
+    setSources(result.customDesktopCapturerSources)
+    return result.customDesktopCapturerSources
   }
 
   const stop = useCallback(() => {
@@ -531,15 +536,24 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           <ActionIcon
             color="dark"
             radius="xl"
+            size="sm"
             variant="filled"
             onClick={() => {
               setShowSourceSettings(false)
               start()
             }}
           >
-            <XIcon size={16} />
+            <XIcon />
           </ActionIcon>
         </TopRightContainer>
+        <ErrorModal
+          error={error}
+          opened={showError}
+          onClose={() => {
+            setShowError(false)
+            setShowSourceSettings(true)
+          }}
+        />
       </Fragment>
     )
   } else {
@@ -577,6 +591,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           <ActionIcon
             color="dark"
             radius="xl"
+            size="sm"
             variant="filled"
             onClick={() => {
               setShowSourceSettings(true)
@@ -586,16 +601,14 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             <SettingsIcon size={16} />
           </ActionIcon>
         </TopRightContainer>
-        {error ? (
-          <ErrorModal
-            error={t(error)}
-            opened={showError}
-            onClose={() => {
-              setShowError(false)
-              setShowSourceSettings(true)
-            }}
-          />
-        ) : null}
+        <ErrorModal
+          error={error}
+          opened={showError}
+          onClose={() => {
+            setShowError(false)
+            setShowSourceSettings(true)
+          }}
+        />
       </Fragment>
     )
   }

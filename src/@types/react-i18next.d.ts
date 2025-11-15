@@ -1,9 +1,22 @@
 import "react-i18next"
 
-import { resources } from "../i18n"
+import en from "@/src/locales/en.json"
 
-declare module "react-i18next" {
+export type Translation = typeof en
+
+type Paths<T, K extends keyof T = keyof T> = K extends string | number
+  ? T[K] extends Record<string, unknown>
+    ? `${K}.${Paths<T[K]>}`
+    : K
+  : never
+
+export type TranslationKey = Paths<Translation>
+
+declare module "i18next" {
   interface CustomTypeOptions {
-    resources: (typeof resources)["en"]
+    defaultNS: "translation"
+    resources: {
+      translation: Translation
+    }
   }
 }

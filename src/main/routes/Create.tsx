@@ -117,8 +117,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   const [printerData, setPrinterData] = useState<ComboboxItem[]>([])
   const [showSelectPrinter, setShowSelectPrinter] = useState(false)
   const [error, setError] = useState<
-    "couldNotEncryptSecrets" | "couldNotEncryptSecret" | "pleaseConnectPrinter"
-  >()
+    | null
+    | "couldNotEncryptSecrets"
+    | "couldNotEncryptSecret"
+    | "pleaseConnectPrinter"
+  >(null)
   const [showError, setShowError] = useState(false)
   const [showPrinting, setShowPrinting] = useState(false)
   const [qrs, setQrs] = useState<Qr[]>(initialQrs)
@@ -636,13 +639,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             </ModalContainer>
           </Modal>
         </Container>
-        {error ? (
-          <ErrorModal
-            error={t(error)}
-            opened={showError}
-            onClose={() => setShowError(false)}
-          />
-        ) : null}
+        <ErrorModal
+          error={error}
+          opened={showError}
+          onClose={() => setShowError(false)}
+        />
       </Fragment>
     )
   } else {
@@ -786,13 +787,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         >
           {t("printing")}…
         </Dialog>
-        {error ? (
-          <ErrorModal
-            error={t(error)}
-            opened={showError}
-            onClose={() => setShowError(false)}
-          />
-        ) : null}
+        <ErrorModal
+          error={error}
+          opened={showError}
+          onClose={() => setShowError(false)}
+        />
       </Fragment>
     )
   }
