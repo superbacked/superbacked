@@ -254,14 +254,14 @@ cli
 
     ipcMain.on("theme:getColorScheme", (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       event.returnValue = shouldUseDarkColors() === true ? "dark" : "light"
     })
 
     ipcMain.on("app:getLocale", (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       event.returnValue = locale
     })
@@ -302,7 +302,7 @@ cli
 
     ipcMain.on("app:getVersion", (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       event.returnValue = app.getVersion()
     })
@@ -316,7 +316,7 @@ cli
       "app:openExternalUrl",
       async (event, ...args: Parameters<typeof openExternalUrl>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         await openExternalUrl(...args)
       }
@@ -326,7 +326,7 @@ cli
       "menu:enableModes",
       (event, ...args: Parameters<typeof enableModes>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         enableModes(...args)
       }
@@ -336,7 +336,7 @@ cli
       "menu:disableModes",
       (event, ...args: Parameters<typeof disableModes>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         disableModes(...args)
       }
@@ -344,7 +344,7 @@ cli
 
     ipcMain.on("app:getShowHiddenSecretsState", (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       event.returnValue = showHiddenSecrets
     })
@@ -353,7 +353,7 @@ cli
       "bip39:generateMnemonic",
       (event, ...args: Parameters<typeof generateMnemonic>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         event.returnValue = generateMnemonic(...args)
       }
@@ -363,7 +363,7 @@ cli
       "bip39:validateMnemonic",
       (event, ...args: Parameters<typeof validateMnemonic>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         event.returnValue = validateMnemonic(...args)
       }
@@ -371,7 +371,7 @@ cli
 
     ipcMain.on("bip39:wordlist", (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       event.returnValue = wordlist
     })
@@ -380,7 +380,7 @@ cli
       "blockcrypt:getDataLength",
       (event, ...args: Parameters<typeof getDataLength>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         event.returnValue = getDataLength(...args)
       }
@@ -390,7 +390,7 @@ cli
       "generatePassphrase",
       async (event, ...args: Parameters<typeof generatePassphrase>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return generatePassphrase(...args)
       }
@@ -400,7 +400,7 @@ cli
       "zbarimg:decode",
       async (event, ...args: Parameters<typeof zbarDecode>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return zbarDecode(...args)
       }
@@ -408,7 +408,7 @@ cli
 
     ipcMain.handle("zbarimg:installed", async (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       return zbarInstalled()
     })
@@ -417,7 +417,7 @@ cli
       "create",
       async (event, ...args: Parameters<typeof create>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return create(...args)
       }
@@ -427,7 +427,7 @@ cli
       "duplicate",
       async (event, ...args: Parameters<typeof duplicate>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return duplicate(...args)
       }
@@ -437,7 +437,7 @@ cli
       "print:getDefaultPrinter",
       async (event, ...args: Parameters<typeof getDefaultPrinter>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return getDefaultPrinter(...args)
       }
@@ -447,7 +447,7 @@ cli
       "print:getPrinters",
       async (event, ...args: Parameters<typeof getPrinters>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return getPrinters(...args)
       }
@@ -457,7 +457,7 @@ cli
       "print:getPrinterStatus",
       async (event, ...args: Parameters<typeof getPrinterStatus>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return getPrinterStatus(...args)
       }
@@ -467,7 +467,7 @@ cli
       "print:print",
       async (event, ...args: Parameters<typeof print>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return print(...args)
       }
@@ -475,7 +475,7 @@ cli
 
     ipcMain.handle("save", async (event, ...args: Parameters<typeof save>) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       return save(...args)
     })
@@ -484,7 +484,7 @@ cli
       "totp:generateToken",
       (event, ...args: Parameters<typeof generateToken>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         event.returnValue = generateToken(...args)
       }
@@ -494,7 +494,7 @@ cli
       "restore",
       async (event, ...args: Parameters<typeof restore>) => {
         if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          return
+          throw new Error("Wrong sender")
         }
         return restore(...args)
       }
@@ -502,14 +502,14 @@ cli
 
     ipcMain.handle("restoreReset", (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       return restoreReset()
     })
 
     ipcMain.handle("window:toggleMaximize", (event) => {
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        return
+        throw new Error("Wrong sender")
       }
       const window = BrowserWindow.getFocusedWindow()
       if (window) {
