@@ -460,6 +460,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             placeholder={`${t("selectDevice")}…`}
             rightSection={
               <ActionIcon
+                color="pink"
                 onClick={() => {
                   void updateDevices()
                 }}
@@ -505,6 +506,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             )}
             rightSection={
               <ActionIcon
+                color="pink"
                 onClick={() => {
                   void updateSources()
                 }}
@@ -543,7 +545,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               start()
             }}
           >
-            <XIcon />
+            <XIcon size={16} />
           </ActionIcon>
         </TopRightContainer>
         <ErrorModal
