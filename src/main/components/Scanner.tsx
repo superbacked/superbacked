@@ -142,6 +142,13 @@ interface ScannerProps {
   autoStop?: boolean
 }
 
+class NoDeviceError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "NoDeviceError"
+  }
+}
+
 /**
  * Scanner component for detecting QR codes using camera or screen capture
  *
@@ -176,7 +183,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<
     | null
-    | "pleaseConnectCameraAndAllowCameraAccess"
+    | "pleaseAllowCameraAccess"
+    | "pleaseConnectCamera"
     | "cameraDoesNotMeetMinimumRequirementOf720p"
     | "pleaseAllowScreenRecording"
     | "couldNotRunScanner"
@@ -185,7 +193,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const [streaming, setStreaming] = useState(false)
   const { handleCode, autoBeep = true, autoStop = true } = props
 
-  const updateDevices = useCallback(async () => {
+  const updateDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
     const enumerateDevices = await navigator.mediaDevices.enumerateDevices()
     const videoInputDevices: MediaDeviceInfo[] = []
     for (const enumerateDevice of enumerateDevices) {
@@ -197,7 +205,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     return videoInputDevices
   }, [])
 
-  const updateSources = async () => {
+  const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
     const result = await window.api.getDesktopCapturerSources()
     if (result.success === false) {
       setError("pleaseAllowScreenRecording")
@@ -325,9 +333,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             id: updatedDevices[0].deviceId,
             type: "device",
           }
-        } else {
-          throw new Error("No device available")
         }
+      }
+      if (sourceRef.current === null) {
+        throw new NoDeviceError("No device available")
       }
       let constraints: MediaStreamConstraints
       if (sourceRef.current.type === "device") {
@@ -358,11 +367,20 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         await navigator.mediaDevices.getUserMedia(constraints)
       setLoading(false)
       if (videoRef.current) {
+        const metadataTimeout = setTimeout(() => {
+          if (sourceRef.current?.type === "device") {
+            setError("pleaseAllowCameraAccess")
+            setShowError(true)
+            stop()
+          }
+        }, 1000)
         videoRef.current.srcObject = mediaStreamRef.current
         videoRef.current.onloadedmetadata = async () => {
+          clearTimeout(metadataTimeout)
           await videoRef.current?.play()
         }
         videoRef.current.ontimeupdate = async () => {
+          clearTimeout(metadataTimeout)
           if (computingRef.current === false) {
             await compute()
           }
@@ -371,13 +389,22 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     } catch (captureError) {
       setLoading(false)
       if (
-        (captureError instanceof Error &&
-          captureError.message.match(/no device available/i)) ||
-        (sourceRef.current?.type === "device" &&
-          captureError instanceof Error &&
-          captureError.name === "NotReadableError")
+        captureError instanceof Error &&
+        captureError.name === "NoDeviceError"
       ) {
-        setError("pleaseConnectCameraAndAllowCameraAccess")
+        setError("pleaseConnectCamera")
+      } else if (
+        sourceRef.current?.type === "device" &&
+        captureError instanceof Error &&
+        captureError.name === "NotAllowedError"
+      ) {
+        setError("pleaseAllowCameraAccess")
+      } else if (
+        sourceRef.current?.type === "device" &&
+        captureError instanceof Error &&
+        captureError.name === "NotReadableError"
+      ) {
+        setError("pleaseConnectCamera")
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
@@ -395,7 +422,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       }
       setShowError(true)
     }
-  }, [updateDevices, compute])
+  }, [updateDevices, stop, compute])
 
   const start = useCallback(() => {
     if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {
@@ -453,7 +480,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             defaultValue={
               sourceRef.current?.type === "device" ? sourceRef.current.id : null
             }
-            disabled={deviceData.length === 0}
             leftSection={<VideoIcon size={16} />}
             label={t("device")}
             maxDropdownHeight={240}
@@ -486,6 +512,11 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               setShowSourceSettings(false)
               start()
             }}
+            onDropdownOpen={async () => {
+              if (devices.length === 0) {
+                await updateDevices()
+              }
+            }}
           />
           <Space h="lg" />
           <Select
@@ -493,7 +524,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             defaultValue={
               sourceRef.current?.type === "source" ? sourceRef.current.id : null
             }
-            disabled={sourceData.length === 0}
             leftSection={<DeviceDesktopIcon size={16} />}
             label={t("source")}
             maxDropdownHeight={240}
@@ -531,6 +561,11 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               }
               setShowSourceSettings(false)
               start()
+            }}
+            onDropdownOpen={async () => {
+              if (sources.length === 0) {
+                await updateSources()
+              }
             }}
           />
         </Container>
