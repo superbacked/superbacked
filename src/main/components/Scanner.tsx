@@ -180,6 +180,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
   const [deviceValue, setDeviceValue] = useState<null | string>(null)
   const [sourceValue, setSourceValue] = useState<null | string>(null)
+  const [deviceDropdownOpened, setDeviceDropdownOpened] = useState(false)
+  const [sourceDropdownOpened, setSourceDropdownOpened] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<
     | null
@@ -480,6 +482,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             defaultValue={
               sourceRef.current?.type === "device" ? sourceRef.current.id : null
             }
+            dropdownOpened={deviceDropdownOpened}
             leftSection={<VideoIcon size={16} />}
             label={t("device")}
             maxDropdownHeight={240}
@@ -512,10 +515,12 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               setShowSourceSettings(false)
               start()
             }}
+            onDropdownClose={() => setDeviceDropdownOpened(false)}
             onDropdownOpen={async () => {
               if (devices.length === 0) {
                 await updateDevices()
               }
+              setDeviceDropdownOpened(true)
             }}
           />
           <Space h="lg" />
@@ -524,6 +529,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             defaultValue={
               sourceRef.current?.type === "source" ? sourceRef.current.id : null
             }
+            dropdownOpened={sourceDropdownOpened}
             leftSection={<DeviceDesktopIcon size={16} />}
             label={t("source")}
             maxDropdownHeight={240}
@@ -562,10 +568,12 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               setShowSourceSettings(false)
               start()
             }}
+            onDropdownClose={() => setSourceDropdownOpened(false)}
             onDropdownOpen={async () => {
               if (sources.length === 0) {
                 await updateSources()
               }
+              setSourceDropdownOpened(true)
             }}
           />
         </Container>
