@@ -1,4 +1,4 @@
-import type { ForgeConfig } from "@electron-forge/shared-types"
+import { ForgeConfig } from "@electron-forge/shared-types"
 
 import { mainConfig } from "./webpack.main.config"
 import { rendererConfig } from "./webpack.renderer.config"

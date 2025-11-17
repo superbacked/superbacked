@@ -1,4 +1,4 @@
-import type { Configuration } from "electron-builder"
+import { Configuration } from "electron-builder"
 
 const files = [
   {
