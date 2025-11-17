@@ -17,12 +17,11 @@ const files = [
 const config: Configuration = {
   appId: "com.superbacked.app",
   artifactName: "superbacked-${arch}-${version}.${ext}",
+  asarUnpack: ["**/bin/**/*", "**/wordlists/**/*", "!**/node_modules/**/*"],
+  files: files,
   productName: "Superbacked",
   dmg: {
     title: "${productName}",
-  },
-  pkg: {
-    license: "LICENSE",
   },
   linux: {
     files: [{ from: "./bin/linux", to: "./bin/linux" }],
@@ -53,8 +52,6 @@ const config: Configuration = {
       },
     ],
   },
-  files: files,
-  asarUnpack: ["**/bin/**/*", "**/wordlists/**/*", "!**/node_modules/**/*"],
 }
 
 export default config
