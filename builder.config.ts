@@ -32,7 +32,6 @@ const config: Configuration = {
     },
   },
   mac: {
-    notarize: false,
     entitlements: "build/entitlements.mac.plist",
     files: [
       {
@@ -41,6 +40,8 @@ const config: Configuration = {
       },
     ],
     hardenedRuntime: true,
+    // Create “App Manager” API key using https://appstoreconnect.apple.com/access/integrations/api and run `xcrun notarytool store-credentials superbacked-notarytool` to create credentials
+    notarize: process.env.STAGING !== "true",
     target: [
       {
         arch: "arm64",
@@ -54,7 +55,6 @@ const config: Configuration = {
   },
   files: files,
   asarUnpack: ["**/bin/**/*", "**/wordlists/**/*", "!**/node_modules/**/*"],
-  afterSign: process.env.STAGING !== "true" ? "notarize.js" : undefined,
 }
 
 export default config
