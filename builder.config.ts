@@ -15,7 +15,7 @@ const files = [
 ]
 
 const config: Configuration = {
-  appId: "com.superbacked",
+  appId: "com.superbacked.app",
   artifactName: "superbacked-${arch}-${version}.${ext}",
   productName: "Superbacked",
   dmg: {
