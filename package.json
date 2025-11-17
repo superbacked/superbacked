@@ -76,15 +76,13 @@
     "blockcrypt": "^0.0.1-beta.22",
     "commander": "^14.0.2",
     "electron-store": "^8.2.0",
-    "got": "^14.6.3",
     "leven": "^4.1.0",
     "qr": "^0.5.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^16.3.0",
     "react-router-dom": "^7.9.5",
-    "tabler-icons-react": "^1.56.0",
-    "zod": "^4.1.12"
+    "tabler-icons-react": "^1.56.0"
   },
   "prettier": {
     "endOfLine": "lf",
