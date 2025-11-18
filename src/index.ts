@@ -131,7 +131,7 @@ export const createWindow = async (): Promise<BrowserWindow> => {
       height: windowHeight,
       minWidth: windowWidth,
       minHeight: windowHeight,
-      titleBarStyle: "hidden",
+      titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
       webPreferences: {
         contextIsolation: true, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
         nodeIntegration: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
