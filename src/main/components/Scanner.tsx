@@ -288,7 +288,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       // Useful for debugging
       // console.log(canvas.toDataURL("image/jpeg", 100))
       let code: null | string = null
-      if (BarcodeDetector) {
+      if (typeof BarcodeDetector !== "undefined") {
         // Use BarcodeDetector when available (currently macOS-only, see https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector)
         const barcodeDetector = new BarcodeDetector({ formats: ["qr_code"] })
         const detectedBarcodes = await barcodeDetector.detect(imageData)
