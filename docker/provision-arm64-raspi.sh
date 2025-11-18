@@ -28,24 +28,24 @@ cp /dist/.icon-icns/icon.icns /mnt/root/home/superbacked/.local/superbacked/supe
 cp /superbacked-os-assets/superbacked.desktop /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
 chmod +x /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
 
-chown 1002:1002 /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
+chown 1000:1000 /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
 
 cp /superbacked-os-assets/superbacked.desktop /mnt/root/home/superbacked/Desktop/superbacked.desktop
 chmod +x /mnt/root/home/superbacked/Desktop/superbacked.desktop
 
-chown 1002:1002 /mnt/root/home/superbacked/Desktop/superbacked.desktop
+chown 1000:1000 /mnt/root/home/superbacked/Desktop/superbacked.desktop
 
 mkdir -p /mnt/root/home/superbacked/.config/autostart
 
 cp /superbacked-os-assets/superbacked-autostart.desktop /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.desktop
 chmod +x /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.desktop
 
-chown 1002:1002 /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.desktop
+chown 1000:1000 /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.desktop
 
 cp /superbacked-os-assets/superbacked-autostart.sh /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.sh
 chmod +x /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.sh
 
-chown 1002:1002 /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.sh
+chown 1000:1000 /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.sh
 
 cp /superbacked-os-assets/superbacked.profile /mnt/root/etc/apparmor.d/superbacked.profile
 
