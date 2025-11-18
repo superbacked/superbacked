@@ -38,7 +38,7 @@ export const rules: RuleSetRule[] = [
           transpileOnly: true,
         },
       },
-      // "./webpack-conditional-loader.ts",
+      "./webpack-conditional-loader.js",
     ],
   },
   {

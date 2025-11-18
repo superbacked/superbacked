@@ -15,12 +15,14 @@ const parse = (sourceByLine) => {
       if (rule.exec(startBlockRule) && eval(startBlockRule) !== true) {
         pushLine = false
       }
-    }
-    if (pushLine === true) {
-      lines.push(line)
+      continue
     }
     if ((result = endBlock.exec(line))) {
       pushLine = true
+      continue
+    }
+    if (pushLine === true) {
+      lines.push(line)
     }
   }
   return lines
