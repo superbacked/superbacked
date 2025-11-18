@@ -37,12 +37,7 @@ const App = () => {
   )
   const [showDisclaimer, setShowDisclaimer] = useState<boolean>(true)
   useEffect(() => {
-    const removeListener = window.api.colorSchemeChange(
-      (updatedColorScheme) => {
-        console.log("here", updatedColorScheme)
-        setColorScheme(updatedColorScheme)
-      }
-    )
+    const removeListener = window.api.colorSchemeChange(setColorScheme)
     return () => {
       removeListener()
     }
