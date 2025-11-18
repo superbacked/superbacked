@@ -23,8 +23,9 @@ const MenuEvents: FunctionComponent<MenuEventsProps> = function (props) {
 
   useEffect(() => {
     const removeListener = window.api.menuTriggeredRoute((to: string) => {
-      setKey((prev) => prev + 1)
-      if (to !== location.pathname) {
+      if (to === location.pathname) {
+        setKey((prev) => prev + 1)
+      } else {
         void navigate(to)
       }
     })
@@ -34,7 +35,7 @@ const MenuEvents: FunctionComponent<MenuEventsProps> = function (props) {
   }, [location.pathname, navigate])
 
   return (
-    <MenuEventsContext.Provider value={{ key }}>
+    <MenuEventsContext.Provider value={{ key: key }}>
       {props.children}
     </MenuEventsContext.Provider>
   )
