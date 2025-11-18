@@ -44,7 +44,6 @@ export interface Api {
   locale: () => Locale
   getDesktopCapturerSources: () => Promise<GetDesktopCapturerSourcesResult>
   platform: NodeJS.Platform
-  systemVersion: string
   version: () => number
   openExternalUrl: typeof openExternalUrl
   enableModes: (...args: Parameters<typeof enableModes>) => void
@@ -109,7 +108,6 @@ const api: Api = {
     return result
   },
   platform: process.platform,
-  systemVersion: process.getSystemVersion(),
   version: () => {
     return ipcRenderer.sendSync("app:getVersion")
   },
