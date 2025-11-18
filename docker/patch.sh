@@ -10,9 +10,9 @@ function detach()
 
 trap detach ERR INT
 
-mknod /dev/loop0p2 b 259 1
+mknod /dev/loop0p2 b 259 2
 
-losetup --find --partscan /patch/ubuntu-24.04.1-preinstalled-desktop-arm64+raspi.img
+losetup --find --partscan /patch/ubuntu-24.04.3-preinstalled-desktop-arm64+raspi.img
 
 mkdir -p /mnt/root
 

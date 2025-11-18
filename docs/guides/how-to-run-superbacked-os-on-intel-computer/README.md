@@ -7,7 +7,7 @@ Pinned: 1
 
 ## Requirements
 
-- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.1 LTS with 1080p camera
+- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS with 1080p camera
 - USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
 
 ## Recommendations (optional)

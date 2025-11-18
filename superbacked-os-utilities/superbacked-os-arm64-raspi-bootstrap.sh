@@ -1,5 +1,5 @@
 #! /bin/bash
-# Used to patch Ubuntu for desktops 24.04.1 LTS (Raspberry Pi)
+# Used to patch Ubuntu for desktops 24.04.3 LTS (Raspberry Pi)
 
 set -e
 set -o pipefail

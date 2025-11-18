@@ -1,5 +1,5 @@
 #! /bin/bash
-# Used to patch Ubuntu for desktops 24.04.1 LTS (Intel)
+# Used to patch Ubuntu for desktops 24.04.3 LTS (Intel)
 
 set -e
 set -o pipefail
