@@ -101,7 +101,7 @@ const App = () => {
     return (
       <MantineEmotionProvider cache={emotionCache}>
         <MantineProvider
-          defaultColorScheme="light"
+          forceColorScheme="light"
           stylesTransform={emotionTransform}
           theme={{
             colors: {

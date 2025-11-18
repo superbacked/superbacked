@@ -37,7 +37,12 @@ const App = () => {
   )
   const [showDisclaimer, setShowDisclaimer] = useState<boolean>(true)
   useEffect(() => {
-    const removeListener = window.api.colorSchemeChange(setColorScheme)
+    const removeListener = window.api.colorSchemeChange(
+      (updatedColorScheme) => {
+        console.log("here", updatedColorScheme)
+        setColorScheme(updatedColorScheme)
+      }
+    )
     return () => {
       removeListener()
     }
@@ -51,7 +56,7 @@ const App = () => {
   return (
     <MantineEmotionProvider cache={emotionCache}>
       <MantineProvider
-        defaultColorScheme={colorScheme}
+        forceColorScheme={colorScheme}
         stylesTransform={emotionTransform}
         theme={{
           colors: {
