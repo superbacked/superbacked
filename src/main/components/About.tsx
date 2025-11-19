@@ -1,9 +1,11 @@
 import { Center, Modal, Space, Text, Title } from "@mantine/core"
 import { FunctionComponent, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import SuperbackedIcon from "@/src/main/superbacked.svg"
 
 const About: FunctionComponent = () => {
+  const { t } = useTranslation()
   const [showAbout, setShowAbout] = useState(false)
   useEffect(() => {
     const removeListener = window.api.menuAbout(() => {
@@ -28,14 +30,14 @@ const About: FunctionComponent = () => {
       <Space h="lg" />
       <Title ta="center">Superbacked</Title>
       <Text c="dimmed" ta="center">
-        Version: {window.api.version()}
+        {t("about.version")}: {window.api.version()}
       </Text>
       <Space h="lg" />
       <Text fw="bold" size="sm" ta="center">
-        Copyright (c) Superbacked, Inc.
+        {t("about.copyright")} (c) Superbacked, Inc.
       </Text>
       <Text fw="bold" size="sm" ta="center">
-        All rights reserved
+        {t("about.allRightsReserved")}
       </Text>
       <Space h="xl" />
     </Modal>

@@ -37,6 +37,11 @@
       "toggleDeveloperTools": "Toggle developer tools"
     }
   },
+  "about": {
+    "version": "Version",
+    "copyright": "Copyright",
+    "allRightsReserved": "All rights reserved"
+  },
   "doNot": "Do not",
   "useSuperbackedOnComputer": "use Superbacked on computer that isn’t",
   "airGapped": "air-gapped",

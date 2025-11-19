@@ -37,6 +37,11 @@
       "toggleDeveloperTools": "Växla utvecklarverktyg"
     }
   },
+  "about": {
+    "version": "Version",
+    "copyright": "Copyright",
+    "allRightsReserved": "Alla rättigheter förbehållna"
+  },
   "doNot": "Använd inte",
   "useSuperbackedOnComputer": "Superbacked på en dator som inte är",
   "airGapped": "isolerad",

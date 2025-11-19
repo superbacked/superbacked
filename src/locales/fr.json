@@ -37,6 +37,11 @@
       "toggleDeveloperTools": "Activer/désactiver les outils de développement"
     }
   },
+  "about": {
+    "version": "Version",
+    "copyright": "Copyright",
+    "allRightsReserved": "Tous droits réservés"
+  },
   "doNot": "Ne pas",
   "useSuperbackedOnComputer": "utiliser Superbacked sur un ordinateur qui n’est pas",
   "airGapped": "isolé d’Internet",

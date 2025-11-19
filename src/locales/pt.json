@@ -37,6 +37,11 @@
       "toggleDeveloperTools": "Alternar ferramentas de desenvolvedor"
     }
   },
+  "about": {
+    "version": "Versão",
+    "copyright": "Copyright",
+    "allRightsReserved": "Todos os direitos reservados"
+  },
   "doNot": "Não",
   "useSuperbackedOnComputer": "use o Superbacked em um computador que não seja",
   "airGapped": "isolado da internet (air-gapped)",
