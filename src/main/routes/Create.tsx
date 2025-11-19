@@ -105,7 +105,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     initialStep = "secret1"
   }
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
   const scannerRef = useRef<ScannerRef>(null)
   const [showHiddenSecrets, setShowHiddenSecrets] = useState(
     window.api.menuGetShowHiddenSecretsState()
@@ -353,6 +353,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     },
     [qrs]
   )
+  useEffect(() => {
+    if (Object.keys(form.errors).length > 0) {
+      form.validate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language])
   useEffect(() => {
     const removeListener = window.api.menuInsert(async (type) => {
       if (type === "mnemonic") {

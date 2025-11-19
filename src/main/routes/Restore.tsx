@@ -60,7 +60,7 @@ interface PasswordModalProps {
 }
 
 const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => {
     if (ref.current) {
@@ -89,6 +89,12 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
       form.reset()
     }
   }, [form, props])
+  useEffect(() => {
+    if (Object.keys(form.errors).length > 0) {
+      form.validate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language])
   return (
     <Modal
       centered
