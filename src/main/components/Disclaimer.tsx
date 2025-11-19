@@ -81,9 +81,9 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
             variant="gradient"
             span
           >
-            {t("doNot")}
+            {t("components.disclaimer.doNot")}
           </Text>{" "}
-          {t("useSuperbackedOnComputer")}{" "}
+          {t("components.disclaimer.useSuperbackedOnComputer")}{" "}
           <Anchor
             onClick={(event: MouseEvent<HTMLAnchorElement>) => {
               event.preventDefault()
@@ -92,9 +92,9 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
               )
             }}
           >
-            {t("airGapped")}
+            {t("components.disclaimer.airGapped")}
           </Anchor>{" "}
-          {t("and")}{" "}
+          {t("components.disclaimer.and")}{" "}
           <Anchor
             onClick={(event: MouseEvent<HTMLAnchorElement>) => {
               event.preventDefault()
@@ -103,27 +103,27 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
               )
             }}
           >
-            {t("exclusivelyUsed")}
+            {t("components.disclaimer.exclusivelyUsed")}
           </Anchor>{" "}
-          {t("forSecretManagementUnlessSecret")}
+          {t("components.disclaimer.forSecretManagementUnlessSecret")}
         </Text>
         <Space h="lg" />
         <Text>
-          {t("superbackedIncCannotBeHeldResponsible")}{" "}
+          {t("components.disclaimer.superbackedIncCannotBeHeldResponsible")}{" "}
           <Text
             fw="bold"
             gradient={{ from: "#fdc0ee", to: "#fbd6cd", deg: 45 }}
             variant="gradient"
             span
           >
-            {t("useAtYourOwnRisk")}
+            {t("components.disclaimer.useAtYourOwnRisk")}
           </Text>
         </Text>
         <Space h="lg" />
         <form>
           <Switch
             checked={form.values.accept}
-            label={t("agree")}
+            label={t("components.disclaimer.agree")}
             withThumbIndicator={false}
             {...form.getInputProps("accept", { withFocus: false })}
           />
@@ -147,7 +147,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
               },
             }}
           >
-            {t("useSuperbacked")}
+            {t("components.disclaimer.useSuperbacked")}
           </Button>
         </form>
       </Container>

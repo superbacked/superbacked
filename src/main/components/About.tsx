@@ -30,14 +30,14 @@ const About: FunctionComponent = () => {
       <Space h="lg" />
       <Title ta="center">Superbacked</Title>
       <Text c="dimmed" ta="center">
-        {t("about.version")}: {window.api.version()}
+        {t("components.about.version")}: {window.api.version()}
       </Text>
       <Space h="lg" />
       <Text fw="bold" size="sm" ta="center">
-        {t("about.copyright")} (c) Superbacked, Inc.
+        {t("components.about.copyright")} (c) Superbacked, Inc.
       </Text>
       <Text fw="bold" size="sm" ta="center">
-        {t("about.allRightsReserved")}
+        {t("components.about.allRightsReserved")}
       </Text>
       <Space h="xl" />
     </Modal>

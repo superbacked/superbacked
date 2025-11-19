@@ -75,7 +75,7 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
     validate: {
       passphrase: (value) => {
         if (value === "") {
-          return t("passphraseRequired")
+          return t("common.passphraseRequired")
         }
         return null
       },
@@ -100,7 +100,7 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
       centered
       onClose={() => props.onClose()}
       opened={true}
-      title={`${t("enterPassphrase")}${
+      title={`${t("routes.restore.enterPassphrase")}${
         form.values.dualPassphrase === true ? "s" : ""
       }`}
       styles={{
@@ -115,8 +115,8 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
           autoFocus
           data-autofocus
           disabled={props.unlocking}
-          label={t("passphrase")}
-          placeholder={t("typePassphrase")}
+          label={t("common.passphrase")}
+          placeholder={t("common.typePassphrase")}
           required
           spellCheck={false}
           visibilityToggleIcon={({ reveal }) =>
@@ -141,7 +141,9 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
             },
           }}
         >
-          {props.unlocking === true ? t("unlocking") : t("unlock")}
+          {props.unlocking === true
+            ? t("routes.restore.unlocking")
+            : t("routes.restore.unlock")}
         </Button>
       </form>
     </Modal>
@@ -408,7 +410,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                   setShowCopied(true)
                 }}
               >
-                {t("copy")}
+                {t("common.copy")}
               </Button>
               <Button
                 variant="default"
@@ -416,7 +418,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                   void navigate("/")
                 }}
               >
-                {t("done")}
+                {t("common.done")}
               </Button>
             </Button.Group>
           </Container>
@@ -428,7 +430,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
             radius="sm"
             size="md"
           >
-            {t("copied")}
+            {t("common.copied")}
           </Dialog>
         </Fragment>
       )
@@ -444,7 +446,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                   setShowCopied(true)
                 }}
               >
-                {t("copy")}
+                {t("common.copy")}
               </Button>
               <Button
                 variant="default"
@@ -453,7 +455,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                   setShowSecret(true)
                 }}
               >
-                {t("showSecret")}
+                {t("routes.restore.showSecret")}
               </Button>
               <Button
                 variant="default"
@@ -461,7 +463,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                   void navigate("/")
                 }}
               >
-                {t("done")}
+                {t("common.done")}
               </Button>
             </Button.Group>
           </Container>
@@ -473,7 +475,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
             radius="sm"
             size="md"
           >
-            {t("copied")}
+            {t("common.copied")}
           </Dialog>
         </Fragment>
       )
@@ -501,7 +503,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
             radius="sm"
             size="md"
           >
-            {t("scanNextBlock")}…
+            {t("routes.restore.scanNextBlock")}…
           </Dialog>
         ) : null}
         {showPassphraseModal === true ? (

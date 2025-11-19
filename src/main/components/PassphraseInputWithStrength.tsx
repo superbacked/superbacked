@@ -58,15 +58,15 @@ export const PassphraseInputWithStrength: FunctionComponent<
     <Popover opened={popoverOpened} width={"440px"} withArrow>
       <Popover.Dropdown>
         <Text c="dimmed" fw="bold" size="sm" ta="center">
-          {t("passphraseStrength")}
+          {t("components.passphraseInputWithStrength.passphraseStrength")}
         </Text>
         <Space h="lg" />
         <Progress color={color} value={strength ?? 0} />
         <Space h="lg" />
         {time !== null ? (
           <Text c={strength && strength < 50 ? "red" : "dimmed"} size="sm">
-            {t("estimatedAttackTime")}:{" "}
-            {t(`zxcvbn.${time.key}`, {
+            {t("components.passphraseInputWithStrength.estimatedAttackTime")}:{" "}
+            {t(`components.passphraseInputWithStrength.zxcvbn.${time.key}`, {
               base: time.base,
             })}
           </Text>

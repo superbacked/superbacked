@@ -31,6 +31,7 @@ import {
   X as XIcon,
 } from "tabler-icons-react"
 
+import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
 import { CustomDesktopCapturerSource } from "@/src/index"
 import ErrorModal from "@/src/main/components/ErrorModal"
 import confirmationSound from "@/src/main/confirmation.wav"
@@ -183,14 +184,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const [deviceDropdownOpened, setDeviceDropdownOpened] = useState(false)
   const [sourceDropdownOpened, setSourceDropdownOpened] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<
-    | null
-    | "pleaseAllowCameraAccess"
-    | "pleaseConnectCamera"
-    | "cameraDoesNotMeetMinimumRequirementOf720p"
-    | "pleaseAllowScreenRecording"
-    | "couldNotRunScanner"
-  >(null)
+  const [error, setError] = useState<null | ValidateTranslationKeys<
+    | "components.scanner.pleaseAllowCameraAccess"
+    | "components.scanner.pleaseConnectCamera"
+    | "components.scanner.cameraDoesNotMeetMinimumRequirementOf720p"
+    | "components.scanner.pleaseAllowScreenRecording"
+    | "components.scanner.couldNotRunScanner"
+  >>(null)
   const [showError, setShowError] = useState(false)
   const [streaming, setStreaming] = useState(false)
   const { handleCode, autoBeep = true, autoStop = true } = props
@@ -210,7 +210,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
     const result = await window.api.getDesktopCapturerSources()
     if (result.success === false) {
-      setError("pleaseAllowScreenRecording")
+      setError("components.scanner.pleaseAllowScreenRecording")
       setShowError(true)
       return []
     }
@@ -371,7 +371,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       if (videoRef.current) {
         const metadataTimeout = setTimeout(() => {
           if (sourceRef.current?.type === "device") {
-            setError("pleaseAllowCameraAccess")
+            setError("components.scanner.pleaseAllowCameraAccess")
             setShowError(true)
             stop()
           }
@@ -394,33 +394,33 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         captureError instanceof Error &&
         captureError.name === "NoDeviceError"
       ) {
-        setError("pleaseConnectCamera")
+        setError("components.scanner.pleaseConnectCamera")
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotAllowedError"
       ) {
-        setError("pleaseAllowCameraAccess")
+        setError("components.scanner.pleaseAllowCameraAccess")
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
-        setError("pleaseConnectCamera")
+        setError("components.scanner.pleaseConnectCamera")
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "OverconstrainedError"
       ) {
-        setError("cameraDoesNotMeetMinimumRequirementOf720p")
+        setError("components.scanner.cameraDoesNotMeetMinimumRequirementOf720p")
       } else if (
         sourceRef.current?.type === "source" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
-        setError("pleaseAllowScreenRecording")
+        setError("components.scanner.pleaseAllowScreenRecording")
       } else {
-        setError("couldNotRunScanner")
+        setError("components.scanner.couldNotRunScanner")
       }
       setShowError(true)
     }
@@ -484,9 +484,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             }
             dropdownOpened={deviceDropdownOpened}
             leftSection={<VideoIcon size={16} />}
-            label={t("device")}
+            label={t("components.scanner.device")}
             maxDropdownHeight={240}
-            placeholder={`${t("selectDevice")}…`}
+            placeholder={`${t("components.scanner.selectDevice")}…`}
             rightSection={
               <ActionIcon
                 color="pink"
@@ -531,9 +531,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             }
             dropdownOpened={sourceDropdownOpened}
             leftSection={<DeviceDesktopIcon size={16} />}
-            label={t("source")}
+            label={t("components.scanner.source")}
             maxDropdownHeight={240}
-            placeholder={`${t("selectSource")}…`}
+            placeholder={`${t("components.scanner.selectSource")}…`}
             renderOption={({ option }) => (
               <Group wrap="nowrap">
                 <Avatar src={(option as CustomComboboxItem).thumbnailDataUrl} />
@@ -620,7 +620,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               radius="sm"
               size="md"
             >
-              {t("loading")}…
+              {t("components.scanner.loading")}…
             </Dialog>
           </Fragment>
         ) : null}

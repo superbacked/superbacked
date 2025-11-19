@@ -210,10 +210,10 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
               </Badge>
               <Text c="dimmed" size="sm">
                 {badge.count}{" "}
-                {t(type, {
+                {t(`components.secretTextareaWithLength.${type}`, {
                   count: badge.count,
                 })}{" "}
-                {t("found", {
+                {t("components.secretTextareaWithLength.found", {
                   count: badge.count,
                 })}
               </Text>
@@ -258,13 +258,14 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     <Popover opened={popoverOpened} width={"440px"} withArrow>
       <Popover.Dropdown>
         <Text c="dimmed" fw="bold" size="sm" ta="center">
-          {t("secretLength")}
+          {t("components.secretTextareaWithLength.secretLength")}
         </Text>
         <Space h="lg" />
         <Progress color={color} value={lengthPercentage} />
         <Space h="lg" />
         <Text c={lengthPercentage > 100 ? "red" : "dimmed"} size="sm">
-          {t("lengthRemaining")}: {100 - lengthPercentage}%
+          {t("components.secretTextareaWithLength.lengthRemaining")}:{" "}
+          {100 - lengthPercentage}%
         </Text>
         {markBadges.length > 0 ? (
           <Fragment>

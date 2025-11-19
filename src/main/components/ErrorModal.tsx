@@ -39,7 +39,7 @@ const ErrorModal: FunctionComponent<ErrorModalProps> = (props) => {
       onClose={props.onClose}
       opened={props.opened ? props.error !== null : false}
       size={props.size ?? "sm"}
-      title={t("headsUp")}
+      title={t("components.errorModal.headsUp")}
     >
       {props.error ? t(props.error) : null}
     </Modal>

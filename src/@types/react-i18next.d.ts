@@ -12,6 +12,8 @@ type Paths<T, K extends keyof T = keyof T> = K extends string | number
 
 export type TranslationKey = Paths<Translation>
 
+export type ValidateTranslationKeys<T extends TranslationKey> = T
+
 declare module "i18next" {
   interface CustomTypeOptions {
     defaultNS: "translation"

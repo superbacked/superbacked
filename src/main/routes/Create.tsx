@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { Printer as PrinterIcon } from "tabler-icons-react"
 
+import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
 import { Qr, Secret, Result } from "@/src/create"
 import ErrorModal from "@/src/main/components/ErrorModal"
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
@@ -116,12 +117,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   const [creating, setCreating] = useState(false)
   const [printerData, setPrinterData] = useState<ComboboxItem[]>([])
   const [showSelectPrinter, setShowSelectPrinter] = useState(false)
-  const [error, setError] = useState<
-    | null
-    | "couldNotEncryptSecrets"
-    | "couldNotEncryptSecret"
-    | "pleaseConnectPrinter"
-  >(null)
+  const [error, setError] = useState<null | ValidateTranslationKeys<
+    | "routes.create.couldNotEncryptSecret"
+    | "routes.create.couldNotEncryptSecrets"
+    | "routes.create.pleaseConnectPrinter"
+    | "routes.create.pleaseSelectPrinter"
+  >>(null)
   const [showError, setShowError] = useState(false)
   const [showPrinting, setShowPrinting] = useState(false)
   const [qrs, setQrs] = useState<Qr[]>(initialQrs)
@@ -177,32 +178,32 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       secret1: (value, values) => {
         const dataLengths = getDataLengths(values)
         if (!value || value === "") {
-          return t("secretRequired")
+          return t("routes.create.secretRequired")
         } else if (
           dataLengths.secret1DataLength > dataLengths.totalDataLength
         ) {
-          return t("secretTooLong")
+          return t("routes.create.secretTooLong")
         }
         return null
       },
       passphrase1: (value) => {
         const result = zxcvbn(value)
         if (!value || value === "") {
-          return t("passphraseRequired")
+          return t("common.passphraseRequired")
         } else if (result.strength < 50) {
-          return t("passphraseTooWeak")
+          return t("routes.create.passphraseTooWeak")
         }
         return null
       },
       backupType: (value) => {
         if (!value || value === "") {
-          return t("backupTypeRequired")
+          return t("routes.create.backupTypeRequired")
         }
         return null
       },
       label: (value) => {
         if (value.length > maxLabelLength) {
-          return t("labelTooLong")
+          return t("routes.create.labelTooLong")
         }
         return null
       },
@@ -210,9 +211,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         if (step === "secret2") {
           const dataLengths = getDataLengths(values)
           if (!value || value === "") {
-            return t("secretRequired")
+            return t("routes.create.secretRequired")
           } else if (dataLengths.maxRemainingHiddenDataLength < 0) {
-            return t("secretTooLong")
+            return t("routes.create.secretTooLong")
           }
         }
         return null
@@ -221,18 +222,18 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         if (step === "secret2") {
           const result = zxcvbn(value)
           if (!value || value === "") {
-            return t("passphraseRequired")
+            return t("common.passphraseRequired")
           } else if (result.strength < 50) {
-            return t("passphraseTooWeak")
+            return t("routes.create.passphraseTooWeak")
           }
           for (const [entryKey, entryValue] of Object.entries(values)) {
             if (entryKey.match(/^passphrase(1|3)$/) && entryValue === value) {
-              return t("passphraseUsed")
+              return t("routes.create.passphraseUsed")
             } else if (
               entryKey.match(/^passphrase(1|3)$/) &&
               leven(entryValue, value) < entryValue.length / 2
             ) {
-              return t("passphraseTooSimilar")
+              return t("routes.create.passphraseTooSimilar")
             }
           }
         }
@@ -242,9 +243,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         if (step === "secret3") {
           const dataLengths = getDataLengths(values)
           if (!value || value === "") {
-            return t("secretRequired")
+            return t("routes.create.secretRequired")
           } else if (dataLengths.maxRemainingHiddenDataLength < 0) {
-            return t("secretTooLong")
+            return t("routes.create.secretTooLong")
           }
         }
         return null
@@ -253,18 +254,18 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         if (step === "secret3") {
           const result = zxcvbn(value)
           if (!value || value === "") {
-            return t("passphraseRequired")
+            return t("common.passphraseRequired")
           } else if (result.strength < 50) {
-            return t("passphraseTooWeak")
+            return t("routes.create.passphraseTooWeak")
           }
           for (const [entryKey, entryValue] of Object.entries(values)) {
             if (entryKey.match(/^passphrase(1|2)$/) && entryValue === value) {
-              return t("passphraseUsed")
+              return t("routes.create.passphraseUsed")
             } else if (
               entryKey.match(/^passphrase(1|2)$/) &&
               leven(entryValue, value) < entryValue.length / 2
             ) {
-              return t("passphraseTooSimilar")
+              return t("routes.create.passphraseTooSimilar")
             }
           }
         }
@@ -322,8 +323,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       if (result.success === false) {
         setError(
           showHiddenSecrets === true
-            ? "couldNotEncryptSecrets"
-            : "couldNotEncryptSecret"
+            ? "routes.create.couldNotEncryptSecrets"
+            : "routes.create.couldNotEncryptSecret"
         )
         setShowError(true)
         setCreating(false)
@@ -414,10 +415,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             autosize
             dataLengths={dataLengths}
             disabled={creating}
-            label={t("secret")}
+            label={t("routes.create.secret")}
             maxRows={5}
             minRows={2}
-            placeholder={t("typeSecret")}
+            placeholder={t("routes.create.typeSecret")}
             required
             secretNumber={1}
             spellCheck={false}
@@ -433,8 +434,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           <PassphraseInputWithStrength
             key="passphrase1"
             disabled={creating}
-            label={t("passphrase")}
-            placeholder={t("typePassphrase")}
+            label={t("common.passphrase")}
+            placeholder={t("common.typePassphrase")}
             required
             spellCheck={false}
             generatePassphrase={async () => {
@@ -451,24 +452,24 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           <Group align="start" grow>
             <Select
               disabled={creating}
-              label={t("backupType")}
-              placeholder={t("selectBackupType")}
+              label={t("routes.create.backupType")}
+              placeholder={t("routes.create.selectBackupType")}
               required
               data={[
                 {
                   value: "standard",
-                  label: t("standard"),
+                  label: t("routes.create.standard"),
                 },
-                { value: "2of3", label: t("2of3") },
-                { value: "3of5", label: t("3of5") },
-                { value: "4of7", label: t("4of7") },
+                { value: "2of3", label: t("routes.create.2of3") },
+                { value: "3of5", label: t("routes.create.3of5") },
+                { value: "4of7", label: t("routes.create.4of7") },
               ]}
               {...form.getInputProps("backupType", { withFocus: false })}
             />
             <TextInput
               disabled={creating}
-              label={t("label")}
-              placeholder={t("typeLabel")}
+              label={t("routes.create.label")}
+              placeholder={t("routes.create.typeLabel")}
               {...form.getInputProps("label", { withFocus: false })}
             />
           </Group>
@@ -482,10 +483,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             autosize
             dataLengths={dataLengths}
             disabled={creating}
-            label={t("secret")}
+            label={t("routes.create.secret")}
             maxRows={4}
             minRows={2}
-            placeholder={t("typeSecret")}
+            placeholder={t("routes.create.typeSecret")}
             required
             secretNumber={secretNumber}
             spellCheck={false}
@@ -503,8 +504,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           <PassphraseInputWithStrength
             key={`passphrase${secretNumber}`}
             disabled={creating}
-            label={t("passphrase")}
-            placeholder={t("typePassphrase")}
+            label={t("common.passphrase")}
+            placeholder={t("common.typePassphrase")}
             required
             spellCheck={false}
             generatePassphrase={async () => {
@@ -558,7 +559,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               },
             })}
           >
-            {t("addSecret")}
+            {t("routes.create.addSecret")}
           </Button>
         </Fragment>
       )
@@ -586,7 +587,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               },
             }}
           >
-            {t("removeSecret")}
+            {t("routes.create.removeSecret")}
           </Button>
         </Fragment>
       )
@@ -615,7 +616,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                 },
               }}
             >
-              {creating === true ? t("creating") : t("create")}
+              {creating === true
+                ? t("routes.create.creating")
+                : t("routes.create.create")}
             </Button>
             {removeSecret}
             {addSecret}
@@ -711,7 +714,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                     const printers = await window.api.getPrinters()
                     const defaultPrinter = await window.api.getDefaultPrinter()
                     if (printers.length === 0) {
-                      setError("pleaseConnectPrinter")
+                      setError("routes.create.pleaseConnectPrinter")
                       setShowError(true)
                     } else if (!defaultPrinter) {
                       const data: ComboboxItem[] = []
@@ -728,7 +731,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                     }
                   }}
                 >
-                  {t("print")}
+                  {t("routes.create.print")}
                 </Button>
               ) : null}
               <Button
@@ -737,7 +740,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   void window.api.save(qrs, ["jpg", "pdf"])
                 }}
               >
-                {t("save")}
+                {t("routes.create.save")}
               </Button>
               <Button
                 variant="default"
@@ -750,7 +753,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   }
                 }}
               >
-                {t("done")}
+                {t("common.done")}
               </Button>
             </Button.Group>
           </Blocks>
@@ -761,7 +764,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             setShowSelectPrinter(false)
           }}
           opened={showSelectPrinter}
-          title={t("pleaseSelectPrinter")}
+          title={t("routes.create.pleaseSelectPrinter")}
           styles={{
             title: {
               fontWeight: "bold",
@@ -772,9 +775,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             data={printerData}
             disabled={printerData.length === 0}
             leftSection={<PrinterIcon size={16} />}
-            label={t("printer")}
+            label={t("routes.create.printer")}
             maxDropdownHeight={240}
-            placeholder={`${t("selectPrinter")}…`}
+            placeholder={`${t("routes.create.selectPrinter")}…`}
             onChange={(value) => {
               if (value) {
                 setShowSelectPrinter(false)
@@ -790,7 +793,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           radius="sm"
           size="md"
         >
-          {t("printing")}…
+          {t("routes.create.printing")}…
         </Dialog>
         <ErrorModal
           error={error}
