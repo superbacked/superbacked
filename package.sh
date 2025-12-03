@@ -74,37 +74,6 @@ if [ "$answer" = "y" ]; then
     number=$((number + 1))
   done
 
-  printf "%s\n" "Building Superbacked OS (arm64-raspi)…"
-
-  cp \
-    superbacked-os/superbacked-os-arm64-raspi-24.04.3.img \
-    dist/superbacked-os-arm64-raspi-${version}.img
-
-  docker run \
-    --interactive \
-    --privileged \
-    --rm \
-    --tty \
-    --volume $(pwd)/dist:/dist \
-    --volume $(pwd)/superbacked-os-assets:/superbacked-os-assets \
-    superbacked-os-packager:24.04 \
-    /root/provision-arm64-raspi.sh \
-    superbacked-arm64-${version}.AppImage \
-    superbacked-os-arm64-raspi-${version}.img
-
-  printf "%s\n" "Compressing Superbacked OS (arm64-raspi)…"
-
-  xz -1 --threads 4 dist/superbacked-os-arm64-raspi-${version}.img
-
-  cat dist/superbacked-os-arm64-raspi-${version}.img.xz | split \
-    -b 2147483647B - dist/superbacked-os-arm64-raspi-${version}.img.xz.part
-
-  number=1
-  for file in dist/superbacked-os-arm64-raspi-${version}.img.xz.part*; do
-    mv "$file" "dist/superbacked-os-arm64-raspi-${version}.img.xz.part$number"
-    number=$((number + 1))
-  done
-
   printf "%s\n" "Stopping Colima…"
 
   colima stop --profile superbacked
