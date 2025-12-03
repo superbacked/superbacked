@@ -15,25 +15,54 @@ gsettings set org.gnome.desktop.interface color-scheme prefer-dark
 gsettings set org.gnome.desktop.media-handling automount false
 gsettings set org.gnome.mutter center-new-windows true
 
-printf "%s\n" "Uninstalling extraneous software…"
-
-sudo apt remove --purge --yes \
-  firefox* \
-  thunderbird* \
-
-sudo apt autoremove --purge --yes
-
-sudo apt clean
-
-sudo snap remove --purge firefox thunderbird
-
 printf "%s\n" "Adding universe repository…"
 
 sudo add-apt-repository --yes universe
 
 printf "%s\n" "Installing dependencies…"
 
-sudo apt install --yes curl libfuse2 overlayroot
+sudo apt install --yes \
+  build-essential \
+  curl \
+  exfatprogs \
+  libfuse2 \
+  libpcsclite-dev \
+  overlayroot \
+  pcscd \
+  pipx \
+  python3-dev \
+  scdaemon \
+  zbar-tools
+
+pipx ensurepath
+
+pipx install trezor yubikey-manager
+
+printf "%s\n" "Configuring udev rules…"
+
+sudo curl https://data.trezor.io/udev/51-trezor.rules --output /etc/udev/rules.d/51-trezor.rules
+sudo curl https://raw.githubusercontent.com/Yubico/libfido2/main/udev/70-u2f.rules --output /etc/udev/rules.d/70-u2f.rules
+
+printf "%s\n" "Uninstalling extraneous software…"
+
+sudo apt remove --purge --yes \
+  build-essential \
+  curl \
+  libpcsclite-dev \
+  python3-dev \
+  unattended-upgrades \
+  update-manager \
+  update-manager-core \
+  update-notifier \
+  update-notifier-common \
+  firefox* \
+  thunderbird*
+
+sudo apt autoremove --purge --yes
+
+sudo apt clean
+
+sudo snap remove --purge firefox thunderbird
 
 printf "%s\n" "Configuring fstab…"
 
@@ -45,6 +74,7 @@ sudo cat /etc/fstab
 printf "%s\n" "Disabling fsck.repair and enabling read-only…"
 
 sudo sed --in-place 's/quiet splash/quiet splash fsck.repair=no ro/g' /etc/default/grub
+
 sudo update-grub
 
 sudo cat /boot/grub/grub.cfg
@@ -53,21 +83,21 @@ printf "%s\n" "Configuring overlayroot…"
 
 sudo sed --in-place 's/overlayroot=""/overlayroot="tmpfs"/g' /etc/overlayroot.conf
 
-printf "%s\n" "Disabling automatic updates…"
-
-sudo apt remove --yes unattended-upgrades update-manager update-notifier
-
 printf "%s\n" "Disable networking…"
 
 sudo systemctl enable nftables
 sudo systemctl start nftables
+
 sudo nft flush ruleset
+
 sudo nft add table inet filter
 sudo nft add chain inet filter input '{ type filter hook input priority 0; policy drop; }'
 sudo nft add chain inet filter forward '{ type filter hook forward priority 0; policy drop; }'
 sudo nft add chain inet filter output '{ type filter hook output priority 0; policy drop; }'
+
 sudo nft add rule inet filter input iif lo accept
 sudo nft add rule inet filter output oif lo accept
+
 sudo nft list ruleset | sudo tee /etc/nftables.conf
 
 printf "%s\n" "Disable sudo…"
