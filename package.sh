@@ -56,7 +56,6 @@ if [ "$answer" = "y" ]; then
     --tty \
     --volume $(pwd)/dist:/dist \
     --volume $(pwd)/superbacked-os-assets:/superbacked-os-assets \
-    --volume $(pwd)/superbacked-os-utilities:/superbacked-os-utilities \
     superbacked-os-packager:24.04 \
     /root/provision-amd64.sh \
     superbacked-x64-${version}.AppImage \
@@ -88,7 +87,6 @@ if [ "$answer" = "y" ]; then
     --tty \
     --volume $(pwd)/dist:/dist \
     --volume $(pwd)/superbacked-os-assets:/superbacked-os-assets \
-    --volume $(pwd)/superbacked-os-utilities:/superbacked-os-utilities \
     superbacked-os-packager:24.04 \
     /root/provision-arm64-raspi.sh \
     superbacked-arm64-${version}.AppImage \
