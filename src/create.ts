@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron"
+import { BrowserWindow, ipcMain } from "electron"
 
 import { Secret as BlockcryptSecret, encrypt } from "blockcrypt"
 
@@ -54,11 +54,13 @@ export type Result =
 
 const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
   return new Promise((resolve) => {
-    blockWindow.webContents.on("ipc-message", async (_event, channel) => {
-      if (channel === "ready") {
+    const handler = (event: Electron.IpcMainEvent) => {
+      if (event.sender === blockWindow.webContents) {
+        ipcMain.removeListener("ready", handler)
         resolve()
       }
-    })
+    }
+    ipcMain.on("ready", handler)
   })
 }
 
@@ -99,7 +101,10 @@ export const compute = async (
     preferCSSPageSize: true,
   })
   const pdf = pdfBuffer.toString("base64")
-  const scale = 2
+  const devicePixelRatio = await blockWindow.webContents.executeJavaScript(
+    "window.devicePixelRatio"
+  )
+  const scale = 4 / devicePixelRatio
   blockWindow.setSize(windowWidth * scale, windowHeight * scale)
   blockWindow.webContents.send("dataChange", { ...data, scale: scale })
   await readyIpcMessage(blockWindow)

@@ -38,8 +38,7 @@ const Container = styled.div<ContainerProps>`
   flex-direction: column;
   justify-content: center;
   padding: 0.5in;
-  transform: ${(props) => `scale(${props.scale})`};
-  transform-origin: top left;
+  zoom: ${(props) => props.scale};
 `
 
 const Hash = styled.div`
