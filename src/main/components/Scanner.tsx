@@ -478,6 +478,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       <Fragment>
         <Container>
           <Select
+            comboboxProps={{ keepMounted: false }}
             data={deviceData}
             defaultValue={
               sourceRef.current?.type === "device" ? sourceRef.current.id : null
@@ -525,6 +526,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           />
           <Space h="lg" />
           <Select
+            comboboxProps={{ keepMounted: false }}
             data={sourceData}
             defaultValue={
               sourceRef.current?.type === "source" ? sourceRef.current.id : null

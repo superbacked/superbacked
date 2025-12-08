@@ -451,6 +451,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           <Space h="lg" />
           <Group align="start" grow>
             <Select
+              comboboxProps={{ keepMounted: false }}
               disabled={creating}
               label={t("routes.create.backupType")}
               placeholder={t("routes.create.selectBackupType")}
@@ -664,6 +665,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           {props.importMode !== true ? (
             <Select
               allowDeselect={false}
+              comboboxProps={{ keepMounted: false }}
               data={[
                 { value: "1", label: "1" },
                 { value: "2", label: "2" },
@@ -772,6 +774,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           }}
         >
           <Select
+            comboboxProps={{ keepMounted: false }}
             data={printerData}
             disabled={printerData.length === 0}
             leftSection={<PrinterIcon size={16} />}
