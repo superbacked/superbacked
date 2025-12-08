@@ -11,5 +11,5 @@ c9fe2e5b74d3d474d3a30901a618ef3cf50d9a43de3b503e2f2d56c34752cd7f  ./bin/darwin/x
 61a45b2e6c881ab146ecfe13247a34aba19cdc10fcfdac7452da90df976eac0d  ./bin/linux/x64/secret-share-combine
 e2bbc1ba5739162523dd5618d14aaec21d8bc4b3579ede803222d6847b4c7913  ./bin/linux/x64/secret-share-split
 4bbdf8ef006ae951c3c28650eb2a3bb9983865429299898534be70089c9d4dc7  ./superbacked-os-utilities/sedutil-cli
-52cd730b40f1f709d37192c68de0bb5de3864e4681f24ed71e8f6e10a0340bbd  ./superbacked-os/superbacked-os-amd64-24.04.3.img
+865f9ac4d830adabec9bf6d51ed63c8ea34859c4cec618912250153f3770c603  ./superbacked-os/superbacked-os-amd64-24.04.3.img
 8f64031df3352982470ab63628ca70f9587da159465bfe2f01d6f15498d246d8  ./superbacked-os/superbacked-os-arm64-raspi-24.04.3.img
