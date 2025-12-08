@@ -16,6 +16,8 @@ if [ "$answer" = "y" ]; then
 
   npm run lint
 
+  npm run prebuild
+
   npm run build
 
   for file in dist/*.AppImage; do

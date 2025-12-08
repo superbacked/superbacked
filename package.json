@@ -6,13 +6,17 @@
   "main": ".webpack/main",
   "scripts": {
     "code": "export ENV=development && electron-forge start",
-    "build": "export ENV=production && electron-forge make && APPLE_KEYCHAIN_PROFILE=superbacked-notarytool electron-builder --config ./builder.config.ts --linux --mac",
-    "build:staging": "export ENV=production STAGING=true && electron-forge make && electron-builder --config ./builder.config.ts --mac",
+    "lint": "eslint --ext .ts,.tsx .",
+    "prebuild": "export ENV=production && electron-forge make",
+    "build": "npm run build:darwin:arm64 && npm run build:darwin:x64 && npm run build:linux:arm64 && npm run build:linux:x64",
+    "build:darwin:arm64": "APPLE_KEYCHAIN_PROFILE=superbacked-notarytool electron-builder --config ./builder.config.ts --mac --arm64",
+    "build:darwin:x64": "APPLE_KEYCHAIN_PROFILE=superbacked-notarytool electron-builder --config ./builder.config.ts --mac --x64",
+    "build:linux:arm64": "electron-builder --config ./builder.config.ts --linux --arm64",
+    "build:linux:x64": "electron-builder --config ./builder.config.ts --linux --x64",
+    "package": "./package.sh",
     "sign-dependencies": "find ./{bin,superbacked-os/*.img,superbacked-os-utilities/sedutil-cli} -type f -print0 | sort -z | xargs -0 shasum --algorithm 256 > SHA256SUMS && gpg --armor --detach-sig --output SHA256SUMS.asc SHA256SUMS",
     "sign-release": "cd dist && find . -name 'superbacked-*' -type f -print0 | sort -z | xargs -0 shasum --algorithm 256 > SHA256SUMS && gpg --armor --detach-sig --output SHA256SUMS.asc SHA256SUMS && cd -",
-    "lint": "eslint --ext .ts,.tsx .",
-    "ncu": "ncu --reject @vercel/webpack-asset-relocator-loader --target minor --upgrade",
-    "package": "./package.sh"
+    "ncu": "ncu --reject @vercel/webpack-asset-relocator-loader --target minor --upgrade"
   },
   "author": {
     "name": "Sun Knudsen",

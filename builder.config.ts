@@ -1,8 +1,16 @@
 import { Configuration } from "electron-builder"
 
+const platform = process.platform
+const arch = process.arch
+
+const appPath =
+  platform === "darwin"
+    ? `./out/Superbacked-${platform}-${arch}/Superbacked.app/Contents/Resources/app`
+    : `./out/Superbacked-${platform}-${arch}/resources/app`
+
 const files = [
   {
-    from: "./out/Superbacked-darwin-arm64/Superbacked.app/Contents/Resources/app",
+    from: appPath,
     to: ".",
   },
   { from: "./wordlists", to: "./wordlists" },
@@ -25,10 +33,7 @@ const config: Configuration = {
   },
   linux: {
     files: [{ from: "./bin/linux", to: "./bin/linux" }],
-    target: {
-      arch: ["arm64", "x64"],
-      target: "AppImage",
-    },
+    target: "AppImage",
   },
   mac: {
     entitlements: "build/entitlements.mac.plist",
@@ -40,17 +45,8 @@ const config: Configuration = {
     ],
     hardenedRuntime: true,
     // Create “App Manager” API key using https://appstoreconnect.apple.com/access/integrations/api and run `xcrun notarytool store-credentials superbacked-notarytool` to create credentials
-    notarize: process.env.STAGING !== "true",
-    target: [
-      {
-        arch: "arm64",
-        target: "dmg",
-      },
-      {
-        arch: "x64",
-        target: "dmg",
-      },
-    ],
+    notarize: process.env.SKIP_NOTORIZATION !== "true",
+    target: "dmg",
   },
 }
 
