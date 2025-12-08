@@ -4,7 +4,6 @@ import {
   desktopCapturer,
   ipcMain,
   nativeTheme,
-  screen,
   session,
   WebFrameMain,
 } from "electron"
@@ -122,16 +121,15 @@ export const createWindow = async (): Promise<BrowserWindow> => {
   return new Promise((resolve, reject) => {
     const windowWidth = 800
     const windowHeight = 600
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    const x = Math.floor((width - windowWidth) / 2)
-    const y = Math.floor((height - windowHeight) / 2)
     const mainWindow = new BrowserWindow({
       backgroundColor: shouldUseDarkColors() === true ? "#1c1b24" : "#ffffff",
       width: windowWidth,
       height: windowHeight,
       minWidth: windowWidth,
       minHeight: windowHeight,
+      show: false,
       titleBarStyle: process.platform === "darwin" ? "hidden" : "default",
+      useContentSize: true,
       webPreferences: {
         contextIsolation: true, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
         nodeIntegration: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
@@ -139,16 +137,16 @@ export const createWindow = async (): Promise<BrowserWindow> => {
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         sandbox: true,
       },
-      show: false,
-      x: x,
-      y: y,
     })
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY).catch((error) => {
       reject(error)
     })
     mainWindow.once("ready-to-show", () => {
-      resolve(mainWindow)
-      mainWindow.show()
+      // Timeout required to wait for OS launch animation to complete before showing window
+      setTimeout(() => {
+        mainWindow.show()
+        resolve(mainWindow)
+      }, 300)
     })
     mainWindow.on("enter-full-screen", () => {
       mainWindow.webContents.send("window:enteredFullScreen")
