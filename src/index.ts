@@ -141,12 +141,9 @@ export const createWindow = async (): Promise<BrowserWindow> => {
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY).catch((error) => {
       reject(error)
     })
-    mainWindow.once("ready-to-show", () => {
-      // Timeout required to wait for OS launch animation to complete before showing window
-      setTimeout(() => {
-        mainWindow.show()
-        resolve(mainWindow)
-      }, 300)
+    mainWindow.webContents.once("did-finish-load", () => {
+      mainWindow.show()
+      resolve(mainWindow)
     })
     mainWindow.on("enter-full-screen", () => {
       mainWindow.webContents.send("window:enteredFullScreen")
