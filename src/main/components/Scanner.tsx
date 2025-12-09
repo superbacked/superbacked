@@ -20,7 +20,6 @@ import {
   useCallback,
   useImperativeHandle,
   forwardRef,
-  useMemo,
 } from "react"
 import { useTranslation } from "react-i18next"
 import {
@@ -35,6 +34,7 @@ import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
 import { CustomDesktopCapturerSource } from "@/src/index"
 import ErrorModal from "@/src/main/components/ErrorModal"
 import confirmationSound from "@/src/main/confirmation.wav"
+import { useDebounce } from "@/src/main/utilities/debounce"
 
 const audio = new Audio(confirmationSound)
 
@@ -233,10 +233,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     }
   }, [])
 
-  const zbarInstalled = useMemo(async () => {
-    return await window.api.zbarInstalled()
-  }, [])
-
   const compute = useCallback(
     async (imageData?: ImageData) => {
       computingRef.current = true
@@ -293,13 +289,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         const barcodeDetector = new BarcodeDetector({ formats: ["qr_code"] })
         const detectedBarcodes = await barcodeDetector.detect(imageData)
         code = detectedBarcodes[0]?.rawValue ?? null
-      } else if (await zbarInstalled) {
-        // Use zbar when available (see https://github.com/mchehab/zbar)
-        code = await window.api.zbarDecode({
-          width: imageData.width,
-          height: imageData.height,
-          data: Array.from(imageData.data),
-        })
       } else {
         // Use qr as fallback (see https://github.com/paulmillr/qr)
         try {
@@ -320,8 +309,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       }
       computingRef.current = false
     },
-    [zbarInstalled, autoBeep, autoStop, stop]
+    [autoBeep, autoStop, stop]
   )
+
+  const debouncedCompute = useDebounce(compute, 100)
 
   const capture = useCallback(async () => {
     try {
@@ -384,7 +375,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         videoRef.current.ontimeupdate = async () => {
           clearTimeout(metadataTimeout)
           if (computingRef.current === false) {
-            await compute()
+            await debouncedCompute()
           }
         }
       }
@@ -424,7 +415,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       }
       setShowError(true)
     }
-  }, [updateDevices, stop, compute])
+  }, [updateDevices, stop, debouncedCompute])
 
   const start = useCallback(() => {
     if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {

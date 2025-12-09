@@ -26,10 +26,6 @@ import {
 } from "@/src/utilities/print"
 import save from "@/src/utilities/save"
 import { generateToken } from "@/src/utilities/totp"
-import {
-  decode as zbarDecode,
-  installed as zbarInstalled,
-} from "@/src/utilities/zbarimg"
 
 export type InsertType = "mnemonic" | "passphrase"
 
@@ -72,8 +68,6 @@ export interface Api {
   generateToken: typeof generateToken
   restore: typeof restore
   restoreReset: typeof restoreReset
-  zbarDecode: typeof zbarDecode
-  zbarInstalled: typeof zbarInstalled
 }
 
 const api: Api = {
@@ -255,17 +249,6 @@ const api: Api = {
   },
   restoreReset: async (...args) => {
     await ipcRenderer.invoke("restoreReset", ...args)
-  },
-  zbarDecode: async (...args) => {
-    const result: string = await ipcRenderer.invoke("zbarimg:decode", ...args)
-    return result
-  },
-  zbarInstalled: async (...args) => {
-    const result: boolean = await ipcRenderer.invoke(
-      "zbarimg:installed",
-      ...args
-    )
-    return result
   },
 }
 

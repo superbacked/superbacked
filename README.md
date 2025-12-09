@@ -39,7 +39,7 @@ Copyright (c) Superbacked, Inc. — All rights reserved
 ### Step 2: install dependencies
 
 ```console
-$ sudo apt install --yes libfuse2 zbar-tools
+$ sudo apt install --yes libfuse2
 ```
 
 ### Step 3: right-click `.AppImage` file and select “Run as a program”

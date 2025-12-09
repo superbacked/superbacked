@@ -33,7 +33,7 @@ sudo add-apt-repository --yes universe
 
 printf "%s\n" "Installing dependencies…"
 
-sudo apt install --yes curl libfuse2 overlayroot zbar-tools
+sudo apt install --yes curl libfuse2 overlayroot
 
 printf "%s\n" "Configuring fstab…"
 

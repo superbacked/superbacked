@@ -43,10 +43,6 @@ import {
 } from "@/src/utilities/print"
 import save from "@/src/utilities/save"
 import { generateToken } from "@/src/utilities/totp"
-import {
-  decode as zbarDecode,
-  installed as zbarInstalled,
-} from "@/src/utilities/zbarimg"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -390,23 +386,6 @@ cli
         return generatePassphrase(...args)
       }
     )
-
-    ipcMain.handle(
-      "zbarimg:decode",
-      async (event, ...args: Parameters<typeof zbarDecode>) => {
-        if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-          throw new Error("Wrong sender")
-        }
-        return zbarDecode(...args)
-      }
-    )
-
-    ipcMain.handle("zbarimg:installed", async (event) => {
-      if (event.senderFrame && validateSender(event.senderFrame) !== true) {
-        throw new Error("Wrong sender")
-      }
-      return zbarInstalled()
-    })
 
     ipcMain.handle(
       "create",

@@ -44,7 +44,7 @@ sudo add-apt-repository --yes universe
 
 printf "%s\n" "Installing dependencies…"
 
-sudo apt install --yes curl libfuse2 overlayroot zbar-tools zlib1g-dev
+sudo apt install --yes curl libfuse2 overlayroot zlib1g-dev
 
 printf "%s\n" "Disabling Bluetooth and Wi-Fi…"
 
