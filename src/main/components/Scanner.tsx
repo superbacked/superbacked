@@ -297,7 +297,12 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           // QR code not found, continue scanning
         }
       }
-      if (canvas && code) {
+      if (
+        videoRef.current !== null &&
+        mediaStreamRef.current !== null &&
+        canvas &&
+        code
+      ) {
         imageDataUrlRef.current = canvas.toDataURL("image/png", 100)
         handleCodeRef.current(code)
         if (autoBeep) {
