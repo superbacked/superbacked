@@ -1,5 +1,5 @@
 #! /bin/bash
-# Used to update Superbacked OS
+# Used to provision Superbacked OS
 
 set -e
 
@@ -10,17 +10,31 @@ function detach()
 
 trap detach ERR INT
 
+printf "%s\n" "Creating block device nodes…"
+
+mknod /dev/loop0p1 b 259 1
 mknod /dev/loop0p2 b 259 2
 
-losetup --find --partscan /dist/$2
+printf "%s\n" "Attaching disk image to loop device…"
+
+losetup --find --partscan /dist/$1
+
+printf "%s\n" "Checking filesystem for inconsistencies…"
+
+fsck /dev/loop0p1
+fsck /dev/loop0p2
+
+printf "%s\n" "Mounting root partition…"
 
 mkdir -p /mnt/root
 
 mount /dev/loop0p2 /mnt/root
 
+printf "%s\n" "Provisioning Superbacked OS…"
+
 mkdir -p /mnt/root/home/superbacked/.local/superbacked
 
-cp /dist/$1 /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
+cp /dist/$2 /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
 chmod +x /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
 
 cp /dist/.icon-icns/icon.icns /mnt/root/home/superbacked/.local/superbacked/superbacked.icns
@@ -49,8 +63,14 @@ chown 1000:1000 /mnt/root/home/superbacked/.config/autostart/superbacked-autosta
 
 cp /superbacked-os-assets/superbacked.profile /mnt/root/etc/apparmor.d/superbacked.profile
 
+printf "%s\n" "Unmounting root partition…"
+
 umount /dev/loop0p2
 
+printf "%s\n" "Optimizing root partition…"
+
 zerofree /dev/loop0p2
+
+printf "%s\n" "Detaching loop device…"
 
 losetup --detach /dev/loop0

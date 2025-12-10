@@ -43,7 +43,7 @@ if [ "$answer" = "y" ]; then
 
   version=$(node --eval 'console.log(require("./package.json").version)')
 
-  printf "%s\n" "Building Superbacked OS (amd64)…"
+  printf "%s\n" "Building Superbacked OS…"
 
   cp \
     superbacked-os/superbacked-os-amd64-24.04.3.img \
@@ -56,12 +56,13 @@ if [ "$answer" = "y" ]; then
     --tty \
     --volume $(pwd)/dist:/dist \
     --volume $(pwd)/superbacked-os-assets:/superbacked-os-assets \
-    superbacked-os-packager:24.04 \
-    /root/provision-amd64.sh \
+    superbacked-os-docker:24.04 \
+    /root/provision-superbacked-os.sh \
+    superbacked-os-amd64-${version}.img \
     superbacked-x64-${version}.AppImage \
-    superbacked-os-amd64-${version}.img
+    > /dev/null
 
-  printf "%s\n" "Compressing Superbacked OS (amd64)…"
+  printf "%s\n" "Compressing Superbacked OS…"
 
   xz -1 --threads 4 dist/superbacked-os-amd64-${version}.img
 

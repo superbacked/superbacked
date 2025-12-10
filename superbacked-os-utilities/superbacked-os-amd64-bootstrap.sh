@@ -83,7 +83,7 @@ printf "%s\n" "Configuring overlayroot…"
 
 sudo sed --in-place 's/overlayroot=""/overlayroot="tmpfs"/g' /etc/overlayroot.conf
 
-printf "%s\n" "Disable networking…"
+printf "%s\n" "Disabling networking…"
 
 sudo systemctl enable nftables
 sudo systemctl start nftables
@@ -100,16 +100,16 @@ sudo nft add rule inet filter output oif lo accept
 
 sudo nft list ruleset | sudo tee /etc/nftables.conf
 
-printf "%s\n" "Disable sudo…"
+printf "%s\n" "Disabling sudo…"
 
 sudo deluser superbacked sudo
 
-printf "%s\n" "Clearing Bash history…"
+printf "%s\n" "Purging Bash history…"
 
 history -cw
 
-printf "%s\n" "Rebooting in 10 seconds…"
+printf "%s\n" "Shutting down in 10 seconds…"
 
 sleep 10
 
-systemctl reboot
+systemctl poweroff

@@ -1,5 +1,5 @@
-#! /bin/bash
-# Used to create optimized Superbacked OS images using Ubuntu for desktops
+#! /bin/sh
+# Used to create Superbacked OS images using macOS
 
 set -e
 set -o pipefail
@@ -12,52 +12,55 @@ if [ -z "$1" ] || [ "$1" = "--help" ]; then
   exit 0
 fi
 
+directory=$(pwd)
+
 name=$1
 
-if ! which zerofree > /dev/null 2>&1; then
-  printf "%s\n" "Installing zerofree…"
-  
-  sudo apt update
-  sudo apt install --yes zerofree
-fi
+diskutil list
 
-sudo fdisk --list
-
-printf "$bold%s$normal" "What disk do you wish to create image from (example: sda)? "
+printf "$bold%s$normal" "What disk do you wish to create image from (example: disk4)? "
 read -r disk
 
-printf "%s\n" "Unmounting partitions…"
+printf "$bold%s$normal" "What is the last volume to include in image (example: disk4s2)? "
+read -r volume
 
-if findmnt /dev/${disk}1; then
-  sudo umount /dev/${disk}1
-fi
+sudo diskutil unmountDisk /dev/$disk
 
-if findmnt /dev/${disk}2; then
-  sudo umount /dev/${disk}2
-fi
+offset=$(diskutil info /dev/${volume} | grep "Partition Offset" | awk '{print $3}')
+size=$(diskutil info /dev/${volume} | grep "Disk Size" | awk '{print $5}' | sed 's/(//')
 
-printf "%s\n" "Checking filesystem integrity…"
-
-sudo fsck /dev/${disk}1
-sudo fsck /dev/${disk}2
-
-printf "%s\n" "Optimizing ext4 partition…"
-sudo zerofree /dev/${disk}2
-
-block_size=$(sudo fdisk --list /dev/$disk | grep Units | awk '{print $(NF-1)}')
-
-end=$(sudo fdisk --list /dev/$disk | grep ${disk}2 | awk '{print $3}')
-
-count=$(echo "(($end * $block_size) / 1048576) + 1" | bc)
+count=$(echo "(($offset + $size) / 1048576) + 1" | bc)
 
 printf "%s\n" "${count}MiB will be copied"
 
 printf "$bold%s$normal" "Do you wish to proceed (y or n)? "
 read -r answer
-
 if [ "$answer" = "y" ]; then
   printf "%s\n" "Creating image…"
-  sudo dd bs=1M count=$count if=/dev/$disk  of=$(dirname "$0")/$name.img
+  sudo dd bs=1m count=$count if=/dev/r${disk} of=${directory}/superbacked-os/${name}.img
+  sudo chown $USER:staff ${directory}/superbacked-os/${name}.img
+else
+  exit 0
 fi
+
+printf "%s\n" "Starting Colima…"
+
+colima start \
+  --profile superbacked \
+  --cpu 4 \
+  --disk 100 \
+  --memory 8
+
+printf "%s\n" "Optimizing image…"
+
+docker run \
+  --interactive \
+  --privileged \
+  --rm \
+  --tty \
+  --volume ${directory}/superbacked-os:/superbacked-os \
+  superbacked-os-docker:24.04 \
+  /root/optimize-image.sh \
+  ${name}.img
 
 printf "%s\n" "Done"
