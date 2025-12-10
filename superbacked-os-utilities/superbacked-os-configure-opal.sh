@@ -5,7 +5,6 @@ set -e
 
 bold=$(tput bold)
 normal=$(tput sgr0)
-red=$(tput setaf 1)
 
 if [ "$1" = "--help" ]; then
   printf "%s\n" "Usage: superbacked-os-configure-opal.sh"
