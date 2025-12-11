@@ -104,12 +104,22 @@ export const compute = async (
   const devicePixelRatio = await blockWindow.webContents.executeJavaScript(
     "window.devicePixelRatio"
   )
-  const scale = 4 / devicePixelRatio
-  blockWindow.setSize(windowWidth * scale, windowHeight * scale)
-  blockWindow.webContents.send("dataChange", { ...data, scale: scale })
+  const scale = 4
+  const contentScale = scale / devicePixelRatio
+  blockWindow.setSize(
+    Math.ceil(windowWidth * contentScale),
+    Math.ceil(windowHeight * contentScale)
+  )
+  blockWindow.webContents.send("dataChange", { ...data, scale: contentScale })
   await readyIpcMessage(blockWindow)
   const image = await blockWindow.webContents.capturePage()
-  const jpg = image.toJPEG(100).toString("base64")
+  const cropped = image.crop({
+    x: 0,
+    y: 0,
+    width: windowWidth * scale,
+    height: windowHeight * scale,
+  })
+  const jpg = cropped.toJPEG(100).toString("base64")
   blockWindow.close()
   return {
     payload: payload,
