@@ -40,8 +40,17 @@ pipx install trezor yubikey-manager
 
 printf "%s\n" "Configuring udev rules…"
 
-sudo curl https://data.trezor.io/udev/51-trezor.rules --output /etc/udev/rules.d/51-trezor.rules
-sudo curl https://raw.githubusercontent.com/Yubico/libfido2/main/udev/70-u2f.rules --output /etc/udev/rules.d/70-u2f.rules
+sudo curl https://data.trezor.io/udev/51-trezor.rules \
+  --output /etc/udev/rules.d/51-trezor.rules
+sudo curl https://raw.githubusercontent.com/Yubico/libfido2/main/udev/70-u2f.rules \
+  --output /etc/udev/rules.d/70-u2f.rules
+
+printf "%s\n" "Configuring yubikey-prov.sh…"
+
+curl https://raw.githubusercontent.com/sunknudsen/yubikey-prov/main/yubikey-prov.sh \
+  --output /home/superbacked/.local/bin/yubikey-prov.sh
+
+chmod +x /home/superbacked/.local/bin/yubikey-prov.sh
 
 printf "%s\n" "Uninstalling extraneous software…"
 
