@@ -182,7 +182,7 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
         </Mark>
       </Popover.Target>
       <Popover.Dropdown sx={{ pointerEvents: "none" }}>
-        <Text size="sm" ta="center">
+        <Text size="sm" span ta="center">
           {props.dropdown}
         </Text>
       </Popover.Dropdown>
