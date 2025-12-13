@@ -275,8 +275,8 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const { t } = useTranslation()
   const scannerRef = useRef<ScannerRef>(null)
   const passphrasesRef = useRef<string[]>([])
-  const codeValueRef = useRef<string>(null)
-  const doneRef = useRef<boolean>(false)
+  const codeRef = useRef<string>(null)
+  const scannedCodesRef = useRef<Set<string>>(new Set())
   const [showPassphraseModal, setShowPassphraseModal] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [showScanNextBlockDialog, setShowScanNextBlockDialog] = useState(false)
@@ -289,20 +289,17 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     }
   }, [])
   const compute = async (beep: boolean) => {
-    let payload: null | Payload = null
+    const code = codeRef.current
+    if (!code) {
+      return
+    } else if (scannedCodesRef.current.has(code) === true) {
+      // Code already computed
+      return
+    }
+    let payload: Payload
     try {
-      if (codeValueRef.current) {
-        payload = JSON.parse(codeValueRef.current)
-      }
-      if (!payload) {
-        // Payload null
-        return
-      } else if (
-        !payload.salt ||
-        !payload.iv ||
-        !payload.headers ||
-        !payload.data
-      ) {
+      payload = JSON.parse(code)
+      if (!payload.salt || !payload.iv || !payload.headers || !payload.data) {
         // Payload not Superbacked-compatible
         return
       }
@@ -323,13 +320,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     }
     const result = await window.api.restore(passphrasesRef.current, payload)
     setUnlocking(false)
-    if (doneRef.current === true) {
-      // Payload already computed
-      return
-    }
     if (result.success === false) {
       if (result.error.match(/shares did not combine to a valid secret/i)) {
         scannerRef.current?.start()
+        scannedCodesRef.current.add(code)
         setShowScanNextBlockDialog(true)
         setShowPassphraseModal(false)
       } else {
@@ -338,8 +332,8 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         setShowPassphraseModal(true)
       }
     } else if (result.success === true) {
-      doneRef.current = true
       scannerRef.current?.stop()
+      scannedCodesRef.current.clear()
       setSecret(result.message.toString())
     }
   }
@@ -486,10 +480,8 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         <Scanner
           ref={scannerRef}
           handleCode={async (code) => {
-            if (doneRef.current === false) {
-              codeValueRef.current = code
-              await compute(true)
-            }
+            codeRef.current = code
+            await compute(true)
           }}
           autoBeep={false}
           autoStop={false}

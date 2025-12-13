@@ -24,7 +24,6 @@ import {
 import { useTranslation } from "react-i18next"
 import {
   DeviceDesktop as DeviceDesktopIcon,
-  Refresh as RefreshIcon,
   Settings as SettingsIcon,
   Video as VideoIcon,
   X as XIcon,
@@ -195,29 +194,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const [streaming, setStreaming] = useState(false)
   const { handleCode, autoBeep = true, autoStop = true } = props
 
-  const updateDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
-    const enumerateDevices = await navigator.mediaDevices.enumerateDevices()
-    const videoInputDevices: MediaDeviceInfo[] = []
-    for (const enumerateDevice of enumerateDevices) {
-      if (enumerateDevice.kind === "videoinput") {
-        videoInputDevices.push(enumerateDevice)
-      }
-    }
-    setDevices(videoInputDevices)
-    return videoInputDevices
-  }, [])
-
-  const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
-    const result = await window.api.getDesktopCapturerSources()
-    if (result.success === false) {
-      setError("components.scanner.pleaseAllowScreenRecording")
-      setShowError(true)
-      return []
-    }
-    setSources(result.customDesktopCapturerSources)
-    return result.customDesktopCapturerSources
-  }
-
   const stop = useCallback(() => {
     setStreaming(false)
     if (mediaStreamRef.current) {
@@ -318,6 +294,18 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   )
 
   const debouncedCompute = useDebounce(compute, 100)
+
+  const updateDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
+    const enumerateDevices = await navigator.mediaDevices.enumerateDevices()
+    const videoInputDevices: MediaDeviceInfo[] = []
+    for (const enumerateDevice of enumerateDevices) {
+      if (enumerateDevice.kind === "videoinput") {
+        videoInputDevices.push(enumerateDevice)
+      }
+    }
+    setDevices(videoInputDevices)
+    return videoInputDevices
+  }, [])
 
   const capture = useCallback(async () => {
     try {
@@ -429,6 +417,29 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     }
   }, [capture])
 
+  const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
+    const result = await window.api.getDesktopCapturerSources()
+    if (result.success === false) {
+      setError("components.scanner.pleaseAllowScreenRecording")
+      setShowError(true)
+      return []
+    }
+    setSources(result.customDesktopCapturerSources)
+    // On Linux, set source to selected window
+    // See https://www.electronjs.org/docs/latest/api/desktop-capturer#caveats
+    const sourceId = result.customDesktopCapturerSources[0]?.id
+    if (window.api.platform === "linux" && sourceId) {
+      sourceRef.current = {
+        id: sourceId,
+        type: "source",
+      }
+      setSourceValue(sourceId)
+      setShowSourceSettings(false)
+      start()
+    }
+    return result.customDesktopCapturerSources
+  }
+
   const beep = useCallback(() => {
     void play()
   }, [])
@@ -484,18 +495,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             label={t("components.scanner.device")}
             maxDropdownHeight={240}
             placeholder={`${t("components.scanner.selectDevice")}…`}
-            rightSection={
-              <ActionIcon
-                color="pink"
-                onClick={() => {
-                  void updateDevices()
-                }}
-                variant="transparent"
-              >
-                <RefreshIcon size={16} />
-              </ActionIcon>
-            }
-            rightSectionPointerEvents="auto"
             value={
               (deviceValue ?? sourceRef.current?.type === "device")
                 ? sourceRef.current?.id
@@ -514,9 +513,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             }}
             onDropdownClose={() => setDeviceDropdownOpened(false)}
             onDropdownOpen={async () => {
-              if (devices.length === 0) {
-                await updateDevices()
-              }
+              await updateDevices()
               setDeviceDropdownOpened(true)
             }}
           />
@@ -538,18 +535,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
                 <Text>{option.label}</Text>
               </Group>
             )}
-            rightSection={
-              <ActionIcon
-                color="pink"
-                onClick={() => {
-                  void updateSources()
-                }}
-                variant="transparent"
-              >
-                <RefreshIcon size={16} />
-              </ActionIcon>
-            }
-            rightSectionPointerEvents="auto"
             value={
               (sourceValue ?? sourceRef.current?.type === "source")
                 ? sourceRef.current?.id
@@ -568,10 +553,11 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             }}
             onDropdownClose={() => setSourceDropdownOpened(false)}
             onDropdownOpen={async () => {
-              if (sources.length === 0) {
-                await updateSources()
+              await updateSources()
+              // On Linux, source is selected automatically
+              if (window.api.platform !== "linux") {
+                setSourceDropdownOpened(true)
               }
-              setSourceDropdownOpened(true)
             }}
           />
         </Container>
