@@ -2,12 +2,16 @@ import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron"
 
 import { Data } from "@/src/create"
 import { Locale } from "@/src/i18n"
+import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 
 export interface BlockApi {
   locale: () => Locale
   platform: string
   dataChange: (callback: (data: Data) => void) => () => void
   ready: () => void
+  pdfToJpeg: (
+    callback: (pdfBuffer: ArrayBuffer) => Promise<PdfToJpegResult>
+  ) => () => void
 }
 
 const blockApi: BlockApi = {
@@ -26,6 +30,21 @@ const blockApi: BlockApi = {
   },
   ready: () => {
     ipcRenderer.send("ready")
+  },
+  pdfToJpeg: (
+    callback: (pdfBuffer: ArrayBuffer) => Promise<PdfToJpegResult>
+  ) => {
+    const listener = async (
+      _event: IpcRendererEvent,
+      pdfBuffer: ArrayBuffer
+    ) => {
+      const jpeg = await callback(pdfBuffer)
+      ipcRenderer.send("jpeg", jpeg)
+    }
+    ipcRenderer.on("pdfToJpeg", listener)
+    return () => {
+      ipcRenderer.removeListener("pdfToJpeg", listener)
+    }
   },
 }
 

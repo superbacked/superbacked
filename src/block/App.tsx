@@ -11,6 +11,7 @@ import Logo from "@/src/block/logo.svg"
 import { BlockApi } from "@/src/block/preload"
 import { Data } from "@/src/create"
 import { setLocale } from "@/src/i18n"
+import pdfToJpeg from "@/src/shared/utilities/pdfToJpeg"
 import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
 import "@mantine/core/styles.css"
@@ -23,11 +24,7 @@ declare global {
   }
 }
 
-interface ContainerProps {
-  scale: Data["scale"]
-}
-
-const Container = styled.div<ContainerProps>`
+const Container = styled.div`
   position: absolute;
   top: 0;
   left: 0;
@@ -38,7 +35,6 @@ const Container = styled.div<ContainerProps>`
   flex-direction: column;
   justify-content: center;
   padding: 0.5in;
-  zoom: ${(props) => props.scale};
 `
 
 const Hash = styled.div`
@@ -82,9 +78,14 @@ const App = () => {
   const { t } = useTranslation()
   const [data, setData] = useState<Data | null>(null)
   useEffect(() => {
-    const removeListener = window.blockApi.dataChange(setData)
+    const dataChangeListener = window.blockApi.dataChange(setData)
+    const pdfToJpegListener = window.blockApi.pdfToJpeg(async (pdfBuffer) => {
+      const jpeg = await pdfToJpeg(pdfBuffer)
+      return jpeg
+    })
     return () => {
-      removeListener()
+      dataChangeListener()
+      pdfToJpegListener()
     }
   }, [])
   useEffect(() => {
@@ -149,7 +150,7 @@ const App = () => {
               }
             `}
           />
-          <Container scale={data.scale}>
+          <Container>
             <QRCode value={data.payloadText} />
             <Hash>
               {data.shortHash}

@@ -81,6 +81,7 @@
     "commander": "^14.0.2",
     "electron-store": "^8.2.0",
     "leven": "^4.1.0",
+    "pdfjs-dist": "^4.10.38",
     "qr": "^0.5.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

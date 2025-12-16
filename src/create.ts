@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain } from "electron"
 
 import { Secret as BlockcryptSecret, encrypt } from "blockcrypt"
 
+import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 import argon2 from "@/src/utilities/argon2"
 import { concatenatePassphrases, hash, shortHash } from "@/src/utilities/crypto"
 import { generateShares } from "@/src/utilities/shamir"
@@ -45,7 +46,6 @@ export interface Data {
   payloadText: string
   shortHash: string
   label?: string
-  scale: number
 }
 
 export type Result =
@@ -54,13 +54,27 @@ export type Result =
 
 const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
   return new Promise((resolve) => {
-    const handler = (event: Electron.IpcMainEvent) => {
+    const listener = (event: Electron.IpcMainEvent) => {
       if (event.sender === blockWindow.webContents) {
-        ipcMain.removeListener("ready", handler)
+        ipcMain.removeListener("ready", listener)
         resolve()
       }
     }
-    ipcMain.on("ready", handler)
+    ipcMain.on("ready", listener)
+  })
+}
+
+const jpegIpcMessage = async (
+  blockWindow: BrowserWindow
+): Promise<PdfToJpegResult> => {
+  return new Promise((resolve) => {
+    const listener = (event: Electron.IpcMainEvent, jpeg: PdfToJpegResult) => {
+      if (event.sender === blockWindow.webContents) {
+        ipcMain.removeListener("jpeg", listener)
+        resolve(jpeg)
+      }
+    }
+    ipcMain.on("jpeg", listener)
   })
 }
 
@@ -75,7 +89,6 @@ export const compute = async (
     payloadText: payloadText,
     shortHash: payloadShortHash,
     label: label,
-    scale: 1,
   }
   const windowWidth = 384
   const windowHeight = 576
@@ -83,6 +96,7 @@ export const compute = async (
     width: windowWidth,
     height: windowHeight,
     darkTheme: false,
+    useContentSize: true,
     webPreferences: {
       contextIsolation: true, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
       nodeIntegration: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
@@ -101,32 +115,15 @@ export const compute = async (
     preferCSSPageSize: true,
   })
   const pdf = pdfBuffer.toString("base64")
-  const devicePixelRatio = await blockWindow.webContents.executeJavaScript(
-    "window.devicePixelRatio"
-  )
-  const scale = 4
-  const contentScale = scale / devicePixelRatio
-  blockWindow.setSize(
-    Math.ceil(windowWidth * contentScale),
-    Math.ceil(windowHeight * contentScale)
-  )
-  blockWindow.webContents.send("dataChange", { ...data, scale: contentScale })
-  await readyIpcMessage(blockWindow)
-  const image = await blockWindow.webContents.capturePage()
-  const cropped = image.crop({
-    x: 0,
-    y: 0,
-    width: windowWidth * scale,
-    height: windowHeight * scale,
-  })
-  const jpg = cropped.toJPEG(100).toString("base64")
+  blockWindow.webContents.send("pdfToJpeg", pdfBuffer)
+  const jpeg = await jpegIpcMessage(blockWindow)
   blockWindow.close()
   return {
     payload: payload,
     hash: payloadHash,
     shortHash: payloadShortHash,
     label: label,
-    jpg: jpg,
+    jpg: jpeg.dataUrl.replace("data:image/jpeg;base64,", ""),
     pdf: pdf,
     copies: 1,
   }
