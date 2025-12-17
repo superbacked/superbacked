@@ -73,6 +73,7 @@ export default defineConfig([
           },
         },
       ],
+      "sort-imports": ["error", { ignoreDeclarationSort: true }],
       "import/no-duplicates": "error",
       "import/no-useless-path-segments": "error",
 

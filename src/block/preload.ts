@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron"
+import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron"
 
 import { Data } from "@/src/create"
 import { Locale } from "@/src/i18n"

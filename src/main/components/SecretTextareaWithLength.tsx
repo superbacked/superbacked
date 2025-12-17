@@ -5,11 +5,11 @@ import {
   Mark,
   Popover,
   Progress,
-  rgba,
   Space,
   Text,
   Textarea,
   TextareaProps,
+  rgba,
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
@@ -27,10 +27,10 @@ import {
 import { useTranslation } from "react-i18next"
 
 import { DataLengths } from "@/src/main/routes/Create"
-import { extract, ExtractionType } from "@/src/main/utilities/regexp"
+import { ExtractionType, extract } from "@/src/main/utilities/regexp"
 import {
-  captureSelection,
   SelectionWithElement,
+  captureSelection,
 } from "@/src/main/utilities/selection"
 
 interface SecretTextareaProps extends TextareaProps {

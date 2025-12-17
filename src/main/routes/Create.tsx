@@ -2,13 +2,13 @@ import styled from "@emotion/styled"
 import {
   Button,
   ComboboxItem,
-  darken,
   Dialog,
   Group,
   Modal,
   Select,
   Space,
   TextInput,
+  darken,
   rgba,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
@@ -27,7 +27,7 @@ import { useNavigate } from "react-router-dom"
 import { Printer as PrinterIcon } from "tabler-icons-react"
 
 import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
-import { Qr, Secret, Result } from "@/src/create"
+import { Qr, Result, Secret } from "@/src/create"
 import ErrorModal from "@/src/main/components/ErrorModal"
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
@@ -35,8 +35,8 @@ import SecretTextareaWithLength from "@/src/main/components/SecretTextareaWithLe
 import {
   SelectionWithElement,
   captureSelection,
-  restoreSelection,
   insertAtCursor,
+  restoreSelection,
 } from "@/src/main/utilities/selection"
 import zxcvbn from "@/src/main/utilities/zxcvbn"
 

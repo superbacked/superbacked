@@ -14,12 +14,12 @@ import {
 import decodeQR from "qr/decode.js"
 import {
   Fragment,
+  forwardRef,
+  useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
-  useCallback,
-  useImperativeHandle,
-  forwardRef,
 } from "react"
 import { useTranslation } from "react-i18next"
 import {

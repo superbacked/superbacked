@@ -1,4 +1,4 @@
-import { useState, useCallback, Fragment } from "react"
+import { Fragment, useCallback, useState } from "react"
 
 import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
 import { Qr } from "@/src/create"

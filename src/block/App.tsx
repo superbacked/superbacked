@@ -1,7 +1,7 @@
-import { css, Global } from "@emotion/react"
+import { Global, css } from "@emotion/react"
 import styled from "@emotion/styled"
 import { MantineProvider } from "@mantine/core"
-import { emotionTransform, MantineEmotionProvider } from "@mantine/emotion"
+import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 

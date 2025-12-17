@@ -1,17 +1,17 @@
 import styled from "@emotion/styled"
 import {
   Button,
-  darken,
   Dialog,
   Mark,
   Modal,
   PasswordInput,
   Popover,
   PopoverProps,
-  rgba,
   RingProgress,
   Space,
   Text,
+  darken,
+  rgba,
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
@@ -21,10 +21,10 @@ import {
   Fragment,
   FunctionComponent,
   ReactNode,
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
 } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -33,9 +33,9 @@ import { Eye as EyeIcon, EyeOff as EyeOffIcon } from "tabler-icons-react"
 import { Payload } from "@/src/create"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import {
-  extract,
   Bip39MnemonicResult,
   TotpUriResult,
+  extract,
 } from "@/src/main/utilities/regexp"
 
 const Container = styled.div`

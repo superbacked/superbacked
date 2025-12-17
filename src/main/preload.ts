@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from "electron"
+import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron"
 
 import { getDataLength } from "blockcrypt"
 
@@ -8,7 +8,7 @@ import { Locale } from "@/src/i18n"
 import { GetDesktopCapturerSourcesResult } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
 import openExternalUrl from "@/src/openExternalUrl"
-import restore, { restoreReset, Result as RestoreResult } from "@/src/restore"
+import restore, { Result as RestoreResult, restoreReset } from "@/src/restore"
 import {
   generateMnemonic,
   validateMnemonic,
@@ -17,12 +17,12 @@ import {
 import { ColorScheme } from "@/src/utilities/config"
 import generatePassphrase from "@/src/utilities/passphrase"
 import {
-  getDefaultPrinter,
-  getPrinters,
-  getPrinterStatus,
-  print,
   Printer,
   PrinterStatus,
+  getDefaultPrinter,
+  getPrinterStatus,
+  getPrinters,
+  print,
 } from "@/src/utilities/print"
 import save from "@/src/utilities/save"
 import { generateToken } from "@/src/utilities/totp"

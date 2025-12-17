@@ -1,4 +1,4 @@
-import { Modal, MantineSize } from "@mantine/core"
+import { MantineSize, Modal } from "@mantine/core"
 import { FunctionComponent } from "react"
 import { useTranslation } from "react-i18next"
 

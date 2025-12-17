@@ -2,10 +2,10 @@ import styled from "@emotion/styled"
 import {
   Anchor,
   Button,
-  darken,
   Space,
   Switch,
   Text,
+  darken,
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"

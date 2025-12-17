@@ -1,4 +1,4 @@
-import { compute, Payload, Qr } from "@/src/create"
+import { Payload, Qr, compute } from "@/src/create"
 
 export type Result =
   | { error: string; success: false }

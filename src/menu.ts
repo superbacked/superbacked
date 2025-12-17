@@ -1,9 +1,9 @@
 import {
-  app,
   BrowserWindow,
-  ipcMain,
   Menu,
   MenuItemConstructorOptions,
+  app,
+  ipcMain,
   systemPreferences,
 } from "electron"
 

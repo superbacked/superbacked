@@ -1,22 +1,22 @@
 import {
-  app,
   BrowserWindow,
+  WebFrameMain,
+  app,
   desktopCapturer,
   ipcMain,
   nativeTheme,
   session,
-  WebFrameMain,
 } from "electron"
 import { URL } from "url"
 
 import { getDataLength } from "blockcrypt"
-import { program as cli, Argument as CommanderArgument } from "commander"
+import { Argument as CommanderArgument, program as cli } from "commander"
 
 import create from "@/src/create"
 import duplicate from "@/src/duplicate"
 import {
-  defaultLocale,
   Locale,
+  defaultLocale,
   locales,
   setLocale as setLocaleI18n,
 } from "@/src/i18n"
@@ -37,8 +37,8 @@ import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import generatePassphrase from "@/src/utilities/passphrase"
 import {
   getDefaultPrinter,
-  getPrinters,
   getPrinterStatus,
+  getPrinters,
   print,
 } from "@/src/utilities/print"
 import save from "@/src/utilities/save"

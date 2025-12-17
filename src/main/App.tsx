@@ -1,6 +1,6 @@
-import { css, Global } from "@emotion/react"
+import { Global, css } from "@emotion/react"
 import { MantineProvider } from "@mantine/core"
-import { emotionTransform, MantineEmotionProvider } from "@mantine/emotion"
+import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
 import { Fragment, useEffect, useState } from "react"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 
