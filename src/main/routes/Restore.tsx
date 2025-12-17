@@ -307,9 +307,6 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       // Payload not valid JSON
       return
     }
-    if (beep === true) {
-      scannerRef.current?.beep()
-    }
     if (
       (props.importMode === true || props.exportMode === true) &&
       props.handlePayload
@@ -320,6 +317,9 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     }
     const result = await window.api.restore(passphrasesRef.current, payload)
     setUnlocking(false)
+    if (beep === true) {
+      scannerRef.current?.beep()
+    }
     if (result.success === false) {
       if (result.error.match(/shares did not combine to a valid secret/i)) {
         scannerRef.current?.start()
