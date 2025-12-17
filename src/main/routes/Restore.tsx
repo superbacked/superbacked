@@ -280,7 +280,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const scannedCodesRef = useRef<Set<string>>(new Set())
   const [showPassphraseModal, setShowPassphraseModal] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
-  const [showScanNextBlockDialog, setShowScanNextBlockDialog] = useState(false)
+  const [showScanNextBlockBadge, setShowScanNextBlockBadge] = useState(false)
   const [secret, setSecret] = useState<null | string>(null)
   const [showCopied, setShowCopied] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
@@ -328,11 +328,11 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       if (result.error.match(/shares did not combine to a valid secret/i)) {
         scannerRef.current?.start()
         scannedCodesRef.current.add(code)
-        setShowScanNextBlockDialog(true)
+        setShowScanNextBlockBadge(true)
         setShowPassphraseModal(false)
       } else {
         scannerRef.current?.stop()
-        setShowScanNextBlockDialog(false)
+        setShowScanNextBlockBadge(false)
         setShowPassphraseModal(true)
       }
     } else if (result.success === true) {
@@ -489,19 +489,13 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           }}
           autoBeep={false}
           autoStop={false}
+          dropzone={true}
+          badge={
+            showScanNextBlockBadge === true
+              ? t("routes.restore.scanOrDragNextBlock")
+              : t("routes.restore.scanOrDragBlock")
+          }
         />
-        {showScanNextBlockDialog === true ? (
-          <Dialog
-            key="scan-next-block-dialog"
-            opened={true}
-            withCloseButton
-            onClose={() => setShowScanNextBlockDialog(false)}
-            radius="sm"
-            size="md"
-          >
-            {t("routes.restore.scanNextBlock")}…
-          </Dialog>
-        ) : null}
         {showPassphraseModal === true ? (
           <PasswordModal
             onClose={() => {

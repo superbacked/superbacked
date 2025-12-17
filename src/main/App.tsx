@@ -22,6 +22,7 @@ import { ColorScheme } from "@/src/utilities/config"
 import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
 import "@mantine/core/styles.css"
+import "@mantine/dropzone/styles.css"
 
 await setLocale(window.api.locale())
 

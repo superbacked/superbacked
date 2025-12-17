@@ -88,6 +88,7 @@
       "cameraDoesNotMeetMinimumRequirementOf720p": "La caméra ne répond pas à l’exigence minimale de 720p",
       "pleaseAllowScreenRecording": "Veuillez autoriser l’enregistrement de l’écran",
       "couldNotRunScanner": "Impossible d’exécuter le scanner",
+      "couldNotHandleFile": "Impossible de traiter le fichier",
       "device": "Appareil",
       "selectDevice": "Sélectionner l’appareil",
       "source": "Source",
@@ -152,7 +153,8 @@
       "enterPassphrase": "Entrer la phrase de passe",
       "unlock": "Déverrouiller",
       "unlocking": "Déverrouillage en cours",
-      "scanNextBlock": "Scanner le bloc suivant",
+      "scanOrDragBlock": "Scanner ou déposer le bloc",
+      "scanOrDragNextBlock": "Scanner or déposer le bloc suivant",
       "showSecret": "Afficher le secret"
     }
   }

@@ -2,6 +2,7 @@ import styled from "@emotion/styled"
 import {
   ActionIcon,
   Avatar,
+  Badge,
   ComboboxItem,
   Dialog,
   Group,
@@ -31,9 +32,11 @@ import {
 
 import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
 import { CustomDesktopCapturerSource } from "@/src/index"
+import Dropzone from "@/src/main/components/Dropzone"
 import ErrorModal from "@/src/main/components/ErrorModal"
 import confirmationSound from "@/src/main/confirmation.wav"
 import { useDebounce } from "@/src/main/utilities/debounce"
+import { fileToImageData } from "@/src/main/utilities/fileToImageData"
 
 const audio = new Audio(confirmationSound)
 
@@ -103,6 +106,17 @@ const Overlay = styled.div`
   box-shadow: 0 0 0 100vh rgba(0, 0, 0, 0.25);
 `
 
+const BadgeContainer = styled.div`
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+`
+
 interface ImageProps {
   radius?: number
 }
@@ -140,6 +154,8 @@ interface ScannerProps {
   handleCode: (code: string, imageDataUrl?: string) => void
   autoBeep?: boolean
   autoStop?: boolean
+  dropzone?: boolean
+  badge?: string
 }
 
 class NoDeviceError extends Error {
@@ -152,9 +168,11 @@ class NoDeviceError extends Error {
 /**
  * Scanner component for detecting QR codes using camera or screen capture
  *
- * @param handleCode - Callback function when QR code is detected (required)
- * @param autoBeep - Whether to play confirmation sound (optional, defaults to true)
- * @param autoStop - Whether to automatically stop scanning after detecting code (optional, defaults to true)
+ * @param handleCode - Callback function that handles detected codes (required)
+ * @param autoBeep   - Automatically play confirmation sound when code is detected (optional, defaults to true)
+ * @param autoStop.  - Automatically stop scanning once code is detected (optional, defaults to true)
+ * @param dropzone   - Enable dropzone (optional, defaults to false)
+ * @param badge      - Displayed badge (optional)
  *
  * @example
  * ```tsx
@@ -189,10 +207,16 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     | "components.scanner.cameraDoesNotMeetMinimumRequirementOf720p"
     | "components.scanner.pleaseAllowScreenRecording"
     | "components.scanner.couldNotRunScanner"
+    | "components.scanner.couldNotHandleFile"
   >>(null)
   const [showError, setShowError] = useState(false)
   const [streaming, setStreaming] = useState(false)
-  const { handleCode, autoBeep = true, autoStop = true } = props
+  const {
+    handleCode,
+    autoBeep = true,
+    autoStop = true,
+    dropzone = false,
+  } = props
 
   const stop = useCallback(() => {
     setStreaming(false)
@@ -250,6 +274,15 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         const y = -(height - canvas.height) / 2
         canvas2d.drawImage(videoRef.current, x, y, width, height)
         imageData = canvas2d.getImageData(x, y, width, height)
+      } else if (imageData) {
+        canvas = document.createElement("canvas")
+        canvas.width = imageData.width
+        canvas.height = imageData.height
+        const canvas2d = canvas.getContext("2d")
+        if (!canvas2d) {
+          throw new Error("Could not get canvas context")
+        }
+        canvas2d.putImageData(imageData, 0, 0)
       }
       if (!imageData) {
         // Wait for image data
@@ -278,7 +311,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         canvas &&
         code
       ) {
-        imageDataUrlRef.current = canvas.toDataURL("image/png", 100)
+        imageDataUrlRef.current = canvas.toDataURL("image/jpeg", 100)
         handleCodeRef.current(code)
         if (autoBeep) {
           void play()
@@ -587,6 +620,25 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   } else {
     return (
       <Fragment>
+        <Dropzone
+          accept={["application/pdf", "image/jpeg"]}
+          active={dropzone}
+          maxFiles={1}
+          maxSize={1 * 1024 ** 2} // 1 MB
+          onDrop={async (files) => {
+            const file = files[0]
+            if (!file) {
+              return
+            }
+            try {
+              const imageData = await fileToImageData(file)
+              await compute(imageData)
+            } catch {
+              setError("components.scanner.couldNotHandleFile")
+              setShowError(true)
+            }
+          }}
+        />
         <Video ref={videoRef} />
         {loading === true ? (
           <Fragment>
@@ -608,9 +660,16 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           </Fragment>
         ) : null}
         {loading === false && streaming === true ? (
-          <OverlayContainer>
-            <Overlay />
-          </OverlayContainer>
+          <Fragment>
+            <OverlayContainer>
+              <Overlay />
+            </OverlayContainer>
+            {props.badge && showError === false ? (
+              <BadgeContainer>
+                <Badge color="dark">{props.badge}</Badge>
+              </BadgeContainer>
+            ) : null}
+          </Fragment>
         ) : null}
         {loading === false && streaming === false && imageDataUrlRef.current ? (
           <Image src={imageDataUrlRef.current} />

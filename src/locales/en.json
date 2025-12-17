@@ -88,6 +88,7 @@
       "cameraDoesNotMeetMinimumRequirementOf720p": "Camera does not meet minimum requirement of 720p",
       "pleaseAllowScreenRecording": "Please allow screen recording",
       "couldNotRunScanner": "Could not run scanner",
+      "couldNotHandleFile": "Could not handle file",
       "device": "Device",
       "selectDevice": "Select device",
       "source": "Source",
@@ -150,7 +151,8 @@
       "enterPassphrase": "Enter passphrase",
       "unlock": "Unlock",
       "unlocking": "Unlocking",
-      "scanNextBlock": "Scan next block",
+      "scanOrDragBlock": "Scan or drag block",
+      "scanOrDragNextBlock": "Scan or drag next block",
       "showSecret": "Show secret"
     }
   }

@@ -88,6 +88,7 @@
       "cameraDoesNotMeetMinimumRequirementOf720p": "Kameran uppfyller inte minimikravet på 720p",
       "pleaseAllowScreenRecording": "Vänligen tillåt skärminspelning",
       "couldNotRunScanner": "Kunde inte köra skanner",
+      "couldNotHandleFile": "Kunde inte hantera filen",
       "device": "Enhet",
       "selectDevice": "Välj enhet",
       "source": "Källa",
@@ -152,7 +153,8 @@
       "enterPassphrase": "Ange lösenfras",
       "unlock": "Lås upp",
       "unlocking": "Låser upp",
-      "scanNextBlock": "Skanna nästa block",
+      "scanOrDragBlock": "Skanna eller dra block",
+      "scanOrDragNextBlock": "Skanna eller dra nästa block",
       "showSecret": "Visa hemlighet"
     }
   }
