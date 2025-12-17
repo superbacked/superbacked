@@ -18,6 +18,7 @@ const About: FunctionComponent = () => {
   return (
     <Modal
       centered
+      closeOnClickOutside={false}
       opened={showAbout}
       onClose={() => {
         setShowAbout(false)

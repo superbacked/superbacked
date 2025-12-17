@@ -761,6 +761,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         </Container>
         <Modal
           centered
+          closeOnClickOutside={false}
           onClose={() => {
             setShowSelectPrinter(false)
           }}

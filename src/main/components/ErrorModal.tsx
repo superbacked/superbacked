@@ -36,6 +36,7 @@ const ErrorModal: FunctionComponent<ErrorModalProps> = (props) => {
   return (
     <Modal
       centered
+      closeOnClickOutside={false}
       onClose={props.onClose}
       opened={props.opened ? props.error !== null : false}
       size={props.size ?? "sm"}

@@ -98,6 +98,7 @@ const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
   return (
     <Modal
       centered
+      closeOnClickOutside={false}
       onClose={() => props.onClose()}
       opened={true}
       title={`${t("routes.restore.enterPassphrase")}${
