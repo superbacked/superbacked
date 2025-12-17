@@ -313,6 +313,9 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     ) {
       scannerRef.current?.stop()
       await props.handlePayload(payload)
+      if (beep === true) {
+        scannerRef.current?.beep()
+      }
       return
     }
     const result = await window.api.restore(passphrasesRef.current, payload)
