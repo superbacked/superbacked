@@ -10,7 +10,6 @@ export type Format = "jpg" | "pdf"
 export default async (qrs: Qr[], formats: Format[]): Promise<boolean> => {
   const window = BrowserWindow.getFocusedWindow()
   if (!window) {
-    // This should never happen, but tracking edge case (required by TypeScript type check)
     throw new Error("Could not get focussed window")
   }
   const openDialogReturnValue = await dialog.showOpenDialog(window, {
@@ -20,7 +19,6 @@ export default async (qrs: Qr[], formats: Format[]): Promise<boolean> => {
   if (openDialogReturnValue.canceled !== true) {
     const selectedPath = openDialogReturnValue.filePaths[0]
     if (!selectedPath) {
-      // This should never happen, but tracking edge case (required by TypeScript type check)
       throw new Error("Could not get selected path")
     }
     for (const qr of qrs) {

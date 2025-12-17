@@ -396,7 +396,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     }
   }, [form])
   if (["secret1", "secret2", "secret3", "preview"].includes(step) === false) {
-    // This should never happen, but tracking edge case
     throw new Error("Invalid step")
   }
   const stepMatch = step.match(/^secret([1-3])$/)

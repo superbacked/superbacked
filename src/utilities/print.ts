@@ -13,7 +13,6 @@ export type PrinterStatus = "printing" | "standby"
 export const getPrinters = async (): Promise<Printer[]> => {
   const window = BrowserWindow.getFocusedWindow()
   if (!window) {
-    // This should never happen, but tracking edge case (required by TypeScript type check)
     throw new Error("Could not get focussed window")
   }
   const printers = await window.webContents.getPrintersAsync()

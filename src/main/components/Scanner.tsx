@@ -227,7 +227,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         canvas.height = videoRef.current.videoHeight
         const canvas2d = canvas.getContext("2d")
         if (!canvas2d) {
-          // This should never happen, but tracking edge case (required by TypeScript type check)
           throw new Error("Could not get canvas context")
         }
         const ratio = canvas.width / canvas.height

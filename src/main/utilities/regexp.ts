@@ -81,7 +81,6 @@ export const extract = (secret: string) => {
   while ((totpUriExecArray = totpUriRegExp.exec(secret))) {
     const totpUriExecArraySecret = totpUriExecArray[5]
     if (!totpUriExecArraySecret) {
-      // This should never happen (required by TypeScript type check)
       continue
     }
     const properties = {
