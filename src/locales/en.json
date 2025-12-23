@@ -81,6 +81,11 @@
         "centuries": "centuries"
       }
     },
+    "passphraseModal": {
+      "enterPassphrase": "Enter passphrase",
+      "unlock": "Unlock",
+      "unlocking": "Unlocking"
+    },
     "scanner": {
       "loading": "Loading",
       "pleaseAllowCameraAccess": "Please allow camera access",
@@ -103,6 +108,12 @@
       "totpUri_other": "URIs",
       "found_one": "found",
       "found_other": "found"
+    }
+  },
+  "utilities": {
+    "save": {
+      "chooseWhereToSaveBlock_one": "Choose where to save block",
+      "chooseWhereToSaveBlock_other": "Choose where to save blocks"
     }
   },
   "common": {
@@ -148,9 +159,6 @@
     },
     "duplicate": { "couldNotDuplicateBlock": "Could not duplicate block" },
     "restore": {
-      "enterPassphrase": "Enter passphrase",
-      "unlock": "Unlock",
-      "unlocking": "Unlocking",
       "scanOrDragBlock": "Scan or drag block",
       "scanOrDragNextBlock": "Scan or drag next block",
       "showSecret": "Show secret"

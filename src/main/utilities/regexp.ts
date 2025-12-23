@@ -1,4 +1,4 @@
-const wordlist = window.api.wordlist()
+const wordlist = window.api.invokeSync.getWordlist()
 
 export const mnemonicWordRegExp = new RegExp(
   `(${wordlist.join("|")})(?![a-z])`,
@@ -61,7 +61,7 @@ export const extract = (secret: string) => {
     const mnemonicRemainderExecArray = mnemonicRemainderRegExp.exec(remainder)
     if (mnemonicRemainderExecArray) {
       const mnemonic = `${firstWord}${mnemonicRemainderExecArray[0]}`
-      const valid = window.api.validateMnemonic(mnemonic)
+      const valid = window.api.invokeSync.validateMnemonic(mnemonic)
       if (valid === true) {
         lastWordIndex = firstWordIndex + mnemonic.length
         results.push({

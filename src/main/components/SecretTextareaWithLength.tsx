@@ -296,9 +296,9 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
               bottom: otherProps.error ? undefined : 0,
               left: 0,
               backgroundColor:
-                colorScheme === "dark" ? theme.colors.dark[6] : "#fff",
+                colorScheme === "dark" ? theme.colors.dark[6] : "#ffffff",
               border: `solid 1px ${
-                colorScheme === "dark" ? theme.colors.dark[6] : "#fff"
+                colorScheme === "dark" ? theme.colors.dark[6] : "#ffffff"
               }`,
               borderRadius: "4px",
               color: "transparent",

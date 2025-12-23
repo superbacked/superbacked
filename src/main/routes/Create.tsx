@@ -27,7 +27,8 @@ import { useNavigate } from "react-router-dom"
 import { Printer as PrinterIcon } from "tabler-icons-react"
 
 import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
-import { Qr, Result, Secret } from "@/src/create"
+import { Qr, Result, Secret } from "@/src/handlers/create"
+import Dropzone from "@/src/main/components/Dropzone"
 import ErrorModal from "@/src/main/components/ErrorModal"
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
@@ -109,7 +110,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   const { i18n, t } = useTranslation()
   const scannerRef = useRef<ScannerRef>(null)
   const [showHiddenSecrets, setShowHiddenSecrets] = useState(
-    window.api.menuGetShowHiddenSecretsState()
+    window.api.invokeSync.getShowHiddenSecretsState()
   )
   const [step, setStep] = useState<Step>(initialStep)
   const [selection, setSelection] = useState<null | SelectionWithElement>(null)
@@ -137,7 +138,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     label: string
   }
   const getDataLengths = useCallback((values: FormValues): DataLengths => {
-    let secret1DataLength = window.api.getDataLength(values.secret1)
+    let secret1DataLength = window.api.invokeSync.getDataLength(values.secret1)
     // Account for Shamir Secret Sharing overhead
     if (shamirBackupTypes.includes(values.backupType)) {
       secret1DataLength += 56
@@ -146,7 +147,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     let concatenatedHiddenSecretsLength = 0
     for (const [entryKey, entryValue] of Object.entries(values)) {
       if (entryKey.match(/^secret(2|3)$/) && entryValue !== "") {
-        concatenatedHiddenSecretsLength += window.api.getDataLength(entryValue)
+        concatenatedHiddenSecretsLength +=
+          window.api.invokeSync.getDataLength(entryValue)
         // Account for Shamir Secret Sharing overhead
         if (shamirBackupTypes.includes(values.backupType)) {
           concatenatedHiddenSecretsLength += 56
@@ -309,7 +311,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       }
       let result: Result
       if (shamir === true) {
-        result = await window.api.create(
+        result = await window.api.invoke.create(
           secrets,
           maxDataLength,
           label,
@@ -318,7 +320,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           threshold
         )
       } else {
-        result = await window.api.create(secrets, maxDataLength, label)
+        result = await window.api.invoke.create(secrets, maxDataLength, label)
       }
       if (result.success === false) {
         setError(
@@ -341,11 +343,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     async (printerName: string) => {
       setShowPrinting(true)
       for (const qr of qrs) {
-        await window.api.print(printerName, qr.pdf, qr.copies)
+        await window.api.invoke.print(printerName, qr.pdf, qr.copies)
       }
       let done = false
       while (done !== true) {
-        const status = await window.api.getPrinterStatus(printerName)
+        const status = await window.api.invoke.getPrinterStatus(printerName)
         if (status === "standby") {
           setShowPrinting(false)
           done = true
@@ -361,12 +363,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language])
   useEffect(() => {
-    const removeListener = window.api.menuInsert(async (type) => {
+    const removeListener = window.api.events.menuInsert(async (type) => {
       if (type === "mnemonic") {
-        const mnemonic = window.api.generateMnemonic()
+        const mnemonic = window.api.invokeSync.generateMnemonic()
         insertAtCursor(mnemonic)
       } else if (type === "passphrase") {
-        const passphrase = await window.api.generatePassphrase()
+        const passphrase = await window.api.invoke.generatePassphrase()
         insertAtCursor(passphrase)
       } else if (type === "scanQrCode") {
         setSelection(captureSelection())
@@ -376,11 +378,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     return () => {
       removeListener()
       // Disable insert mode before component is unmounted
-      window.api.disableModes(["insert"])
+      void window.api.invoke.disableModes(["insert"])
     }
   }, [])
   useEffect(() => {
-    const removeListener = window.api.menuShowHiddenSecrets((state) => {
+    const removeListener = window.api.events.menuShowHiddenSecrets((state) => {
       const element = document.activeElement as HTMLElement
       element.blur()
       setShowHiddenSecrets(state)
@@ -422,10 +424,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             secretNumber={1}
             spellCheck={false}
             onFocus={() => {
-              window.api.enableModes(["insert"])
+              void window.api.invoke.enableModes(["insert"])
             }}
             onBlur={() => {
-              window.api.disableModes(["insert"])
+              void window.api.invoke.disableModes(["insert"])
             }}
             {...form.getInputProps("secret1", { withFocus: false })}
           />
@@ -438,7 +440,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             required
             spellCheck={false}
             generatePassphrase={async () => {
-              const passphrase = await window.api.generatePassphrase(
+              const passphrase = await window.api.invoke.generatePassphrase(
                 5,
                 "eff_short_wordlist_1"
               )
@@ -491,10 +493,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             secretNumber={secretNumber}
             spellCheck={false}
             onFocus={() => {
-              window.api.enableModes(["insert"])
+              void window.api.invoke.enableModes(["insert"])
             }}
             onBlur={() => {
-              window.api.disableModes(["insert"])
+              void window.api.invoke.disableModes(["insert"])
             }}
             {...form.getInputProps(`secret${secretNumber}`, {
               withFocus: false,
@@ -509,7 +511,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             required
             spellCheck={false}
             generatePassphrase={async () => {
-              const passphrase = await window.api.generatePassphrase(
+              const passphrase = await window.api.invoke.generatePassphrase(
                 5,
                 "eff_short_wordlist_1"
               )
@@ -608,7 +610,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               variant="gradient"
               sx={{
                 "&:disabled": {
-                  color: darken("#fff", 0.25),
+                  color: darken("#ffffff", 0.25),
                   backgroundImage: `linear-gradient(45deg, ${darken(
                     "#fdc0ee",
                     0.25
@@ -712,8 +714,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   disabled={showPrinting}
                   variant="default"
                   onClick={async () => {
-                    const printers = await window.api.getPrinters()
-                    const defaultPrinter = await window.api.getDefaultPrinter()
+                    const printers = await window.api.invoke.getPrinters()
+                    const defaultPrinter =
+                      await window.api.invoke.getDefaultPrinter()
                     if (printers.length === 0) {
                       setError("routes.create.pleaseConnectPrinter")
                       setShowError(true)
@@ -738,7 +741,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               <Button
                 variant="default"
                 onClick={() => {
-                  void window.api.save(qrs, ["jpg", "pdf"])
+                  void window.api.invoke.save(qrs, ["jpg", "pdf"])
                 }}
               >
                 {t("routes.create.save")}

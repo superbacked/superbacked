@@ -8,6 +8,7 @@ import { emotionCache } from "@/emotion-cache"
 import { setLocale } from "@/src/i18n"
 import About from "@/src/main/components/About"
 import Disclaimer from "@/src/main/components/Disclaimer"
+import Loading from "@/src/main/components/Loader"
 import MenuEvents, {
   MenuEventsContextConsumer,
 } from "@/src/main/components/MenuEvents"
@@ -24,7 +25,7 @@ import "@fontsource/roboto-mono/latin-700.css"
 import "@mantine/core/styles.css"
 import "@mantine/dropzone/styles.css"
 
-await setLocale(window.api.locale())
+await setLocale(window.api.invokeSync.getLocale())
 
 declare global {
   interface Window {
@@ -34,17 +35,17 @@ declare global {
 
 const App = () => {
   const [colorScheme, setColorScheme] = useState<ColorScheme>(
-    window.api.colorScheme()
+    window.api.invokeSync.getColorScheme()
   )
-  const [showDisclaimer, setShowDisclaimer] = useState<boolean>(true)
   useEffect(() => {
-    const removeListener = window.api.colorSchemeChange(setColorScheme)
+    const removeListener =
+      window.api.events.systemColorSchemeChange(setColorScheme)
     return () => {
       removeListener()
     }
   }, [])
   useEffect(() => {
-    const removeListener = window.api.localeChange(setLocale)
+    const removeListener = window.api.events.systemLocaleChange(setLocale)
     return () => {
       removeListener()
     }
@@ -134,13 +135,8 @@ const App = () => {
             </MenuEventsContextConsumer>
           </MenuEvents>
         </MemoryRouter>
-        {showDisclaimer === true ? (
-          <Disclaimer
-            close={() => {
-              setShowDisclaimer(false)
-            }}
-          />
-        ) : null}
+        <Loading />
+        <Disclaimer />
       </MantineProvider>
     </MantineEmotionProvider>
   )

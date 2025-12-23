@@ -81,6 +81,11 @@
         "centuries": "århundraden"
       }
     },
+    "passphraseModal": {
+      "enterPassphrase": "Ange lösenfras",
+      "unlock": "Lås upp",
+      "unlocking": "Låser upp"
+    },
     "scanner": {
       "loading": "Laddar",
       "pleaseAllowCameraAccess": "Vänligen tillåt kameraåtkomst",
@@ -103,6 +108,12 @@
       "totpUri_other": "URI:er",
       "found_one": "hittad",
       "found_other": "hittade"
+    }
+  },
+  "utilities": {
+    "save": {
+      "chooseWhereToSaveBlock_one": "Välj var blocket ska sparas",
+      "chooseWhereToSaveBlock_other": "Välj var blocken ska sparas"
     }
   },
   "common": {
@@ -150,9 +161,6 @@
       "couldNotDuplicateBlock": "Kunde inte duplicera block"
     },
     "restore": {
-      "enterPassphrase": "Ange lösenfras",
-      "unlock": "Lås upp",
-      "unlocking": "Låser upp",
       "scanOrDragBlock": "Skanna eller dra block",
       "scanOrDragNextBlock": "Skanna eller dra nästa block",
       "showSecret": "Visa hemlighet"

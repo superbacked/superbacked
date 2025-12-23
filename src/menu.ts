@@ -11,6 +11,7 @@ import { t } from "i18next"
 
 import { locales, resources } from "@/src/i18n"
 import { locale, setLocale } from "@/src/index"
+import { sendEvent } from "@/src/utilities/sendEvent"
 
 if (process.platform === "darwin") {
   systemPreferences.setUserDefault(
@@ -55,7 +56,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:about")
+              sendEvent(focusedWindow, "menuAbout")
             }
           },
         },
@@ -81,7 +82,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:triggeredRoute", "/")
+              sendEvent(focusedWindow, "menuTriggeredRoute", "/")
             }
           },
         },
@@ -91,10 +92,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send(
-                "menu:triggeredRoute",
-                "/duplicate"
-              )
+              sendEvent(focusedWindow, "menuTriggeredRoute", "/duplicate")
             }
           },
         },
@@ -104,7 +102,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:triggeredRoute", "/restore")
+              sendEvent(focusedWindow, "menuTriggeredRoute", "/restore")
             }
           },
         },
@@ -205,7 +203,7 @@ export const setMenu = () => {
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:insert", "mnemonic")
+              sendEvent(focusedWindow, "menuInsert", "mnemonic")
             }
           },
         },
@@ -216,7 +214,7 @@ export const setMenu = () => {
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:insert", "passphrase")
+              sendEvent(focusedWindow, "menuInsert", "passphrase")
             }
           },
         },
@@ -227,7 +225,7 @@ export const setMenu = () => {
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:insert", "scanQrCode")
+              sendEvent(focusedWindow, "menuInsert", "scanQrCode")
             }
           },
         },
@@ -249,8 +247,9 @@ export const setMenu = () => {
             showHiddenSecrets = menuItem.checked
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send(
-                "menu:showHiddenSecrets",
+              sendEvent(
+                focusedWindow,
+                "menuShowHiddenSecrets",
                 showHiddenSecrets
               )
             }
@@ -264,7 +263,7 @@ export const setMenu = () => {
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:showSelectionAsQrCode")
+              sendEvent(focusedWindow, "menuShowSelectionAsQrCode")
             }
           },
         },

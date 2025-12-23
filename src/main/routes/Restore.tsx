@@ -3,34 +3,29 @@ import {
   Button,
   Dialog,
   Mark,
-  Modal,
-  PasswordInput,
   Popover,
   PopoverProps,
   RingProgress,
   Space,
   Text,
-  darken,
   rgba,
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
-import { useForm } from "@mantine/form"
 import { useDisclosure } from "@mantine/hooks"
 import {
   Fragment,
   FunctionComponent,
   ReactNode,
-  useCallback,
   useEffect,
   useRef,
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { Eye as EyeIcon, EyeOff as EyeOffIcon } from "tabler-icons-react"
 
-import { Payload } from "@/src/create"
+import { Payload } from "@/src/handlers/create"
+import PasswordModal from "@/src/main/components/PasswordModal"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import {
   Bip39MnemonicResult,
@@ -52,104 +47,6 @@ const Container = styled.div`
   user-select: text;
   z-index: 0;
 `
-
-interface PasswordModalProps {
-  onClose: () => void
-  onSubmit: (passphrases: string[]) => void
-  unlocking: boolean
-}
-
-const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
-  const { i18n, t } = useTranslation()
-  const ref = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.focus()
-    }
-  }, [props.unlocking])
-  const form = useForm({
-    initialValues: {
-      passphrase: "",
-      dualPassphrase: false,
-    },
-    validate: {
-      passphrase: (value) => {
-        if (value === "") {
-          return t("common.passphraseRequired")
-        }
-        return null
-      },
-    },
-  })
-  const handleUnlock = useCallback(() => {
-    const validation = form.validate()
-    if (validation.hasErrors === false) {
-      const passphrases = [form.values.passphrase]
-      props.onSubmit(passphrases)
-      form.reset()
-    }
-  }, [form, props])
-  useEffect(() => {
-    if (Object.keys(form.errors).length > 0) {
-      form.validate()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i18n.language])
-  return (
-    <Modal
-      centered
-      closeOnClickOutside={false}
-      onClose={() => props.onClose()}
-      opened={true}
-      title={`${t("routes.restore.enterPassphrase")}${
-        form.values.dualPassphrase === true ? "s" : ""
-      }`}
-      styles={{
-        title: {
-          fontWeight: "bold",
-        },
-      }}
-    >
-      <form onSubmit={form.onSubmit(handleUnlock)}>
-        <PasswordInput
-          ref={ref}
-          autoFocus
-          data-autofocus
-          disabled={props.unlocking}
-          label={t("common.passphrase")}
-          placeholder={t("common.typePassphrase")}
-          required
-          spellCheck={false}
-          visibilityToggleIcon={({ reveal }) =>
-            reveal === true ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />
-          }
-          {...form.getInputProps("passphrase", { withFocus: false })}
-        />
-        <Space h="lg" />
-        <Button
-          disabled={props.unlocking}
-          gradient={{ from: "#fdc0ee", to: "#fbd6cd", deg: 45 }}
-          loading={props.unlocking}
-          onClick={handleUnlock}
-          variant="gradient"
-          sx={{
-            "&:disabled": {
-              color: darken("#fff", 0.25),
-              backgroundImage: `linear-gradient(45deg, ${darken(
-                "#fdc0ee",
-                0.25
-              )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
-            },
-          }}
-        >
-          {props.unlocking === true
-            ? t("routes.restore.unlocking")
-            : t("routes.restore.unlock")}
-        </Button>
-      </form>
-    </Modal>
-  )
-}
 
 interface SmartPopoverProps {
   dropdown: ReactNode
@@ -226,7 +123,7 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
     return (((seconds + milliseconds / 1000) % 30) / 30) * 100
   }
   const [token, setToken] = useState<string>(
-    window.api.generateToken(props.secret)
+    window.api.invokeSync.generateToken(props.secret)
   )
   const [timeRemaining, setTimeRemaining] = useState<number>(getTimeRemaining())
   useEffect(() => {
@@ -234,7 +131,7 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
     const timer = setInterval(() => {
       const nextTimeRemaining = getTimeRemaining()
       if (previousTimeRemaining && previousTimeRemaining > nextTimeRemaining) {
-        setToken(window.api.generateToken(props.secret))
+        setToken(window.api.invokeSync.generateToken(props.secret))
       }
       setTimeRemaining(nextTimeRemaining)
       previousTimeRemaining = nextTimeRemaining
@@ -286,7 +183,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const [showSecret, setShowSecret] = useState(false)
   useEffect(() => {
     return () => {
-      window.api.restoreReset()
+      window.api.invoke.restoreReset()
     }
   }, [])
   const compute = async (beep: boolean) => {
@@ -319,7 +216,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       }
       return
     }
-    const result = await window.api.restore(passphrasesRef.current, payload)
+    const result = await window.api.invoke.restore(
+      passphrasesRef.current,
+      payload
+    )
     setUnlocking(false)
     if (beep === true) {
       scannerRef.current?.beep()

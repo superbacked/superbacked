@@ -6,10 +6,10 @@ import SuperbackedIcon from "@/src/main/superbacked.svg"
 
 const About: FunctionComponent = () => {
   const { t } = useTranslation()
-  const [showAbout, setShowAbout] = useState(false)
+  const [opened, setOpened] = useState(false)
   useEffect(() => {
-    const removeListener = window.api.menuAbout(() => {
-      setShowAbout(true)
+    const removeListener = window.api.events.menuAbout(() => {
+      setOpened(true)
     })
     return () => {
       removeListener()
@@ -19,11 +19,12 @@ const About: FunctionComponent = () => {
     <Modal
       centered
       closeOnClickOutside={false}
-      opened={showAbout}
+      lockScroll={false}
+      opened={opened}
       onClose={() => {
-        setShowAbout(false)
+        setOpened(false)
       }}
-      zIndex={400}
+      zIndex={1000}
     >
       <Center>
         <SuperbackedIcon style={{ width: "25%" }} />
@@ -31,7 +32,7 @@ const About: FunctionComponent = () => {
       <Space h="lg" />
       <Title ta="center">Superbacked</Title>
       <Text c="dimmed" ta="center">
-        {t("components.about.version")}: {window.api.version()}
+        {t("components.about.version")}: {window.api.invokeSync.getVersion()}
       </Text>
       <Space h="lg" />
       <Text fw="bold" size="sm" ta="center">

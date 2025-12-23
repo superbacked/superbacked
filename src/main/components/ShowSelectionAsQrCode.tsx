@@ -13,9 +13,9 @@ const ShowSelectionAsQrCode: FunctionComponent = () => {
     }
     const selectedText = selection.toString()
     if (selectedText !== "") {
-      window.api.enableModes(["select"])
+      window.api.invoke.enableModes(["select"])
     } else {
-      window.api.disableModes(["select"])
+      window.api.invoke.disableModes(["select"])
     }
   }, [])
 
@@ -30,7 +30,8 @@ const ShowSelectionAsQrCode: FunctionComponent = () => {
 
   useEffect(() => {
     document.addEventListener("selectionchange", handleSelectionChange)
-    const removeListener = window.api.menuShowSelectionAsQrCode(handleShowModal)
+    const removeListener =
+      window.api.events.menuShowSelectionAsQrCode(handleShowModal)
     return () => {
       document.removeEventListener("selectionchange", handleSelectionChange)
       removeListener()

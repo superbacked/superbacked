@@ -9,14 +9,14 @@ import { emotionCache } from "@/emotion-cache"
 import QRCode from "@/src/block/components/QRCode"
 import Logo from "@/src/block/logo.svg"
 import { BlockApi } from "@/src/block/preload"
-import { Data } from "@/src/create"
+import { Data } from "@/src/handlers/create"
 import { setLocale } from "@/src/i18n"
 import pdfToJpeg from "@/src/shared/utilities/pdfToJpeg"
 import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
 import "@mantine/core/styles.css"
 
-await setLocale(window.blockApi.locale())
+await setLocale(window.blockApi.invokeSync.getLocale())
 
 declare global {
   interface Window {
@@ -78,11 +78,13 @@ const App = () => {
   const { t } = useTranslation()
   const [data, setData] = useState<Data | null>(null)
   useEffect(() => {
-    const dataChangeListener = window.blockApi.dataChange(setData)
-    const pdfToJpegListener = window.blockApi.pdfToJpeg(async (pdfBuffer) => {
-      const jpeg = await pdfToJpeg(pdfBuffer)
-      return jpeg
-    })
+    const dataChangeListener = window.blockApi.events.dataChange(setData)
+    const pdfToJpegListener = window.blockApi.events.pdfToJpeg(
+      async (pdfBuffer) => {
+        const jpeg = await pdfToJpeg(pdfBuffer)
+        return jpeg
+      }
+    )
     return () => {
       dataChangeListener()
       pdfToJpegListener()

@@ -1,51 +1,60 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron"
 
-import { Data } from "@/src/create"
+import { Data } from "@/src/handlers/create"
 import { Locale } from "@/src/i18n"
+import { createEventListener } from "@/src/shared/utilities/createEventListener"
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
+import { invokeSync } from "@/src/utilities/invokeSync"
 
+/**
+ * Block window API exposed to renderer process via contextBridge.
+ * Available as `window.blockApi` in renderer context.
+ */
 export interface BlockApi {
-  locale: () => Locale
-  platform: string
-  dataChange: (callback: (data: Data) => void) => () => void
+  /** Subscribe to block window events. */
+  events: {
+    /** Subscribe to data change events. */
+    dataChange: (callback: (data: Data) => void) => () => void
+    /** Subscribe to PDF to JPEG conversion requests. */
+    pdfToJpeg: (
+      callback: (pdfBuffer: ArrayBuffer) => Promise<PdfToJpegResult>
+    ) => () => void
+  }
+  /** Invoke synchronous IPC handlers in main process. */
+  invokeSync: {
+    /** Get current locale. */
+    getLocale: () => Locale
+  }
+  /** Signal block window is ready. */
   ready: () => void
-  pdfToJpeg: (
-    callback: (pdfBuffer: ArrayBuffer) => Promise<PdfToJpegResult>
-  ) => () => void
+  /** Current platform (darwin or linux). */
+  platform: NodeJS.Platform
 }
 
 const blockApi: BlockApi = {
-  locale: () => {
-    return ipcRenderer.sendSync("app:getLocale")
+  events: {
+    dataChange: createEventListener("dataChange"),
+    pdfToJpeg: (callback) => {
+      const listener = async (
+        _event: IpcRendererEvent,
+        pdfBuffer: ArrayBuffer
+      ) => {
+        const jpeg = await callback(pdfBuffer)
+        ipcRenderer.send("jpeg", jpeg)
+      }
+      ipcRenderer.on("pdfToJpeg", listener)
+      return () => {
+        ipcRenderer.removeListener("pdfToJpeg", listener)
+      }
+    },
   },
-  platform: process.platform,
-  dataChange: (callback) => {
-    const listener = (_event: IpcRendererEvent, data: Data) => {
-      callback(data)
-    }
-    ipcRenderer.on("dataChange", listener)
-    return () => {
-      ipcRenderer.removeListener("dataChange", listener)
-    }
+  invokeSync: {
+    getLocale: invokeSync("getLocale"),
   },
   ready: () => {
     ipcRenderer.send("ready")
   },
-  pdfToJpeg: (
-    callback: (pdfBuffer: ArrayBuffer) => Promise<PdfToJpegResult>
-  ) => {
-    const listener = async (
-      _event: IpcRendererEvent,
-      pdfBuffer: ArrayBuffer
-    ) => {
-      const jpeg = await callback(pdfBuffer)
-      ipcRenderer.send("jpeg", jpeg)
-    }
-    ipcRenderer.on("pdfToJpeg", listener)
-    return () => {
-      ipcRenderer.removeListener("pdfToJpeg", listener)
-    }
-  },
+  platform: process.platform,
 }
 
 contextBridge.exposeInMainWorld("blockApi", blockApi)

@@ -1,6 +1,6 @@
 import { decrypt } from "blockcrypt"
 
-import { Payload } from "@/src/create"
+import { Payload } from "@/src/handlers/create"
 import argon2 from "@/src/utilities/argon2"
 import { concatenatePassphrases } from "@/src/utilities/crypto"
 import { combineShares } from "@/src/utilities/shamir"

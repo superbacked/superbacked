@@ -81,6 +81,11 @@
         "centuries": "séculos"
       }
     },
+    "passphraseModal": {
+      "enterPassphrase": "Digite a frase secreta",
+      "unlock": "Desbloquear",
+      "unlocking": "Desbloqueando"
+    },
     "scanner": {
       "loading": "Carregando",
       "pleaseAllowCameraAccess": "Por favor, permita o acesso à câmera",
@@ -103,6 +108,12 @@
       "totpUri_other": "URIs",
       "found_one": "encontrado",
       "found_other": "encontrados"
+    }
+  },
+  "utilities": {
+    "save": {
+      "chooseWhereToSaveBlock_one": "Escolher onde salvar o bloco",
+      "chooseWhereToSaveBlock_other": "Escolher onde salvar os blocos"
     }
   },
   "common": {
@@ -150,9 +161,6 @@
       "couldNotDuplicateBlock": "Não foi possível duplicar o bloco"
     },
     "restore": {
-      "enterPassphrase": "Digite a frase secreta",
-      "unlock": "Desbloquear",
-      "unlocking": "Desbloqueando",
       "scanOrDragBlock": "Escanear ou arrastar o bloco",
       "scanOrDragNextBlock": "Escanear ou arrastar próximo bloco",
       "showSecret": "Mostrar segredo"

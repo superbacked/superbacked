@@ -4,13 +4,10 @@ import {
   Avatar,
   Badge,
   ComboboxItem,
-  Dialog,
   Group,
-  Loader,
   Select,
   Space,
   Text,
-  useMantineColorScheme,
 } from "@mantine/core"
 import decodeQR from "qr/decode.js"
 import {
@@ -31,9 +28,10 @@ import {
 } from "tabler-icons-react"
 
 import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
-import { CustomDesktopCapturerSource } from "@/src/index"
+import { CustomDesktopCapturerSource } from "@/src/handlers/getDesktopCapturerSources"
 import Dropzone from "@/src/main/components/Dropzone"
 import ErrorModal from "@/src/main/components/ErrorModal"
+import Loading from "@/src/main/components/Loading"
 import confirmationSound from "@/src/main/confirmation.wav"
 import { useDebounce } from "@/src/main/utilities/debounce"
 import { fileToImageData } from "@/src/main/utilities/fileToImageData"
@@ -88,7 +86,7 @@ const Video = styled.video<VideoProps>`
   z-index: -1;
 `
 
-const OverlayContainer = styled.div`
+const GuideContainer = styled.div`
   position: absolute;
   top: 0;
   left: 0;
@@ -100,7 +98,7 @@ const OverlayContainer = styled.div`
   justify-content: center;
 `
 
-const Overlay = styled.div`
+const Guide = styled.div`
   height: 75%;
   aspect-ratio: 1;
   box-shadow: 0 0 0 100vh rgba(0, 0, 0, 0.25);
@@ -186,7 +184,6 @@ class NoDeviceError extends Error {
  */
 const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const { t } = useTranslation()
-  const { colorScheme } = useMantineColorScheme()
   const videoRef = useRef<null | HTMLVideoElement>(null)
   const mediaStreamRef = useRef<null | MediaStream>(null)
   const imageDataUrlRef = useRef<null | string>(null)
@@ -450,7 +447,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   }, [capture])
 
   const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
-    const result = await window.api.getDesktopCapturerSources()
+    const result = await window.api.invoke.getDesktopCapturerSources()
     if (result.success === false) {
       setError("components.scanner.pleaseAllowScreenRecording")
       setShowError(true)
@@ -641,29 +638,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         />
         <Video ref={videoRef} />
         {loading === true ? (
-          <Fragment>
-            <Container>
-              <Loader
-                color={colorScheme === "dark" ? "white" : "dark"}
-                size="sm"
-              />
-            </Container>
-            <Dialog
-              opened={true}
-              withCloseButton
-              onClose={() => setLoading(false)}
-              radius="sm"
-              size="md"
-            >
-              {t("components.scanner.loading")}…
-            </Dialog>
-          </Fragment>
+          <Loading visible={loading} dialog="components.scanner.loading" />
         ) : null}
         {loading === false && streaming === true ? (
           <Fragment>
-            <OverlayContainer>
-              <Overlay />
-            </OverlayContainer>
+            <GuideContainer>
+              <Guide />
+            </GuideContainer>
             {props.badge && showError === false ? (
               <BadgeContainer>
                 <Badge color="dark">{props.badge}</Badge>

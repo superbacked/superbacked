@@ -2,8 +2,9 @@ import { BrowserWindow, dialog } from "electron"
 import { join } from "path"
 
 import { writeFile } from "fs-extra"
+import { t } from "i18next"
 
-import { Qr } from "@/src/create"
+import { Qr } from "@/src/handlers/create"
 
 export type Format = "jpg" | "pdf"
 
@@ -12,9 +13,13 @@ export default async (qrs: Qr[], formats: Format[]): Promise<boolean> => {
   if (!window) {
     throw new Error("Could not get focussed window")
   }
+  const message = t("utilities.save.chooseWhereToSaveBlock", {
+    count: qrs.length,
+  })
   const openDialogReturnValue = await dialog.showOpenDialog(window, {
-    buttonLabel: "Save",
+    message: message,
     properties: ["createDirectory", "openDirectory"],
+    title: message,
   })
   if (openDialogReturnValue.canceled !== true) {
     const selectedPath = openDialogReturnValue.filePaths[0]

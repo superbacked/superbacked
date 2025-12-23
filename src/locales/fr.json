@@ -81,6 +81,11 @@
         "centuries": "siècles"
       }
     },
+    "passphraseModal": {
+      "enterPassphrase": "Entrer la phrase de passe",
+      "unlock": "Déverrouiller",
+      "unlocking": "Déverrouillage en cours"
+    },
     "scanner": {
       "loading": "Chargement",
       "pleaseAllowCameraAccess": "Veuillez autoriser l’accès à la caméra",
@@ -103,6 +108,12 @@
       "totpUri_other": "URIs",
       "found_one": "trouvé",
       "found_other": "trouvés"
+    }
+  },
+  "utilities": {
+    "save": {
+      "chooseWhereToSaveBlock_one": "Choisir où enregistrer le bloc",
+      "chooseWhereToSaveBlock_other": "Choisir où enregistrer les blocs"
     }
   },
   "common": {
@@ -150,9 +161,6 @@
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
     "restore": {
-      "enterPassphrase": "Entrer la phrase de passe",
-      "unlock": "Déverrouiller",
-      "unlocking": "Déverrouillage en cours",
       "scanOrDragBlock": "Scanner ou déposer le bloc",
       "scanOrDragNextBlock": "Scanner or déposer le bloc suivant",
       "showSecret": "Afficher le secret"

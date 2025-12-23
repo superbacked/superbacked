@@ -2,6 +2,7 @@ import styled from "@emotion/styled"
 import {
   Anchor,
   Button,
+  Overlay,
   Space,
   Switch,
   Text,
@@ -10,35 +11,8 @@ import {
   useMantineTheme,
 } from "@mantine/core"
 import { useForm } from "@mantine/form"
-import { Fragment, FunctionComponent, MouseEvent } from "react"
+import { Fragment, FunctionComponent, MouseEvent, useState } from "react"
 import { useTranslation } from "react-i18next"
-
-const CustomOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  backdrop-filter: blur(4px);
-  z-index: 300;
-`
-
-interface CustomInnerOverlayProps {
-  color: string
-}
-
-const CustomInnerOverlay = styled.div<CustomInnerOverlayProps>`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  opacity: 0.85;
-  z-index: 300;
-  ${(props) => {
-    return `background-color: ${props.color}`
-  }};
-`
 
 const Container = styled.div`
   position: absolute;
@@ -53,26 +27,24 @@ const Container = styled.div`
   z-index: 400;
 `
 
-interface DisclaimerProps {
-  close: () => void
-}
-
-const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
+const Disclaimer: FunctionComponent = () => {
   const { t } = useTranslation()
   const theme = useMantineTheme()
   const { colorScheme } = useMantineColorScheme()
+  const [show, setShow] = useState(true)
   const form = useForm({
     initialValues: {
       accept: false,
     },
   })
-  return (
+  return show === true ? (
     <Fragment>
-      <CustomOverlay>
-        <CustomInnerOverlay
-          color={colorScheme === "dark" ? theme.colors.dark[7] : "#fff"}
-        />
-      </CustomOverlay>
+      <Overlay
+        backgroundOpacity={0.85}
+        blur={4}
+        color={colorScheme === "dark" ? theme.colors.dark[7] : "#fff"}
+        zIndex={300}
+      />
       <Container>
         <Text>
           <Text
@@ -87,7 +59,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
           <Anchor
             onClick={(event: MouseEvent<HTMLAnchorElement>) => {
               event.preventDefault()
-              void window.api.openExternalUrl(
+              void window.api.invoke.openExternalUrl(
                 `${process.env.SUPERBACKED_WEBSITE_BASE_URI}/faq/air-gapped`
               )
             }}
@@ -98,7 +70,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
           <Anchor
             onClick={(event: MouseEvent<HTMLAnchorElement>) => {
               event.preventDefault()
-              void window.api.openExternalUrl(
+              void window.api.invoke.openExternalUrl(
                 `${process.env.SUPERBACKED_WEBSITE_BASE_URI}/faq/hardware`
               )
             }}
@@ -135,7 +107,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
             size="md"
             variant="gradient"
             onClick={() => {
-              props.close()
+              setShow(false)
             }}
             sx={{
               "&:disabled": {
@@ -152,7 +124,7 @@ const Disclaimer: FunctionComponent<DisclaimerProps> = (props) => {
         </form>
       </Container>
     </Fragment>
-  )
+  ) : null
 }
 
 export default Disclaimer

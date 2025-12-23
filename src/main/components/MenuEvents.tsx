@@ -22,13 +22,15 @@ const MenuEvents: FunctionComponent<MenuEventsProps> = function (props) {
   const [key, setKey] = useState(0)
 
   useEffect(() => {
-    const removeListener = window.api.menuTriggeredRoute((to: string) => {
-      if (to === location.pathname) {
-        setKey((prev) => prev + 1)
-      } else {
-        void navigate(to)
+    const removeListener = window.api.events.menuTriggeredRoute(
+      (to: string) => {
+        if (to === location.pathname) {
+          setKey((prev) => prev + 1)
+        } else {
+          void navigate(to)
+        }
       }
-    })
+    )
     return () => {
       removeListener()
     }
