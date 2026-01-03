@@ -2,7 +2,6 @@ import { app } from "electron"
 
 import { getDataLength } from "blockcrypt"
 
-import { TranslationKey } from "@/src/@types/react-i18next"
 import create from "@/src/handlers/create"
 import duplicate from "@/src/handlers/duplicate"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
@@ -19,6 +18,7 @@ import save from "@/src/handlers/save"
 import toggleMaximize from "@/src/handlers/toggleMaximize"
 import { Locale } from "@/src/i18n"
 import { disableModes, enableModes, showHiddenSecrets } from "@/src/menu"
+import { TranslationKey } from "@/src/shared/types/i18n"
 import {
   generateMnemonic,
   validateMnemonic,

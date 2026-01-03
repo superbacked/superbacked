@@ -13,15 +13,15 @@ export const resources = {
   },
   fr: {
     label: "Français",
-    translation: fr,
+    translation: fr satisfies typeof en,
   },
   pt: {
     label: "Português",
-    translation: pt,
+    translation: pt satisfies typeof en,
   },
   sv: {
     label: "Svenska",
-    translation: sv,
+    translation: sv satisfies typeof en,
   },
 }
 

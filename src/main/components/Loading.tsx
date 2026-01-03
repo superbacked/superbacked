@@ -2,7 +2,7 @@ import { Dialog, LoadingOverlay } from "@mantine/core"
 import { Fragment, FunctionComponent } from "react"
 import { useTranslation } from "react-i18next"
 
-import { TranslationKey } from "@/src/@types/react-i18next"
+import { TranslationKey } from "@/src/shared/types/i18n"
 
 interface LoadingProps {
   visible: boolean
