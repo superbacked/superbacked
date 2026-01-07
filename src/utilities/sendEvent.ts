@@ -23,9 +23,13 @@ type EventParameters<EventName extends EventNames> =
  * Uses event names directly as IPC channel names.
  *
  * @example
- * sendEvent(window, "appLoading", true)
  * sendEvent(window, "menuTriggeredRoute", "/restore")
+ *
+ * @example
  * sendEvent(window, "systemColorSchemeChange", "dark")
+ *
+ * @example
+ * sendEvent(window, "systemLocaleChange", "en")
  */
 export function sendEvent<EventName extends EventNames>(
   window: BrowserWindow,

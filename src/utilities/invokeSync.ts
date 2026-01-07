@@ -26,6 +26,7 @@ type InvokeSyncParams<Channel extends InvokeSyncChannel> =
  * const getColorScheme = invokeSync("getColorScheme")
  * const colorScheme = getColorScheme()
  *
+ * @example
  * const generateMnemonic = invokeSync("generateMnemonic")
  * const mnemonic = generateMnemonic(128)
  */

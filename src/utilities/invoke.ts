@@ -25,6 +25,7 @@ type InvokeParams<Channel extends InvokeChannel> =
  * const create = invoke("create")
  * const result = await create(secrets, dataLength, label)
  *
+ * @example
  * const getPrinters = invoke("getPrinters")
  * const printers = await getPrinters()
  */
