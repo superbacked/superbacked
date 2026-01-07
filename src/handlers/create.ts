@@ -4,7 +4,7 @@ import { Secret as BlockcryptSecret, encrypt } from "blockcrypt"
 
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 import argon2 from "@/src/utilities/argon2"
-import { concatenatePassphrases, hash, shortHash } from "@/src/utilities/crypto"
+import { hash, shortHash } from "@/src/utilities/crypto"
 import { generateShares } from "@/src/utilities/shamir"
 
 declare const BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -12,7 +12,7 @@ declare const BLOCK_WINDOW_WEBPACK_ENTRY: string
 
 export interface Secret {
   message: string
-  passphrases: string[]
+  passphrase: string
 }
 
 export interface ShamirBlockcryptSecret {
@@ -172,7 +172,7 @@ export default async function create(
         for (const [index, share] of shares.entries()) {
           const blockcryptSecret = {
             message: Buffer.concat([Buffer.from("shamir:"), share]),
-            passphrase: concatenatePassphrases(secret.passphrases),
+            passphrase: secret.passphrase,
           }
           if (shamirBlockcryptSecrets[index]) {
             shamirBlockcryptSecrets[index].push(blockcryptSecret)
@@ -207,7 +207,7 @@ export default async function create(
       for (const secret of secrets) {
         blockcryptSecrets.push({
           message: secret.message,
-          passphrase: concatenatePassphrases(secret.passphrases),
+          passphrase: secret.passphrase,
         })
       }
       const block = await encrypt(blockcryptSecrets, argon2, 48, dataLength)

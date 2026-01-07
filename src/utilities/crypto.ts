@@ -21,9 +21,6 @@ export const shortHash = (string: string) => {
   return hashedString.substring(0, 8)
 }
 
-export const concatenatePassphrases = (passphrases: string[]) => {
-  const sortedPassphrases = passphrases.sort()
-  return sortedPassphrases.join(",")
 }
 
 /**
