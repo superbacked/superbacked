@@ -2,7 +2,6 @@ import { decrypt } from "blockcrypt"
 
 import { Payload } from "@/src/handlers/create"
 import argon2 from "@/src/utilities/argon2"
-import { concatenatePassphrases } from "@/src/utilities/crypto"
 import { combineShares } from "@/src/utilities/shamir"
 
 const shamirShares: Buffer[] = []
@@ -21,21 +20,20 @@ export const restoreReset = () => {
 }
 
 export type Result =
-  | { message: string; success: true }
   | { error: string; success: false }
+  | { message: string; success: true }
 
 export default async (
-  passphrases: string[],
+  passphrase: string,
   payload: Payload
 ): Promise<Result> => {
   try {
-    const concatenatedPassphrases = concatenatePassphrases(passphrases)
     const salt = Buffer.from(payload.salt, "base64")
     const iv = Buffer.from(payload.iv, "base64")
     const headers = Buffer.from(payload.headers, "base64")
     const data = Buffer.from(payload.data, "base64")
     const message = await decrypt(
-      concatenatedPassphrases,
+      passphrase,
       salt,
       iv,
       headers,
@@ -43,7 +41,7 @@ export default async (
       argon2
     ).catch(() =>
       // Try legacy mode
-      decrypt(concatenatedPassphrases, salt, iv, headers, data, argon2, true)
+      decrypt(passphrase, salt, iv, headers, data, argon2, true)
     )
     const shamirBuffer = Buffer.from("shamir:")
     const shamirBufferLength = shamirBuffer.length

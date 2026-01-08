@@ -2,7 +2,7 @@ import { FunctionComponent, useCallback, useEffect, useState } from "react"
 
 import QrCodeModal from "@/src/main/components/QrCodeModal"
 
-const ShowSelectionAsQrCode: FunctionComponent = () => {
+const SelectionAsQrCode: FunctionComponent = () => {
   const [showQrCodeModal, setShowQrCodeModal] = useState(false)
   const [value, setValue] = useState<string>("")
 
@@ -48,4 +48,4 @@ const ShowSelectionAsQrCode: FunctionComponent = () => {
   )
 }
 
-export default ShowSelectionAsQrCode
+export default SelectionAsQrCode

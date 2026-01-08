@@ -2,13 +2,18 @@ import styled from "@emotion/styled"
 import {
   ActionIcon,
   Avatar,
-  Badge,
   ComboboxItem,
   Group,
   Select,
   Space,
   Text,
 } from "@mantine/core"
+import {
+  IconDeviceDesktop,
+  IconSettings,
+  IconVideo,
+  IconX,
+} from "@tabler/icons-react"
 import decodeQR from "qr/decode.js"
 import {
   Fragment,
@@ -20,17 +25,11 @@ import {
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  DeviceDesktop as DeviceDesktopIcon,
-  Settings as SettingsIcon,
-  Video as VideoIcon,
-  X as XIcon,
-} from "tabler-icons-react"
 
-import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
 import { CustomDesktopCapturerSource } from "@/src/handlers/getDesktopCapturerSources"
+import ActionBadge from "@/src/main/components/ActionBadge"
 import Dropzone from "@/src/main/components/Dropzone"
-import ErrorModal from "@/src/main/components/ErrorModal"
+import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
 import Loading from "@/src/main/components/Loading"
 import confirmationSound from "@/src/main/confirmation.wav"
 import { useDebounce } from "@/src/main/utilities/debounce"
@@ -104,17 +103,6 @@ const Guide = styled.div`
   box-shadow: 0 0 0 100vh rgba(0, 0, 0, 0.25);
 `
 
-const BadgeContainer = styled.div`
-  position: absolute;
-  bottom: 48px;
-  left: 0;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  justify-content: center;
-`
-
 interface ImageProps {
   radius?: number
 }
@@ -166,21 +154,19 @@ class NoDeviceError extends Error {
 /**
  * Scanner component for detecting QR codes using camera or screen capture
  *
- * @param handleCode - Callback function that handles detected codes (required)
- * @param autoBeep   - Automatically play confirmation sound when code is detected (optional, defaults to true)
- * @param autoStop.  - Automatically stop scanning once code is detected (optional, defaults to true)
- * @param dropzone   - Enable dropzone (optional, defaults to false)
- * @param badge      - Displayed badge (optional)
+ * @param handleCode callback function that handles detected codes
+ * @param autoBeep automatically play confirmation sound when code is detected, defaults to `true`
+ * @param autoStop automatically stop scanning once code is detected, defaults to `true`
+ * @param dropzone enable dropzone, defaults to `false`
+ * @param badge displayed badge (optional)
  *
  * @example
- * ```tsx
  * const scannerRef = useRef<ScannerRef>(null)
  *
  * <Scanner
  *   ref={scannerRef}
  *   handleCode={(code) => console.log(code)}
  * />
- * ```
  */
 const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const { t } = useTranslation()
@@ -197,8 +183,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const [sourceValue, setSourceValue] = useState<null | string>(null)
   const [deviceDropdownOpened, setDeviceDropdownOpened] = useState(false)
   const [sourceDropdownOpened, setSourceDropdownOpened] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<null | ValidateTranslationKeys<
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<null | ErrorState<
     | "components.scanner.pleaseAllowCameraAccess"
     | "components.scanner.pleaseConnectCamera"
     | "components.scanner.cameraDoesNotMeetMinimumRequirementOf720p"
@@ -206,7 +192,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     | "components.scanner.couldNotRunScanner"
     | "components.scanner.couldNotHandleFile"
   >>(null)
-  const [showError, setShowError] = useState(false)
   const [streaming, setStreaming] = useState(false)
   const {
     handleCode,
@@ -339,8 +324,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const capture = useCallback(async () => {
     try {
       setError(null)
-      setShowError(false)
-      setLoading(true)
+      setIsLoading(true)
       const updatedDevices = await updateDevices()
       if (!sourceRef.current) {
         if (updatedDevices[0]) {
@@ -380,12 +364,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       }
       mediaStreamRef.current =
         await navigator.mediaDevices.getUserMedia(constraints)
-      setLoading(false)
+      setIsLoading(false)
       if (videoRef.current) {
         const metadataTimeout = setTimeout(() => {
           if (sourceRef.current?.type === "device") {
-            setError("components.scanner.pleaseAllowCameraAccess")
-            setShowError(true)
+            setError({
+              message: "components.scanner.pleaseAllowCameraAccess",
+            })
             stop()
           }
         }, 1000)
@@ -402,40 +387,42 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         }
       }
     } catch (captureError) {
-      setLoading(false)
+      setIsLoading(false)
       if (
         captureError instanceof Error &&
         captureError.name === "NoDeviceError"
       ) {
-        setError("components.scanner.pleaseConnectCamera")
+        setError({ message: "components.scanner.pleaseConnectCamera" })
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotAllowedError"
       ) {
-        setError("components.scanner.pleaseAllowCameraAccess")
+        setError({ message: "components.scanner.pleaseAllowCameraAccess" })
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
-        setError("components.scanner.pleaseConnectCamera")
+        setError({ message: "components.scanner.pleaseConnectCamera" })
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "OverconstrainedError"
       ) {
-        setError("components.scanner.cameraDoesNotMeetMinimumRequirementOf720p")
+        setError({
+          message:
+            "components.scanner.cameraDoesNotMeetMinimumRequirementOf720p",
+        })
       } else if (
         sourceRef.current?.type === "source" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
-        setError("components.scanner.pleaseAllowScreenRecording")
+        setError({ message: "components.scanner.pleaseAllowScreenRecording" })
       } else {
-        setError("components.scanner.couldNotRunScanner")
+        setError({ message: "components.scanner.couldNotRunScanner" })
       }
-      setShowError(true)
     }
   }, [updateDevices, stop, debouncedCompute])
 
@@ -449,8 +436,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
     const result = await window.api.invoke.getDesktopCapturerSources()
     if (result.success === false) {
-      setError("components.scanner.pleaseAllowScreenRecording")
-      setShowError(true)
+      setError({ message: "components.scanner.pleaseAllowScreenRecording" })
       return []
     }
     setSources(result.customDesktopCapturerSources)
@@ -520,7 +506,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               sourceRef.current?.type === "device" ? sourceRef.current.id : null
             }
             dropdownOpened={deviceDropdownOpened}
-            leftSection={<VideoIcon size={16} />}
+            leftSection={<IconVideo size={16} />}
             label={t("components.scanner.device")}
             maxDropdownHeight={240}
             placeholder={`${t("components.scanner.selectDevice")}…`}
@@ -554,7 +540,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               sourceRef.current?.type === "source" ? sourceRef.current.id : null
             }
             dropdownOpened={sourceDropdownOpened}
-            leftSection={<DeviceDesktopIcon size={16} />}
+            leftSection={<IconDeviceDesktop size={16} />}
             label={t("components.scanner.source")}
             maxDropdownHeight={240}
             placeholder={`${t("components.scanner.selectSource")}…`}
@@ -601,14 +587,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               start()
             }}
           >
-            <XIcon size={16} />
+            <IconX size={16} />
           </ActionIcon>
         </TopRightContainer>
         <ErrorModal
           error={error}
-          opened={showError}
           onClose={() => {
-            setShowError(false)
+            setError(null)
             setShowSourceSettings(true)
           }}
         />
@@ -631,28 +616,27 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               const imageData = await fileToImageData(file)
               await compute(imageData)
             } catch {
-              setError("components.scanner.couldNotHandleFile")
-              setShowError(true)
+              setError({ message: "components.scanner.couldNotHandleFile" })
             }
           }}
         />
         <Video ref={videoRef} />
-        {loading === true ? (
-          <Loading visible={loading} dialog="components.scanner.loading" />
+        {isLoading === true ? (
+          <Loading visible={isLoading} dialog="components.scanner.loading" />
         ) : null}
-        {loading === false && streaming === true ? (
+        {isLoading === false && streaming === true ? (
           <Fragment>
             <GuideContainer>
               <Guide />
             </GuideContainer>
-            {props.badge && showError === false ? (
-              <BadgeContainer>
-                <Badge color="dark">{props.badge}</Badge>
-              </BadgeContainer>
+            {props.badge && error === null ? (
+              <ActionBadge color="dark">{props.badge}</ActionBadge>
             ) : null}
           </Fragment>
         ) : null}
-        {loading === false && streaming === false && imageDataUrlRef.current ? (
+        {isLoading === false &&
+        streaming === false &&
+        imageDataUrlRef.current ? (
           <Image src={imageDataUrlRef.current} />
         ) : null}
         <TopRightContainer>
@@ -666,14 +650,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               stop()
             }}
           >
-            <SettingsIcon size={16} />
+            <IconSettings size={16} />
           </ActionIcon>
         </TopRightContainer>
         <ErrorModal
           error={error}
-          opened={showError}
           onClose={() => {
-            setShowError(false)
+            setError(null)
             setShowSourceSettings(true)
           }}
         />

@@ -136,7 +136,7 @@ export const createWindow = async (): Promise<BrowserWindow> => {
   })
 }
 
-export const getMainWindow = (): BrowserWindow | null => {
+export const getMainWindow = (): null | BrowserWindow => {
   if (mainWindowId === null) {
     return null
   }

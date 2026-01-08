@@ -2,6 +2,13 @@ import { app } from "electron"
 
 import { getDataLength } from "blockcrypt"
 
+import {
+  createArchive,
+  deriveKey,
+  generateMasterKey,
+  restoreArchive,
+} from "@/src/handlers/archive"
+import chooseDirectory from "@/src/handlers/chooseDirectory"
 import create from "@/src/handlers/create"
 import duplicate from "@/src/handlers/duplicate"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
@@ -17,7 +24,8 @@ import restore, { restoreReset } from "@/src/handlers/restore"
 import save from "@/src/handlers/save"
 import toggleMaximize from "@/src/handlers/toggleMaximize"
 import { Locale } from "@/src/i18n"
-import { disableModes, enableModes, showHiddenSecrets } from "@/src/menu"
+import { locale, shouldUseDarkColors } from "@/src/index"
+import { disableModes, enableModes } from "@/src/menu"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import {
   generateMnemonic,
@@ -28,8 +36,6 @@ import { ColorScheme } from "@/src/utilities/config"
 import { handle } from "@/src/utilities/handle"
 import { handleSync } from "@/src/utilities/handleSync"
 import { generateToken } from "@/src/utilities/totp"
-
-import { locale, shouldUseDarkColors } from "./index"
 
 type InsertType = "mnemonic" | "passphrase" | "scanQrCode"
 
@@ -46,7 +52,6 @@ export interface IpcEvents {
   menuAbout: EventListener<() => void>
   menuTriggeredRoute: EventListener<(to: string) => void>
   menuInsert: EventListener<(type: InsertType) => void>
-  menuShowHiddenSecrets: EventListener<(state: boolean) => void>
   menuShowSelectionAsQrCode: EventListener<() => void>
   windowEnteredFullScreen: EventListener<() => void>
   windowLeftFullScreen: EventListener<() => void>
@@ -70,6 +75,9 @@ const asyncHandlers = {
   save,
   restore,
   restoreReset,
+  chooseDirectory,
+  createArchive,
+  restoreArchive,
 } as const
 
 // Derive interface from handler map
@@ -95,11 +103,12 @@ const syncHandlers = {
   getColorScheme: () => (shouldUseDarkColors() === true ? "dark" : "light"),
   getLocale: () => locale,
   getVersion: () => app.getVersion(),
-  getShowHiddenSecretsState: () => showHiddenSecrets,
   generateMnemonic,
   validateMnemonic,
   getWordlist: () => wordlist,
   getDataLength,
+  generateMasterKey,
+  deriveKey,
   generateToken,
 } as const
 

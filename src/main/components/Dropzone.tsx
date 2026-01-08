@@ -1,36 +1,36 @@
 import {
   Dropzone as MantineDropzone,
   DropzoneFullScreenProps as MantineDropzoneFullScreenProps,
+  FileWithPath as MantineFileWithPath,
 } from "@mantine/dropzone"
 import { FunctionComponent } from "react"
 
-type DropzoneProps = Omit<MantineDropzoneFullScreenProps, "styles" | "zIndex">
+export type FileWithPath = MantineFileWithPath
 
-const Dropzone: FunctionComponent<DropzoneProps> = (props) => {
+export type DropzoneProps = Omit<
+  MantineDropzoneFullScreenProps,
+  "getFilesFromEvent" | "styles" | "zIndex"
+>
+
+export const Dropzone: FunctionComponent<DropzoneProps> = (props) => {
   return (
     <MantineDropzone.FullScreen
       {...props}
+      getFilesFromEvent={async (event) =>
+        "dataTransfer" in event && event.dataTransfer
+          ? Array.from(event.dataTransfer.files)
+          : []
+      }
       styles={{
-        root: {
-          "&[data-idle]": {
-            backgroundColor: "transparent",
-            border: "none",
-          },
-          "&[data-accept]": {
-            backgroundImage: "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
-            border: "none",
-          },
-          "&[data-reject]": {
-            backgroundColor: "transparent",
-            border: "none",
-          },
-        },
         fullScreen: {
-          backgroundColor: "transparent",
           padding: 0,
         },
+        root: {
+          backgroundImage: "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+          border: "none",
+        },
       }}
-      zIndex={200}
+      zIndex={2000}
     />
   )
 }

@@ -32,7 +32,6 @@
       "view": "View",
       "chooseLanguage": "Choose app language",
       "showSelectionAsQrCode": "Show selection as QR code",
-      "showHiddenSecrets": "Show hidden secrets",
       "reload": "Reload",
       "toggleDeveloperTools": "Toggle developer tools"
     }
@@ -46,20 +45,70 @@
       "copyright": "Copyright",
       "allRightsReserved": "All rights reserved"
     },
+    "createStandaloneArchiveModal": {
+      "createStandaloneArchive": "Create standalone archive",
+      "filename": "Filename",
+      "typeFilename": "Type filename…",
+      "createArchive": "Create"
+    },
+    "createDisclaimerModal": {
+      "standardDescription_one": "Block and passphrase required to restore secret",
+      "standardDescription_other": "Block and passphrases required to restore secrets",
+      "standardWithOneDetachedArchiveDescription_one": "Block and passphrase required to restore secret and detached archive",
+      "standardWithOneDetachedArchiveDescription_other": "Block and passphrases required to restore secrets and detached archive",
+      "standardWithMultipleDetachedArchivesDescription_one": "Block and passphrase required to restore secret and detached archives",
+      "standardWithMultipleDetachedArchivesDescription_other": "Block and passphrases required to restore secrets and detached archives",
+      "2of3Description_one": "2 of 3 blocks of blockset and passphrase required to restore secret",
+      "2of3Description_other": "2 of 3 blocks of blockset and passphrases required to restore secrets",
+      "2of3WithOneDetachedArchiveDescription_one": "2 of 3 blocks of blockset and passphrase required to restore secret and detached archive",
+      "2of3WithOneDetachedArchiveDescription_other": "2 of 3 blocks of blockset and passphrases required to restore secrets and detached archive",
+      "2of3WithMultipleDetachedArchivesDescription_one": "2 of 3 blocks of blockset and passphrase required to restore secret and detached archives",
+      "2of3WithMultipleDetachedArchivesDescription_other": "2 of 3 blocks of blockset and passphrases required to restore secrets and detached archives",
+      "3of5Description_one": "3 of 5 blocks of blockset and passphrase required to restore secret",
+      "3of5Description_other": "3 of 5 blocks of blockset and passphrases required to restore secrets",
+      "3of5WithOneDetachedArchiveDescription_one": "3 of 5 blocks of blockset and passphrase required to restore secret and detached archive",
+      "3of5WithOneDetachedArchiveDescription_other": "3 of 5 blocks of blockset and passphrases required to restore secrets and detached archive",
+      "3of5WithMultipleDetachedArchivesDescription_one": "3 of 5 blocks of blockset and passphrase required to restore secret and detached archives",
+      "3of5WithMultipleDetachedArchivesDescription_other": "3 of 5 blocks of blockset and passphrases required to restore secrets and detached archives",
+      "4of7Description_one": "4 of 7 blocks of blockset and passphrase required to restore secret",
+      "4of7Description_other": "4 of 7 blocks of blockset and passphrases required to restore secrets",
+      "4of7WithOneDetachedArchiveDescription_one": "4 of 7 blocks of blockset and passphrase required to restore secret and detached archive",
+      "4of7WithOneDetachedArchiveDescription_other": "4 of 7 blocks of blockset and passphrases required to restore secrets and detached archive",
+      "4of7WithMultipleDetachedArchivesDescription_one": "4 of 7 blocks of blockset and passphrase required to restore secret and detached archives",
+      "4of7WithMultipleDetachedArchivesDescription_other": "4 of 7 blocks of blockset and passphrases required to restore secrets and detached archives"
+    },
     "disclaimer": {
-      "doNot": "Do not",
-      "useSuperbackedOnComputer": "use Superbacked on computer that isn’t",
-      "airGapped": "air-gapped",
-      "and": "and",
-      "exclusivelyUsed": "exclusively used",
-      "forSecretManagementUnlessSecret": "for secret management unless secret is already present on computer.",
-      "superbackedIncCannotBeHeldResponsible": "Superbacked, Inc., along with its employees, operators and shareholders and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets.",
+      "computerProvisioningWarning": "<bold>Do not</bold> use Superbacked on computer that is not specifically provisioned for secret management (no data persistence or network connectivity) unless secret is already present on computer.",
+      "limitationOfLiability": "Superbacked, Inc., along with its employees, operators and shareholders and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets.",
       "useAtYourOwnRisk": "USE AT YOUR OWN RISK.",
       "agree": "I agree to above terms and accept underlying risks",
       "useSuperbacked": "Use Superbacked"
     },
     "errorModal": {
       "headsUp": "Heads-up"
+    },
+    "featureDescriptionModal": {
+      "learnMore": "Learn more",
+      "detachedArchiveDescription": "Detached archives encrypt files and folders using master keys embedded in blocks and are restored using blocks and passphrases providing multi-factor authentication.",
+      "standaloneArchiveDescription": "Standalone archives encrypt files and folders using passphrases only and are restored without blocks providing single-factor authentication."
+    },
+    "fileManager": {
+      "addToBlock": "Add to block",
+      "addToBlockset": "Add to blockset",
+      "addFiles": "Add files",
+      "createStandaloneArchive": "Create standalone archive…",
+      "addToStandaloneArchive": "Add to standalone archive",
+      "showFiles_one": "Show file",
+      "showFiles_other": "Show files",
+      "dragAndDropFiles": "Drag and drop files",
+      "couldNotHandleDroppedFiles": "Could not handle dropped files",
+      "couldNotCreateStandaloneArchive": "Could not create standalone archive",
+      "couldNotRestoreStandaloneArchive": "Could not restore standalone archive",
+      "standaloneArchiveCreated": "Standalone archive created",
+      "standaloneArchiveRestored": "Standalone archive restored"
+    },
+    "hiddenSecretDisclaimerModal": {
+      "description": "Hidden secrets use separate passphrases and are concealed in unused blockspace."
     },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Passphrase strength",
@@ -83,8 +132,11 @@
     },
     "passphraseModal": {
       "enterPassphrase": "Enter passphrase",
-      "unlock": "Unlock",
-      "unlocking": "Unlocking"
+      "unlock": "Unlock"
+    },
+    "restoreStandaloneArchiveModal": {
+      "restoreStandaloneArchive": "Restore standalone archive",
+      "restore": "Restore"
     },
     "scanner": {
       "loading": "Loading",
@@ -110,19 +162,31 @@
       "found_other": "found"
     }
   },
-  "utilities": {
+  "handlers": {
+    "createArchive": {
+      "chooseWhereToSaveArchive_one": "Choose where to save archive",
+      "chooseWhereToSaveArchive_other": "Choose where to save archives"
+    },
+    "restoreArchive": {
+      "chooseWhereToSaveArchiveContent": "Choose where to save archive content"
+    },
     "save": {
-      "chooseWhereToSaveBlock_one": "Choose where to save block",
-      "chooseWhereToSaveBlock_other": "Choose where to save blocks"
+      "chooseWhereToSaveBlock": "Choose where to save block",
+      "chooseWhereToSaveBlockset": "Choose where to save blockset"
     }
   },
   "common": {
-    "passphrase": "Passphrase",
-    "typePassphrase": "Type passphrase…",
-    "passphraseRequired": "Passphrase required",
-    "copy": "Copy",
+    "cancel": "Cancel",
     "copied": "Copied",
-    "done": "Done"
+    "copy": "Copy",
+    "done": "Done",
+    "gotIt": "Got it",
+    "important": "Important",
+    "next": "Next",
+    "passphrase": "Passphrase",
+    "passphraseRequired": "Passphrase required",
+    "passphraseTooWeak": "Passphrase too weak",
+    "typePassphrase": "Type passphrase…"
   },
   "routes": {
     "create": {
@@ -130,7 +194,8 @@
       "typeSecret": "Type secret…",
       "secretRequired": "Secret required",
       "secretTooLong": "Secret too long",
-      "passphraseTooWeak": "Passphrase too weak",
+      "detachedArchive": "Detached archive",
+      "dragAndDropFileToProvisionDetachedArchive": "Drag and drop file to provision detached archive",
       "passphraseUsed": "Passphrase used",
       "passphraseTooSimilar": "Passphrase too similar",
       "label": "Label (optional)",
@@ -139,28 +204,44 @@
       "backupType": "Backup type",
       "selectBackupType": "Select backup type…",
       "backupTypeRequired": "Backup type required",
-      "standard": "Standard",
-      "2of3": "Distributed (2 of 3 blocks required)",
-      "3of5": "Distributed (3 of 5 blocks required)",
-      "4of7": "Distributed (4 of 7 blocks required)",
-      "addSecret": "Add hidden secret",
-      "removeSecret": "Remove hidden secret",
-      "create": "Create",
-      "creating": "Creating",
-      "couldNotEncryptSecret": "Could not encrypt secret",
-      "couldNotEncryptSecrets": "Could not encrypt secret(s)",
+      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Drag and drop file to create or restore standalone archive",
+      "dragAndDropFilesToAddToDetachedArchive": "Drag and drop files to add to detached archive",
+      "standard": "Single block",
+      "standardDescription": "Block and passphrase required to restore secret",
+      "2of3": "Blockset (2-of-3 threshold)",
+      "2of3Description": "2 of 3 blocks of blockset and passphrase required to restore secret",
+      "3of5": "Blockset (3-of-5 threshold)",
+      "3of5Description": "3 of 5 blocks of blockset and passphrase required to restore secret",
+      "4of7": "Blockset (4-of-7 threshold)",
+      "4of7Description": "4 of 7 blocks of blockset and passphrase required to restore secret",
+      "addHiddenSecret": "Add hidden secret",
+      "removeHiddenSecret": "Remove hidden secret",
+      "createBlock": "Create block",
+      "createBlockAndDetachedArchive_one": "Create block and detached archive",
+      "createBlockAndDetachedArchive_other": "Create block and detached archives",
+      "createBlockset": "Create blockset",
+      "createBlocksetAndDetachedArchive_one": "Create blockset and detached archive",
+      "createBlocksetAndDetachedArchive_other": "Create blockset and detached archives",
+      "couldNotCreateBlock": "Could not create block",
+      "couldNotCreateBlockset": "Could not create blockset",
       "print": "Print",
       "pleaseConnectPrinter": "Please connect printer",
       "pleaseSelectPrinter": "Please select printer",
       "printer": "Printer",
       "selectPrinter": "Select printer",
-      "printing": "Printing",
+      "printingBlock": "Printing block",
+      "printingBlockset": "Printing blockset",
       "save": "Save"
     },
     "duplicate": { "couldNotDuplicateBlock": "Could not duplicate block" },
     "restore": {
-      "scanOrDragBlock": "Scan or drag block",
-      "scanOrDragNextBlock": "Scan or drag next block",
+      "scanOrDragAndDropBlock": "Scan or drag and drop block",
+      "scanOrDragAndDropNextBlock": "Scan or drag and drop next block",
+      "couldNotUnlockBlock": "Could not unlock block",
+      "dragAndDropArchiveToRestore": "Drag and drop {{filename}} to restore archive",
+      "restoringArchive": "Restoring archive",
+      "couldNotRestoreDetachedArchive": "Could not restore detached archive",
+      "detachedArchiveRestored": "Detached archive restored",
       "showSecret": "Show secret"
     }
   }

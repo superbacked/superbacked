@@ -1,5 +1,4 @@
-import { BrowserWindow } from "electron"
-
+import { getMainWindow } from "@/src/index"
 import spawn from "@/src/utilities/spawn"
 
 export interface Printer {
@@ -11,9 +10,9 @@ export interface Printer {
 export type PrinterStatus = "printing" | "standby"
 
 export const getPrinters = async (): Promise<Printer[]> => {
-  const window = BrowserWindow.getFocusedWindow()
+  const window = getMainWindow()
   if (!window) {
-    throw new Error("Could not get focussed window")
+    throw new Error("Could not get main window")
   }
   const printers = await window.webContents.getPrintersAsync()
 
@@ -34,7 +33,7 @@ export const getPrinters = async (): Promise<Printer[]> => {
   return sanitizedPrinters
 }
 
-export const getDefaultPrinter = async (): Promise<Printer | null> => {
+export const getDefaultPrinter = async (): Promise<null | Printer> => {
   const printers = await getPrinters()
   for (const printer of printers) {
     if (printer.isDefault === true) {

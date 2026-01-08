@@ -1,6 +1,7 @@
 import { Global, css } from "@emotion/react"
-import { MantineProvider } from "@mantine/core"
+import { MantineProvider, darken } from "@mantine/core"
 import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
+import { Notifications, notifications } from "@mantine/notifications"
 import { Fragment, useEffect, useState } from "react"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 
@@ -8,11 +9,10 @@ import { emotionCache } from "@/emotion-cache"
 import { setLocale } from "@/src/i18n"
 import About from "@/src/main/components/About"
 import Disclaimer from "@/src/main/components/Disclaimer"
-import Loading from "@/src/main/components/Loader"
 import MenuEvents, {
   MenuEventsContextConsumer,
 } from "@/src/main/components/MenuEvents"
-import ShowSelectionAsQrCode from "@/src/main/components/ShowSelectionAsQrCode"
+import SelectionAsQrCode from "@/src/main/components/SelectionAsQrCode"
 import TitleBar from "@/src/main/components/TitleBar"
 import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
@@ -24,6 +24,7 @@ import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
 import "@mantine/core/styles.css"
 import "@mantine/dropzone/styles.css"
+import "@mantine/notifications/styles.css"
 
 await setLocale(window.api.invokeSync.getLocale())
 
@@ -45,7 +46,10 @@ const App = () => {
     }
   }, [])
   useEffect(() => {
-    const removeListener = window.api.events.systemLocaleChange(setLocale)
+    const removeListener = window.api.events.systemLocaleChange((locale) => {
+      notifications.clean()
+      void setLocale(locale)
+    })
     return () => {
       removeListener()
     }
@@ -83,6 +87,38 @@ const App = () => {
             ],
           },
           components: {
+            Button: {
+              styles: {
+                root: {
+                  "&[data-variant='signatureGradient']": {
+                    background:
+                      "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+                    color: "#ffffff",
+                    "&:disabled": {
+                      color: darken("#ffffff", 0.25),
+                      backgroundImage: `linear-gradient(45deg, ${darken(
+                        "#fdc0ee",
+                        0.25
+                      )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
+                    },
+                  },
+                  "&[data-variant='signatureTextGradient']": {
+                    background: "transparent",
+                    backgroundImage:
+                      "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    "&:disabled": {
+                      backgroundImage: `linear-gradient(45deg, ${darken(
+                        "#fdc0ee",
+                        0.25
+                      )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
+                    },
+                  },
+                },
+              },
+            },
             Modal: {
               styles: {
                 title: {
@@ -90,6 +126,26 @@ const App = () => {
                 },
                 overlay: {
                   backdropFilter: "blur(4px)",
+                },
+              },
+            },
+            Notification: {
+              styles: {
+                root: {
+                  "&::before": { display: "none" },
+                },
+              },
+            },
+            Text: {
+              styles: {
+                root: {
+                  "&[data-variant='signatureGradient']": {
+                    backgroundImage:
+                      "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  },
                 },
               },
             },
@@ -109,6 +165,7 @@ const App = () => {
             }
           `}
         />
+        <Notifications containerWidth={400} />
         <TitleBar />
         <MemoryRouter>
           <MenuEvents>
@@ -127,7 +184,7 @@ const App = () => {
                         element={<Restore key={context.key} />}
                       />
                     </Routes>
-                    <ShowSelectionAsQrCode />
+                    <SelectionAsQrCode />
                     <About />
                   </Fragment>
                 )
@@ -135,7 +192,6 @@ const App = () => {
             </MenuEventsContextConsumer>
           </MenuEvents>
         </MemoryRouter>
-        <Loading />
         <Disclaimer />
       </MantineProvider>
     </MantineEmotionProvider>

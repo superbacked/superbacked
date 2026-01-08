@@ -76,7 +76,7 @@ const LogoContainer = styled.div`
 
 const App = () => {
   const { t } = useTranslation()
-  const [data, setData] = useState<Data | null>(null)
+  const [data, setData] = useState<null | Data>(null)
   useEffect(() => {
     const dataChangeListener = window.blockApi.events.dataChange(setData)
     const pdfToJpegListener = window.blockApi.events.pdfToJpeg(

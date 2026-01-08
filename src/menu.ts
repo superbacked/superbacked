@@ -30,8 +30,6 @@ type Mode = "insert" | "select"
 
 const enabledModes: Set<Mode> = new Set()
 
-export let showHiddenSecrets = false
-
 export const setMenu = () => {
   const runningMacOS = process.platform === "darwin"
   const debuggingModeEnabled = app.isPackaged === false || app.inspect === true
@@ -237,24 +235,6 @@ export const setMenu = () => {
         {
           label: t("menu.view.chooseLanguage"),
           submenu: chooseLanguageSubmenu,
-        },
-        { type: "separator" },
-        {
-          type: "checkbox",
-          checked: showHiddenSecrets,
-          label: t("menu.view.showHiddenSecrets"),
-          click(menuItem) {
-            showHiddenSecrets = menuItem.checked
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              sendEvent(
-                focusedWindow,
-                "menuShowHiddenSecrets",
-                showHiddenSecrets
-              )
-            }
-            setMenu()
-          },
         },
         { type: "separator" },
         {

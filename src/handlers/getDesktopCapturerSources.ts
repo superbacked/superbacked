@@ -7,11 +7,11 @@ export interface CustomDesktopCapturerSource {
 }
 
 export type GetDesktopCapturerSourcesResult =
+  | { error: string; success: false }
   | {
       customDesktopCapturerSources: CustomDesktopCapturerSource[]
       success: true
     }
-  | { error: string; success: false }
 
 export default async function getDesktopCapturerSources(): Promise<GetDesktopCapturerSourcesResult> {
   try {

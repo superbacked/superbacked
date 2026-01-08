@@ -1,4 +1,4 @@
-import { createHash, randomInt } from "crypto"
+import { createHash, hkdfSync, randomBytes, randomInt } from "crypto"
 
 /**
  * Hash string using SHA-256
@@ -21,6 +21,23 @@ export const shortHash = (string: string) => {
   return hashedString.substring(0, 8)
 }
 
+/**
+ * Derive key using HKDF-SHA256
+ * @param inputKeyingMaterial input keying material
+ * @param salt salt value
+ * @param info additional info value
+ * @param length length of the key to generate
+ * @returns derived key
+ */
+export const hkdf = (
+  inputKeyingMaterial: Buffer,
+  salt: Buffer,
+  info: Buffer,
+  length: number
+): Buffer => {
+  return Buffer.from(
+    hkdfSync("sha256", inputKeyingMaterial, salt, info, length)
+  )
 }
 
 /**
@@ -42,4 +59,22 @@ export const getRandomInt = async (
       }
     })
   })
+}
+
+/**
+ * Generate a cryptographically secure random encryption key
+ * @param keySize key size in bytes, defaults to `32`
+ * @returns random encryption key as Buffer
+ */
+export const generateEncryptionKey = (keySize = 32): Buffer => {
+  return randomBytes(keySize)
+}
+
+/**
+ * Generate a cryptographically secure random salt
+ * @param saltSize salt size in bytes, defaults to `16`
+ * @returns random encryption salt as Buffer
+ */
+export const generateSalt = (saltSize = 16): Buffer => {
+  return randomBytes(saltSize)
 }

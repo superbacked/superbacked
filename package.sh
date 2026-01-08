@@ -4,10 +4,65 @@
 set -e
 set -o pipefail
 
-printf "$bold%s$normal" "Do you wish to build app (y or n)? "
-read -r answer
+bold=$(tput bold)
+normal=$(tput sgr0)
 
-if [ "$answer" = "y" ]; then
+# Parse command-line options
+build_app=""
+build_os=""
+yes=false
+
+function show_help() {
+  cat << EOF
+Usage: package.sh [options]
+
+Options:
+  --app       Build app only
+  --os        Build Superbacked OS only
+  --yes       Skip all confirmation prompts and build both
+  -h, --help  Show this help message
+
+If no options are provided, the script will prompt for each step.
+EOF
+  exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      show_help
+      ;;
+    --app)
+      build_app=true
+      shift
+      ;;
+    --os)
+      build_os=true
+      shift
+      ;;
+    --yes)
+      yes=true
+      build_app=true
+      build_os=true
+      shift
+      ;;
+    *)
+      echo "Error: Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Prompt for app build if not specified
+if [ "$yes" != true ] && [ -z "$build_app" ]; then
+  printf "$bold%s$normal" "Do you wish to build app (y or n)? "
+  read -r answer
+  if [ "$answer" = "y" ]; then
+    build_app=true
+  fi
+fi
+
+if [ "$build_app" = true ]; then
   printf "%s\n" "Purging dist and out folders…"
 
   find ./{dist,out} ! -name .borgignore -delete
@@ -25,10 +80,16 @@ if [ "$answer" = "y" ]; then
   done
 fi
 
-printf "$bold%s$normal" "Do you wish to build Superbacked OS (y or n)? "
-read -r answer
+# Prompt for Superbacked OS build if not specified
+if [ "$yes" != true ] && [ -z "$build_os" ]; then
+  printf "$bold%s$normal" "Do you wish to build Superbacked OS (y or n)? "
+  read -r answer
+  if [ "$answer" = "y" ]; then
+    build_os=true
+  fi
+fi
 
-if [ "$answer" = "y" ]; then
+if [ "$build_os" = true ]; then
   printf "%s\n" "Purging Superbacked OS images…"
 
   find ./dist -type f \( -name "*.img*" \) -delete

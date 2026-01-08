@@ -1,48 +1,46 @@
-import { MantineSize, Modal } from "@mantine/core"
-import { FunctionComponent } from "react"
+import { MantineSize, Modal, Text } from "@mantine/core"
+import { FunctionComponent, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { TranslationKey } from "@/src/@types/react-i18next"
+import {
+  TranslationKey,
+  ValidateTranslationKeys,
+} from "@/src/shared/types/i18n"
+
+export type ErrorState<TKeys extends TranslationKey = TranslationKey> = {
+  message: ValidateTranslationKeys<TKeys>
+  count?: number
+}
 
 interface ErrorModalProps {
-  error: null | TranslationKey
-  opened: boolean
+  error: null | ErrorState
   onClose: () => void
   size?: MantineSize
 }
 
-/**
- * Error modal component for displaying translated error messages
- *
- * @param error - Translation key of the error message or null (required)
- * @param opened - Whether the modal is visible (required)
- * @param onClose - Callback when modal is closed (required)
- * @param size - Size of the modal (optional, defaults to "sm")
- *
- * @example
- * ```tsx
- * const [error, setError] = useState<TranslationKey | null>(null)
- * const [showError, setShowError] = useState(false)
- *
- * <ErrorModal
- *   error={error}
- *   opened={showError}
- *   onClose={() => setShowError(false)}
- * />
- * ```
- */
 const ErrorModal: FunctionComponent<ErrorModalProps> = (props) => {
   const { t } = useTranslation()
+  const [displayedError, setDisplayedError] = useState(props.error)
+
+  // Preserve error message during modal close animation
+  // When error becomes null, modal starts closing but displayedError keeps the message visible
+  if (props.error !== null && props.error !== displayedError) {
+    setDisplayedError(props.error)
+  }
+
   return (
     <Modal
       centered
-      closeOnClickOutside={false}
       onClose={props.onClose}
-      opened={props.opened ? props.error !== null : false}
+      opened={props.error !== null}
       size={props.size ?? "sm"}
       title={t("components.errorModal.headsUp")}
     >
-      {props.error ? t(props.error) : null}
+      <Text size="sm">
+        {displayedError
+          ? t(displayedError.message, { count: displayedError.count })
+          : null}
+      </Text>
     </Modal>
   )
 }

@@ -1,28 +1,21 @@
-import { BrowserWindow, dialog } from "electron"
 import { join } from "path"
 
 import { writeFile } from "fs-extra"
 import { t } from "i18next"
 
+import chooseDirectory from "@/src/handlers/chooseDirectory"
 import { Qr } from "@/src/handlers/create"
 
 export type Format = "jpg" | "pdf"
 
 export default async (qrs: Qr[], formats: Format[]): Promise<boolean> => {
-  const window = BrowserWindow.getFocusedWindow()
-  if (!window) {
-    throw new Error("Could not get focussed window")
-  }
-  const message = t("utilities.save.chooseWhereToSaveBlock", {
-    count: qrs.length,
-  })
-  const openDialogReturnValue = await dialog.showOpenDialog(window, {
-    message: message,
-    properties: ["createDirectory", "openDirectory"],
-    title: message,
-  })
-  if (openDialogReturnValue.canceled !== true) {
-    const selectedPath = openDialogReturnValue.filePaths[0]
+  const message =
+    qrs.length > 1
+      ? t("handlers.save.chooseWhereToSaveBlockset")
+      : t("handlers.save.chooseWhereToSaveBlock")
+  const saveDialogReturnValue = await chooseDirectory(message)
+  if (saveDialogReturnValue.canceled !== true) {
+    const selectedPath = saveDialogReturnValue.filePath
     if (!selectedPath) {
       throw new Error("Could not get selected path")
     }

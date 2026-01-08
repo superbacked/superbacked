@@ -36,6 +36,7 @@ import {
 interface SecretTextareaProps extends TextareaProps {
   dataLengths: DataLengths
   secretNumber: number
+  onPopoverChange?: (opened: boolean) => void
 }
 
 interface Extraction {
@@ -76,6 +77,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     onBlur,
     onChange,
     onFocus,
+    onPopoverChange,
     ...otherProps
   } = props
   const lengthPercentage = useMemo(() => {
@@ -128,7 +130,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     }
     return extractions
   }, [currentSelection, otherProps.value, theme])
-  const color = lengthPercentage > 100 ? "red" : "teal"
+  const color = lengthPercentage > 100 ? "red" : "pink"
   const updateScrollTop = useCallback(() => {
     if (textRef.current && textareaRef.current) {
       textRef.current.scrollTop = textareaRef.current.scrollTop
@@ -138,9 +140,8 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     if (document.activeElement === textareaRef.current) {
       const newSelection = captureSelection()
       if (
-        !prevousSelectionRef.current ||
-        prevousSelectionRef.current.start !== newSelection.start ||
-        prevousSelectionRef.current.end !== newSelection.end
+        prevousSelectionRef.current?.start !== newSelection.start ||
+        prevousSelectionRef.current?.end !== newSelection.end
       ) {
         prevousSelectionRef.current = newSelection
         setCurrentSelection(newSelection)
@@ -255,7 +256,13 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     textChildren.push(value.substring(startIndex).replace(/\n$/, "\n\n"))
   }
   return (
-    <Popover opened={popoverOpened} width={"440px"} withArrow>
+    <Popover
+      onExitTransitionEnd={() => onPopoverChange?.(false)}
+      onOpen={() => onPopoverChange?.(true)}
+      opened={popoverOpened}
+      width={"440px"}
+      withArrow
+    >
       <Popover.Dropdown>
         <Text c="dimmed" fw="bold" size="sm" ta="center">
           {t("components.secretTextareaWithLength.secretLength")}
@@ -281,7 +288,14 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
               setPopoverOpened(true)
             }
           }}
-          onBlurCapture={() => setPopoverOpened(false)}
+          onBlurCapture={() => {
+            setPopoverOpened(false)
+            setCurrentSelection({
+              start: 0,
+              end: 0,
+              element: textareaRef.current as HTMLTextAreaElement,
+            })
+          }}
           sx={() => ({
             position: "relative",
             width: "100%",
@@ -349,6 +363,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
               }
             }}
             {...otherProps}
+            spellCheck={false}
             styles={{
               root: {
                 width: "100%",
