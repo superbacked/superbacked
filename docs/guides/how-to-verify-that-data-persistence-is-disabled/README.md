@@ -11,22 +11,11 @@ Superbacked OS disables data persistence by default to make sure secrets are not
 
 Using terminal, compute disk checksum before and after using Superbacked OS and make sure checksums match.
 
+Confirm checksums match Superbacked OS release boot (1) and root (2) partition PGP-signed checksums.
+
 ### macOS
 
-#### Step 1 (if computing checksum of Superbacked OS for Raspberry Pi): disable automatic mounting of `/Volumes/system-boot`
-
-> Heads-up: when mounting filesystems, macOS may write hidden files altering computed disk checksum (completing step 1 is only required once).
-
-```shell-session
-$ volume_path="/Volumes/system-boot"
-
-$ volume_uuid=$(diskutil info "$volume_path" | awk '/Volume UUID:/ { print $3 }')
-
-$ echo "UUID=$volume_uuid none auto ro,noauto" | sudo tee -a /etc/fstab
-UUID=C6651C15-1754-301D-B9DB-76371B6FE869 none auto ro,noauto
-```
-
-#### Step 2: compute disk checksum
+#### Step 1: compute disk checksum
 
 > Heads-up: replace `rdisk4` with disk found using `diskutil list`.
 
@@ -45,8 +34,9 @@ $ sudo diskutil unmountDisk /dev/disk4
 Password:
 Unmount of all volumes on disk4 was successful
 
-$ sudo openssl dgst -sha256 /dev/rdisk4
-SHA256(/dev/rdisk4)= bf786d69790b84d88a2c47d656807e166c5a224ea32e8e4520ac4daf41db78be
+$ sudo sha256sum /dev/rdisk4s1 /dev/rdisk4s2
+6cdca6aab0db8d2a893883085eed84a642ebb3b65990de02540bb3c198c643cb  /dev/rdisk4s1
+0e33c330624ba3ef1ecc0a8fa3a8c4821c36ba46fb08791e74eff4787b7d6b27  /dev/rdisk4s2
 ```
 
 ### Ubuntu
@@ -62,7 +52,7 @@ Units: sectors of 1 * 512 = 512 bytes
 Sector size (logical/physical): 512 bytes / 512 bytes
 I/O size (minimum/optimal): 512 bytes / 512 bytes
 Disklabel type: dos
-Disk identifier: 0xc5c84eac
+Disk identifier: 0xefc52f4f
 
 Device     Boot   Start      End  Sectors  Size Id Type
 /dev/sdb1  *       2048  1050623  1048576  512M ef EFI (FAT-12/16/32)
@@ -73,6 +63,7 @@ umount: /dev/sdb: not mounted.
 umount: /dev/sdb1: not mounted.
 umount: /dev/sdb2: not mounted.
 
-$ sudo openssl dgst -sha256 /dev/sdb
-SHA2-256(/dev/sdb)= bf786d69790b84d88a2c47d656807e166c5a224ea32e8e4520ac4daf41db78be
+$ sudo sha256sum /dev/sdb1 /dev/sdb2
+6cdca6aab0db8d2a893883085eed84a642ebb3b65990de02540bb3c198c643cb  /dev/sdb1
+0e33c330624ba3ef1ecc0a8fa3a8c4821c36ba46fb08791e74eff4787b7d6b27  /dev/sdb2
 ```

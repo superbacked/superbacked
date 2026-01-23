@@ -71,6 +71,14 @@ printf "%s\n" "Optimizing root partition…"
 
 zerofree /dev/loop0p2
 
+printf "%s\n" "Calculating SHA256 checksums…"
+
+printf "Boot partition: " > /dist/$1.sha256sums
+sha256sum /dev/loop0p1 | cut -d ' ' -f1 >> /dist/$1.sha256sums
+
+printf "Root partition: " >> /dist/$1.sha256sums
+sha256sum /dev/loop0p2 | cut -d ' ' -f1 >> /dist/$1.sha256sums
+
 printf "%s\n" "Detaching loop device…"
 
 losetup --detach /dev/loop0
