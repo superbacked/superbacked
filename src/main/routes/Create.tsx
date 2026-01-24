@@ -198,8 +198,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     | "routes.create.pleaseSelectPrinter"
   >>(null)
   const [qrs, setQrs] = useState<Qr[]>(initialQrs)
-  // The following ref is a temporary patch to help users avoid unintended button clicks (should be fixed using proper UI)
+  // The following refs are a temporary patch to help users avoid unintended button clicks (should be fixed using proper UI)
   const openedPopoversRef = useRef(0)
+  const blockedClicksRef = useRef(0)
   type FormValues = {
     secret1: string
     passphrase1: string
@@ -216,6 +217,20 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     } else {
       openedPopoversRef.current--
     }
+  }, [])
+  const shouldIgnoreClick = useCallback(() => {
+    if (openedPopoversRef.current > 0) {
+      blockedClicksRef.current++
+      if (blockedClicksRef.current >= 2) {
+        // Reset counter after two blocked clicks
+        openedPopoversRef.current = 0
+        blockedClicksRef.current = 0
+        return false
+      }
+      return true
+    }
+    blockedClicksRef.current = 0
+    return false
   }, [])
   const getDataLengths = useCallback(
     (backupType: BackupType, secretsData: SecretsState): DataLengths => {
@@ -934,7 +949,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             size="sm"
             variant="signatureTextGradient"
             onClick={() => {
-              if (openedPopoversRef.current > 0) return
+              if (shouldIgnoreClick()) return
               const validation = form.validate()
               if (validation.hasErrors === false) {
                 if (secretNumber === 1) {
@@ -960,7 +975,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             size="sm"
             variant="signatureTextGradient"
             onClick={() => {
-              if (openedPopoversRef.current > 0) return
+              if (shouldIgnoreClick()) return
               form.setValues({
                 [`secret${secretNumber}`]: "",
                 [`passphrase${secretNumber}`]: "",
@@ -1020,7 +1035,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               fullWidth
               loading={isCreating}
               onClick={() => {
-                if (openedPopoversRef.current > 0) return
+                if (shouldIgnoreClick()) return
                 void handleCreate()
               }}
               size="md"
