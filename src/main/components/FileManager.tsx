@@ -126,8 +126,9 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
             hideOverlay()
             closePopover()
             reset()
+          } else {
+            handleFiles(files)
           }
-          handleFiles(files)
           return files
         })
       },

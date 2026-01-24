@@ -222,7 +222,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     if (openedPopoversRef.current > 0) {
       blockedClicksRef.current++
       if (blockedClicksRef.current >= 2) {
-        // Reset counter after two blocked clicks
+        // Reset counter after two blocked clicks as a failsafe if event handlers are inconsistent
         openedPopoversRef.current = 0
         blockedClicksRef.current = 0
         return false
@@ -636,7 +636,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             handleFiles={(handledFiles) => {
               updateSecretsState({ 1: handledFiles })
               if (handledFiles.length === 0) {
-                closeArchivePopover()
+                handlePopoverChange(false)
               }
             }}
           />
@@ -1023,7 +1023,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             handleFiles={(handledFiles) => {
               updateSecretsState({ [secretNumber]: handledFiles })
               if (handledFiles.length === 0) {
-                closeArchivePopover()
+                handlePopoverChange(false)
               }
             }}
           />
