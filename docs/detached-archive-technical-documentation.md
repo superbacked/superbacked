@@ -123,7 +123,7 @@ Archives use AES-256-GCM authenticated encryption providing confidentiality and 
 **Security characteristics:**
 
 - **Algorithm**: AES-256-GCM authenticated encryption
-- **Confidentiality**: AES-256 block cipher conceals archive content
+- **Confidentiality**: AES-256 block cipher encrypts archive content
 - **Integrity**: Galois/Counter Mode (GCM) provides authentication tag to detect tampering
 
 ## Archive structure
