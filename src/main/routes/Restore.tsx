@@ -32,6 +32,7 @@ import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
 import Loading from "@/src/main/components/Loading"
 import PassphraseModal from "@/src/main/components/PassphraseModal"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
+import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   Bip39MnemonicResult,
   TotpUriResult,
@@ -426,10 +427,14 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                               "routes.restore.couldNotRestoreDetachedArchive",
                           })
                         } else if (result.success) {
-                          notifications.show({
+                          showNotificationWithButton({
                             message: t(
                               "routes.restore.detachedArchiveRestored"
                             ),
+                            buttonLabel: t("common.show"),
+                            buttonOnClick: () => {
+                              void window.api.invoke.openPath(outputDir)
+                            },
                           })
                         }
                       } catch {

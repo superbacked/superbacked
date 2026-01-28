@@ -8,7 +8,6 @@ import {
   Space,
 } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
-import { notifications } from "@mantine/notifications"
 import {
   Fragment,
   forwardRef,
@@ -19,7 +18,10 @@ import {
 } from "react"
 import { useTranslation } from "react-i18next"
 
-import { CreateStandaloneArchiveResult } from "@/src/handlers/standaloneArchive"
+import {
+  CreateStandaloneArchiveResult,
+  RestoreStandaloneArchiveResult,
+} from "@/src/handlers/standaloneArchive"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import CreateStandaloneArchiveModal from "@/src/main/components/CreateStandaloneArchiveModal"
 import Dropzone, { FileWithPath } from "@/src/main/components/Dropzone"
@@ -27,6 +29,7 @@ import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
 import FileList from "@/src/main/components/FileList"
 import Overlay from "@/src/main/components/Overlay"
 import RestoreStandaloneArchiveModal from "@/src/main/components/RestoreStandaloneArchiveModal"
+import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import { ValidateTranslationKeys } from "@/src/shared/types/i18n"
 import CustomError from "@/src/shared/utilities/CustomError"
 
@@ -139,7 +142,9 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
       async (
         filename: string,
         passphrase: string
-      ): Promise<void | CreateStandaloneArchiveResult> => {
+      ): Promise<
+        void | (CreateStandaloneArchiveResult & { archivePath: string })
+      > => {
         setIsCreatingArchive(true)
         const filePaths = selectedFiles.map((file) => file.absolutePath)
         try {
@@ -165,7 +170,10 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
               "components.fileManager.couldNotCreateStandaloneArchive"
             )
           }
-          return result
+          return {
+            ...result,
+            archivePath,
+          }
         } finally {
           setIsCreatingArchive(false)
         }
@@ -174,7 +182,11 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
     )
 
     const restoreArchive = useCallback(
-      async (passphrase: string) => {
+      async (
+        passphrase: string
+      ): Promise<
+        void | (RestoreStandaloneArchiveResult & { outputDir: string })
+      > => {
         if (
           !selectedFiles[0] ||
           selectedFiles[0].name.endsWith(".superbacked") === false
@@ -206,7 +218,10 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
             "components.fileManager.couldNotRestoreStandaloneArchive"
           )
         }
-        return result
+        return {
+          ...result,
+          outputDir,
+        }
       },
       [selectedFiles, t]
     )
@@ -354,10 +369,14 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
                     values.passphrase
                   )
                   if (result?.success) {
-                    notifications.show({
+                    showNotificationWithButton({
                       message: t(
                         "components.fileManager.standaloneArchiveCreated"
                       ),
+                      buttonLabel: t("common.show"),
+                      buttonOnClick: () => {
+                        void window.api.invoke.openPath(result.archivePath)
+                      },
                     })
                     closeArchiveModal()
                     hideOverlay()
@@ -390,11 +409,15 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
                 try {
                   setIsRestoringArchive(true)
                   const result = await restoreArchive(passphrase)
-                  if (result?.success) {
-                    notifications.show({
+                  if (result?.success && result.outputDir) {
+                    showNotificationWithButton({
                       message: t(
                         "components.fileManager.standaloneArchiveRestored"
                       ),
+                      buttonLabel: t("common.show"),
+                      buttonOnClick: () => {
+                        void window.api.invoke.openPath(result.outputDir)
+                      },
                     })
                     closePassphraseModal()
                     hideOverlay()

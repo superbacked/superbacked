@@ -37,6 +37,7 @@ const api: Api = {
   invoke: {
     getDesktopCapturerSources: invoke("getDesktopCapturerSources"),
     openExternalUrl: invoke("openExternalUrl"),
+    openPath: invoke("openPath"),
     enableModes: invoke("enableModes"),
     disableModes: invoke("disableModes"),
     toggleMaximize: invoke("toggleMaximize"),

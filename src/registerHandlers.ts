@@ -13,6 +13,7 @@ import duplicate from "@/src/handlers/duplicate"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
 import getDesktopCapturerSources from "@/src/handlers/getDesktopCapturerSources"
 import openExternalUrl from "@/src/handlers/openExternalUrl"
+import openPath from "@/src/handlers/openPath"
 import {
   getDefaultPrinter,
   getPrinterStatus,
@@ -65,6 +66,7 @@ export interface IpcEvents {
 const asyncHandlers = {
   getDesktopCapturerSources,
   openExternalUrl,
+  openPath,
   enableModes,
   disableModes,
   toggleMaximize,
