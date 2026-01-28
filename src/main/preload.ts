@@ -51,8 +51,10 @@ const api: Api = {
     restore: invoke("restore"),
     restoreReset: invoke("restoreReset"),
     chooseDirectory: invoke("chooseDirectory"),
-    createArchive: invoke("createArchive"),
-    restoreArchive: invoke("restoreArchive"),
+    createDetachedArchive: invoke("createDetachedArchive"),
+    createStandaloneArchive: invoke("createStandaloneArchive"),
+    restoreDetachedArchive: invoke("restoreDetachedArchive"),
+    restoreStandaloneArchive: invoke("restoreStandaloneArchive"),
   } satisfies IpcHandlers,
   invokeSync: {
     getColorScheme: invokeSync("getColorScheme"),

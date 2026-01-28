@@ -163,12 +163,19 @@
     }
   },
   "handlers": {
-    "createArchive": {
-      "chooseWhereToSaveArchive_one": "Escolher onde guardar o arquivo",
-      "chooseWhereToSaveArchive_other": "Escolher onde guardar os arquivos"
+    "createStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchive_one": "Escolher onde guardar o arquivo autônomo",
+      "chooseWhereToSaveStandaloneArchive_other": "Escolher onde guardar os arquivos autônomos"
     },
-    "restoreArchive": {
-      "chooseWhereToSaveArchiveContent": "Escolher onde guardar o conteúdo do arquivo"
+    "restoreStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchiveContent": "Escolher onde guardar o conteúdo do arquivo autônomo"
+    },
+    "createDetachedArchive": {
+      "chooseWhereToSaveDetachedArchive_one": "Escolher onde guardar o arquivo destacado",
+      "chooseWhereToSaveDetachedArchive_other": "Escolher onde guardar os arquivos destacados"
+    },
+    "restoreDetachedArchive": {
+      "chooseWhereToSaveDetachedArchiveContent": "Escolher onde guardar o conteúdo do arquivo destacado"
     },
     "save": {
       "chooseWhereToSaveBlock": "Escolher onde guardar o bloco",
@@ -222,6 +229,8 @@
       "createBlockset": "Criar o conjunto de blocos",
       "createBlocksetAndDetachedArchive_one": "Criar o conjunto de blocos e o arquivo destacado",
       "createBlocksetAndDetachedArchive_other": "Criar o conjunto de blocos e os arquivos destacados",
+      "couldNotCreateDetachedArchive_one": "Não foi possível criar o arquivo destacado",
+      "couldNotCreateDetachedArchive_other": "Não foi possível criar os arquivos destacados",
       "couldNotCreateBlock": "Não foi possível criar o bloco",
       "couldNotCreateBlockset": "Não foi possível criar o conjunto de blocos",
       "print": "Imprimir",
@@ -241,7 +250,7 @@
       "scanOrDragAndDropNextBlock": "Escanear ou arrastar próximo bloco",
       "couldNotUnlockBlock": "Não foi possível desbloquear o bloco",
       "dragAndDropArchiveToRestore": "Arrastar e soltar {{filename}} para restaurar o arquivo",
-      "restoringArchive": "Restaurando arquivo",
+      "restoringDetachedArchive": "Restaurando arquivo desanexado",
       "couldNotRestoreDetachedArchive": "Não foi possível restaurar o arquivo destacado",
       "detachedArchiveRestored": "Arquivo destacado restaurado",
       "showSecret": "Mostrar o segredo"

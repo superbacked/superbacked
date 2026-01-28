@@ -19,7 +19,7 @@ import {
 } from "react"
 import { useTranslation } from "react-i18next"
 
-import { CreateArchiveResult } from "@/src/handlers/archive"
+import { CreateStandaloneArchiveResult } from "@/src/handlers/standaloneArchive"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import CreateStandaloneArchiveModal from "@/src/main/components/CreateStandaloneArchiveModal"
 import Dropzone, { FileWithPath } from "@/src/main/components/Dropzone"
@@ -139,23 +139,26 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
       async (
         filename: string,
         passphrase: string
-      ): Promise<void | CreateArchiveResult> => {
+      ): Promise<void | CreateStandaloneArchiveResult> => {
         setIsCreatingArchive(true)
         const filePaths = selectedFiles.map((file) => file.absolutePath)
         try {
           const saveDialogReturnValue = await window.api.invoke.chooseDirectory(
-            t("handlers.createArchive.chooseWhereToSaveArchive", {
-              count: 1,
-            })
+            t(
+              "handlers.createStandaloneArchive.chooseWhereToSaveStandaloneArchive",
+              {
+                count: 1,
+              }
+            )
           )
           if (saveDialogReturnValue.canceled) {
             return
           }
           const archivePath = `${saveDialogReturnValue.filePath}/${filename}.superbacked`
-          const result = await window.api.invoke.createArchive(
+          const result = await window.api.invoke.createStandaloneArchive(
             filePaths,
             archivePath,
-            { passphrase }
+            passphrase
           )
           if (result?.success === false && result.error) {
             throw new FileManagerError(
@@ -181,7 +184,9 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
         const filePath = selectedFiles[0].absolutePath
 
         const saveDialogReturnValue = await window.api.invoke.chooseDirectory(
-          t("handlers.restoreArchive.chooseWhereToSaveArchiveContent")
+          t(
+            "handlers.restoreStandaloneArchive.chooseWhereToSaveStandaloneArchiveContent"
+          )
         )
         if (saveDialogReturnValue.canceled) {
           return
@@ -191,10 +196,10 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
           throw new Error("Could not get output directory")
         }
 
-        const result = await window.api.invoke.restoreArchive(
+        const result = await window.api.invoke.restoreStandaloneArchive(
           filePath,
           outputDir,
-          { passphrase }
+          passphrase
         )
         if (result?.success === false && result.error) {
           throw new FileManagerError(

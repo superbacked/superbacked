@@ -163,12 +163,19 @@
     }
   },
   "handlers": {
-    "createArchive": {
-      "chooseWhereToSaveArchive_one": "Välj var arkivet ska sparas",
-      "chooseWhereToSaveArchive_other": "Välj var arkiven ska sparas"
+    "createStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchive_one": "Välj var det fristående arkivet ska sparas",
+      "chooseWhereToSaveStandaloneArchive_other": "Välj var de fristående arkiven ska sparas"
     },
-    "restoreArchive": {
-      "chooseWhereToSaveArchiveContent": "Välj var arkivinnehållet ska sparas"
+    "restoreStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchiveContent": "Välj var innehållet i det fristående arkivet ska sparas"
+    },
+    "createDetachedArchive": {
+      "chooseWhereToSaveDetachedArchive_one": "Välj var det separata arkivet ska sparas",
+      "chooseWhereToSaveDetachedArchive_other": "Välj var de separata arkiven ska sparas"
+    },
+    "restoreDetachedArchive": {
+      "chooseWhereToSaveDetachedArchiveContent": "Välj var innehållet i det separata arkivet ska sparas"
     },
     "save": {
       "chooseWhereToSaveBlock": "Välj var blocket ska sparas",
@@ -222,6 +229,8 @@
       "createBlockset": "Skapa blockuppsättning",
       "createBlocksetAndDetachedArchive_one": "Skapa blockuppsättning och fristående arkiv",
       "createBlocksetAndDetachedArchive_other": "Skapa blockuppsättning och fristående arkiv",
+      "couldNotCreateDetachedArchive_one": "Kunde inte skapa separat arkiv",
+      "couldNotCreateDetachedArchive_other": "Kunde inte skapa separata arkiv",
       "couldNotCreateBlock": "Kunde inte skapa block",
       "couldNotCreateBlockset": "Kunde inte skapa blockuppsättning",
       "print": "Skriv ut",
@@ -239,7 +248,7 @@
       "scanOrDragAndDropNextBlock": "Skanna eller dra nästa block",
       "couldNotUnlockBlock": "Kunde inte låsa upp blocket",
       "dragAndDropArchiveToRestore": "Dra och släpp {{filename}} för att återställa arkivet",
-      "restoringArchive": "Återställer arkiv",
+      "restoringDetachedArchive": "Återställer fristående arkiv",
       "couldNotRestoreDetachedArchive": "Kunde inte återställa frånkopplat arkiv",
       "detachedArchiveRestored": "Frånkopplat arkiv återställt",
       "showSecret": "Visa hemlighet"

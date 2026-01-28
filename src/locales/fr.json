@@ -164,12 +164,19 @@
     }
   },
   "handlers": {
-    "createArchive": {
-      "chooseWhereToSaveArchive_one": "Choisir où enregistrer l’archive",
-      "chooseWhereToSaveArchive_other": "Choisir où enregistrer les archives"
+    "createStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchive_one": "Choisir où enregistrer l’archive autonome",
+      "chooseWhereToSaveStandaloneArchive_other": "Choisir où enregistrer les archives autonomes"
     },
-    "restoreArchive": {
-      "chooseWhereToSaveArchiveContent": "Choisir où enregistrer le contenu de l’archive"
+    "restoreStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchiveContent": "Choisir où enregistrer le contenu de l’archive autonome"
+    },
+    "createDetachedArchive": {
+      "chooseWhereToSaveDetachedArchive_one": "Choisir où enregistrer l’archive détachée",
+      "chooseWhereToSaveDetachedArchive_other": "Choisir où enregistrer les archives détachées"
+    },
+    "restoreDetachedArchive": {
+      "chooseWhereToSaveDetachedArchiveContent": "Choisir où enregistrer le contenu de l’archive détachée"
     },
     "save": {
       "chooseWhereToSaveBlock": "Choisir où enregistrer le bloc",
@@ -223,6 +230,8 @@
       "createBlockset": "Créer l’ensemble de blocs",
       "createBlocksetAndDetachedArchive_one": "Créer l’ensemble de blocs et l’archive détachée",
       "createBlocksetAndDetachedArchive_other": "Créer l’ensemble de blocs et les archives détachées",
+      "couldNotCreateDetachedArchive_one": "Impossible de créer l’archive détachée",
+      "couldNotCreateDetachedArchive_other": "Impossible de créer les archives détachées",
       "couldNotCreateBlock": "Impossible de créer le bloc",
       "couldNotCreateBlockset": "Impossible de créer l’ensemble de blocs",
       "print": "Imprimer",
@@ -242,7 +251,7 @@
       "scanOrDragAndDropNextBlock": "Scanner or déposer le bloc suivant",
       "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
       "dragAndDropArchiveToRestore": "Glisser et déposer {{filename}} pour restaurer l’archive",
-      "restoringArchive": "Restauration de l’archive",
+      "restoringDetachedArchive": "Restauration de l’archive détachée",
       "couldNotRestoreDetachedArchive": "Impossible de restaurer l’archive détachée",
       "detachedArchiveRestored": "Archive détachée restaurée",
       "showSecret": "Afficher le secret"

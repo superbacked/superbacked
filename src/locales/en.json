@@ -163,12 +163,19 @@
     }
   },
   "handlers": {
-    "createArchive": {
-      "chooseWhereToSaveArchive_one": "Choose where to save archive",
-      "chooseWhereToSaveArchive_other": "Choose where to save archives"
+    "createStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchive_one": "Choose where to save standalone archive",
+      "chooseWhereToSaveStandaloneArchive_other": "Choose where to save standalone archives"
     },
-    "restoreArchive": {
-      "chooseWhereToSaveArchiveContent": "Choose where to save archive content"
+    "restoreStandaloneArchive": {
+      "chooseWhereToSaveStandaloneArchiveContent": "Choose where to save standalone archive content"
+    },
+    "createDetachedArchive": {
+      "chooseWhereToSaveDetachedArchive_one": "Choose where to save detached archive",
+      "chooseWhereToSaveDetachedArchive_other": "Choose where to save detached archives"
+    },
+    "restoreDetachedArchive": {
+      "chooseWhereToSaveDetachedArchiveContent": "Choose where to save detached archive content"
     },
     "save": {
       "chooseWhereToSaveBlock": "Choose where to save block",
@@ -222,6 +229,8 @@
       "createBlockset": "Create blockset",
       "createBlocksetAndDetachedArchive_one": "Create blockset and detached archive",
       "createBlocksetAndDetachedArchive_other": "Create blockset and detached archives",
+      "couldNotCreateDetachedArchive_one": "Could not create detached archive",
+      "couldNotCreateDetachedArchive_other": "Could not create detached archives",
       "couldNotCreateBlock": "Could not create block",
       "couldNotCreateBlockset": "Could not create blockset",
       "print": "Print",
@@ -239,7 +248,7 @@
       "scanOrDragAndDropNextBlock": "Scan or drag and drop next block",
       "couldNotUnlockBlock": "Could not unlock block",
       "dragAndDropArchiveToRestore": "Drag and drop {{filename}} to restore archive",
-      "restoringArchive": "Restoring archive",
+      "restoringDetachedArchive": "Restoring detached archive",
       "couldNotRestoreDetachedArchive": "Could not restore detached archive",
       "detachedArchiveRestored": "Detached archive restored",
       "showSecret": "Show secret"

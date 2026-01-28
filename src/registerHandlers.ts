@@ -2,14 +2,13 @@ import { app } from "electron"
 
 import { getDataLength } from "blockcrypt"
 
-import {
-  createArchive,
-  deriveKey,
-  generateMasterKey,
-  restoreArchive,
-} from "@/src/handlers/archive"
+import { deriveKey, generateMasterKey } from "@/src/handlers/archiveCore"
 import chooseDirectory from "@/src/handlers/chooseDirectory"
 import create from "@/src/handlers/create"
+import {
+  createDetachedArchive,
+  restoreDetachedArchive,
+} from "@/src/handlers/detachedArchive"
 import duplicate from "@/src/handlers/duplicate"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
 import getDesktopCapturerSources from "@/src/handlers/getDesktopCapturerSources"
@@ -22,6 +21,10 @@ import {
 } from "@/src/handlers/print"
 import restore, { restoreReset } from "@/src/handlers/restore"
 import save from "@/src/handlers/save"
+import {
+  createStandaloneArchive,
+  restoreStandaloneArchive,
+} from "@/src/handlers/standaloneArchive"
 import toggleMaximize from "@/src/handlers/toggleMaximize"
 import { Locale } from "@/src/i18n"
 import { locale, shouldUseDarkColors } from "@/src/index"
@@ -76,8 +79,10 @@ const asyncHandlers = {
   restore,
   restoreReset,
   chooseDirectory,
-  createArchive,
-  restoreArchive,
+  createDetachedArchive,
+  restoreDetachedArchive,
+  createStandaloneArchive,
+  restoreStandaloneArchive,
 } as const
 
 // Derive interface from handler map

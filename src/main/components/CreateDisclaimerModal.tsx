@@ -6,7 +6,7 @@ import { TranslationKey } from "@/src/shared/types/i18n"
 
 interface CreateDisclaimerModalProps {
   backupType: "standard" | "2of3" | "3of5" | "4of7"
-  archiveCount?: number
+  detachedArchiveCount?: number
   hiddenSecretCount?: number
   opened: boolean
   onClose: () => void
@@ -19,12 +19,12 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
   const { t } = useTranslation()
 
   const totalSecretCount = 1 + (props.hiddenSecretCount ?? 0)
-  const archiveCount = props.archiveCount ?? 0
+  const detachedArchiveCount = props.detachedArchiveCount ?? 0
 
   let descriptionKey: TranslationKey
-  if (archiveCount === 0) {
+  if (detachedArchiveCount === 0) {
     descriptionKey = `components.createDisclaimerModal.${props.backupType}Description`
-  } else if (archiveCount === 1) {
+  } else if (detachedArchiveCount === 1) {
     descriptionKey = `components.createDisclaimerModal.${props.backupType}WithOneDetachedArchiveDescription`
   } else {
     descriptionKey = `components.createDisclaimerModal.${props.backupType}WithMultipleDetachedArchivesDescription`

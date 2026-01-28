@@ -55,7 +55,7 @@ import zxcvbn from "@/src/main/utilities/zxcvbn"
 const secretNumbers = [1, 2, 3] as const
 const maxDataLength = 1024
 const maxLabelLength = 64
-const shamirBackupTypes = [
+const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },
   { value: "3of5", threshold: 3, shares: 5 },
   { value: "4of7", threshold: 4, shares: 7 },
@@ -100,26 +100,26 @@ const Block = styled.img`
 
 type SecretNumber = (typeof secretNumbers)[number]
 
-type BackupType = "" | "standard" | (typeof shamirBackupTypes)[number]["value"]
+type BackupType =
+  | ""
+  | "standard"
+  | (typeof blocksetBackupTypes)[number]["value"]
 
 type ValidBackupType = Exclude<BackupType, "">
 
-type SecretsState = Record<SecretNumber, SecretState>
-
-type ArchiveSecret = {
-  secret: string
-  masterKey: string
-}
-
-type SecretData = string | ArchiveSecret
-
 type SecretState = {
-  files: FileWithAbsolutePath[]
-  masterKey: string | null
-  encryptionKey: string | null
-  archiveFilename: string | null
-  message: SecretData
+  secret: string
+  detachedArchive: {
+    files: FileWithAbsolutePath[]
+    masterKey: string
+    encryptionKey: string
+    hmacKey: string
+    filename: string
+    blockContent: string
+  } | null
 }
+
+type SecretsState = Record<SecretNumber, SecretState>
 
 export interface DataLengths {
   totalDataLength: number
@@ -152,32 +152,26 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   const fileManagerRef = useRef<FileManagerRef>(null)
   const scannerRef = useRef<ScannerRef>(null)
 
-  const [archivePopoverOpened, archivePopoverHandlers] = useDisclosure(false)
+  const [detachedArchivePopoverOpened, detachedArchivePopoverHandlers] =
+    useDisclosure(false)
 
-  const { close: closeArchivePopover, toggle: toggleArchivePopover } =
-    archivePopoverHandlers
+  const {
+    close: closeDetachedArchivePopover,
+    toggle: toggleDetachedArchivePopover,
+  } = detachedArchivePopoverHandlers
 
   const [secrets, setSecrets] = useState<SecretsState>({
     1: {
-      files: [],
-      masterKey: null,
-      encryptionKey: null,
-      archiveFilename: null,
-      message: "",
+      secret: "",
+      detachedArchive: null,
     },
     2: {
-      files: [],
-      masterKey: null,
-      encryptionKey: null,
-      archiveFilename: null,
-      message: "",
+      secret: "",
+      detachedArchive: null,
     },
     3: {
-      files: [],
-      masterKey: null,
-      encryptionKey: null,
-      archiveFilename: null,
-      message: "",
+      secret: "",
+      detachedArchive: null,
     },
   })
   const [step, setStep] = useState<Step>(initialStep)
@@ -191,7 +185,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   const [showSelectPrinter, setShowSelectPrinter] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
   const [error, setError] = useState<null | ErrorState<
-    | "components.fileManager.couldNotCreateStandaloneArchive"
+    | "routes.create.couldNotCreateDetachedArchive"
     | "routes.create.couldNotCreateBlock"
     | "routes.create.couldNotCreateBlockset"
     | "routes.create.pleaseConnectPrinter"
@@ -235,24 +229,23 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   const getDataLengths = useCallback(
     (backupType: BackupType, secretsData: SecretsState): DataLengths => {
       let secret1DataLength = window.api.invokeSync.getDataLength(
-        typeof secretsData[1].message === "string"
-          ? secretsData[1].message
-          : JSON.stringify(secretsData[1].message)
+        secretsData[1].detachedArchive?.blockContent ?? secretsData[1].secret
       )
       // Account for Shamir Secret Sharing overhead (if applicable)
-      if (shamirBackupTypes.some((type) => type.value === backupType)) {
+      if (blocksetBackupTypes.some((type) => type.value === backupType)) {
         secret1DataLength += 56
       }
       const totalDataLength = maxDataLength
       let concatenatedHiddenSecretsLength = 0
       for (const secretNumber of [2, 3] as const) {
-        const message = secretsData[secretNumber].message
-        if (message !== "") {
-          let hiddenSecretLength = window.api.invokeSync.getDataLength(
-            typeof message === "string" ? message : JSON.stringify(message)
-          )
+        const hiddenSecret =
+          secretsData[secretNumber].detachedArchive?.blockContent ??
+          secretsData[secretNumber].secret
+        if (hiddenSecret !== "") {
+          let hiddenSecretLength =
+            window.api.invokeSync.getDataLength(hiddenSecret)
           // Account for Shamir Secret Sharing overhead (if applicable)
-          if (shamirBackupTypes.some((type) => type.value === backupType)) {
+          if (blocksetBackupTypes.some((type) => type.value === backupType)) {
             hiddenSecretLength += 56
           }
           concatenatedHiddenSecretsLength += hiddenSecretLength
@@ -388,53 +381,59 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         for (const secretNumber of secretNumbers) {
           const currentSecret = prevSecrets[secretNumber]
           const formSecret = form.values[`secret${secretNumber}`]
-          const files = fileUpdates?.[secretNumber] ?? currentSecret.files
+          const files =
+            fileUpdates?.[secretNumber] ??
+            currentSecret.detachedArchive?.files ??
+            []
 
-          // Generate or clear master key based on files
-          let masterKey = currentSecret.masterKey
-          if (files.length > 0 && masterKey === null) {
-            masterKey = window.api.invokeSync.generateMasterKey()
-          } else if (files.length === 0 && masterKey !== null) {
-            masterKey = null
-          }
+          // Generate or clear detached archive based on files
+          let detachedArchive: SecretState["detachedArchive"] = null
 
-          // Derive encryption key and filename from master key
-          let encryptionKey: string | null = null
-          let archiveFilename: string | null = null
-          if (masterKey) {
-            encryptionKey = window.api.invokeSync.deriveKey(
+          if (files.length > 0) {
+            // Generate master key if needed
+            const masterKey =
+              currentSecret.detachedArchive?.masterKey ??
+              window.api.invokeSync.generateMasterKey()
+
+            // Derive encryption key, HMAC key and filename from master key
+            const encryptionKey = window.api.invokeSync.deriveKey(
               masterKey,
               "encryption-key-v1"
             )
-            const salt = window.btoa(formSecret || "")
-            archiveFilename = window.api.invokeSync.deriveKey(
+            const hmacKey = window.api.invokeSync.deriveKey(
+              masterKey,
+              "hmac-v1"
+            )
+            const filename = window.api.invokeSync.deriveKey(
               masterKey,
               "filename-v1",
               16,
-              "hex",
-              salt
+              "hex"
             )
-          }
 
-          // Build message from formSecret and masterKey
-          let message: SecretData = ""
-          if (formSecret && formSecret !== "") {
-            if (masterKey) {
-              message = {
+            // Build block content with secret and master key
+            const blockContent = JSON.stringify(
+              {
                 secret: formSecret,
                 masterKey: masterKey,
-              }
-            } else {
-              message = formSecret
+              },
+              null,
+              2
+            )
+
+            detachedArchive = {
+              files,
+              masterKey,
+              encryptionKey,
+              hmacKey,
+              filename,
+              blockContent,
             }
           }
 
           newSecrets[secretNumber] = {
-            files,
-            masterKey,
-            encryptionKey,
-            archiveFilename,
-            message,
+            secret: formSecret,
+            detachedArchive,
           }
         }
 
@@ -458,7 +457,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         }
         setIsCreating(true)
         // Define defaults
-        let shamir = false,
+        let isBlockset = false,
           number = 3,
           threshold = 2
         const secretsList: Secret[] = []
@@ -468,33 +467,37 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           const passphrase =
             form.values[`passphrase${secretNumber}` as keyof typeof form.values]
           if (secret && secret !== "" && passphrase && passphrase !== "") {
-            const message = secrets[secretNumber].message
+            const message =
+              secrets[secretNumber].detachedArchive?.blockContent ??
+              secrets[secretNumber].secret
             secretsList.push({
-              message:
-                typeof message === "string" ? message : JSON.stringify(message),
+              message: message,
               passphrase: passphrase,
             })
           }
         }
         const label = form.values.label
-        const sharmirBackup = shamirBackupTypes.find(
+        const blocksetBackup = blocksetBackupTypes.find(
           (type) => type.value === form.values.backupType
         )
-        if (sharmirBackup) {
-          shamir = true
-          number = sharmirBackup.shares
-          threshold = sharmirBackup.threshold
+        if (blocksetBackup) {
+          isBlockset = true
+          number = blocksetBackup.shares
+          threshold = blocksetBackup.threshold
         }
-        // Create archives if applicable
-        const archives = secretNumbers.filter(
-          (secretNumber) => secrets[secretNumber].files.length > 0
+        // Create detached archives if applicable
+        const detachedArchives = secretNumbers.filter(
+          (secretNumber) => secrets[secretNumber].detachedArchive !== null
         )
-        if (archives.length > 0) {
+        if (detachedArchives.length > 0) {
           // Prompt for output directory once
           const saveDialogReturnValue = await window.api.invoke.chooseDirectory(
-            t("handlers.createArchive.chooseWhereToSaveArchive", {
-              count: archives.length,
-            })
+            t(
+              "handlers.createDetachedArchive.chooseWhereToSaveDetachedArchive",
+              {
+                count: detachedArchives.length,
+              }
+            )
           )
           if (saveDialogReturnValue.canceled) {
             // User cancelled, stop
@@ -504,27 +507,25 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           if (saveDialogReturnValue.filePath) {
             const outputDir = saveDialogReturnValue.filePath
             // Create archives
-            for (const secretNumber of archives) {
-              const filename = secrets[secretNumber].archiveFilename
-              const encryptionKey = secrets[secretNumber].encryptionKey
-              if (!filename || !encryptionKey) {
-                continue
-              }
-              const secretFiles = secrets[secretNumber].files
-              const filePaths = secretFiles.map((file) => file.absolutePath)
-              const archivePath = `${outputDir}/${filename}.superbacked`
-              const result = await window.api.invoke.createArchive(
+            for (const secretNumber of detachedArchives) {
+              const detachedArchive = secrets[secretNumber].detachedArchive
+              if (!detachedArchive) continue
+
+              const filePaths = detachedArchive.files.map(
+                (file) => file.absolutePath
+              )
+              const archivePath = `${outputDir}/${detachedArchive.filename}.superbacked`
+              const result = await window.api.invoke.createDetachedArchive(
                 filePaths,
                 archivePath,
-                {
-                  encryptionKey: encryptionKey,
-                }
+                detachedArchive.encryptionKey,
+                detachedArchive.hmacKey,
+                detachedArchive.blockContent
               )
               if (result.success === false) {
                 setError({
-                  message:
-                    "components.fileManager.couldNotCreateStandaloneArchive",
-                  count: archives.length,
+                  message: "routes.create.couldNotCreateDetachedArchive",
+                  count: detachedArchives.length,
                 })
                 setIsCreating(false)
                 return
@@ -534,7 +535,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         }
         // Create blocks
         let result: Result
-        if (shamir === true) {
+        if (isBlockset === true) {
           result = await window.api.invoke.create(
             secretsList,
             maxDataLength,
@@ -552,7 +553,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         }
         if (result.success === false) {
           setError({
-            message: shamir
+            message: isBlockset
               ? "routes.create.couldNotCreateBlockset"
               : "routes.create.couldNotCreateBlock",
           })
@@ -651,7 +652,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                 value: "standard",
                 label: t("routes.create.standard"),
               },
-              ...shamirBackupTypes.map((type) => ({
+              ...blocksetBackupTypes.map((type) => ({
                 value: type.value,
                 label: t(`routes.create.${type.value}`),
               })),
@@ -722,7 +723,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             onPopoverChange={handlePopoverChange}
             {...form.getInputProps("secret1", { withFocus: false })}
           />
-          {secrets[1].files.length > 0 ? (
+          {secrets[1].detachedArchive !== null ? (
             <Fragment>
               <Space h="xs" />
               <Group align="center" gap="xs">
@@ -735,26 +736,25 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   }}
                   onChange={(opened) => {
                     if (!opened) {
-                      closeArchivePopover()
+                      closeDetachedArchivePopover()
                     }
                   }}
                   onExitTransitionEnd={() => {
                     handlePopoverChange(false)
                   }}
-                  opened={archivePopoverOpened}
+                  opened={detachedArchivePopoverOpened}
                   width={"440px"}
                   withArrow
                 >
                   <Popover.Target>
                     <Button
                       color="dark"
-                      disabled={secrets[1].files.length === 0}
-                      onClick={toggleArchivePopover}
+                      onClick={toggleDetachedArchivePopover}
                       size="xs"
                       variant="filled"
                     >
                       <Text fw="bold" size="xs" variant="signatureGradient">
-                        {secrets[1].archiveFilename}.superbacked
+                        {secrets[1].detachedArchive?.filename}.superbacked
                       </Text>
                     </Button>
                   </Popover.Target>
@@ -765,7 +765,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                       type="scroll"
                     >
                       <FileList
-                        files={secrets[1].files}
+                        files={secrets[1].detachedArchive?.files ?? []}
                         onRemoveFile={(file) => {
                           fileManagerRef.current?.removeFile(file)
                         }}
@@ -802,7 +802,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             {...form.getInputProps("label", { withFocus: false })}
           />
           <ActionBadge>
-            {secrets[1].files.length > 0
+            {secrets[1].detachedArchive !== null
               ? t("routes.create.dragAndDropFilesToAddToDetachedArchive")
               : t(
                   "routes.create.dragAndDropFileToProvisionDetachedArchive"
@@ -840,7 +840,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               withFocus: false,
             })}
           />
-          {secrets[secretNumber].files.length > 0 ? (
+          {secrets[secretNumber].detachedArchive !== null ? (
             <Fragment>
               <Space h="xs" />
               <Group align="center" gap="xs">
@@ -853,25 +853,25 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   }}
                   onChange={(opened) => {
                     if (!opened) {
-                      closeArchivePopover()
+                      closeDetachedArchivePopover()
                     }
                   }}
                   onExitTransitionEnd={() => {
                     handlePopoverChange(false)
                   }}
-                  opened={archivePopoverOpened}
+                  opened={detachedArchivePopoverOpened}
                   width={"440px"}
                   withArrow
                 >
                   <Popover.Target>
                     <Button
                       color="dark"
-                      disabled={secrets[secretNumber].files.length === 0}
-                      onClick={toggleArchivePopover}
+                      onClick={toggleDetachedArchivePopover}
                       size="xs"
                       variant="signatureTextGradient"
                     >
-                      {secrets[secretNumber].archiveFilename}.superbacked
+                      {secrets[secretNumber].detachedArchive?.filename}
+                      .superbacked
                     </Button>
                   </Popover.Target>
                   <Popover.Dropdown>
@@ -881,7 +881,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                       type="scroll"
                     >
                       <FileList
-                        files={secrets[secretNumber].files}
+                        files={
+                          secrets[secretNumber].detachedArchive?.files ?? []
+                        }
                         onRemoveFile={(file) => {
                           fileManagerRef.current?.removeFile(file)
                         }}
@@ -913,7 +915,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             })}
           />
           <ActionBadge>
-            {secrets[secretNumber].files.length > 0
+            {secrets[secretNumber].detachedArchive !== null
               ? t("routes.create.dragAndDropFilesToAddToDetachedArchive")
               : t(
                   "routes.create.dragAndDropFileToProvisionDetachedArchive"
@@ -989,25 +991,24 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         </Fragment>
       )
     }
-    const archiveCount = secretNumbers.filter(
-      (num) => secrets[num].files.length > 0
+    const detachedArchiveCount = secretNumbers.filter(
+      (num) => secrets[num].detachedArchive !== null
     ).length
-    const isShamir = shamirBackupTypes.some(
+    const isBlockset = blocksetBackupTypes.some(
       (type) => type.value === form.values.backupType
     )
-
     let createButtonLabel: string
-    if (archiveCount === 0) {
-      createButtonLabel = isShamir
+    if (detachedArchiveCount === 0) {
+      createButtonLabel = isBlockset
         ? t("routes.create.createBlockset")
         : t("routes.create.createBlock")
     } else {
-      createButtonLabel = isShamir
+      createButtonLabel = isBlockset
         ? t("routes.create.createBlocksetAndDetachedArchive", {
-            count: archiveCount,
+            count: detachedArchiveCount,
           })
         : t("routes.create.createBlockAndDetachedArchive", {
-            count: archiveCount,
+            count: detachedArchiveCount,
           })
     }
 
@@ -1072,11 +1073,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         </Container>
         <CreateDisclaimerModal
           backupType={backupType}
-          archiveCount={
-            secretNumbers.filter((num) => secrets[num].files.length > 0).length
+          detachedArchiveCount={
+            secretNumbers.filter((num) => secrets[num].detachedArchive !== null)
+              .length
           }
           hiddenSecretCount={
-            [2, 3].filter((num) => secrets[num as 2 | 3].message !== "").length
+            [2, 3].filter((num) => secrets[num as 2 | 3].secret !== "").length
           }
           opened={showDisclaimer}
           onClose={() => setShowDisclaimer(false)}

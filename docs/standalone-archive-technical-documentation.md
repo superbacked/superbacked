@@ -17,18 +17,18 @@ Standalone archives provide a simple alternative when users need to encrypt file
 ## Terminology
 
 - **Block**: Encrypted QR code-encoded dataset
-- **Blockset**: Set of cryptographically-associated blocks
+- **Blockset**: Set of cryptographically-bound blocks
 - **Passphrase**: User-provided passphrase used to derive encryption key
-- **Archive**: Encrypted tar archive containing files and/or folders stored separately from block or blockset
+- **Standalone archive**: Encrypted tar archive containing files and/or folders
 
 ## Overview
 
-When user creates standalone archive, app creates archive by:
+When user creates standalone archive, app creates standalone archive by:
 
 1. Generating cryptographically-secure 128-bit salt
 2. Deriving 256-bit encryption key from passphrase and salt
 3. Generating cryptographically-secure 96-bit nonce
-4. Creating, encrypting and saving archive using `.superbacked` extension
+4. Creating, encrypting and saving standalone archive using `.superbacked` extension
 
 ## Salt generation
 
@@ -50,7 +50,7 @@ export const generateSalt = (saltSize = 16): Buffer => {
 
 - **Salt strength**: 128 bit—provides strong security against rainbow table attacks
 - **Randomness source**: Node.js `crypto.randomBytes`—generates cryptographically-secure pseudo-random bytes using `/dev/urandom`
-- **Storage**: Salt is stored at the beginning of encrypted archive file (first 16 bytes)
+- **Storage**: Salt is stored at the beginning of encrypted standalone archive file (first 16 bytes)
 
 ## Encryption key generation
 
@@ -112,33 +112,33 @@ const nonce = randomBytes(12)
 
 - **Nonce strength**: 96-bit—recommended for AES-GCM
 - **Randomness source**: Node.js `crypto.randomBytes`—generates cryptographically-secure pseudo-random bytes using `/dev/urandom`
-- **Uniqueness**: Each archive has unique nonce ensuring encryption key never encrypts multiple archives using same nonce
+- **Uniqueness**: Each standalone archive has unique nonce ensuring encryption key never encrypts multiple standalone archives using same nonce
 
-## Archive format
+## Standalone archive format
 
-Archives use portable tar format as the container for files and folders.
+Standalone archives use portable tar format as the container for files and folders.
 
 - **Container**: Portable tar archive format
 - **Portability**: Omits system-specific metadata for cross-platform compatibility
 - **File metadata**: Preserves file names, sizes and permissions
 
-## Archive encryption
+## Standalone archive encryption
 
-Archives use AES-256-GCM authenticated encryption providing confidentiality and integrity.
+Standalone archives use AES-256-GCM authenticated encryption providing confidentiality and integrity.
 
 **Security characteristics:**
 
 - **Algorithm**: AES-256-GCM authenticated encryption
-- **Confidentiality**: AES-256 block cipher encrypts archive content
+- **Confidentiality**: AES-256 block cipher encrypts standalone archive content
 - **Integrity**: Galois/Counter Mode (GCM) provides authentication tag to detect tampering
 
-## Archive structure
+## Standalone archive structure
 
-Archives use binary format with embedded cryptographic metadata.
+Standalone archives use binary format with embedded cryptographic metadata.
 
 ### File format
 
-Archive files use the following binary structure:
+Standalone archive files use the following binary structure:
 
 ```text
 [salt (16 bytes)][nonce (12 bytes)][encrypted data][tag (16 bytes)]
@@ -147,11 +147,11 @@ Archive files use the following binary structure:
 **Components:**
 
 - **Salt**: 16-byte random salt used for Argon2d key derivation
-- **Nonce**: 12-byte random nonce for AES-256-GCM archive encryption
+- **Nonce**: 12-byte random nonce for AES-256-GCM standalone archive encryption
 - **Encrypted data**: AES-256-GCM encrypted portable tar archive
 - **Authentication tag**: 16-byte GCM authentication tag
 
-This structure embeds all cryptographic metadata needed for decryption directly in archive file, eliminating the need for separate manifest files.
+This structure embeds all cryptographic metadata needed for decryption directly in standalone archive file, eliminating the need for separate manifest files.
 
 ### Creation workflow
 
@@ -161,8 +161,8 @@ With app in create mode:
 2. User clicks create standalone archive button
 3. User enters filename and passphrase
 4. User clicks create button
-5. User chooses where to save archive
-6. App creates, encrypts and saves archive using `.superbacked` extension
+5. User chooses where to save standalone archive
+6. App creates, encrypts and saves standalone archive using `.superbacked` extension
 
 ### Restoration workflow
 
@@ -171,5 +171,5 @@ With app in create mode:
 1. User drags and drops standalone archive
 2. User enters passphrase
 3. User clicks restore button
-4. User chooses where to save archive content
-5. App decrypts and saves archive content
+4. User chooses where to save standalone archive content
+5. App decrypts and saves standalone archive content
