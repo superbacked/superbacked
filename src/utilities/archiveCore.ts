@@ -85,6 +85,7 @@ export const createTarExtractStream = async (outputDir: string) => {
 
   const extractor = extract({
     cwd: outputDir,
+    strict: true,
     onentry: (entry: ReadEntry) => {
       extractedFiles.push(entry.path)
     },
