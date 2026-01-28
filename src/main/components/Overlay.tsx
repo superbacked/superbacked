@@ -16,6 +16,7 @@ const Overlay: FunctionComponent<OverlayProps> = (props) => {
       backgroundOpacity={0.85}
       blur={4}
       color={colorScheme === "dark" ? theme.colors.dark[7] : "#fff"}
+      fixed
       zIndex={props.zIndex}
     />
   )
