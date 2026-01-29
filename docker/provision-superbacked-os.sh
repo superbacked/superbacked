@@ -17,7 +17,7 @@ mknod /dev/loop0p2 b 259 2
 
 printf "%s\n" "Attaching disk image to loop device…"
 
-losetup --find --partscan /dist/$1
+losetup --find --partscan /dist/${1}
 
 printf "%s\n" "Checking filesystem for inconsistencies…"
 
@@ -32,36 +32,13 @@ mount /dev/loop0p2 /mnt/root
 
 printf "%s\n" "Provisioning Superbacked OS…"
 
-mkdir -p /mnt/root/home/superbacked/.local/superbacked
+tar \
+  --directory "/mnt/root" \
+  --extract \
+  --file "/dist/${2}" \
+  --gzip
 
-cp /dist/$2 /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
-chmod +x /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
-
-cp /dist/.icon-icns/icon.icns /mnt/root/home/superbacked/.local/superbacked/superbacked.icns
-
-cp /superbacked-os-assets/superbacked.desktop /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
-chmod +x /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
-
-chown 1000:1000 /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
-
-cp /superbacked-os-assets/superbacked.desktop /mnt/root/home/superbacked/Desktop/superbacked.desktop
-chmod +x /mnt/root/home/superbacked/Desktop/superbacked.desktop
-
-chown 1000:1000 /mnt/root/home/superbacked/Desktop/superbacked.desktop
-
-mkdir -p /mnt/root/home/superbacked/.config/autostart
-
-cp /superbacked-os-assets/superbacked-autostart.desktop /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.desktop
-chmod +x /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.desktop
-
-chown 1000:1000 /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.desktop
-
-cp /superbacked-os-assets/superbacked-autostart.sh /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.sh
-chmod +x /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.sh
-
-chown 1000:1000 /mnt/root/home/superbacked/.config/autostart/superbacked-autostart.sh
-
-cp /superbacked-os-assets/superbacked.profile /mnt/root/etc/apparmor.d/superbacked.profile
+chown --recursive 1000:1000 /mnt/root/home/superbacked
 
 printf "%s\n" "Unmounting root partition…"
 
@@ -73,11 +50,11 @@ zerofree /dev/loop0p2
 
 printf "%s\n" "Calculating SHA256 checksums…"
 
-printf "Boot partition: " > /dist/$1.sha256sums
-sha256sum /dev/loop0p1 | cut -d ' ' -f1 >> /dist/$1.sha256sums
+printf "Boot partition: " > /dist/${1}.sha256sums
+sha256sum /dev/loop0p1 | cut -d ' ' -f1 >> /dist/${1}.sha256sums
 
-printf "Root partition: " >> /dist/$1.sha256sums
-sha256sum /dev/loop0p2 | cut -d ' ' -f1 >> /dist/$1.sha256sums
+printf "Root partition: " >> /dist/${1}.sha256sums
+sha256sum /dev/loop0p2 | cut -d ' ' -f1 >> /dist/${1}.sha256sums
 
 printf "%s\n" "Detaching loop device…"
 

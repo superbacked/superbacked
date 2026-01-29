@@ -6,7 +6,7 @@ Superbacked is a secret management platform used to back up and pass on sensitiv
 
 ## Disclaimer
 
-**Do not** use Superbacked on computer that isn’t [air-gapped](https://superbacked.com/faq/air-gapped) and [exclusively used](https://superbacked.com/faq/hardware) for secret management unless secret is already present on computer.
+**Do not** use Superbacked on computer that is not specifically provisioned for secret management (no data persistence or network connectivity) unless secret is already present on computer.
 
 Superbacked, Inc., along with its employees, operators and shareholders and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets. **USE AT YOUR OWN RISK.**
 
@@ -39,7 +39,7 @@ Copyright (c) Superbacked, Inc. — All rights reserved
 ### Step 2: install dependencies
 
 ```console
-$ sudo apt install --yes libfuse2
+$ sudo apt install --yes libfuse2 zlib1g-dev
 ```
 
 ### Step 3: right-click `.AppImage` file and select “Run as a program”
@@ -94,13 +94,13 @@ $ npm run code
 
 ## How to verify integrity of release
 
-### Step 1: download [release](https://github.com/superbacked/superbacked/releases)’s `SHA256SUMS` and `SHA256SUMS.asc` to same folder as app (`superbacked-std-universal-1.6.0.dmg` in example below)
+### Step 1: download [release](https://github.com/superbacked/superbacked/releases)’s `SHA256SUMS` and `SHA256SUMS.asc` to same folder as app (`superbacked-arm64-1.9.0.dmg` in example below)
 
 ```console
 $ ls
 SHA256SUMS
 SHA256SUMS.asc
-superbacked-std-universal-1.6.0.dmg
+superbacked-arm64-1.9.0.dmg
 ```
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using [GnuPG](https://gnupg.org/)
@@ -122,7 +122,7 @@ gpg: no ultimately trusted keys found
 
 $ gpg --verify SHA256SUMS.asc
 gpg: assuming signed data in 'SHA256SUMS'
-gpg: Signature made Sat Oct 12 11:09:30 2024 EDT
+gpg: Signature made Thu 18 Dec 06:40:08 2025 EST
 gpg:                using EDDSA key 9C7887E1B5FCBCE2DFED0E1C02C43AD072D57783
 gpg: Good signature from "Sun Knudsen <hello@sunknudsen.com>" [unknown]
 gpg: WARNING: This key is not certified with a trusted signature!
@@ -143,7 +143,7 @@ Primary key fingerprint: E786 274B C92B 47C2 3C1C F44B 8C9C A674 C47C A060
 
 ```console
 $ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
-./superbacked-std-universal-1.6.0.dmg: OK
+./superbacked-arm64-1.9.0.dmg: OK
 ```
 
 OK
@@ -152,8 +152,8 @@ OK
 
 ## Support this project
 
-Superbacked was created by [Sun Knudsen](https://sunknudsen.com/), a privacy and security researcher and [YouTuber](https://www.youtube.com/sunknudsen) and is now maintained by [Sun Knudsen](https://sunknudsen.com/) and [Christoffer Carlsson](https://christoffercarlsson.se/).
+Superbacked was created by [Sun Knudsen](https://sunknudsen.com/), a privacy and security researcher and [YouTuber](https://www.youtube.com/sunknudsen) and is maintained by [Sun Knudsen](https://sunknudsen.com/) and [Christoffer Carlsson](https://christoffercarlsson.se/).
 
-This project would have never been possible without the support of generous patrons (thank you).
+Thanks to past contributors including Zean Moore and to our generous patrons without whom Superbacked would not exist 🙌.
 
 If you love Superbacked, please star the [repo](https://github.com/superbacked/superbacked) and consider [supporting](https://sunknudsen.com/donate) the project.

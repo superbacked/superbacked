@@ -17,7 +17,7 @@ mknod /dev/loop0p2 b 259 2
 
 printf "%s\n" "Attaching disk image to loop device…"
 
-losetup --find --partscan /superbacked-os/$1
+losetup --find --partscan /superbacked-os/${1}
 
 printf "%s\n" "Checking filesystem for inconsistencies…"
 

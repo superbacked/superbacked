@@ -1,0 +1,12 @@
+[Unit]
+Description=Superbacked bootstrap
+After=graphical-session.target xdg-desktop-autostart.target
+ConditionPathExists=!/home/superbacked/.config/superbacked-os-bootstrap.done
+
+[Service]
+Environment=HOME=/home/superbacked
+ExecStart=/usr/bin/gnome-terminal -- /home/superbacked/.local/bin/superbacked-os-bootstrap.sh
+Type=oneshot
+
+[Install]
+WantedBy=graphical-session.target

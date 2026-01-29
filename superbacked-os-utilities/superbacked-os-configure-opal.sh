@@ -13,15 +13,15 @@ fi
 
 sudo sedutil-cli --scan
 
-printf "$bold%s$normal" "What Opal-compliant disk do you wish to configure as read-only (example: sda)? "
+printf "${bold}%s${normal}" "What Opal-compliant disk do you wish to configure as read-only (example: sda)? "
 read -r source_disk
 
-printf "$bold%s$normal" "What passphrase do you wish to use? "
+printf "${bold}%s${normal}" "What passphrase do you wish to use? "
 read -r passphrase
 
-sudo sedutil-cli --initialSetup "$passphrase" /dev/$source_disk
-sudo sedutil-cli --readonlyLockingRange 0 "$passphrase" /dev/$source_disk
-sudo sedutil-cli --setMBREnable off "$passphrase" /dev/$source_disk
+sudo sedutil-cli --initialSetup "${passphrase}" /dev/${source_disk}
+sudo sedutil-cli --readonlyLockingRange 0 "${passphrase}" /dev/${source_disk}
+sudo sedutil-cli --setMBREnable off "${passphrase}" /dev/${source_disk}
 
 printf "%s\n" "Rebooting in 10 seconds…"
 

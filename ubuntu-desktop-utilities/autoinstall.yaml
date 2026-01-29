@@ -1,0 +1,99 @@
+#cloud-config
+# See the autoinstall documentation at:
+# https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html
+autoinstall:
+  apt:
+    geoip: true
+    preserve_sources_list: false
+    primary:
+      - arches: [amd64]
+        uri: http://ca.archive.ubuntu.com/ubuntu/
+  codecs:
+    install: false
+  drivers:
+    install: false
+  identity:
+    hostname: superbacked-os
+    password: $6$Vo7ZCjdXeEbzcl6R$RuAwnYmUV5c4BpY/PcIlFVpRmZlMYSzg1e/wPePMyofu2RBFBgu7egWoB5iUX79SCPDVAib/NCNlZYA6uY8qQ/
+    realname: Superbacked
+    username: superbacked
+  kernel:
+    package: linux-generic-hwe-24.04
+  keyboard:
+    layout: us
+  locale: en_US.UTF-8
+  network:
+    ethernets:
+      match-all:
+        match:
+          name: en*
+        dhcp4: true
+    version: 2
+  source:
+    id: ubuntu-desktop-minimal
+    search_drivers: false
+  ssh:
+    allow-pw: false
+    authorized-keys: []
+    install-server: false
+  storage:
+    config:
+      - ptable: msdos
+        serial: SAMSUNG_MZVL4256HBJD_DD56419884D9D-0:0
+        path: /dev/sdb
+        preserve: false
+        name: ""
+        grub_device: false
+        id: disk-sdb
+        type: disk
+      - device: disk-sdb
+        size: 536870912
+        wipe: superblock
+        flag: boot
+        number: 1
+        preserve: false
+        grub_device: true
+        offset: 1048576
+        resize: true
+        path: /dev/sdb1
+        id: partition-0
+        type: partition
+      - fstype: fat32
+        volume: partition-0
+        preserve: false
+        id: format-1
+        type: format
+      - device: disk-sdb
+        size: 10737418240
+        wipe: superblock
+        number: 2
+        preserve: false
+        offset: 537919488
+        path: /dev/sdb2
+        id: partition-1
+        type: partition
+      - fstype: ext4
+        volume: partition-1
+        preserve: false
+        id: format-2
+        type: format
+      - path: /
+        device: format-2
+        id: mount-2
+        type: mount
+      - path: /boot/efi
+        device: format-1
+        id: mount-1
+        type: mount
+  timezone: America/Toronto
+  updates: security
+  late-commands:
+    - curtin in-target --target=/target -- mkdir --parents /home/superbacked/.local/bin
+    - cp /cdrom/superbacked-os-amd64-bootstrap.sh /target/home/superbacked/.local/bin/superbacked-os-bootstrap.sh
+    - curtin in-target --target=/target -- chmod +x /home/superbacked/.local/bin/superbacked-os-bootstrap.sh
+    - curtin in-target --target=/target -- mkdir --parents /home/superbacked/.config/systemd/user/graphical-session.target.wants
+    - cp /cdrom/superbacked-os-bootstrap.service /target/home/superbacked/.config/systemd/user/superbacked-os-bootstrap.service
+    - curtin in-target --target=/target -- ln --symbolic /home/superbacked/.config/systemd/user/superbacked-os-bootstrap.service /home/superbacked/.config/systemd/user/graphical-session.target.wants/superbacked-os-bootstrap.service
+    - curtin in-target --target=/target -- touch /home/superbacked/.config/gnome-initial-setup-done
+    - chown --recursive 1000:1000 /target/home/superbacked
+  version: 1

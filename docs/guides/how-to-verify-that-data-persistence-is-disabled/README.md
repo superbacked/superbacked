@@ -1,7 +1,7 @@
 <!--
 Title: How to verify that data persistence is disabled
 Description: Learn how to verify that data persistence is disabled
-Publication date: 2025-01-11T09:58:30.556Z
+Publication date: 2026-01-29T18:12:16.210Z
 Pinned:
 -->
 
@@ -15,7 +15,18 @@ Confirm checksums match Superbacked OS release boot (1) and root (2) partition P
 
 ### macOS
 
-#### Step 1: compute disk checksum
+#### Step 1 (if computing checksum of Superbacked OS for Raspberry Pi): disable automatic mounting of `/Volumes/system-boot`
+
+```shell-session
+$ volume_path="/Volumes/system-boot"
+
+$ volume_uuid=$(diskutil info "$volume_path" | awk '/Volume UUID:/ { print $3 }')
+
+$ echo "UUID=$volume_uuid none auto ro,noauto" | sudo tee -a /etc/fstab
+UUID=C6651C15-1754-301D-B9DB-76371B6FE869 none auto ro,noauto
+```
+
+#### Step 2: compute disk checksum
 
 > Heads-up: replace `rdisk4` with disk found using `diskutil list`.
 

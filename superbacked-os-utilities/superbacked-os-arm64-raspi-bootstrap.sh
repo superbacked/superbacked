@@ -1,8 +1,8 @@
 #! /bin/bash
-# Used to patch Ubuntu for desktops 24.04.3 LTS (amd64)
+# Used to patch Ubuntu for desktops 24.04.3 LTS (arm64-raspi)
 #
 # Usage:
-# bash -c "$(curl -fsSL https://github.com/superbacked/superbacked/releases/download/v__VERSION__/superbacked-os-amd64-bootstrap-__VERSION__.sh)"
+# bash -c "$(curl -fsSL https://github.com/superbacked/superbacked/releases/download/v__VERSION__/superbacked-os-arm64-raspi-bootstrap-__VERSION__.sh)"
 
 set -e
 set -o pipefail
@@ -102,8 +102,19 @@ sudo apt remove --purge --yes \
   update-notifier \
   update-notifier-common \
   whoopsie \
+  duplicity* \
+  file-roller* \
   firefox* \
-  thunderbird*
+  gnome-calendar* \
+  gnome-snapshot* \
+  libreoffice* \
+  remmina* \
+  rhythmbox* \
+  shotwell* \
+  simple-scan* \
+  thunderbird* \
+  totem* \
+  transmission*
 
 sudo apt autoremove --purge --yes
 
@@ -111,20 +122,25 @@ sudo apt clean
 
 sudo snap remove --purge firefox thunderbird
 
+printf "%s\n" "Disabling Bluetooth and Wi-Fi…"
+
+cat << "EOF" | sudo tee -a /boot/firmware/config.txt
+dtoverlay=disable-bt
+dtoverlay=disable-wifi
+EOF
+
 printf "%s\n" "Configuring fstab…"
 
-sudo sed --in-place 's/ext4 defaults/ext4 defaults,noload,ro/g' /etc/fstab
-sudo sed --in-place 's/vfat defaults/vfat defaults,ro/g' /etc/fstab
+sudo sed --in-place 's/discard/discard,noload,ro/g' /etc/fstab
+sudo sed --in-place 's/defaults/defaults,ro/g' /etc/fstab
 
 sudo cat /etc/fstab
 
 printf "%s\n" "Disabling fsck.repair and enabling read-only…"
 
-sudo sed --in-place 's/quiet splash/quiet splash fsck.repair=no ro/g' /etc/default/grub
+sudo sed --in-place 's/quiet splash/quiet splash fsck.repair=no ro/g' /boot/firmware/cmdline.txt
 
-sudo update-grub
-
-sudo cat /boot/grub/grub.cfg
+sudo cat /boot/firmware/cmdline.txt
 
 printf "%s\n" "Configuring overlayroot…"
 
@@ -155,16 +171,16 @@ if [ "${version}" != "__""VERSION""__" ]; then
 
   curl \
     --location \
-    --output "/tmp/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz" \
-    "https://github.com/superbacked/superbacked/releases/download/v${version}/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz"
+    --output "/tmp/superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz" \
+    "https://github.com/superbacked/superbacked/releases/download/v${version}/superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz"
 
   sudo tar \
     --extract \
     --gzip \
-    --file "/tmp/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz" \
+    --file "/tmp/superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz" \
     --directory /
 
-  rm "/tmp/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz"
+  rm "/tmp/superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz"
 fi
 
 printf "%s\n" "Disabling sudo…"

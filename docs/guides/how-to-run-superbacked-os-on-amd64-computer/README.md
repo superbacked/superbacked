@@ -1,14 +1,15 @@
 <!--
-Title: How to provision Superbacked OS computer
-Description: Learn how to provision Superbacked OS computer.
-Publication date: 2026-01-23T12:53:49.204Z
+Title: How to run Superbacked OS on amd64 computer
+Description: Learn how to run Superbacked OS on amd64 computer.
+Publication date: 2026-01-29T17:55:20.856Z
 Pinned: 1
 -->
 
 ## Requirements
 
-- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS with 1080p camera
+- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS using amd64 architecture
 - USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
+- Plug-and-play or built-in webcam (1080p min)
 
 ## Recommendations (optional)
 
