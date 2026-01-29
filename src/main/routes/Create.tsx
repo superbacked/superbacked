@@ -52,14 +52,14 @@ import {
 } from "@/src/main/utilities/selection"
 import zxcvbn from "@/src/main/utilities/zxcvbn"
 
-const secretNumbers = [1, 2, 3] as const
-const maxDataLength = 1024
-const maxLabelLength = 64
 const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },
   { value: "3of5", threshold: 3, shares: 5 },
   { value: "4of7", threshold: 4, shares: 7 },
 ] as const
+const secretNumbers = [1, 2, 3] as const
+const maxDataLength = 1024
+const maxLabelLength = 64
 
 const Container = styled.div`
   position: absolute;
