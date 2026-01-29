@@ -206,10 +206,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     label: string
   }
   const handlePopoverChange = useCallback((opened: boolean) => {
+    blockedClicksRef.current = 0
     if (opened) {
       openedPopoversRef.current++
     } else {
-      openedPopoversRef.current--
+      openedPopoversRef.current = Math.max(0, openedPopoversRef.current - 1)
     }
   }, [])
   const shouldIgnoreClick = useCallback(() => {
