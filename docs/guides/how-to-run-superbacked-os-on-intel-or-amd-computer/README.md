@@ -1,6 +1,6 @@
 <!--
 Title: How to run Superbacked OS on Intel or AMD computer
-Description: Learn how to run Superbacked OS on Intel or AMD computer.
+Description: Learn how to run Superbacked OS on Intel or AMD computer
 Publication date: 2026-01-29T17:55:20.856Z
 Pinned: 1
 -->
