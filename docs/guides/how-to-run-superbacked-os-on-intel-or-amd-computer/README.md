@@ -1,13 +1,13 @@
 <!--
-Title: How to run Superbacked OS on amd64 computer
-Description: Learn how to run Superbacked OS on amd64 computer.
+Title: How to run Superbacked OS on Intel or AMD computer
+Description: Learn how to run Superbacked OS on Intel or AMD computer.
 Publication date: 2026-01-29T17:55:20.856Z
 Pinned: 1
 -->
 
 ## Requirements
 
-- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS using amd64 architecture
+- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS
 - USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
 - Plug-and-play or built-in webcam (1080p min)
 
