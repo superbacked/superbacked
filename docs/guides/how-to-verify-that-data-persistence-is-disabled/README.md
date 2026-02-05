@@ -17,7 +17,7 @@ Confirm checksums match Superbacked OS release boot (1) and root (2) partition P
 
 #### Step 1 (if computing checksum of Superbacked OS for Raspberry Pi): disable automatic mounting of `/Volumes/system-boot`
 
-```shell-session
+```console
 $ volume_path="/Volumes/system-boot"
 
 $ volume_uuid=$(diskutil info "$volume_path" | awk '/Volume UUID:/ { print $3 }')
@@ -30,7 +30,7 @@ UUID=C6651C15-1754-301D-B9DB-76371B6FE869 none auto ro,noauto
 
 > Heads-up: replace `rdisk4` with disk found using `diskutil list`.
 
-```shell-session
+```console
 $ diskutil list
 …
 
@@ -54,7 +54,7 @@ $ sudo sha256sum /dev/rdisk4s1 /dev/rdisk4s2
 
 > Heads-up: replace `sdb` with disk found using `sudo fdisk --list`.
 
-```shell-session
+```console
 $ sudo fdisk --list
 …
 Disk /dev/sdb: 14.44 GiB, 15502147584 bytes, 30277632 sectors

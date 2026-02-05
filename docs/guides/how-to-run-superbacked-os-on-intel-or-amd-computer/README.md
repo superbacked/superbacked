@@ -29,7 +29,7 @@ Go to https://www.raspberrypi.com/software/, download and install Raspberry Pi�
 
 > Heads-up: depends on [Qt](https://www.qt.io/).
 
-```shell-session
+```console
 $ sudo add-apt-repository --yes universe
 
 $ sudo apt install --yes rpi-imager
@@ -45,7 +45,7 @@ Select “App Options”, disable “Enable anonymous statistics (telemetry) col
 
 #### macOS or Ubuntu
 
-```shell-session
+```console
 $ cd ~/Downloads
 
 $ for number in $(seq 1 2); do curl --fail --location "https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-amd64-${latestRelease}.img.xz.part$number" || break; done | cat > superbacked-os-amd64-${latestRelease}.img.xz
@@ -57,7 +57,7 @@ $ for number in $(seq 1 2); do curl --fail --location "https://github.com/superb
 
 > Heads-up: replace `Sun Knudsen` with your username.
 
-```shell-session
+```console
 $ wsl
 
 $ cd /mnt/c/Users/Sun\ Knudsen/Downloads

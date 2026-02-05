@@ -26,7 +26,7 @@ On Ubuntu, run `sudo apt update && sudo apt install`.
 
 > Heads-up: see [this](https://github.com/sunknudsen/guides/tree/main/archive/how-to-generate-and-air-gap-pgp-private-keys-using-gnupg-tails-and-yubikey) archived guide to learn how to manage keys securely (updated guide will be published shortly).
 
-```shell-session
+```console
 $ gpg --full-generate-key
 gpg (GnuPG) 2.4.8; Copyright (C) 2025 g10 Code GmbH
 This is free software: you are free to change and redistribute it.
@@ -105,7 +105,7 @@ Go to https://github.com/settings/keys, click “New GPG key”, paste PGP publi
 
 > Heads-up: replace `9A676BBA8BBA38079DFDEF7AE9A8AF4CB78129CA` with your PGP public key ID.
 
-```shell-session
+```console
 $ git config --global commit.gpgsign true
 
 $ git config --global gpg.program $(which gpg)
