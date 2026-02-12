@@ -44,6 +44,7 @@ import HiddenSecretDisclaimerModal from "@/src/main/components/HiddenSecretDiscl
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import SecretTextareaWithLength from "@/src/main/components/SecretTextareaWithLength"
+import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   SelectionWithElement,
   captureSelection,
@@ -532,6 +533,15 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                 return
               }
             }
+            showNotificationWithButton({
+              message: t("routes.create.detachedArchiveCreated", {
+                count: detachedArchives.length,
+              }),
+              buttonLabel: t("common.show"),
+              buttonOnClick: () => {
+                void window.api.invoke.openPath(outputDir)
+              },
+            })
           }
         }
         // Create blocks
@@ -1181,8 +1191,25 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               </Button>
               <Button
                 variant="default"
-                onClick={() => {
-                  void window.api.invoke.save(qrs, ["jpg", "pdf"])
+                onClick={async () => {
+                  const result = await window.api.invoke.save(qrs, [
+                    "jpg",
+                    "pdf",
+                  ])
+                  if (result.success && result.directoryPath) {
+                    showNotificationWithButton({
+                      message:
+                        qrs.length > 1
+                          ? t("routes.create.blocksetSaved")
+                          : t("routes.create.blockSaved"),
+                      buttonLabel: t("common.show"),
+                      buttonOnClick: () => {
+                        if (result.directoryPath) {
+                          void window.api.invoke.openPath(result.directoryPath)
+                        }
+                      },
+                    })
+                  }
                 }}
               >
                 {t("routes.create.save")}

@@ -8,7 +8,10 @@ import { Qr } from "@/src/handlers/create"
 
 export type Format = "jpg" | "pdf"
 
-export default async (qrs: Qr[], formats: Format[]): Promise<boolean> => {
+export default async (
+  qrs: Qr[],
+  formats: Format[]
+): Promise<{ success: boolean; directoryPath?: string }> => {
   const message =
     qrs.length > 1
       ? t("handlers.save.chooseWhereToSaveBlockset")
@@ -29,7 +32,7 @@ export default async (qrs: Qr[], formats: Format[]): Promise<boolean> => {
         await writeFile(pdfFile, qr.pdf, "base64")
       }
     }
-    return true
+    return { success: true, directoryPath: selectedPath }
   }
-  return false
+  return { success: false }
 }

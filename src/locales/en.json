@@ -242,7 +242,11 @@
       "selectPrinter": "Select printer",
       "printingBlock": "Printing block",
       "printingBlockset": "Printing blockset",
-      "save": "Save"
+      "save": "Save",
+      "blockSaved": "Block saved",
+      "blocksetSaved": "Blockset saved",
+      "detachedArchiveCreated_one": "Detached archive created",
+      "detachedArchiveCreated_other": "Detached archives created"
     },
     "duplicate": { "couldNotDuplicateBlock": "Could not duplicate block" },
     "restore": {

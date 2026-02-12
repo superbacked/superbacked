@@ -242,7 +242,11 @@
       "selectPrinter": "Välj skrivare",
       "printingBlock": "Skriver ut blocket",
       "printingBlockset": "Skriver ut blockuppsättningen",
-      "save": "Spara"
+      "save": "Spara",
+      "blockSaved": "Block sparat",
+      "blocksetSaved": "Blockuppsättning sparad",
+      "detachedArchiveCreated_one": "Separat arkiv skapat",
+      "detachedArchiveCreated_other": "Separata arkiv skapade"
     },
     "duplicate": { "couldNotDuplicateBlock": "Kunde inte duplicera block" },
     "restore": {

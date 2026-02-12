@@ -243,7 +243,11 @@
       "selectPrinter": "Sélectionner l’imprimante",
       "printingBlock": "Impression du bloc",
       "printingBlockset": "Impression de l’ensemble de blocs",
-      "save": "Enregistrer"
+      "save": "Enregistrer",
+      "blockSaved": "Bloc enregistré",
+      "blocksetSaved": "Ensemble de blocs enregistré",
+      "detachedArchiveCreated_one": "Archive détachée créée",
+      "detachedArchiveCreated_other": "Archives détachées créées"
     },
     "duplicate": {
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"

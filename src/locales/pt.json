@@ -242,7 +242,11 @@
       "selectPrinter": "Selecionar impressora",
       "printingBlock": "Imprimindo o bloco",
       "printingBlockset": "Imprimindo o conjunto de blocos",
-      "save": "Salvar"
+      "save": "Salvar",
+      "blockSaved": "Bloco guardado",
+      "blocksetSaved": "Conjunto de blocos guardado",
+      "detachedArchiveCreated_one": "Arquivo destacado criado",
+      "detachedArchiveCreated_other": "Arquivos destacados criados"
     },
     "duplicate": {
       "couldNotDuplicateBlock": "Não foi possível duplicar o bloco"
