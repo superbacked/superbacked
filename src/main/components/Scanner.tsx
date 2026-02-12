@@ -146,8 +146,10 @@ export interface Code {
 
 export interface ScannerRef {
   beep: () => void
+  clear: () => void
   start: () => void
   stop: () => void
+  isUsingCamera: () => boolean
 }
 
 interface ScannerProps {
@@ -210,8 +212,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     | "components.scanner.couldNotRunScanner"
     | "components.scanner.couldNotHandleFile"
   >>(null)
-  const [streaming, setStreaming] = useState(false)
-  const [userStarted, setUserStarted] = useState(false)
+  const [isUsingCamera, setIsUsingCamera] = useState(false)
+  const [isStreaming, setIsStreaming] = useState(false)
   const {
     handleCode,
     autoBeep = true,
@@ -220,7 +222,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   } = props
 
   const stop = useCallback(() => {
-    setStreaming(false)
+    setIsStreaming(false)
     if (mediaStreamRef.current) {
       for (const track of mediaStreamRef.current.getTracks()) {
         if (track.readyState === "live") {
@@ -235,7 +237,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   }, [])
 
   const compute = useCallback(
-    async (imageData?: ImageData) => {
+    async (imageData?: ImageData, isUsingDropzone = false) => {
       computingRef.current = true
       let canvas: null | HTMLCanvasElement = null
       if (!imageData && videoRef.current) {
@@ -307,10 +309,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         }
       }
       if (
-        videoRef.current !== null &&
-        mediaStreamRef.current !== null &&
         canvas &&
-        code
+        code &&
+        (isUsingDropzone ||
+          (videoRef.current !== null && mediaStreamRef.current !== null))
       ) {
         imageDataUrlRef.current = canvas.toDataURL("image/jpeg", 100)
         handleCodeRef.current(code)
@@ -468,8 +470,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
 
   const start = useCallback(() => {
     if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {
-      setStreaming(true)
-      setUserStarted(true)
+      setIsUsingCamera(true)
+      setIsStreaming(true)
       void capture()
     }
   }, [capture])
@@ -503,14 +505,24 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     void play()
   }, [])
 
+  const clear = useCallback(() => {
+    imageDataUrlRef.current = null
+  }, [])
+
+  const getIsUsingCamera = useCallback(() => {
+    return isUsingCamera
+  }, [isUsingCamera])
+
   useImperativeHandle(
     ref,
     () => ({
       beep,
+      clear,
       start,
       stop,
+      isUsingCamera: getIsUsingCamera,
     }),
-    [beep, start, stop]
+    [beep, clear, start, stop, getIsUsingCamera]
   )
 
   useEffect(() => {
@@ -660,8 +672,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               return
             }
             try {
+              setIsUsingCamera(false)
               const imageData = await fileToImageData(file)
-              await compute(imageData)
+              await compute(imageData, true)
             } catch {
               setError({ message: "components.scanner.couldNotHandleFile" })
             }
@@ -671,7 +684,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         {isLoading === true ? (
           <Loading visible={isLoading} dialog="components.scanner.loading" />
         ) : null}
-        {isLoading === false && streaming === false && !userStarted ? (
+        {isLoading === false &&
+        isStreaming === false &&
+        isUsingCamera === false &&
+        !imageDataUrlRef.current ? (
           <Fragment>
             <CenterContainer>
               <Button size="sm" onClick={start} variant="signatureTextGradient">
@@ -680,7 +696,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             </CenterContainer>
           </Fragment>
         ) : null}
-        {isLoading === false && streaming === true ? (
+        {isLoading === false && isStreaming === true ? (
           <Fragment>
             <GuideContainer>
               <Guide />
@@ -688,7 +704,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           </Fragment>
         ) : null}
         {isLoading === false &&
-        streaming === false &&
+        isStreaming === false &&
         imageDataUrlRef.current ? (
           <Image src={imageDataUrlRef.current} />
         ) : null}

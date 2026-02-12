@@ -216,6 +216,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       return
     } else if (scannedCodesRef.current.has(code) === true) {
       // Code already computed
+      notifications.show({
+        id: "scanOrDragAndDropNextBlock",
+        message: t("routes.restore.scanOrDragAndDropNextBlock"),
+      })
       return
     }
     let payload: Payload
@@ -241,7 +245,14 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     setIsUnlocking(false)
     if (result.success === false) {
       if (result.error.match(/shares did not combine to a valid secret/i)) {
-        scannerRef.current?.start()
+        notifications.show({
+          id: "scanOrDragAndDropNextBlock",
+          message: t("routes.restore.scanOrDragAndDropNextBlock"),
+        })
+        scannerRef.current?.clear()
+        if (scannerRef.current?.isUsingCamera()) {
+          scannerRef.current?.start()
+        }
         scannedCodesRef.current.add(code)
         setShowScanNextBlockBadge(true)
         setShowPassphraseModal(false)
@@ -253,6 +264,8 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         setShowPassphraseModal(true)
       }
     } else if (result.success === true) {
+      notifications.hide("scanOrDragAndDropNextBlock")
+
       scannerRef.current?.stop()
       scannedCodesRef.current.clear()
 
@@ -527,7 +540,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           opened={showPassphraseModal}
           onClose={() => {
             passphraseRef.current = ""
-            scannerRef.current?.start()
+            scannerRef.current?.clear()
+            if (scannerRef.current?.isUsingCamera()) {
+              scannerRef.current?.start()
+            }
             setShowPassphraseModal(false)
             setPassphraseError(null)
           }}

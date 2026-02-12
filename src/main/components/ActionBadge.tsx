@@ -5,7 +5,7 @@ import { FunctionComponent, ReactNode } from "react"
 const ActionBadgeContainer = styled.div`
   position: absolute;
   right: 0;
-  bottom: 24px;
+  bottom: 30px;
   left: 0;
   width: 100%;
   display: flex;
