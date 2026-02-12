@@ -141,6 +141,7 @@
     },
     "scanner": {
       "loading": "Chargement",
+      "scanBlockUsingCamera": "Scanner le bloc avec la caméra",
       "pleaseAllowCameraAccess": "Veuillez autoriser l’accès à la caméra",
       "pleaseConnectCamera": "Veuillez connecter la caméra",
       "cameraDoesNotMeetMinimumRequirementOf720p": "La caméra ne répond pas à l’exigence minimale de 720p",

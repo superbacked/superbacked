@@ -140,6 +140,7 @@
     },
     "scanner": {
       "loading": "Laddar",
+      "scanBlockUsingCamera": "Skanna block med kamera",
       "pleaseAllowCameraAccess": "Vänligen tillåt kameraåtkomst",
       "pleaseConnectCamera": "Vänligen anslut en kamera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "Kameran uppfyller inte minimikravet på 720p",

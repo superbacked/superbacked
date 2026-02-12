@@ -2,6 +2,7 @@ import styled from "@emotion/styled"
 import {
   ActionIcon,
   Avatar,
+  Button,
   ComboboxItem,
   Group,
   Select,
@@ -60,10 +61,23 @@ const Container = styled.div`
   z-index: 0;
 `
 
+const CenterContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+`
+
 const TopRightContainer = styled.div`
   position: absolute;
   top: 24px;
   right: 24px;
+  z-index: 2;
 `
 
 interface VideoProps {
@@ -193,6 +207,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     | "components.scanner.couldNotHandleFile"
   >>(null)
   const [streaming, setStreaming] = useState(false)
+  const [userStarted, setUserStarted] = useState(false)
   const {
     handleCode,
     autoBeep = true,
@@ -429,6 +444,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const start = useCallback(() => {
     if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {
       setStreaming(true)
+      setUserStarted(true)
       void capture()
     }
   }, [capture])
@@ -474,11 +490,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   }, [handleCode])
 
   useEffect(() => {
-    start()
     return () => {
       stop()
     }
-  }, [start, stop])
+  }, [stop])
 
   if (showSourceSettings === true) {
     const deviceData: ComboboxItem[] = []
@@ -624,20 +639,29 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         {isLoading === true ? (
           <Loading visible={isLoading} dialog="components.scanner.loading" />
         ) : null}
+        {isLoading === false && streaming === false && !userStarted ? (
+          <Fragment>
+            <CenterContainer>
+              <Button size="sm" onClick={start} variant="signatureTextGradient">
+                {t("components.scanner.scanBlockUsingCamera")}
+              </Button>
+            </CenterContainer>
+          </Fragment>
+        ) : null}
         {isLoading === false && streaming === true ? (
           <Fragment>
             <GuideContainer>
               <Guide />
             </GuideContainer>
-            {props.badge && error === null ? (
-              <ActionBadge color="dark">{props.badge}</ActionBadge>
-            ) : null}
           </Fragment>
         ) : null}
         {isLoading === false &&
         streaming === false &&
         imageDataUrlRef.current ? (
           <Image src={imageDataUrlRef.current} />
+        ) : null}
+        {props.badge && error === null ? (
+          <ActionBadge color="dark">{props.badge}</ActionBadge>
         ) : null}
         <TopRightContainer>
           <ActionIcon

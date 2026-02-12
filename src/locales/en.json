@@ -140,6 +140,7 @@
     },
     "scanner": {
       "loading": "Loading",
+      "scanBlockUsingCamera": "Scan block using camera",
       "pleaseAllowCameraAccess": "Please allow camera access",
       "pleaseConnectCamera": "Please connect camera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "Camera does not meet minimum requirement of 720p",
