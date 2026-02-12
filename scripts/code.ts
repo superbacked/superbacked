@@ -18,6 +18,7 @@ const ELECTRON_PATH = String(electron)
 let electronProcess: ChildProcess | null = null
 let isElectronStarted = false
 let manualRestart = false
+let autoRestart = false
 
 function cleanup() {
   electronProcess?.kill()
@@ -77,6 +78,11 @@ function setupStdinListener() {
       if (input === "rs" && isElectronStarted) {
         console.log("\nManually restarting Electron…")
         startElectron()
+      } else if (input === "ar") {
+        autoRestart = !autoRestart
+        console.log(
+          `\nElectron auto-restart ${autoRestart ? "enabled" : "disabled"}`
+        )
       }
       input = ""
       return
@@ -98,7 +104,9 @@ function setupStdinListener() {
     }
   })
 
-  console.log('\n💡 Type "rs" and press enter to manually restart Electron\n')
+  console.log(
+    "\n💡 Type “rs” and press enter to manually restart Electron or “ar” to auto-restart Electron\n"
+  )
 }
 
 function handleCompilationComplete(error: Error | null, stats?: MultiStats) {
@@ -120,7 +128,7 @@ function handleCompilationComplete(error: Error | null, stats?: MultiStats) {
     isElectronStarted = true
     console.log("Starting Electron…")
     startElectron()
-  } else {
+  } else if (autoRestart) {
     console.log("Restarting Electron…")
     startElectron()
   }
