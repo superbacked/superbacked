@@ -2,14 +2,31 @@ import store, { Schema } from "electron-store"
 
 export type ColorScheme = "dark" | "light"
 
+export interface WindowBounds {
+  height: number
+  width: number
+  x: number
+  y: number
+}
+
 export interface Store {
-  colorScheme: ColorScheme
+  colorScheme?: ColorScheme
+  windowBounds?: WindowBounds
 }
 
 const schema: Schema<Store> = {
   colorScheme: {
     enum: ["light", "dark"],
     type: "string",
+  },
+  windowBounds: {
+    type: "object",
+    properties: {
+      height: { type: "number" },
+      width: { type: "number" },
+      x: { type: "number" },
+      y: { type: "number" },
+    },
   },
 }
 

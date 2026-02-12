@@ -94,12 +94,15 @@ let mainWindowId: null | number = null
 
 export const createWindow = async (): Promise<BrowserWindow> => {
   return new Promise((resolve, reject) => {
+    const savedBounds = getConfig("windowBounds")
     const windowWidth = 800
     const windowHeight = 600
     const mainWindow = new BrowserWindow({
       backgroundColor: shouldUseDarkColors() === true ? "#1c1b24" : "#ffffff",
-      width: windowWidth,
-      height: windowHeight,
+      width: savedBounds?.width ?? windowWidth,
+      height: savedBounds?.height ?? windowHeight,
+      x: savedBounds?.x,
+      y: savedBounds?.y,
       minWidth: windowWidth,
       minHeight: windowHeight,
       show: false,
@@ -129,6 +132,8 @@ export const createWindow = async (): Promise<BrowserWindow> => {
     })
     mainWindow.on("close", () => {
       disableModes(["insert", "select"])
+      const bounds = mainWindow.getBounds()
+      setConfig("windowBounds", bounds)
     })
     if (app.inspect === true) {
       mainWindow.webContents.openDevTools()

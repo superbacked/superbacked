@@ -74,15 +74,13 @@ if [ "${partial}" != true ] && [ -z "${build_app}" ]; then
 fi
 
 if [ "${build_app}" = true ]; then
-  printf "%s\n" "Purging dist and out folders…"
+  printf "%s\n" "Purging dist folder…"
 
-  find ./{dist,out} ! -name .borgignore -delete
+  find ./dist ! -name .borgignore -delete
 
   printf "%s\n" "Building Superbacked app…"
 
   npm run lint
-
-  npm run prebuild
 
   npm run build
 

@@ -3,6 +3,5 @@
 *.code-workspace
 dist/
 node_modules/
-out/
 superbacked-os/.borgignore
 superbacked-os/*.img

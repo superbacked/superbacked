@@ -1,14 +1,13 @@
-import { app } from "electron"
-import { join } from "path"
-
-import { readFile } from "fs-extra"
-
 import { getRandomInt } from "@/src/utilities/crypto"
+import effLargeWordlist from "@/wordlists/eff_large_wordlist.json"
+import effShortWordlist1 from "@/wordlists/eff_short_wordlist_1.json"
+import effShortWordlist20 from "@/wordlists/eff_short_wordlist_2_0.json"
 
-const wordlistDir = join(app.getAppPath(), "wordlists").replace(
-  "app.asar",
-  "app.asar.unpacked"
-)
+const wordlists = {
+  eff_large_wordlist: effLargeWordlist,
+  eff_short_wordlist_1: effShortWordlist1,
+  eff_short_wordlist_2_0: effShortWordlist20,
+}
 
 export type Wordlist =
   | "eff_large_wordlist"
@@ -34,8 +33,7 @@ export default async (
   ) {
     throw new Error("Invalid wordlist")
   }
-  const data = await readFile(join(wordlistDir, `${wordlist}.json`), "utf8")
-  const words = JSON.parse(data)
+  const words = wordlists[wordlist]
   const passphrase = []
   for (let index = 1; index <= length; index++) {
     const randomInt = await getRandomInt(0, words.length - 1)
