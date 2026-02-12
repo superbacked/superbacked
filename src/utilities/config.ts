@@ -11,12 +11,20 @@ export interface WindowBounds {
 
 export interface Store {
   colorScheme?: ColorScheme
+  scannerDevice?: string
+  scannerSource?: string
   windowBounds?: WindowBounds
 }
 
 const schema: Schema<Store> = {
   colorScheme: {
     enum: ["light", "dark"],
+    type: "string",
+  },
+  scannerDevice: {
+    type: "string",
+  },
+  scannerSource: {
     type: "string",
   },
   windowBounds: {
@@ -59,4 +67,8 @@ export function get<Key extends keyof Store>(key?: Key): Store | Store[Key] {
   } else {
     return config.store
   }
+}
+
+export function unset<Key extends keyof Store>(key: Key): void {
+  return config.delete(key)
 }

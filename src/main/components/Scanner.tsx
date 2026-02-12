@@ -193,8 +193,12 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const [showSourceSettings, setShowSourceSettings] = useState(false)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
-  const [deviceValue, setDeviceValue] = useState<null | string>(null)
-  const [sourceValue, setSourceValue] = useState<null | string>(null)
+  const [deviceValue, setDeviceValue] = useState<null | string>(
+    window.api.invokeSync.getConfig("scannerDevice") ?? null
+  )
+  const [sourceValue, setSourceValue] = useState<null | string>(
+    window.api.invokeSync.getConfig("scannerSource") ?? null
+  )
   const [deviceDropdownOpened, setDeviceDropdownOpened] = useState(false)
   const [sourceDropdownOpened, setSourceDropdownOpened] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -332,6 +336,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         videoInputDevices.push(enumerateDevice)
       }
     }
+    videoInputDevices.sort((a, b) => a.label.localeCompare(b.label))
     setDevices(videoInputDevices)
     return videoInputDevices
   }, [])
@@ -342,7 +347,27 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       setIsLoading(true)
       const updatedDevices = await updateDevices()
       if (!sourceRef.current) {
-        if (updatedDevices[0]) {
+        if (deviceValue) {
+          const deviceExists = updatedDevices.some(
+            (device) => device.deviceId === deviceValue
+          )
+          if (deviceExists) {
+            sourceRef.current = {
+              id: deviceValue,
+              type: "device",
+            }
+          } else {
+            window.api.invokeSync.unsetConfig("scannerDevice")
+            setDeviceValue(null)
+          }
+        }
+        if (!sourceRef.current && sourceValue) {
+          sourceRef.current = {
+            id: sourceValue,
+            type: "source",
+          }
+        }
+        if (!sourceRef.current && updatedDevices[0]) {
           sourceRef.current = {
             id: updatedDevices[0].deviceId,
             type: "device",
@@ -439,7 +464,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         setError({ message: "components.scanner.couldNotRunScanner" })
       }
     }
-  }, [updateDevices, stop, debouncedCompute])
+  }, [updateDevices, deviceValue, sourceValue, stop, debouncedCompute])
 
   const start = useCallback(() => {
     if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {
@@ -455,10 +480,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       setError({ message: "components.scanner.pleaseAllowScreenRecording" })
       return []
     }
-    setSources(result.customDesktopCapturerSources)
+    const sortedSources = result.customDesktopCapturerSources.sort((a, b) =>
+      a.label.localeCompare(b.label)
+    )
+    setSources(sortedSources)
     // On Linux, set source to selected window
     // See https://www.electronjs.org/docs/latest/api/desktop-capturer#caveats
-    const sourceId = result.customDesktopCapturerSources[0]?.id
+    const sourceId = sortedSources[0]?.id
     if (window.api.platform === "linux" && sourceId) {
       sourceRef.current = {
         id: sourceId,
@@ -468,7 +496,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       setShowSourceSettings(false)
       start()
     }
-    return result.customDesktopCapturerSources
+    return sortedSources
   }
 
   const beep = useCallback(() => {
@@ -537,6 +565,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
                   type: "device",
                 }
                 setDeviceValue(value)
+                window.api.invokeSync.setConfig("scannerDevice", value)
+                window.api.invokeSync.unsetConfig("scannerSource")
               }
               setShowSourceSettings(false)
               start()
@@ -577,6 +607,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
                   type: "source",
                 }
                 setSourceValue(value)
+                window.api.invokeSync.unsetConfig("scannerDevice")
+                window.api.invokeSync.setConfig("scannerSource", value)
               }
               setShowSourceSettings(false)
               start()

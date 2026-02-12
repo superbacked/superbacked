@@ -36,7 +36,12 @@ import {
   validateMnemonic,
   wordlist,
 } from "@/src/utilities/bip39"
-import { ColorScheme } from "@/src/utilities/config"
+import {
+  ColorScheme,
+  get as getConfig,
+  set as setConfig,
+  unset as unsetConfig,
+} from "@/src/utilities/config"
 import { handle } from "@/src/utilities/handle"
 import { handleSync } from "@/src/utilities/handleSync"
 import { generateToken } from "@/src/utilities/totp"
@@ -110,6 +115,9 @@ const syncHandlers = {
   getColorScheme: () => (shouldUseDarkColors() === true ? "dark" : "light"),
   getLocale: () => locale,
   getVersion: () => app.getVersion(),
+  getConfig,
+  setConfig,
+  unsetConfig,
   generateMnemonic,
   validateMnemonic,
   getWordlist: () => wordlist,
@@ -131,7 +139,7 @@ export const registerSyncHandlers = () => {
     ][]
   ).forEach(([name, handler]) => {
     handleSync(name, (...args: never[]) => {
-      // @ts-expect-error - TypeScript can’t type ...args when handlers have different signatures
+      // @ts-expect-error - TypeScript can't properly type handler union
       return handler(...args)
     })
   })
