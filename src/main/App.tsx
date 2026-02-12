@@ -165,7 +165,6 @@ const App = () => {
             }
           `}
         />
-        <Notifications containerWidth={400} />
         <TitleBar />
         <MemoryRouter>
           <MenuEvents>
@@ -193,6 +192,7 @@ const App = () => {
           </MenuEvents>
         </MemoryRouter>
         <Disclaimer />
+        <Notifications containerWidth={400} />
       </MantineProvider>
     </MantineEmotionProvider>
   )
