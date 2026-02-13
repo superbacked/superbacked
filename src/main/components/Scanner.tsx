@@ -192,10 +192,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const mediaStreamRef = useRef<null | MediaStream>(null)
   const computingRef = useRef(false)
   const handleCodeRef = useRef(props.handleCode)
-  const [showSourceSettings, setShowSourceSettings] = useState(false)
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
-  const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
-  const [source, setSource] = useState<null | Source>(() => {
+  const getInitialSource = (): null | Source => {
     const deviceId = window.api.invokeSync.getConfig("scannerDevice")
     if (deviceId) {
       return { id: deviceId, type: "device" }
@@ -205,7 +202,12 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       return { id: sourceId, type: "source" }
     }
     return null
-  })
+  }
+  const sourceRef = useRef<null | Source>(getInitialSource())
+  const [showSourceSettings, setShowSourceSettings] = useState(false)
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
+  const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
+  const [source, setSource] = useState<null | Source>(sourceRef.current)
   const [deviceDropdownOpened, setDeviceDropdownOpened] = useState(false)
   const [sourceDropdownOpened, setSourceDropdownOpened] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -227,6 +229,11 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     autoStop = true,
     dropzone = false,
   } = props
+
+  const updateSource = useCallback((newSource: null | Source) => {
+    sourceRef.current = newSource
+    setSource(newSource)
+  }, [])
 
   const stop = useCallback(() => {
     setIsStreaming(false)
@@ -355,14 +362,14 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       setError(null)
       setIsLoading(true)
       const updatedDevices = await updateDevices()
-      let currentSource = source
+      let currentSource = sourceRef.current
       if (currentSource === null) {
         if (updatedDevices[0]) {
           currentSource = {
             id: updatedDevices[0].deviceId,
             type: "device",
           }
-          setSource(currentSource)
+          updateSource(currentSource)
         }
       } else if (currentSource.type === "device") {
         const deviceExists = updatedDevices.some(
@@ -375,10 +382,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               id: updatedDevices[0].deviceId,
               type: "device",
             }
-            setSource(currentSource)
+            updateSource(currentSource)
           } else {
             currentSource = null
-            setSource(null)
+            updateSource(null)
           }
         }
       }
@@ -442,19 +449,19 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       ) {
         setError({ message: "components.scanner.pleaseConnectCamera" })
       } else if (
-        source?.type === "device" &&
+        sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotAllowedError"
       ) {
         setError({ message: "components.scanner.pleaseAllowCameraAccess" })
       } else if (
-        source?.type === "device" &&
+        sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
         setError({ message: "components.scanner.pleaseConnectCamera" })
       } else if (
-        source?.type === "device" &&
+        sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "OverconstrainedError"
       ) {
@@ -463,7 +470,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             "components.scanner.cameraDoesNotMeetMinimumRequirementOf720p",
         })
       } else if (
-        source?.type === "source" &&
+        sourceRef.current?.type === "source" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
@@ -472,7 +479,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         setError({ message: "components.scanner.couldNotRunScanner" })
       }
     }
-  }, [updateDevices, source, stop, debouncedCompute])
+  }, [updateDevices, updateSource, stop, debouncedCompute])
 
   const start = useCallback(() => {
     if (
@@ -499,9 +506,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     // See https://www.electronjs.org/docs/latest/api/desktop-capturer#caveats
     const sourceId = sortedSources[0]?.id
     if (window.api.platform === "linux" && sourceId) {
-      setSource({
+      updateSource({
         id: sourceId,
-        type: "source",
+        type: "source" as const,
       })
       window.api.invokeSync.setConfig("scannerSource", sourceId)
       setShowSourceSettings(false)
@@ -580,15 +587,15 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             value={source?.type === "device" ? source.id : null}
             onChange={(value) => {
               if (value) {
-                setSource({
+                updateSource({
                   id: value,
-                  type: "device",
+                  type: "device" as const,
                 })
                 window.api.invokeSync.setConfig("scannerDevice", value)
                 window.api.invokeSync.unsetConfig("scannerSource")
+                setShowSourceSettings(false)
+                start()
               }
-              setShowSourceSettings(false)
-              start()
             }}
             onDropdownClose={() => setDeviceDropdownOpened(false)}
             onDropdownOpen={async () => {
@@ -614,15 +621,15 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             value={source?.type === "source" ? source.id : null}
             onChange={(value) => {
               if (value) {
-                setSource({
+                updateSource({
                   id: value,
-                  type: "source",
+                  type: "source" as const,
                 })
                 window.api.invokeSync.unsetConfig("scannerDevice")
                 window.api.invokeSync.setConfig("scannerSource", value)
+                setShowSourceSettings(false)
+                start()
               }
-              setShowSourceSettings(false)
-              start()
             }}
             onDropdownClose={() => setSourceDropdownOpened(false)}
             onDropdownOpen={async () => {
