@@ -220,6 +220,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         id: "scanOrDragAndDropNextBlock",
         message: t("routes.restore.scanOrDragAndDropNextBlock"),
       })
+      scannerRef.current?.clear()
       return
     }
     let payload: Payload
@@ -358,11 +359,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         <Fragment>
           <Container>
             <Text
+              size="sm"
               sx={{
-                fontSize: "14px",
                 overflowWrap: "anywhere",
                 whiteSpace: "pre-wrap",
-                width: "100%",
               }}
               ta="left"
             >
