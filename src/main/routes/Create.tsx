@@ -495,7 +495,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           // Prompt for output directory once
           const saveDialogReturnValue = await window.api.invoke.chooseDirectory(
             t(
-              "handlers.createDetachedArchive.chooseWhereToSaveDetachedArchive",
+              "handlers.createDetachedArchive.chooseWhereToCreateDetachedArchive",
               {
                 count: detachedArchives.length,
               }

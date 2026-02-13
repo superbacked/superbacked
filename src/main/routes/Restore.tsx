@@ -414,7 +414,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                       const saveDialogReturnValue =
                         await window.api.invoke.chooseDirectory(
                           t(
-                            "handlers.restoreDetachedArchive.chooseWhereToSaveDetachedArchiveContent"
+                            "handlers.restoreDetachedArchive.chooseWhereToRestoreDetachedArchive"
                           )
                         )
                       if (saveDialogReturnValue.canceled) {

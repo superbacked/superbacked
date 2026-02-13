@@ -141,7 +141,7 @@
     },
     "scanner": {
       "loading": "Chargement",
-      "scanBlockUsingCamera": "Scanner le bloc avec la caméra",
+      "useCameraOrScreenCapture": "Utiliser la caméra ou la capture d’écran",
       "pleaseAllowCameraAccess": "Veuillez autoriser l’accès à la caméra",
       "pleaseConnectCamera": "Veuillez connecter la caméra",
       "cameraDoesNotMeetMinimumRequirementOf720p": "La caméra ne répond pas à l’exigence minimale de 720p",
@@ -166,18 +166,18 @@
   },
   "handlers": {
     "createStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchive_one": "Choisir où enregistrer l’archive autonome",
-      "chooseWhereToSaveStandaloneArchive_other": "Choisir où enregistrer les archives autonomes"
+      "chooseWhereToCreateStandaloneArchive_one": "Choisir où créer l’archive autonome",
+      "chooseWhereToCreateStandaloneArchive_other": "Choisir où créer les archives autonomes"
     },
     "restoreStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchiveContent": "Choisir où enregistrer le contenu de l’archive autonome"
+      "chooseWhereToRestoreStandaloneArchive": "Choisir où restaurer l’archive autonome"
     },
     "createDetachedArchive": {
-      "chooseWhereToSaveDetachedArchive_one": "Choisir où enregistrer l’archive détachée",
-      "chooseWhereToSaveDetachedArchive_other": "Choisir où enregistrer les archives détachées"
+      "chooseWhereToCreateDetachedArchive_one": "Choisir où créer l’archive détachée",
+      "chooseWhereToCreateDetachedArchive_other": "Choisir où créer les archives détachées"
     },
     "restoreDetachedArchive": {
-      "chooseWhereToSaveDetachedArchiveContent": "Choisir où enregistrer le contenu de l’archive détachée"
+      "chooseWhereToRestoreDetachedArchive": "Choisir où restaurer l’archive détachée"
     },
     "save": {
       "chooseWhereToSaveBlock": "Choisir où enregistrer le bloc",
@@ -236,6 +236,8 @@
       "couldNotCreateDetachedArchive_other": "Impossible de créer les archives détachées",
       "couldNotCreateBlock": "Impossible de créer le bloc",
       "couldNotCreateBlockset": "Impossible de créer l’ensemble de blocs",
+      "detachedArchiveCreated_one": "Archive détachée créée",
+      "detachedArchiveCreated_other": "Archives détachées créées",
       "print": "Imprimer",
       "pleaseConnectPrinter": "Veuillez connecter l’imprimante",
       "pleaseSelectPrinter": "Veuillez sélectionner l’imprimante",
@@ -245,9 +247,7 @@
       "printingBlockset": "Impression de l’ensemble de blocs",
       "save": "Enregistrer",
       "blockSaved": "Bloc enregistré",
-      "blocksetSaved": "Ensemble de blocs enregistré",
-      "detachedArchiveCreated_one": "Archive détachée créée",
-      "detachedArchiveCreated_other": "Archives détachées créées"
+      "blocksetSaved": "Ensemble de blocs enregistré"
     },
     "duplicate": {
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"

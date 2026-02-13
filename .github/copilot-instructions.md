@@ -13,6 +13,7 @@
 
 ## JavaScript and TypeScript preferences
 
+- Avoid using `!` operator for negation and prefer explicit comparisons (use `value === null` instead of `!value`, `value !== null` instead of `value`, `booleanValue === false` instead of `!booleanValue`, `booleanValue === true` instead of `booleanValue`)
 - Sort component props alphabetically
 - Sort src/locales components, handlers and common child translation keys alphabetically
 - Sort src/locales translation keys in order they appear in components

@@ -140,7 +140,7 @@
     },
     "scanner": {
       "loading": "Carregando",
-      "scanBlockUsingCamera": "Escanear bloco usando câmera",
+      "useCameraOrScreenCapture": "Usar câmera ou captura de tela",
       "pleaseAllowCameraAccess": "Por favor, permita o acesso à câmera",
       "pleaseConnectCamera": "Por favor, conecte uma câmera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "A câmera não atende ao requisito mínimo de 720p",
@@ -165,18 +165,18 @@
   },
   "handlers": {
     "createStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchive_one": "Escolher onde guardar o arquivo autônomo",
-      "chooseWhereToSaveStandaloneArchive_other": "Escolher onde guardar os arquivos autônomos"
+      "chooseWhereToCreateStandaloneArchive_one": "Escolher onde criar o arquivo autônomo",
+      "chooseWhereToCreateStandaloneArchive_other": "Escolher onde criar os arquivos autônomos"
     },
     "restoreStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchiveContent": "Escolher onde guardar o conteúdo do arquivo autônomo"
+      "chooseWhereToRestoreStandaloneArchive": "Escolher onde restaurar o arquivo autônomo"
     },
     "createDetachedArchive": {
-      "chooseWhereToSaveDetachedArchive_one": "Escolher onde guardar o arquivo destacado",
-      "chooseWhereToSaveDetachedArchive_other": "Escolher onde guardar os arquivos destacados"
+      "chooseWhereToCreateDetachedArchive_one": "Escolher onde criar o arquivo destacado",
+      "chooseWhereToCreateDetachedArchive_other": "Escolher onde criar os arquivos destacados"
     },
     "restoreDetachedArchive": {
-      "chooseWhereToSaveDetachedArchiveContent": "Escolher onde guardar o conteúdo do arquivo destacado"
+      "chooseWhereToRestoreDetachedArchive": "Escolher onde restaurar o arquivo destacado"
     },
     "save": {
       "chooseWhereToSaveBlock": "Escolher onde guardar o bloco",
@@ -235,6 +235,8 @@
       "couldNotCreateDetachedArchive_other": "Não foi possível criar os arquivos destacados",
       "couldNotCreateBlock": "Não foi possível criar o bloco",
       "couldNotCreateBlockset": "Não foi possível criar o conjunto de blocos",
+      "detachedArchiveCreated_one": "Arquivo destacado criado",
+      "detachedArchiveCreated_other": "Arquivos destacados criados",
       "print": "Imprimir",
       "pleaseConnectPrinter": "Por favor, conecte a impressora",
       "pleaseSelectPrinter": "Por favor, selecione a impressora",
@@ -244,9 +246,7 @@
       "printingBlockset": "Imprimindo o conjunto de blocos",
       "save": "Salvar",
       "blockSaved": "Bloco guardado",
-      "blocksetSaved": "Conjunto de blocos guardado",
-      "detachedArchiveCreated_one": "Arquivo destacado criado",
-      "detachedArchiveCreated_other": "Arquivos destacados criados"
+      "blocksetSaved": "Conjunto de blocos guardado"
     },
     "duplicate": {
       "couldNotDuplicateBlock": "Não foi possível duplicar o bloco"

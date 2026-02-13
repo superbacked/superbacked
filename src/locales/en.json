@@ -140,7 +140,7 @@
     },
     "scanner": {
       "loading": "Loading",
-      "scanBlockUsingCamera": "Scan block using camera",
+      "useCameraOrScreenCapture": "Use camera or screen capture",
       "pleaseAllowCameraAccess": "Please allow camera access",
       "pleaseConnectCamera": "Please connect camera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "Camera does not meet minimum requirement of 720p",
@@ -165,18 +165,18 @@
   },
   "handlers": {
     "createStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchive_one": "Choose where to save standalone archive",
-      "chooseWhereToSaveStandaloneArchive_other": "Choose where to save standalone archives"
+      "chooseWhereToCreateStandaloneArchive_one": "Choose where to create standalone archive",
+      "chooseWhereToCreateStandaloneArchive_other": "Choose where to create standalone archives"
     },
     "restoreStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchiveContent": "Choose where to save standalone archive content"
+      "chooseWhereToRestoreStandaloneArchive": "Choose where to restore standalone archive"
     },
     "createDetachedArchive": {
-      "chooseWhereToSaveDetachedArchive_one": "Choose where to save detached archive",
-      "chooseWhereToSaveDetachedArchive_other": "Choose where to save detached archives"
+      "chooseWhereToCreateDetachedArchive_one": "Choose where to create detached archive",
+      "chooseWhereToCreateDetachedArchive_other": "Choose where to create detached archives"
     },
     "restoreDetachedArchive": {
-      "chooseWhereToSaveDetachedArchiveContent": "Choose where to save detached archive content"
+      "chooseWhereToRestoreDetachedArchive": "Choose where to restore detached archive"
     },
     "save": {
       "chooseWhereToSaveBlock": "Choose where to save block",
@@ -235,6 +235,8 @@
       "couldNotCreateDetachedArchive_other": "Could not create detached archives",
       "couldNotCreateBlock": "Could not create block",
       "couldNotCreateBlockset": "Could not create blockset",
+      "detachedArchiveCreated_one": "Detached archive created",
+      "detachedArchiveCreated_other": "Detached archives created",
       "print": "Print",
       "pleaseConnectPrinter": "Please connect printer",
       "pleaseSelectPrinter": "Please select printer",
@@ -244,9 +246,7 @@
       "printingBlockset": "Printing blockset",
       "save": "Save",
       "blockSaved": "Block saved",
-      "blocksetSaved": "Blockset saved",
-      "detachedArchiveCreated_one": "Detached archive created",
-      "detachedArchiveCreated_other": "Detached archives created"
+      "blocksetSaved": "Blockset saved"
     },
     "duplicate": { "couldNotDuplicateBlock": "Could not duplicate block" },
     "restore": {

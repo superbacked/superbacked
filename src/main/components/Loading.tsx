@@ -16,6 +16,7 @@ const Loading: FunctionComponent<LoadingProps> = (props) => {
   return (
     <Fragment>
       <LoadingOverlay
+        loaderProps={{ size: "sm" }}
         overlayProps={{
           blur: 4,
           color: "#000000",

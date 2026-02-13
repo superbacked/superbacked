@@ -150,7 +150,7 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
         try {
           const saveDialogReturnValue = await window.api.invoke.chooseDirectory(
             t(
-              "handlers.createStandaloneArchive.chooseWhereToSaveStandaloneArchive",
+              "handlers.createStandaloneArchive.chooseWhereToCreateStandaloneArchive",
               {
                 count: 1,
               }
@@ -197,7 +197,7 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
 
         const saveDialogReturnValue = await window.api.invoke.chooseDirectory(
           t(
-            "handlers.restoreStandaloneArchive.chooseWhereToSaveStandaloneArchiveContent"
+            "handlers.restoreStandaloneArchive.chooseWhereToRestoreStandaloneArchive"
           )
         )
         if (saveDialogReturnValue.canceled) {

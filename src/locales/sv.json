@@ -140,7 +140,7 @@
     },
     "scanner": {
       "loading": "Laddar",
-      "scanBlockUsingCamera": "Skanna block med kamera",
+      "useCameraOrScreenCapture": "Använd kamera eller skärminspelning",
       "pleaseAllowCameraAccess": "Vänligen tillåt kameraåtkomst",
       "pleaseConnectCamera": "Vänligen anslut en kamera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "Kameran uppfyller inte minimikravet på 720p",
@@ -165,18 +165,18 @@
   },
   "handlers": {
     "createStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchive_one": "Välj var det fristående arkivet ska sparas",
-      "chooseWhereToSaveStandaloneArchive_other": "Välj var de fristående arkiven ska sparas"
+      "chooseWhereToCreateStandaloneArchive_one": "Välj var det fristående arkivet ska skapas",
+      "chooseWhereToCreateStandaloneArchive_other": "Välj var de fristående arkiven ska skapas"
     },
     "restoreStandaloneArchive": {
-      "chooseWhereToSaveStandaloneArchiveContent": "Välj var innehållet i det fristående arkivet ska sparas"
+      "chooseWhereToRestoreStandaloneArchive": "Välj var det fristående arkivet ska återställas"
     },
     "createDetachedArchive": {
-      "chooseWhereToSaveDetachedArchive_one": "Välj var det separata arkivet ska sparas",
-      "chooseWhereToSaveDetachedArchive_other": "Välj var de separata arkiven ska sparas"
+      "chooseWhereToCreateDetachedArchive_one": "Välj var det separata arkivet ska skapas",
+      "chooseWhereToCreateDetachedArchive_other": "Välj var de separata arkiven ska skapas"
     },
     "restoreDetachedArchive": {
-      "chooseWhereToSaveDetachedArchiveContent": "Välj var innehållet i det separata arkivet ska sparas"
+      "chooseWhereToRestoreDetachedArchive": "Välj var det separata arkivet ska återställas"
     },
     "save": {
       "chooseWhereToSaveBlock": "Välj var blocket ska sparas",
@@ -235,6 +235,8 @@
       "couldNotCreateDetachedArchive_other": "Kunde inte skapa separata arkiv",
       "couldNotCreateBlock": "Kunde inte skapa block",
       "couldNotCreateBlockset": "Kunde inte skapa blockuppsättning",
+      "detachedArchiveCreated_one": "Separat arkiv skapat",
+      "detachedArchiveCreated_other": "Separata arkiv skapade",
       "print": "Skriv ut",
       "pleaseConnectPrinter": "Vänligen anslut skrivare",
       "pleaseSelectPrinter": "Vänligen välj skrivare",
@@ -244,9 +246,7 @@
       "printingBlockset": "Skriver ut blockuppsättningen",
       "save": "Spara",
       "blockSaved": "Block sparat",
-      "blocksetSaved": "Blockuppsättning sparad",
-      "detachedArchiveCreated_one": "Separat arkiv skapat",
-      "detachedArchiveCreated_other": "Separata arkiv skapade"
+      "blocksetSaved": "Blockuppsättning sparad"
     },
     "duplicate": { "couldNotDuplicateBlock": "Kunde inte duplicera block" },
     "restore": {
