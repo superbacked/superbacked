@@ -32,7 +32,6 @@
       "view": "Affichage",
       "chooseLanguage": "Choisir la langue de l’application",
       "showSelectionAsQrCode": "Afficher la sélection en tant que code QR",
-      "showHiddenSecrets": "Afficher les secrets cachés",
       "reload": "Actualiser",
       "toggleDeveloperTools": "Activer/désactiver les outils de développement"
     }
@@ -46,20 +45,71 @@
       "copyright": "Copyright",
       "allRightsReserved": "Tous droits réservés"
     },
+    "createStandaloneArchiveModal": {
+      "createStandaloneArchive": "Créer une archive autonome",
+
+      "filename": "Nom de fichier",
+      "typeFilename": "Taper le nom de fichier…",
+      "createArchive": "Créer"
+    },
+    "createDisclaimerModal": {
+      "standardDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
+      "standardDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets",
+      "standardWithOneDetachedArchiveDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
+      "standardWithOneDetachedArchiveDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
+      "standardWithMultipleDetachedArchivesDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
+      "standardWithMultipleDetachedArchivesDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et les archives détachées",
+      "2of3Description_one": "2 des 3 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
+      "2of3Description_other": "2 des 3 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets",
+      "2of3WithOneDetachedArchiveDescription_one": "2 des 3 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
+      "2of3WithOneDetachedArchiveDescription_other": "2 des 3 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
+      "2of3WithMultipleDetachedArchivesDescription_one": "2 des 3 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
+      "2of3WithMultipleDetachedArchivesDescription_other": "2 des 3 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées",
+      "3of5Description_one": "3 des 5 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
+      "3of5Description_other": "3 des 5 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets",
+      "3of5WithOneDetachedArchiveDescription_one": "3 des 5 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
+      "3of5WithOneDetachedArchiveDescription_other": "3 des 5 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
+      "3of5WithMultipleDetachedArchivesDescription_one": "3 des 5 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
+      "3of5WithMultipleDetachedArchivesDescription_other": "3 des 5 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées",
+      "4of7Description_one": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
+      "4of7Description_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets",
+      "4of7WithOneDetachedArchiveDescription_one": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
+      "4of7WithOneDetachedArchiveDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
+      "4of7WithMultipleDetachedArchivesDescription_one": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
+      "4of7WithMultipleDetachedArchivesDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées"
+    },
     "disclaimer": {
-      "doNot": "Ne pas",
-      "useSuperbackedOnComputer": "utiliser Superbacked sur un ordinateur qui n’est pas",
-      "airGapped": "isolé d’Internet",
-      "and": "et",
-      "exclusivelyUsed": "utilisé exclusivement",
-      "forSecretManagementUnlessSecret": "pour la gestion de secret, à moins que le secret soit déjà présent sur l’ordinateur.",
-      "superbackedIncCannotBeHeldResponsible": "Superbacked, Inc., ainsi que ses actionnaires, employés et opérateurs, et les contributeurs et mainteneurs de son code source, ne peuvent être tenus responsables des secrets perdus ou volés.",
+      "computerProvisioningWarning": "<bold>Ne pas</bold> utiliser Superbacked sur un ordinateur qui n’est pas spécifiquement provisionné pour la gestion de secret (pas de persistance de données ou de connectivité réseau) à moins que le secret soit déjà présent sur l’ordinateur.",
+      "limitationOfLiability": "Superbacked, Inc., ainsi que ses actionnaires, employés et opérateurs, et les contributeurs et mainteneurs de son code source, ne peuvent être tenus responsables des secrets perdus ou volés.",
       "useAtYourOwnRisk": "UTILISER À VOS PROPRES RISQUES.",
       "agree": "J’accepte les termes ci-dessus et les risques sous-jacents",
       "useSuperbacked": "Utiliser Superbacked"
     },
     "errorModal": {
       "headsUp": "Attention"
+    },
+    "featureDescriptionModal": {
+      "learnMore": "En savoir plus",
+      "detachedArchiveDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les blocs et sont restaurées à l’aide de blocs et de phrases de passe fournissant une authentification multi-facteurs.",
+      "standaloneArchiveDescription": "Les archives autonomes chiffrent les fichiers et dossiers à l’aide de phrases de passe uniquement et sont restaurées sans blocs fournissant une authentification à facteur unique."
+    },
+    "fileManager": {
+      "addToBlock": "Ajouter au bloc",
+      "addToBlockset": "Ajouter à l’ensemble de blocs",
+      "addFiles": "Ajouter des fichiers",
+      "createStandaloneArchive": "Créer une archive autonome…",
+      "addToStandaloneArchive": "Ajouter à une archive autonome",
+      "showFiles_one": "Afficher le fichier",
+      "showFiles_other": "Afficher les fichiers",
+      "dragAndDropFiles": "Glisser-déposer les fichiers",
+      "couldNotHandleDroppedFiles": "Impossible de traiter les fichiers déposés",
+      "couldNotCreateStandaloneArchive": "Impossible de créer l’archive autonome",
+      "couldNotRestoreStandaloneArchive": "Impossible de restaurer l’archive autonome",
+      "standaloneArchiveCreated": "Archive autonome créée",
+      "standaloneArchiveRestored": "Archive autonome restaurée"
+    },
+    "hiddenSecretDisclaimerModal": {
+      "description": "Les secrets cachés utilisent des phrases de passe distinctes et sont dissimulés dans l’espace de bloc inutilisé."
     },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Force de la phrase de passe",
@@ -81,13 +131,23 @@
         "centuries": "siècles"
       }
     },
+    "passphraseModal": {
+      "enterPassphrase": "Entrer la phrase de passe",
+      "unlock": "Déverrouiller"
+    },
+    "restoreStandaloneArchiveModal": {
+      "restoreStandaloneArchive": "Restaurer une archive autonome",
+      "restore": "Restaurer"
+    },
     "scanner": {
       "loading": "Chargement",
+      "useCameraOrScreenCapture": "Utiliser la caméra ou la capture d’écran",
       "pleaseAllowCameraAccess": "Veuillez autoriser l’accès à la caméra",
       "pleaseConnectCamera": "Veuillez connecter la caméra",
       "cameraDoesNotMeetMinimumRequirementOf720p": "La caméra ne répond pas à l’exigence minimale de 720p",
       "pleaseAllowScreenRecording": "Veuillez autoriser l’enregistrement de l’écran",
       "couldNotRunScanner": "Impossible d’exécuter le scanner",
+      "couldNotHandleFile": "Impossible de traiter le fichier",
       "device": "Appareil",
       "selectDevice": "Sélectionner l’appareil",
       "source": "Source",
@@ -104,13 +164,39 @@
       "found_other": "trouvés"
     }
   },
+  "handlers": {
+    "createStandaloneArchive": {
+      "chooseWhereToCreateStandaloneArchive_one": "Choisir où créer l’archive autonome",
+      "chooseWhereToCreateStandaloneArchive_other": "Choisir où créer les archives autonomes"
+    },
+    "restoreStandaloneArchive": {
+      "chooseWhereToRestoreStandaloneArchive": "Choisir où restaurer l’archive autonome"
+    },
+    "createDetachedArchive": {
+      "chooseWhereToCreateDetachedArchive_one": "Choisir où créer l’archive détachée",
+      "chooseWhereToCreateDetachedArchive_other": "Choisir où créer les archives détachées"
+    },
+    "restoreDetachedArchive": {
+      "chooseWhereToRestoreDetachedArchive": "Choisir où restaurer l’archive détachée"
+    },
+    "save": {
+      "chooseWhereToSaveBlock": "Choisir où enregistrer le bloc",
+      "chooseWhereToSaveBlockset": "Choisir où enregistrer l’ensemble de blocs"
+    }
+  },
   "common": {
-    "passphrase": "Phrase de passe",
-    "typePassphrase": "Taper la phrase de passe…",
-    "passphraseRequired": "Phrase de passe requise",
-    "copy": "Copier",
+    "cancel": "Annuler",
     "copied": "Copié",
-    "done": "Terminer"
+    "copy": "Copier",
+    "done": "Terminer",
+    "gotIt": "J’ai compris",
+    "important": "Important",
+    "next": "Suivant",
+    "show": "Afficher",
+    "passphrase": "Phrase de passe",
+    "passphraseRequired": "Phrase de passe requise",
+    "passphraseTooWeak": "Phrase de passe trop faible",
+    "typePassphrase": "Taper la phrase de passe…"
   },
   "routes": {
     "create": {
@@ -118,7 +204,8 @@
       "typeSecret": "Taper le secret…",
       "secretRequired": "Secret requis",
       "secretTooLong": "Secret trop long",
-      "passphraseTooWeak": "Phrase de passe trop faible",
+      "detachedArchive": "Archive détachée",
+      "dragAndDropFileToProvisionDetachedArchive": "Glisser et déposer un fichier pour provisionner une archive détachée",
       "passphraseUsed": "Phrase de passe utilisée",
       "passphraseTooSimilar": "Phrase de passe trop similaire",
       "label": "Étiquette (facultatif)",
@@ -127,32 +214,52 @@
       "backupType": "Type de sauvegarde",
       "selectBackupType": "Sélectionner le type de sauvegarde…",
       "backupTypeRequired": "Type de sauvegarde requis",
-      "standard": "Standard",
-      "2of3": "Distribué (2 des 3 blocs requis)",
-      "3of5": "Distribué (3 des 5 blocs requis)",
-      "4of7": "Distribué (4 des 7 blocs requis)",
-      "addSecret": "Ajouter un secret caché",
-      "removeSecret": "Supprimer le secret caché",
-      "create": "Créer",
-      "creating": "Création en cours",
-      "couldNotEncryptSecret": "Impossible de chiffrer le secret",
-      "couldNotEncryptSecrets": "Impossible de chiffrer le(s) secret(s)",
+      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Glisser-déposer un fichier pour créer ou restaurer une archive autonome",
+      "dragAndDropFilesToAddToDetachedArchive": "Glisser et déposer des fichiers pour ajouter à l’archive détachée",
+      "standard": "Bloc unique",
+      "standardDescription": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
+      "2of3": "Ensemble de blocs (seuil 2 sur 3)",
+      "2of3Description": "2 des 3 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
+      "3of5": "Ensemble de blocs (seuil 3 sur 5)",
+      "3of5Description": "3 des 5 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
+      "4of7": "Ensemble de blocs (seuil 4 sur 7)",
+      "4of7Description": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
+      "addHiddenSecret": "Ajouter un secret caché",
+      "removeHiddenSecret": "Supprimer le secret caché",
+      "createBlock": "Créer le bloc",
+      "createBlockAndDetachedArchive_one": "Créer le bloc et l’archive détachée",
+      "createBlockAndDetachedArchive_other": "Créer le bloc et les archives détachées",
+      "createBlockset": "Créer l’ensemble de blocs",
+      "createBlocksetAndDetachedArchive_one": "Créer l’ensemble de blocs et l’archive détachée",
+      "createBlocksetAndDetachedArchive_other": "Créer l’ensemble de blocs et les archives détachées",
+      "couldNotCreateDetachedArchive_one": "Impossible de créer l’archive détachée",
+      "couldNotCreateDetachedArchive_other": "Impossible de créer les archives détachées",
+      "couldNotCreateBlock": "Impossible de créer le bloc",
+      "couldNotCreateBlockset": "Impossible de créer l’ensemble de blocs",
+      "detachedArchiveCreated_one": "Archive détachée créée",
+      "detachedArchiveCreated_other": "Archives détachées créées",
       "print": "Imprimer",
       "pleaseConnectPrinter": "Veuillez connecter l’imprimante",
       "pleaseSelectPrinter": "Veuillez sélectionner l’imprimante",
       "printer": "Imprimante",
       "selectPrinter": "Sélectionner l’imprimante",
-      "printing": "Impression en cours",
-      "save": "Enregistrer"
+      "printingBlock": "Impression du bloc",
+      "printingBlockset": "Impression de l’ensemble de blocs",
+      "save": "Enregistrer",
+      "blockSaved": "Bloc enregistré",
+      "blocksetSaved": "Ensemble de blocs enregistré"
     },
     "duplicate": {
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
     "restore": {
-      "enterPassphrase": "Entrer la phrase de passe",
-      "unlock": "Déverrouiller",
-      "unlocking": "Déverrouillage en cours",
-      "scanNextBlock": "Scanner le bloc suivant",
+      "scanOrDragAndDropBlock": "Scanner ou déposer le bloc",
+      "scanOrDragAndDropNextBlock": "Scanner or déposer le bloc suivant",
+      "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
+      "dragAndDropArchiveToRestore": "Glisser et déposer {{filename}} pour restaurer l’archive",
+      "restoringDetachedArchive": "Restauration de l’archive détachée",
+      "couldNotRestoreDetachedArchive": "Impossible de restaurer l’archive détachée",
+      "detachedArchiveRestored": "Archive détachée restaurée",
       "showSecret": "Afficher le secret"
     }
   }

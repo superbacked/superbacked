@@ -2,14 +2,39 @@ import store, { Schema } from "electron-store"
 
 export type ColorScheme = "dark" | "light"
 
+export interface WindowBounds {
+  height: number
+  width: number
+  x: number
+  y: number
+}
+
 export interface Store {
-  colorScheme: ColorScheme
+  colorScheme?: ColorScheme
+  scannerDevice?: string
+  scannerSource?: string
+  windowBounds?: WindowBounds
 }
 
 const schema: Schema<Store> = {
   colorScheme: {
     enum: ["light", "dark"],
     type: "string",
+  },
+  scannerDevice: {
+    type: "string",
+  },
+  scannerSource: {
+    type: "string",
+  },
+  windowBounds: {
+    type: "object",
+    properties: {
+      height: { type: "number" },
+      width: { type: "number" },
+      x: { type: "number" },
+      y: { type: "number" },
+    },
   },
 }
 
@@ -42,4 +67,8 @@ export function get<Key extends keyof Store>(key?: Key): Store | Store[Key] {
   } else {
     return config.store
   }
+}
+
+export function unset<Key extends keyof Store>(key: Key): void {
+  return config.delete(key)
 }

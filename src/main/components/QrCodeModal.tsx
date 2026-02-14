@@ -14,7 +14,6 @@ const ModalContainer = styled.div`
 `
 
 interface QrCodeModalProps {
-  closeOnClickOutside?: boolean
   opened: boolean
   onClose: () => void
   value: string
@@ -24,7 +23,6 @@ const QrCodeModal: FunctionComponent<QrCodeModalProps> = (props) => {
   return (
     <Modal
       centered
-      closeOnClickOutside={props.closeOnClickOutside}
       onClose={props.onClose}
       opened={props.opened}
       padding={0}

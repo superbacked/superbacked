@@ -2,7 +2,8 @@ import { fixupConfigRules } from "@eslint/compat"
 import { FlatCompat } from "@eslint/eslintrc"
 import js from "@eslint/js"
 import tsParser from "@typescript-eslint/parser"
-import { defineConfig } from "eslint/config"
+import { defineConfig, globalIgnores } from "eslint/config"
+import prettier from "eslint-config-prettier/flat"
 import globals from "globals"
 
 const compat = new FlatCompat({
@@ -11,20 +12,17 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 })
 
-export default defineConfig([
+const eslintConfig = defineConfig([
+  ...fixupConfigRules(
+    compat.extends(
+      "eslint:recommended",
+      "plugin:import/electron",
+      "plugin:import/recommended",
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended"
+    )
+  ),
   {
-    ignores: [".webpack/**", "dist/**", "node_modules/**", "out/**"],
-  },
-  {
-    extends: fixupConfigRules(
-      compat.extends(
-        "eslint:recommended",
-        "plugin:import/electron",
-        "plugin:import/recommended",
-        "plugin:react/recommended",
-        "plugin:react-hooks/recommended"
-      )
-    ),
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -39,9 +37,6 @@ export default defineConfig([
         typescript: {
           alwaysTryTypes: true,
           project: "./tsconfig.json",
-        },
-        node: {
-          extensions: [".js", ".jsx", ".ts", ".tsx"],
         },
       },
       react: {
@@ -73,6 +68,7 @@ export default defineConfig([
           },
         },
       ],
+      "sort-imports": ["error", { ignoreDeclarationSort: true }],
       "import/no-duplicates": "error",
       "import/no-useless-path-segments": "error",
 
@@ -84,18 +80,19 @@ export default defineConfig([
       "react/prop-types": "off", // Using TypeScript
     },
   },
-  {
-    files: ["**/*.ts", "**/*.tsx"],
-    extends: compat.extends(
+  ...fixupConfigRules(
+    compat.extends(
       "plugin:@typescript-eslint/eslint-recommended",
       "plugin:@typescript-eslint/recommended"
-    ),
+    )
+  ),
+  {
+    files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
-      ecmaVersion: 2022,
+      parser: tsParser,
       parserOptions: {
         project: "./tsconfig.json",
       },
-      sourceType: "module",
     },
     rules: {
       // Disable base rules that are replaced by TypeScript equivalents
@@ -164,4 +161,8 @@ export default defineConfig([
       "react/react-in-jsx-scope": "off",
     },
   },
+  prettier,
+  globalIgnores([".webpack/**", "dist/**", "node_modules/**"]),
 ])
+
+export default eslintConfig

@@ -1,15 +1,16 @@
-# Run `docker build --tag superbacked-os-packager:24.04 .` to build image
+# Run `docker build --tag superbacked-os-docker:24.04 .` to build image
 
 FROM ubuntu:24.04
 
 USER root
 
 RUN apt update
-RUN apt install --yes zerofree
+RUN apt install --yes bc parted xorriso zerofree
 
-COPY patch.sh /root/patch.sh
-COPY provision-amd64.sh /root/provision-amd64.sh
-COPY provision-arm64-raspi.sh /root/provision-arm64-raspi.sh
+COPY optimize-image.sh /root/optimize-image.sh
+COPY provision-ubuntu-desktop-for-raspberry-pi-image.sh /root/provision-ubuntu-desktop-for-raspberry-pi-image.sh
+COPY provision-ubuntu-desktop-iso.sh /root/provision-ubuntu-desktop-iso.sh
+COPY provision-superbacked-os.sh /root/provision-superbacked-os.sh
 
 ENV HOME=/root
 

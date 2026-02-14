@@ -12,7 +12,7 @@ const TitleBar: FunctionComponent = () => {
   const [fullscreen, setFullscreen] = useState(false)
   const titleBar = window.api.platform === "darwin" ? true : false
   useEffect(() => {
-    const removeListener = window.api.enteredFullScreen(() => {
+    const removeListener = window.api.events.windowEnteredFullScreen(() => {
       setFullscreen(true)
     })
     return () => {
@@ -20,7 +20,7 @@ const TitleBar: FunctionComponent = () => {
     }
   }, [])
   useEffect(() => {
-    const removeListener = window.api.leftFullScreen(() => {
+    const removeListener = window.api.events.windowLeftFullScreen(() => {
       setFullscreen(false)
     })
     return () => {
@@ -31,7 +31,7 @@ const TitleBar: FunctionComponent = () => {
     return (
       <TitleBarContainer
         onDoubleClick={() => {
-          window.api.toggleMaximize()
+          window.api.invoke.toggleMaximize()
         }}
       />
     )

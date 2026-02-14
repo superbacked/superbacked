@@ -25,14 +25,13 @@
     "insert": {
       "insert": "Inserir",
       "mnemonic": "Mnemônico BIP39",
-      "passphrase": "Frase secreta EFF",
+      "passphrase": "Frase de passe EFF",
       "scanQrCode": "Ler código QR"
     },
     "view": {
       "view": "Exibir",
       "chooseLanguage": "Escolher idioma do aplicativo",
       "showSelectionAsQrCode": "Mostrar seleção como código QR",
-      "showHiddenSecrets": "Mostrar segredos ocultos",
       "reload": "Recarregar",
       "toggleDeveloperTools": "Alternar ferramentas de desenvolvedor"
     }
@@ -46,14 +45,41 @@
       "copyright": "Copyright",
       "allRightsReserved": "Todos os direitos reservados"
     },
+    "createStandaloneArchiveModal": {
+      "createStandaloneArchive": "Criar um arquivo autônomo",
+      "filename": "Nome do arquivo",
+      "typeFilename": "Digite o nome do arquivo…",
+      "createArchive": "Criar"
+    },
+    "createDisclaimerModal": {
+      "standardDescription_one": "O bloco e a frase de passe são necessários para restaurar o segredo",
+      "standardDescription_other": "O bloco e as frases de passe são necessários para restaurar os segredos",
+      "standardWithOneDetachedArchiveDescription_one": "O bloco e a frase de passe são necessários para restaurar o segredo e o arquivo separado",
+      "standardWithOneDetachedArchiveDescription_other": "O bloco e as frases de passe são necessários para restaurar os segredos e o arquivo separado",
+      "standardWithMultipleDetachedArchivesDescription_one": "O bloco e a frase de passe são necessários para restaurar o segredo e os arquivos separados",
+      "standardWithMultipleDetachedArchivesDescription_other": "O bloco e as frases de passe são necessários para restaurar os segredos e os arquivos separados",
+      "2of3Description_one": "2 dos 3 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo",
+      "2of3Description_other": "2 dos 3 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos",
+      "2of3WithOneDetachedArchiveDescription_one": "2 dos 3 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo e o arquivo separado",
+      "2of3WithOneDetachedArchiveDescription_other": "2 dos 3 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos e o arquivo separado",
+      "2of3WithMultipleDetachedArchivesDescription_one": "2 dos 3 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo e os arquivos separados",
+      "2of3WithMultipleDetachedArchivesDescription_other": "2 dos 3 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos e os arquivos separados",
+      "3of5Description_one": "3 dos 5 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo",
+      "3of5Description_other": "3 dos 5 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos",
+      "3of5WithOneDetachedArchiveDescription_one": "3 dos 5 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo e o arquivo separado",
+      "3of5WithOneDetachedArchiveDescription_other": "3 dos 5 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos e o arquivo separado",
+      "3of5WithMultipleDetachedArchivesDescription_one": "3 dos 5 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo e os arquivos separados",
+      "3of5WithMultipleDetachedArchivesDescription_other": "3 dos 5 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos e os arquivos separados",
+      "4of7Description_one": "4 dos 7 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo",
+      "4of7Description_other": "4 dos 7 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos",
+      "4of7WithOneDetachedArchiveDescription_one": "4 dos 7 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo e o arquivo separado",
+      "4of7WithOneDetachedArchiveDescription_other": "4 dos 7 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos e o arquivo separado",
+      "4of7WithMultipleDetachedArchivesDescription_one": "4 dos 7 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo e os arquivos separados",
+      "4of7WithMultipleDetachedArchivesDescription_other": "4 dos 7 blocos do conjunto de blocos e as frases de passe são necessários para restaurar os segredos e os arquivos separados"
+    },
     "disclaimer": {
-      "doNot": "Não",
-      "useSuperbackedOnComputer": "use o Superbacked em um computador que não seja",
-      "airGapped": "isolado da internet (air-gapped)",
-      "and": "e",
-      "exclusivelyUsed": "usado exclusivamente",
-      "forSecretManagementUnlessSecret": "para gerenciamento de segredos, a menos que o segredo já esteja presente neste computador.",
-      "superbackedIncCannotBeHeldResponsible": "A Superbacked, Inc., juntamente com seus funcionários, operadores e acionistas, e os contribuidores e mantenedores de seu código-fonte, não podem ser responsabilizados por segredos perdidos ou roubados.",
+      "computerProvisioningWarning": "<bold>Não</bold> use o Superbacked em um computador que não seja especificamente provisionado para gerenciamento de segredos (sem persistência de dados ou conectividade de rede), a menos que o segredo já esteja presente no computador.",
+      "limitationOfLiability": "A Superbacked, Inc., juntamente com seus funcionários, operadores e acionistas, e os contribuidores e mantenedores de seu código-fonte, não podem ser responsabilizados por segredos perdidos ou roubados.",
       "useAtYourOwnRisk": "USE POR SUA CONTA E RISCO.",
       "agree": "Eu concordo com os termos acima e aceito os riscos envolvidos",
       "useSuperbacked": "Usar o Superbacked"
@@ -61,8 +87,31 @@
     "errorModal": {
       "headsUp": "Atenção"
     },
+    "featureDescriptionModal": {
+      "learnMore": "Saber mais",
+      "detachedArchiveDescription": "Os arquivos desanexados criptografam arquivos e pastas usando chaves mestras incorporadas em blocos e são restaurados usando blocos e frases de acesso fornecendo autenticação multifator.",
+      "standaloneArchiveDescription": "Os arquivos independentes criptografam arquivos e pastas usando apenas frases de acesso e são restaurados sem blocos fornecendo autenticação de fator único."
+    },
+    "fileManager": {
+      "addToBlock": "Adicionar ao bloco",
+      "addToBlockset": "Adicionar ao conjunto de blocos",
+      "addFiles": "Adicionar arquivos",
+      "createStandaloneArchive": "Criar arquivo autônomo…",
+      "addToStandaloneArchive": "Adicionar ao arquivo autônomo",
+      "showFiles_one": "Mostrar arquivo",
+      "showFiles_other": "Mostrar arquivos",
+      "dragAndDropFiles": "Arrastar e soltar arquivos",
+      "couldNotHandleDroppedFiles": "Não foi possível processar os arquivos soltos",
+      "couldNotCreateStandaloneArchive": "Não foi possível criar o arquivo autônomo",
+      "couldNotRestoreStandaloneArchive": "Não foi possível restaurar o arquivo autônomo",
+      "standaloneArchiveCreated": "Arquivo autônomo criado",
+      "standaloneArchiveRestored": "Arquivo autônomo restaurado"
+    },
+    "hiddenSecretDisclaimerModal": {
+      "description": "Os segredos ocultos usam frases de passe separadas e estão ocultos no espaço de bloco não utilizado."
+    },
     "passphraseInputWithStrength": {
-      "passphraseStrength": "Complexidade da frase secreta",
+      "passphraseStrength": "Força da frase de passe",
       "estimatedAttackTime": "Tempo estimado de ataque",
       "zxcvbn": {
         "ltSecond": "menos de um segundo",
@@ -81,13 +130,23 @@
         "centuries": "séculos"
       }
     },
+    "passphraseModal": {
+      "enterPassphrase": "Inserir a frase de passe",
+      "unlock": "Desbloquear"
+    },
+    "restoreStandaloneArchiveModal": {
+      "restoreStandaloneArchive": "Restaurar um arquivo autônomo",
+      "restore": "Restaurar"
+    },
     "scanner": {
       "loading": "Carregando",
+      "useCameraOrScreenCapture": "Usar câmera ou captura de tela",
       "pleaseAllowCameraAccess": "Por favor, permita o acesso à câmera",
       "pleaseConnectCamera": "Por favor, conecte uma câmera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "A câmera não atende ao requisito mínimo de 720p",
       "pleaseAllowScreenRecording": "Por favor, permita a gravação de tela",
       "couldNotRunScanner": "Não foi possível executar o scanner",
+      "couldNotHandleFile": "Não foi possível processar o arquivo",
       "device": "Dispositivo",
       "selectDevice": "Selecionar dispositivo",
       "source": "Fonte",
@@ -104,13 +163,39 @@
       "found_other": "encontrados"
     }
   },
+  "handlers": {
+    "createStandaloneArchive": {
+      "chooseWhereToCreateStandaloneArchive_one": "Escolher onde criar o arquivo autônomo",
+      "chooseWhereToCreateStandaloneArchive_other": "Escolher onde criar os arquivos autônomos"
+    },
+    "restoreStandaloneArchive": {
+      "chooseWhereToRestoreStandaloneArchive": "Escolher onde restaurar o arquivo autônomo"
+    },
+    "createDetachedArchive": {
+      "chooseWhereToCreateDetachedArchive_one": "Escolher onde criar o arquivo destacado",
+      "chooseWhereToCreateDetachedArchive_other": "Escolher onde criar os arquivos destacados"
+    },
+    "restoreDetachedArchive": {
+      "chooseWhereToRestoreDetachedArchive": "Escolher onde restaurar o arquivo destacado"
+    },
+    "save": {
+      "chooseWhereToSaveBlock": "Escolher onde guardar o bloco",
+      "chooseWhereToSaveBlockset": "Escolher onde guardar o conjunto de blocos"
+    }
+  },
   "common": {
-    "passphrase": "Frase secreta",
-    "typePassphrase": "Digite a frase secreta…",
-    "passphraseRequired": "Frase secreta necessária",
-    "copy": "Copiar",
+    "cancel": "Cancelar",
     "copied": "Copiado",
-    "done": "Concluído"
+    "copy": "Copiar",
+    "done": "Concluir",
+    "gotIt": "Entendi",
+    "important": "Importante",
+    "next": "Próximo",
+    "show": "Mostrar",
+    "passphrase": "Frase de passe",
+    "passphraseRequired": "Frase de passe necessária",
+    "passphraseTooWeak": "Frase de passe muito fraca",
+    "typePassphrase": "Digitar a frase de passe…"
   },
   "routes": {
     "create": {
@@ -118,42 +203,63 @@
       "typeSecret": "Digite o segredo…",
       "secretRequired": "Segredo necessário",
       "secretTooLong": "Segredo muito longo",
-      "passphraseTooWeak": "Frase secreta muito fraca",
-      "passphraseUsed": "Frase secreta utilizada",
-      "passphraseTooSimilar": "Frase secreta muito parecida",
+      "detachedArchive": "Arquivo separado",
+      "dragAndDropFileToProvisionDetachedArchive": "Arrastar e soltar arquivo para provisionar arquivo separado",
+      "passphraseUsed": "Frase de passe utilizada",
+      "passphraseTooSimilar": "Frase de passe muito parecida",
       "label": "Etiqueta (opcional)",
       "typeLabel": "Digite a etiqueta…",
       "labelTooLong": "Etiqueta muito longa",
       "backupType": "Tipo de backup",
-      "selectBackupType": "Selecione o tipo de backup…",
+      "selectBackupType": "Selecionar tipo de backup…",
       "backupTypeRequired": "Tipo de backup necessário",
-      "standard": "Padrão",
-      "2of3": "Distribuído (2 de 3 blocos necessários)",
-      "3of5": "Distribuído (3 de 5 blocos necessários)",
-      "4of7": "Distribuído (4 de 7 blocos necessários)",
-      "addSecret": "Adicionar segredo oculto",
-      "removeSecret": "Remover segredo oculto",
-      "create": "Criar",
-      "creating": "Criando",
-      "couldNotEncryptSecret": "Não foi possível criptografar o segredo",
-      "couldNotEncryptSecrets": "Não foi possível criptografar o(s) segredo(s)",
+      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Arrastar e soltar arquivo para criar ou restaurar arquivo autônomo",
+      "dragAndDropFilesToAddToDetachedArchive": "Arrastar e soltar arquivos para adicionar ao arquivo separado",
+      "standard": "Bloco único",
+      "standardDescription": "O bloco e a frase de passe são necessários para restaurar o segredo",
+      "2of3": "Conjunto de blocos (limiar 2 de 3)",
+      "2of3Description": "2 dos 3 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo",
+      "3of5": "Conjunto de blocos (limiar 3 de 5)",
+      "3of5Description": "3 dos 5 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo",
+      "4of7": "Conjunto de blocos (limiar 4 de 7)",
+      "4of7Description": "4 dos 7 blocos do conjunto de blocos e a frase de passe são necessários para restaurar o segredo",
+      "addHiddenSecret": "Adicionar segredo oculto",
+      "removeHiddenSecret": "Remover segredo oculto",
+      "createBlock": "Criar o bloco",
+      "createBlockAndDetachedArchive_one": "Criar o bloco e o arquivo destacado",
+      "createBlockAndDetachedArchive_other": "Criar o bloco e os arquivos destacados",
+      "createBlockset": "Criar o conjunto de blocos",
+      "createBlocksetAndDetachedArchive_one": "Criar o conjunto de blocos e o arquivo destacado",
+      "createBlocksetAndDetachedArchive_other": "Criar o conjunto de blocos e os arquivos destacados",
+      "couldNotCreateDetachedArchive_one": "Não foi possível criar o arquivo destacado",
+      "couldNotCreateDetachedArchive_other": "Não foi possível criar os arquivos destacados",
+      "couldNotCreateBlock": "Não foi possível criar o bloco",
+      "couldNotCreateBlockset": "Não foi possível criar o conjunto de blocos",
+      "detachedArchiveCreated_one": "Arquivo destacado criado",
+      "detachedArchiveCreated_other": "Arquivos destacados criados",
       "print": "Imprimir",
       "pleaseConnectPrinter": "Por favor, conecte a impressora",
       "pleaseSelectPrinter": "Por favor, selecione a impressora",
       "printer": "Impressora",
       "selectPrinter": "Selecionar impressora",
-      "printing": "Imprimindo",
-      "save": "Salvar"
+      "printingBlock": "Imprimindo o bloco",
+      "printingBlockset": "Imprimindo o conjunto de blocos",
+      "save": "Salvar",
+      "blockSaved": "Bloco guardado",
+      "blocksetSaved": "Conjunto de blocos guardado"
     },
     "duplicate": {
       "couldNotDuplicateBlock": "Não foi possível duplicar o bloco"
     },
     "restore": {
-      "enterPassphrase": "Digite a frase secreta",
-      "unlock": "Desbloquear",
-      "unlocking": "Desbloqueando",
-      "scanNextBlock": "Escanear próximo bloco",
-      "showSecret": "Mostrar segredo"
+      "scanOrDragAndDropBlock": "Escanear ou arrastar o bloco",
+      "scanOrDragAndDropNextBlock": "Escanear ou arrastar próximo bloco",
+      "couldNotUnlockBlock": "Não foi possível desbloquear o bloco",
+      "dragAndDropArchiveToRestore": "Arrastar e soltar {{filename}} para restaurar o arquivo",
+      "restoringDetachedArchive": "Restaurando arquivo desanexado",
+      "couldNotRestoreDetachedArchive": "Não foi possível restaurar o arquivo destacado",
+      "detachedArchiveRestored": "Arquivo destacado restaurado",
+      "showSecret": "Mostrar o segredo"
     }
   }
 }

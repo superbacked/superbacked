@@ -1,6 +1,7 @@
-import { css, Global } from "@emotion/react"
-import { MantineProvider } from "@mantine/core"
-import { emotionTransform, MantineEmotionProvider } from "@mantine/emotion"
+import { Global, css } from "@emotion/react"
+import { MantineProvider, darken } from "@mantine/core"
+import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
+import { Notifications, notifications } from "@mantine/notifications"
 import { Fragment, useEffect, useState } from "react"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 
@@ -11,7 +12,7 @@ import Disclaimer from "@/src/main/components/Disclaimer"
 import MenuEvents, {
   MenuEventsContextConsumer,
 } from "@/src/main/components/MenuEvents"
-import ShowSelectionAsQrCode from "@/src/main/components/ShowSelectionAsQrCode"
+import SelectionAsQrCode from "@/src/main/components/SelectionAsQrCode"
 import TitleBar from "@/src/main/components/TitleBar"
 import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
@@ -22,8 +23,10 @@ import { ColorScheme } from "@/src/utilities/config"
 import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
 import "@mantine/core/styles.css"
+import "@mantine/dropzone/styles.css"
+import "@mantine/notifications/styles.css"
 
-await setLocale(window.api.locale())
+await setLocale(window.api.invokeSync.getLocale())
 
 declare global {
   interface Window {
@@ -33,17 +36,20 @@ declare global {
 
 const App = () => {
   const [colorScheme, setColorScheme] = useState<ColorScheme>(
-    window.api.colorScheme()
+    window.api.invokeSync.getColorScheme()
   )
-  const [showDisclaimer, setShowDisclaimer] = useState<boolean>(true)
   useEffect(() => {
-    const removeListener = window.api.colorSchemeChange(setColorScheme)
+    const removeListener =
+      window.api.events.systemColorSchemeChange(setColorScheme)
     return () => {
       removeListener()
     }
   }, [])
   useEffect(() => {
-    const removeListener = window.api.localeChange(setLocale)
+    const removeListener = window.api.events.systemLocaleChange((locale) => {
+      notifications.clean()
+      void setLocale(locale)
+    })
     return () => {
       removeListener()
     }
@@ -81,6 +87,38 @@ const App = () => {
             ],
           },
           components: {
+            Button: {
+              styles: {
+                root: {
+                  "&[data-variant='signatureGradient']": {
+                    background:
+                      "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+                    color: "#ffffff",
+                    "&:disabled": {
+                      color: darken("#ffffff", 0.25),
+                      backgroundImage: `linear-gradient(45deg, ${darken(
+                        "#fdc0ee",
+                        0.25
+                      )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
+                    },
+                  },
+                  "&[data-variant='signatureTextGradient']": {
+                    background: "transparent",
+                    backgroundImage:
+                      "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    "&:disabled": {
+                      backgroundImage: `linear-gradient(45deg, ${darken(
+                        "#fdc0ee",
+                        0.25
+                      )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
+                    },
+                  },
+                },
+              },
+            },
             Modal: {
               styles: {
                 title: {
@@ -88,6 +126,26 @@ const App = () => {
                 },
                 overlay: {
                   backdropFilter: "blur(4px)",
+                },
+              },
+            },
+            Notification: {
+              styles: {
+                root: {
+                  "&::before": { display: "none" },
+                },
+              },
+            },
+            Text: {
+              styles: {
+                root: {
+                  "&[data-variant='signatureGradient']": {
+                    backgroundImage:
+                      "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  },
                 },
               },
             },
@@ -125,7 +183,7 @@ const App = () => {
                         element={<Restore key={context.key} />}
                       />
                     </Routes>
-                    <ShowSelectionAsQrCode />
+                    <SelectionAsQrCode />
                     <About />
                   </Fragment>
                 )
@@ -133,13 +191,8 @@ const App = () => {
             </MenuEventsContextConsumer>
           </MenuEvents>
         </MemoryRouter>
-        {showDisclaimer === true ? (
-          <Disclaimer
-            close={() => {
-              setShowDisclaimer(false)
-            }}
-          />
-        ) : null}
+        <Disclaimer />
+        <Notifications containerWidth={400} />
       </MantineProvider>
     </MantineEmotionProvider>
   )

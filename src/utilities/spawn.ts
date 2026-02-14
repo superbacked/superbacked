@@ -1,4 +1,4 @@
-import { spawn, SpawnOptions } from "child_process"
+import { SpawnOptions, spawn } from "child_process"
 
 interface ExtendedSpawnOptions extends SpawnOptions {
   input?: Buffer | string

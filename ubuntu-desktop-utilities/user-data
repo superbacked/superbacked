@@ -1,0 +1,32 @@
+#cloud-config
+
+system_info:
+  default_user:
+    name: ""
+
+hostname: superbacked-os
+
+groups:
+  - name: superbacked
+    gid: 1000
+
+users:
+  - name: superbacked
+    gecos: Superbacked
+    groups: [adm, cdrom, dip, lxd, plugdev, sudo]
+    lock_passwd: false
+    passwd: $6$Vo7ZCjdXeEbzcl6R$RuAwnYmUV5c4BpY/PcIlFVpRmZlMYSzg1e/wPePMyofu2RBFBgu7egWoB5iUX79SCPDVAib/NCNlZYA6uY8qQ/
+    shell: /bin/bash
+    uid: 1000
+
+runcmd:
+  - mkdir --parents /home/superbacked/.local/bin
+  - cp /boot/firmware/superbacked-os-arm64-raspi-bootstrap.sh /home/superbacked/.local/bin/superbacked-os-bootstrap.sh
+  - chmod +x /home/superbacked/.local/bin/superbacked-os-bootstrap.sh
+  - mkdir --parents /home/superbacked/.config/systemd/user/graphical-session.target.wants
+  - cp /boot/firmware/superbacked-os-bootstrap.service /home/superbacked/.config/systemd/user/superbacked-os-bootstrap.service
+  - ln --symbolic /home/superbacked/.config/systemd/user/superbacked-os-bootstrap.service /home/superbacked/.config/systemd/user/graphical-session.target.wants/superbacked-os-bootstrap.service
+  - touch /home/superbacked/.config/gnome-initial-setup-done
+  - chown --recursive 1000:1000 /home/superbacked
+  - rm /boot/firmware/superbacked-os-arm64-raspi-bootstrap.sh
+  - rm /boot/firmware/superbacked-os-bootstrap.service

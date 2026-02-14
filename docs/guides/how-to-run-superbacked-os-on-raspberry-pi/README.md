@@ -1,18 +1,18 @@
 <!--
 Title: How to run Superbacked OS on Raspberry Pi
 Description: Learn how to run Superbacked OS on Raspberry Pi
-Publication date: 2025-01-11T09:58:30.556Z
+Publication date: 2026-01-29T17:55:21.467Z
 Pinned: 2
 -->
 
 ## Requirements
 
-- Raspberry Pi [4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/) or [5](https://www.raspberrypi.com/products/raspberry-pi-5/) (2GB min, 4GB or more recommended)
+- Raspberry Pi [4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/) or [5](https://www.raspberrypi.com/products/raspberry-pi-5/) (4GB min, 8GB or more recommended)
 - Raspberry Pi [15W USB-C Power Supply](https://www.raspberrypi.com/products/type-c-power-supply/)
 - Raspberry Pi [keyboard](https://www.raspberrypi.com/products/raspberry-pi-keyboard-and-hub/) and [mouse](https://www.raspberrypi.com/products/raspberry-pi-mouse/) (or equivalent)
 - Raspberry Pi [Micro HDMI to Standard HDMI (A/M) Cable](https://www.raspberrypi.com/products/micro-hdmi-to-standard-hdmi-a-cable/) (or equivalent)
 - microSD card or USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
-- Plug and play webcam with USB-A connector (1080p min)
+- Plug-and-play webcam with USB-A connector (1080p min)
 - HDMI display (1080p min)
 
 ## Recommendations (optional)
@@ -31,30 +31,15 @@ Go to https://www.raspberrypi.com/software/, download and install Raspberry Pi�
 
 > Heads-up: depends on [Qt](https://www.qt.io/).
 
-```shell-session
-$ sudo add-apt-repository -y universe
+```console
+$ sudo add-apt-repository --yes universe
 
-$ sudo apt install -y rpi-imager
+$ sudo apt install --yes rpi-imager
 ```
 
-### Step 2 (optional): disable Raspberry Pi Imager [telemetry](https://github.com/raspberrypi/rpi-imager#telemetry)
+### Step 2 (optional): opt out of Raspberry Pi Imager [telemetry](https://github.com/raspberrypi/rpi-imager#opting-out)
 
-#### macOS
-
-```shell-session
-$ defaults write org.raspberrypi.Imager.plist telemetry -bool NO
-```
-
-#### Ubuntu
-
-```shell-session
-$ mkdir -p ~/.config/Raspberry\ Pi
-
-$ cat << "EOF" > ~/.config/Raspberry\ Pi/Imager.conf
-[General]
-telemetry=false
-EOF
-```
+Select “App Options”, disable “Enable anonymous statistics (telemetry) collection” and click “Save”.
 
 ### Step 3: download Superbacked OS
 
@@ -62,7 +47,7 @@ EOF
 
 #### macOS or Ubuntu
 
-```shell-session
+```console
 $ cd ~/Downloads
 
 $ for number in $(seq 1 2); do curl --fail --location "https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-arm64-raspi-${latestRelease}.img.xz.part$number" || break; done | cat > superbacked-os-arm64-raspi-${latestRelease}.img.xz
@@ -74,7 +59,7 @@ $ for number in $(seq 1 2); do curl --fail --location "https://github.com/superb
 
 > Heads-up: replace `Sun Knudsen` with your username.
 
-```shell-session
+```console
 $ wsl
 
 $ cd /mnt/c/Users/Sun\ Knudsen/Downloads
@@ -82,11 +67,11 @@ $ cd /mnt/c/Users/Sun\ Knudsen/Downloads
 $ for number in $(seq 1 2); do curl --fail --location "https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-arm64-raspi-${latestRelease}.img.xz.part$number" || break; done | cat > superbacked-os-arm64-raspi-${latestRelease}.img.xz
 ```
 
-### Step 4: copy Superbacked OS to USB flash drive
+### Step 4: copy Superbacked OS to microSD or USB flash drive
 
-Open “Raspberry Pi Imager”, click “CHOOSE OS”, then “Use custom”, select `superbacked-os-arm64-raspi-${latestRelease}.img.xz`, click “CHOOSE STORAGE”, select USB flash drive, click “NEXT”, then “NO” and, finally, click “YES”.
+Open “Raspberry Pi Imager”, click “OS”, then “Use custom”, select `superbacked-os-amd64-${latestRelease}.img.xz`, click “Storage”, select microSD or USB flash drive, click “NEXT”, then “WRITE” and, finally, click “I UNDERSTAND, ERASE AND WRITE”.
 
-![Raspberry Pi Imager, release semver may differ](./assets/rpi-imager.png)
+![Raspberry Pi Imager, release semver may differ](./assets/raspberry-pi-imager.png)
 
 ### Step 5 (optional): enable write protection
 

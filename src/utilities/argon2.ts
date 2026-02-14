@@ -1,14 +1,16 @@
 import { app } from "electron"
-import { join } from "path"
+import { join, resolve } from "path"
 
 import spawn from "@/src/utilities/spawn"
 
-const binDir = join(
-  app.getAppPath(),
-  "bin",
-  process.platform,
-  process.arch
-).replace("app.asar", "app.asar.unpacked")
+const env = process.env.ENV ?? "development"
+const binDir =
+  env === "development"
+    ? resolve(__dirname, "../../bin", process.platform, process.arch)
+    : join(app.getAppPath(), "bin", process.platform, process.arch).replace(
+        "app.asar",
+        "app.asar.unpacked"
+      )
 
 export default async (passphrase: string, salt: string): Promise<Buffer> => {
   const { stdout } = await spawn(

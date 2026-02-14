@@ -7,9 +7,9 @@ import {
   TextInput,
   TextInputProps,
 } from "@mantine/core"
+import { IconArrowsRandom } from "@tabler/icons-react"
 import { FunctionComponent, useLayoutEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { ArrowsRandom as ArrowsRandomIcon } from "tabler-icons-react"
 
 import zxcvbn, { ZxcvbnTranslationKey } from "@/src/main/utilities/zxcvbn"
 
@@ -20,6 +20,7 @@ interface Time {
 
 interface PassphraseInputWithStrengthProps extends TextInputProps {
   generatePassphrase: () => Promise<string>
+  onPopoverChange?: (opened: boolean) => void
 }
 
 export const PassphraseInputWithStrength: FunctionComponent<
@@ -31,13 +32,8 @@ export const PassphraseInputWithStrength: FunctionComponent<
   const [popoverOpened, setPopoverOpened] = useState(false)
   const [strength, setStrength] = useState<null | number>(null)
   const [time, setTime] = useState<null | Time>(null)
-  const color =
-    strength && strength === 100
-      ? "teal"
-      : strength && strength >= 50
-        ? "yellow"
-        : "red"
-  const { generatePassphrase, onChange, ...otherProps } = props
+  const color = strength && strength >= 50 ? "pink" : "red"
+  const { generatePassphrase, onChange, onPopoverChange, ...otherProps } = props
   const updatePopover = (passphrase: string) => {
     const result = zxcvbn(passphrase)
     setStrength(result.strength)
@@ -55,7 +51,13 @@ export const PassphraseInputWithStrength: FunctionComponent<
     }, 0)
   }, [otherProps.value])
   return (
-    <Popover opened={popoverOpened} width={"440px"} withArrow>
+    <Popover
+      onOpen={() => onPopoverChange?.(true)}
+      onExitTransitionEnd={() => onPopoverChange?.(false)}
+      opened={popoverOpened}
+      width={"440px"}
+      withArrow
+    >
       <Popover.Dropdown>
         <Text c="dimmed" fw="bold" size="sm" ta="center">
           {t("components.passphraseInputWithStrength.passphraseStrength")}
@@ -80,7 +82,9 @@ export const PassphraseInputWithStrength: FunctionComponent<
               setPopoverOpened(true)
             }
           }}
-          onBlurCapture={() => setPopoverOpened(false)}
+          onBlurCapture={() => {
+            setPopoverOpened(false)
+          }}
           onChange={(event) => {
             if (onChange) {
               onChange(event)
@@ -95,6 +99,9 @@ export const PassphraseInputWithStrength: FunctionComponent<
             <ActionIcon
               color="pink"
               disabled={otherProps.disabled}
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
               onClick={async () => {
                 if (textInputRef.current) {
                   textInputRef.current.focus()
@@ -105,10 +112,11 @@ export const PassphraseInputWithStrength: FunctionComponent<
               }}
               variant="transparent"
             >
-              <ArrowsRandomIcon size={16} />
+              <IconArrowsRandom size={16} />
             </ActionIcon>
           }
           rightSectionPointerEvents="auto"
+          spellCheck={false}
           {...otherProps}
         />
       </Popover.Target>

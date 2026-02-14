@@ -1,22 +1,19 @@
 import styled from "@emotion/styled"
 import {
   Button,
-  darken,
-  Dialog,
   Mark,
-  Modal,
-  PasswordInput,
   Popover,
   PopoverProps,
-  rgba,
   RingProgress,
   Space,
   Text,
+  rgba,
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
-import { useForm } from "@mantine/form"
+import { FileWithPath } from "@mantine/dropzone"
 import { useDisclosure } from "@mantine/hooks"
+import { notifications } from "@mantine/notifications"
 import {
   Fragment,
   FunctionComponent,
@@ -24,19 +21,24 @@ import {
   useEffect,
   useRef,
   useState,
-  useCallback,
 } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { Eye as EyeIcon, EyeOff as EyeOffIcon } from "tabler-icons-react"
 
-import { Payload } from "@/src/create"
+import { Payload } from "@/src/handlers/create"
+import ActionBadge from "@/src/main/components/ActionBadge"
+import Dropzone from "@/src/main/components/Dropzone"
+import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
+import Loading from "@/src/main/components/Loading"
+import PassphraseModal from "@/src/main/components/PassphraseModal"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
+import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
-  extract,
   Bip39MnemonicResult,
   TotpUriResult,
+  extract,
 } from "@/src/main/utilities/regexp"
+import { TranslationKey } from "@/src/shared/types/i18n"
 
 const Container = styled.div`
   position: absolute;
@@ -52,103 +54,6 @@ const Container = styled.div`
   user-select: text;
   z-index: 0;
 `
-
-interface PasswordModalProps {
-  onClose: () => void
-  onSubmit: (passphrases: string[]) => void
-  unlocking: boolean
-}
-
-const PasswordModal: FunctionComponent<PasswordModalProps> = (props) => {
-  const { i18n, t } = useTranslation()
-  const ref = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.focus()
-    }
-  }, [props.unlocking])
-  const form = useForm({
-    initialValues: {
-      passphrase: "",
-      dualPassphrase: false,
-    },
-    validate: {
-      passphrase: (value) => {
-        if (value === "") {
-          return t("common.passphraseRequired")
-        }
-        return null
-      },
-    },
-  })
-  const handleUnlock = useCallback(() => {
-    const validation = form.validate()
-    if (validation.hasErrors === false) {
-      const passphrases = [form.values.passphrase]
-      props.onSubmit(passphrases)
-      form.reset()
-    }
-  }, [form, props])
-  useEffect(() => {
-    if (Object.keys(form.errors).length > 0) {
-      form.validate()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i18n.language])
-  return (
-    <Modal
-      centered
-      onClose={() => props.onClose()}
-      opened={true}
-      title={`${t("routes.restore.enterPassphrase")}${
-        form.values.dualPassphrase === true ? "s" : ""
-      }`}
-      styles={{
-        title: {
-          fontWeight: "bold",
-        },
-      }}
-    >
-      <form onSubmit={form.onSubmit(handleUnlock)}>
-        <PasswordInput
-          ref={ref}
-          autoFocus
-          data-autofocus
-          disabled={props.unlocking}
-          label={t("common.passphrase")}
-          placeholder={t("common.typePassphrase")}
-          required
-          spellCheck={false}
-          visibilityToggleIcon={({ reveal }) =>
-            reveal === true ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />
-          }
-          {...form.getInputProps("passphrase", { withFocus: false })}
-        />
-        <Space h="lg" />
-        <Button
-          disabled={props.unlocking}
-          gradient={{ from: "#fdc0ee", to: "#fbd6cd", deg: 45 }}
-          loading={props.unlocking}
-          onClick={handleUnlock}
-          variant="gradient"
-          sx={{
-            "&:disabled": {
-              color: darken("#fff", 0.25),
-              backgroundImage: `linear-gradient(45deg, ${darken(
-                "#fdc0ee",
-                0.25
-              )} 0%, ${darken("#fbd6cd", 0.25)} 100%)`,
-            },
-          }}
-        >
-          {props.unlocking === true
-            ? t("routes.restore.unlocking")
-            : t("routes.restore.unlock")}
-        </Button>
-      </form>
-    </Modal>
-  )
-}
 
 interface SmartPopoverProps {
   dropdown: ReactNode
@@ -225,7 +130,7 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
     return (((seconds + milliseconds / 1000) % 30) / 30) * 100
   }
   const [token, setToken] = useState<string>(
-    window.api.generateToken(props.secret)
+    window.api.invokeSync.generateToken(props.secret)
   )
   const [timeRemaining, setTimeRemaining] = useState<number>(getTimeRemaining())
   useEffect(() => {
@@ -233,7 +138,7 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
     const timer = setInterval(() => {
       const nextTimeRemaining = getTimeRemaining()
       if (previousTimeRemaining && previousTimeRemaining > nextTimeRemaining) {
-        setToken(window.api.generateToken(props.secret))
+        setToken(window.api.invokeSync.generateToken(props.secret))
       }
       setTimeRemaining(nextTimeRemaining)
       previousTimeRemaining = nextTimeRemaining
@@ -265,7 +170,6 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
 export type HandlePayload = (payload: Payload) => Promise<boolean>
 
 interface RestoreProps {
-  importMode?: boolean
   exportMode?: boolean
   handlePayload?: HandlePayload
 }
@@ -274,26 +178,49 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const scannerRef = useRef<ScannerRef>(null)
-  const passphrasesRef = useRef<string[]>([])
+  const passphraseRef = useRef<string>("")
   const codeRef = useRef<string>(null)
   const scannedCodesRef = useRef<Set<string>>(new Set())
   const [showPassphraseModal, setShowPassphraseModal] = useState(false)
-  const [unlocking, setUnlocking] = useState(false)
-  const [showScanNextBlockDialog, setShowScanNextBlockDialog] = useState(false)
+  const [isUnlocking, setIsUnlocking] = useState(false)
+  const [passphraseError, setPassphraseError] = useState<null | TranslationKey>(
+    null
+  )
+  const [showScanNextBlockBadge, setShowScanNextBlockBadge] = useState(false)
   const [secret, setSecret] = useState<null | string>(null)
-  const [showCopied, setShowCopied] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
+  const [detachedArchiveEncryptionKey, setDetachedArchiveEncryptionKey] =
+    useState<null | string>(null)
+  const [detachedArchiveHmacKey, setDetachedArchiveHmacKey] = useState<
+    null | string
+  >(null)
+  const [detachedArchiveFilename, setDetachedArchiveFilename] = useState<
+    null | string
+  >(null)
+  const [detachedArchiveBlockContent, setDetachedArchiveBlockContent] =
+    useState<null | string>(null)
+  const [isRestoringDetachedArchive, setIsRestoringDetachedArchive] =
+    useState(false)
+  const [error, setError] =
+    useState<null | ErrorState<"routes.restore.couldNotRestoreDetachedArchive">>(
+      null
+    )
   useEffect(() => {
     return () => {
-      window.api.restoreReset()
+      window.api.invoke.restoreReset()
     }
   }, [])
-  const compute = async (beep: boolean) => {
+  const compute = async () => {
     const code = codeRef.current
     if (!code) {
       return
     } else if (scannedCodesRef.current.has(code) === true) {
       // Code already computed
+      notifications.show({
+        id: "scanOrDragAndDropNextBlock",
+        message: t("routes.restore.scanOrDragAndDropNextBlock"),
+      })
+      scannerRef.current?.clear()
       return
     }
     let payload: Payload
@@ -307,37 +234,81 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       // Payload not valid JSON
       return
     }
-    if (
-      (props.importMode === true || props.exportMode === true) &&
-      props.handlePayload
-    ) {
+    if (props.exportMode === true && props.handlePayload) {
       scannerRef.current?.stop()
       await props.handlePayload(payload)
-      if (beep === true) {
-        scannerRef.current?.beep()
-      }
       return
     }
-    const result = await window.api.restore(passphrasesRef.current, payload)
-    setUnlocking(false)
-    if (beep === true) {
-      scannerRef.current?.beep()
-    }
+    const result = await window.api.invoke.restore(
+      passphraseRef.current,
+      payload
+    )
+    setIsUnlocking(false)
     if (result.success === false) {
       if (result.error.match(/shares did not combine to a valid secret/i)) {
-        scannerRef.current?.start()
+        notifications.show({
+          id: "scanOrDragAndDropNextBlock",
+          message: t("routes.restore.scanOrDragAndDropNextBlock"),
+        })
+        scannerRef.current?.clear()
+        if (scannerRef.current?.isUsingCamera()) {
+          scannerRef.current?.start()
+        }
         scannedCodesRef.current.add(code)
-        setShowScanNextBlockDialog(true)
+        setShowScanNextBlockBadge(true)
         setShowPassphraseModal(false)
+        setPassphraseError(null)
       } else {
         scannerRef.current?.stop()
-        setShowScanNextBlockDialog(false)
+        setShowScanNextBlockBadge(false)
+        setPassphraseError("routes.restore.couldNotUnlockBlock")
         setShowPassphraseModal(true)
       }
     } else if (result.success === true) {
+      notifications.hide("scanOrDragAndDropNextBlock")
+
       scannerRef.current?.stop()
       scannedCodesRef.current.clear()
-      setSecret(result.message.toString())
+
+      // Parse secret
+      const message = result.message
+      let extractedSecret = message
+      let extractedMasterKey: null | string = null
+      try {
+        const parsed = JSON.parse(extractedSecret)
+        if (parsed && typeof parsed.secret === "string") {
+          extractedSecret = parsed.secret
+          if (typeof parsed.masterKey === "string") {
+            extractedMasterKey = parsed.masterKey
+          }
+        }
+      } catch {
+        // Not JSON, use as-is
+      }
+
+      setSecret(extractedSecret)
+
+      // If masterKey exists, derive archive encryption key, HMAC key and filename
+      if (extractedMasterKey) {
+        const encryptionKey = window.api.invokeSync.deriveKey(
+          extractedMasterKey,
+          "encryption-key-v1"
+        )
+        setDetachedArchiveEncryptionKey(encryptionKey)
+        const derivedHmacKey = window.api.invokeSync.deriveKey(
+          extractedMasterKey,
+          "hmac-v1"
+        )
+        setDetachedArchiveHmacKey(derivedHmacKey)
+        const derivedFilename = window.api.invokeSync.deriveKey(
+          extractedMasterKey,
+          "filename-v1",
+          16,
+          "hex"
+        )
+        setDetachedArchiveFilename(derivedFilename)
+        setDetachedArchiveBlockContent(message)
+      }
     }
   }
   if (secret) {
@@ -388,11 +359,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         <Fragment>
           <Container>
             <Text
+              size="sm"
               sx={{
-                fontSize: "14px",
                 overflowWrap: "anywhere",
                 whiteSpace: "pre-wrap",
-                width: "100%",
               }}
               ta="left"
             >
@@ -404,7 +374,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                 variant="default"
                 onClick={async () => {
                   await navigator.clipboard.writeText(secret)
-                  setShowCopied(true)
+                  notifications.show({
+                    id: "copy",
+                    message: t("common.copied"),
+                  })
                 }}
               >
                 {t("common.copy")}
@@ -419,28 +392,93 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               </Button>
             </Button.Group>
           </Container>
-          <Dialog
-            key="copied-dialog"
-            opened={showCopied}
-            withCloseButton
-            onClose={() => setShowCopied(false)}
-            radius="sm"
-            size="md"
-          >
-            {t("common.copied")}
-          </Dialog>
         </Fragment>
       )
     } else {
       return (
         <Fragment>
+          {detachedArchiveFilename ? (
+            <Fragment>
+              <Dropzone
+                onDrop={async (files: FileWithPath[]) => {
+                  const file = files[0]
+                  if (
+                    file &&
+                    detachedArchiveEncryptionKey &&
+                    detachedArchiveHmacKey &&
+                    detachedArchiveBlockContent
+                  ) {
+                    const filename = file.name.replace(/\.superbacked$/, "")
+                    if (filename === detachedArchiveFilename) {
+                      const filePath = window.api.getPathForFile(file)
+                      const saveDialogReturnValue =
+                        await window.api.invoke.chooseDirectory(
+                          t(
+                            "handlers.restoreDetachedArchive.chooseWhereToRestoreDetachedArchive"
+                          )
+                        )
+                      if (saveDialogReturnValue.canceled) {
+                        return
+                      }
+                      const outputDir = saveDialogReturnValue.filePath
+                      if (!outputDir) {
+                        return
+                      }
+                      setIsRestoringDetachedArchive(true)
+                      try {
+                        const result =
+                          await window.api.invoke.restoreDetachedArchive(
+                            filePath,
+                            outputDir,
+                            detachedArchiveEncryptionKey,
+                            detachedArchiveHmacKey,
+                            detachedArchiveBlockContent
+                          )
+                        if (result.success === false && result.error) {
+                          setError({
+                            message:
+                              "routes.restore.couldNotRestoreDetachedArchive",
+                          })
+                        } else if (result.success) {
+                          showNotificationWithButton({
+                            message: t(
+                              "routes.restore.detachedArchiveRestored"
+                            ),
+                            buttonLabel: t("common.show"),
+                            buttonOnClick: () => {
+                              void window.api.invoke.openPath(outputDir)
+                            },
+                          })
+                        }
+                      } catch {
+                        setError({
+                          message:
+                            "routes.restore.couldNotRestoreDetachedArchive",
+                        })
+                      } finally {
+                        setIsRestoringDetachedArchive(false)
+                      }
+                    }
+                  }
+                }}
+              />
+              <ActionBadge color="dark">
+                {t("routes.restore.dragAndDropArchiveToRestore", {
+                  filename: `${detachedArchiveFilename}.superbacked`,
+                })}
+              </ActionBadge>
+            </Fragment>
+          ) : null}
           <Container>
             <Button.Group sx={{ display: "inline-block" }}>
               <Button
                 variant="default"
                 onClick={async () => {
                   await navigator.clipboard.writeText(secret)
-                  setShowCopied(true)
+                  notifications.show({
+                    id: "copy",
+                    message: t("common.copied"),
+                  })
                 }}
               >
                 {t("common.copy")}
@@ -448,7 +486,6 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               <Button
                 variant="default"
                 onClick={() => {
-                  setShowCopied(false)
                   setShowSecret(true)
                 }}
               >
@@ -464,16 +501,12 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               </Button>
             </Button.Group>
           </Container>
-          <Dialog
-            key="copied-dialog"
-            opened={showCopied}
-            withCloseButton
-            onClose={() => setShowCopied(false)}
-            radius="sm"
-            size="md"
-          >
-            {t("common.copied")}
-          </Dialog>
+          <ErrorModal error={error} onClose={() => setError(null)} />
+          <Loading
+            visible={isRestoringDetachedArchive}
+            dialog="routes.restore.restoringDetachedArchive"
+            count={1}
+          />
         </Fragment>
       )
     }
@@ -482,39 +515,49 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       <Container>
         <Scanner
           ref={scannerRef}
-          handleCode={async (code) => {
+          handleCode={(code) => {
             codeRef.current = code
-            await compute(true)
+            scannerRef.current?.beep()
+            scannerRef.current?.stop()
+            if (props.exportMode === true || passphraseRef.current) {
+              setPassphraseError(null)
+              void compute()
+            } else {
+              setShowPassphraseModal(true)
+            }
           }}
           autoBeep={false}
           autoStop={false}
+          dropzone={true}
+          badge={
+            showScanNextBlockBadge === true
+              ? t("routes.restore.scanOrDragAndDropNextBlock")
+              : t("routes.restore.scanOrDragAndDropBlock")
+          }
         />
-        {showScanNextBlockDialog === true ? (
-          <Dialog
-            key="scan-next-block-dialog"
-            opened={true}
-            withCloseButton
-            onClose={() => setShowScanNextBlockDialog(false)}
-            radius="sm"
-            size="md"
-          >
-            {t("routes.restore.scanNextBlock")}…
-          </Dialog>
-        ) : null}
-        {showPassphraseModal === true ? (
-          <PasswordModal
-            onClose={() => {
-              setShowPassphraseModal(false)
+        <PassphraseModal
+          error={passphraseError}
+          opened={showPassphraseModal}
+          onClose={() => {
+            passphraseRef.current = ""
+            scannerRef.current?.clear()
+            if (scannerRef.current?.isUsingCamera()) {
               scannerRef.current?.start()
-            }}
-            onSubmit={async (passphrases) => {
-              setUnlocking(true)
-              passphrasesRef.current = passphrases
-              await compute(false)
-            }}
-            unlocking={unlocking}
-          />
-        ) : null}
+            }
+            setShowPassphraseModal(false)
+            setPassphraseError(null)
+          }}
+          onReset={() => {
+            setPassphraseError(null)
+          }}
+          onSubmit={async (passphrase) => {
+            passphraseRef.current = passphrase
+            setPassphraseError(null)
+            setIsUnlocking(true)
+            await compute()
+          }}
+          isUnlocking={isUnlocking}
+        />
       </Container>
     )
   }

@@ -28,6 +28,6 @@
     "target": "ES2022",
     "useDefineForClassFields": true
   },
-  "include": ["*.ts", "src/**/*"],
-  "exclude": [".webpack", "dist", "node_modules", "out"]
+  "include": ["*.ts", "scripts/**/*", "src/**/*"],
+  "exclude": [".webpack", "dist", "node_modules"]
 }

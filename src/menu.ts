@@ -1,9 +1,9 @@
 import {
-  app,
   BrowserWindow,
-  ipcMain,
   Menu,
   MenuItemConstructorOptions,
+  app,
+  ipcMain,
   systemPreferences,
 } from "electron"
 
@@ -11,6 +11,7 @@ import { t } from "i18next"
 
 import { locales, resources } from "@/src/i18n"
 import { locale, setLocale } from "@/src/index"
+import { sendEvent } from "@/src/utilities/sendEvent"
 
 if (process.platform === "darwin") {
   systemPreferences.setUserDefault(
@@ -28,8 +29,6 @@ if (process.platform === "darwin") {
 type Mode = "insert" | "select"
 
 const enabledModes: Set<Mode> = new Set()
-
-export let showHiddenSecrets = false
 
 export const setMenu = () => {
   const runningMacOS = process.platform === "darwin"
@@ -55,7 +54,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:about")
+              sendEvent(focusedWindow, "menuAbout")
             }
           },
         },
@@ -81,7 +80,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:triggeredRoute", "/")
+              sendEvent(focusedWindow, "menuTriggeredRoute", "/")
             }
           },
         },
@@ -91,10 +90,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send(
-                "menu:triggeredRoute",
-                "/duplicate"
-              )
+              sendEvent(focusedWindow, "menuTriggeredRoute", "/duplicate")
             }
           },
         },
@@ -104,7 +100,7 @@ export const setMenu = () => {
           async click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:triggeredRoute", "/restore")
+              sendEvent(focusedWindow, "menuTriggeredRoute", "/restore")
             }
           },
         },
@@ -205,7 +201,7 @@ export const setMenu = () => {
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:insert", "mnemonic")
+              sendEvent(focusedWindow, "menuInsert", "mnemonic")
             }
           },
         },
@@ -216,7 +212,7 @@ export const setMenu = () => {
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:insert", "passphrase")
+              sendEvent(focusedWindow, "menuInsert", "passphrase")
             }
           },
         },
@@ -227,7 +223,7 @@ export const setMenu = () => {
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:insert", "scanQrCode")
+              sendEvent(focusedWindow, "menuInsert", "scanQrCode")
             }
           },
         },
@@ -242,29 +238,12 @@ export const setMenu = () => {
         },
         { type: "separator" },
         {
-          type: "checkbox",
-          checked: showHiddenSecrets,
-          label: t("menu.view.showHiddenSecrets"),
-          click(menuItem) {
-            showHiddenSecrets = menuItem.checked
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              focusedWindow.webContents.send(
-                "menu:showHiddenSecrets",
-                showHiddenSecrets
-              )
-            }
-            setMenu()
-          },
-        },
-        { type: "separator" },
-        {
           enabled: enabledModes.has("select"),
           label: t("menu.view.showSelectionAsQrCode"),
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
-              focusedWindow.webContents.send("menu:showSelectionAsQrCode")
+              sendEvent(focusedWindow, "menuShowSelectionAsQrCode")
             }
           },
         },

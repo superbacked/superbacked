@@ -5,12 +5,15 @@ export type SelectionWithElement = {
 }
 
 export const captureSelection = (): SelectionWithElement => {
-  const element = document.activeElement as HTMLTextAreaElement
-  const [start, end] = [element.selectionStart, element.selectionEnd]
+  const activeElement = document.activeElement as HTMLTextAreaElement
+  const [start, end] = [
+    activeElement.selectionStart,
+    activeElement.selectionEnd,
+  ]
   return {
-    element,
-    start,
-    end,
+    element: activeElement,
+    start: start,
+    end: end,
   }
 }
 
@@ -20,14 +23,14 @@ export const restoreSelection = (selection: SelectionWithElement) => {
 }
 
 export const insertAtCursor = (text: string) => {
-  const element = document.activeElement as HTMLTextAreaElement
-  // const [start, end] = [element.selectionStart, element.selectionEnd]
-  // element.setRangeText(text, start, end, "end")
-  // form.setFieldValue("secret1", element.value)
+  const activeElement = document.activeElement as HTMLTextAreaElement
+  // const [start, end] = [activeElement.selectionStart, activeElement.selectionEnd]
+  // activeElement.setRangeText(text, start, end, "end")
+  // form.setFieldValue("secret1", activeElement.value)
   // eslint-disable-next-line @typescript-eslint/no-deprecated
   document.execCommand("insertText", false, text)
   const event = new Event("change", { bubbles: true })
-  element.dispatchEvent(event)
-  element.blur()
-  element.focus()
+  activeElement.dispatchEvent(event)
+  activeElement.blur()
+  activeElement.focus()
 }

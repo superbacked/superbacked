@@ -32,7 +32,6 @@
       "view": "Visa",
       "chooseLanguage": "Välj appspråk",
       "showSelectionAsQrCode": "Visa markering som QR-kod",
-      "showHiddenSecrets": "Visa dolda hemligheter",
       "reload": "Ladda om",
       "toggleDeveloperTools": "Växla utvecklarverktyg"
     }
@@ -46,20 +45,70 @@
       "copyright": "Copyright",
       "allRightsReserved": "Alla rättigheter förbehållna"
     },
+    "createStandaloneArchiveModal": {
+      "createStandaloneArchive": "Skapa fristående arkiv",
+      "filename": "Filnamn",
+      "typeFilename": "Skriv filnamn…",
+      "createArchive": "Skapa"
+    },
+    "createDisclaimerModal": {
+      "standardDescription_one": "Blocket och lösenfrasen krävs för att återställa hemligheten",
+      "standardDescription_other": "Blocket och lösenfraserna krävs för att återställa hemligheterna",
+      "standardWithOneDetachedArchiveDescription_one": "Blocket och lösenfrasen krävs för att återställa hemligheten och fristående arkivet",
+      "standardWithOneDetachedArchiveDescription_other": "Blocket och lösenfraserna krävs för att återställa hemligheterna och fristående arkivet",
+      "standardWithMultipleDetachedArchivesDescription_one": "Blocket och lösenfrasen krävs för att återställa hemligheten och fristående arkiven",
+      "standardWithMultipleDetachedArchivesDescription_other": "Blocket och lösenfraserna krävs för att återställa hemligheterna och fristående arkiven",
+      "2of3Description_one": "2 av 3 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten",
+      "2of3Description_other": "2 av 3 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna",
+      "2of3WithOneDetachedArchiveDescription_one": "2 av 3 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten och fristående arkivet",
+      "2of3WithOneDetachedArchiveDescription_other": "2 av 3 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna och fristående arkivet",
+      "2of3WithMultipleDetachedArchivesDescription_one": "2 av 3 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten och fristående arkiven",
+      "2of3WithMultipleDetachedArchivesDescription_other": "2 av 3 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna och fristående arkiven",
+      "3of5Description_one": "3 av 5 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten",
+      "3of5Description_other": "3 av 5 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna",
+      "3of5WithOneDetachedArchiveDescription_one": "3 av 5 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten och fristående arkivet",
+      "3of5WithOneDetachedArchiveDescription_other": "3 av 5 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna och fristående arkivet",
+      "3of5WithMultipleDetachedArchivesDescription_one": "3 av 5 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten och fristående arkiven",
+      "3of5WithMultipleDetachedArchivesDescription_other": "3 av 5 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna och fristående arkiven",
+      "4of7Description_one": "4 av 7 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten",
+      "4of7Description_other": "4 av 7 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna",
+      "4of7WithOneDetachedArchiveDescription_one": "4 av 7 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten och fristående arkivet",
+      "4of7WithOneDetachedArchiveDescription_other": "4 av 7 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna och fristående arkivet",
+      "4of7WithMultipleDetachedArchivesDescription_one": "4 av 7 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten och fristående arkiven",
+      "4of7WithMultipleDetachedArchivesDescription_other": "4 av 7 block i blockuppsättningen och lösenfraserna krävs för att återställa hemligheterna och fristående arkiven"
+    },
     "disclaimer": {
-      "doNot": "Använd inte",
-      "useSuperbackedOnComputer": "Superbacked på en dator som inte är",
-      "airGapped": "isolerad",
-      "and": "och",
-      "exclusivelyUsed": "exklusivt använd",
-      "forSecretManagementUnlessSecret": "för hemlighetshantering såvida inte hemligheten redan finns på datorn.",
-      "superbackedIncCannotBeHeldResponsible": "Superbacked, Inc., tillsammans med dess anställda, operatörer och aktieägare samt bidragsgivare och underhållare av dess källkod, kan inte hållas ansvariga för förlorade eller stulna hemligheter.",
+      "computerProvisioningWarning": "<bold>Använd inte</bold> Superbacked på en dator som inte är specifikt provisionerad för hantering av hemligheter (ingen datapersistens eller nätverksanslutning) såvida inte hemligheten redan finns på datorn.",
+      "limitationOfLiability": "Superbacked, Inc., tillsammans med dess anställda, operatörer och aktieägare samt bidragsgivare och underhållare av dess källkod, kan inte hållas ansvariga för förlorade eller stulna hemligheter.",
       "useAtYourOwnRisk": "ANVÄND PÅ EGEN RISK.",
       "agree": "Jag godkänner ovanstående villkor och accepterar underliggande risker",
       "useSuperbacked": "Använd Superbacked"
     },
     "errorModal": {
       "headsUp": "Observera"
+    },
+    "featureDescriptionModal": {
+      "learnMore": "Läs mer",
+      "detachedArchiveDescription": "Frikopplade arkiv krypterar filer och mappar med huvudnycklar inbäddade i block och återställs med block och lösenfraser som ger multifaktorautentisering.",
+      "standaloneArchiveDescription": "Fristående arkiv krypterar filer och mappar med endast lösenfraser och återställs utan block som ger enfaktorsautentisering."
+    },
+    "fileManager": {
+      "addToBlock": "Lägg till i block",
+      "addToBlockset": "Lägg till i blockuppsättning",
+      "addFiles": "Lägg till filer",
+      "createStandaloneArchive": "Skapa fristående arkiv…",
+      "addToStandaloneArchive": "Lägg till i fristående arkiv",
+      "showFiles_one": "Visa fil",
+      "showFiles_other": "Visa filer",
+      "dragAndDropFiles": "Dra och släpp filer",
+      "couldNotHandleDroppedFiles": "Kunde inte hantera släppta filer",
+      "couldNotCreateStandaloneArchive": "Kunde inte skapa fristående arkiv",
+      "couldNotRestoreStandaloneArchive": "Kunde inte återställa fristående arkiv",
+      "standaloneArchiveCreated": "Fristående arkiv skapat",
+      "standaloneArchiveRestored": "Fristående arkiv återställt"
+    },
+    "hiddenSecretDisclaimerModal": {
+      "description": "Dolda hemligheter använder separata lösenfraser och är dolda i oanvänt blockutrymme."
     },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Lösenfrasstyrka",
@@ -81,13 +130,23 @@
         "centuries": "århundraden"
       }
     },
+    "passphraseModal": {
+      "enterPassphrase": "Ange lösenfras",
+      "unlock": "Lås upp"
+    },
+    "restoreStandaloneArchiveModal": {
+      "restoreStandaloneArchive": "Återställ fristående arkiv",
+      "restore": "Återställ"
+    },
     "scanner": {
       "loading": "Laddar",
+      "useCameraOrScreenCapture": "Använd kamera eller skärminspelning",
       "pleaseAllowCameraAccess": "Vänligen tillåt kameraåtkomst",
       "pleaseConnectCamera": "Vänligen anslut en kamera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "Kameran uppfyller inte minimikravet på 720p",
       "pleaseAllowScreenRecording": "Vänligen tillåt skärminspelning",
       "couldNotRunScanner": "Kunde inte köra skanner",
+      "couldNotHandleFile": "Kunde inte hantera filen",
       "device": "Enhet",
       "selectDevice": "Välj enhet",
       "source": "Källa",
@@ -104,13 +163,39 @@
       "found_other": "hittade"
     }
   },
+  "handlers": {
+    "createStandaloneArchive": {
+      "chooseWhereToCreateStandaloneArchive_one": "Välj var det fristående arkivet ska skapas",
+      "chooseWhereToCreateStandaloneArchive_other": "Välj var de fristående arkiven ska skapas"
+    },
+    "restoreStandaloneArchive": {
+      "chooseWhereToRestoreStandaloneArchive": "Välj var det fristående arkivet ska återställas"
+    },
+    "createDetachedArchive": {
+      "chooseWhereToCreateDetachedArchive_one": "Välj var det separata arkivet ska skapas",
+      "chooseWhereToCreateDetachedArchive_other": "Välj var de separata arkiven ska skapas"
+    },
+    "restoreDetachedArchive": {
+      "chooseWhereToRestoreDetachedArchive": "Välj var det separata arkivet ska återställas"
+    },
+    "save": {
+      "chooseWhereToSaveBlock": "Välj var blocket ska sparas",
+      "chooseWhereToSaveBlockset": "Välj var blockuppsättningen ska sparas"
+    }
+  },
   "common": {
-    "passphrase": "Lösenfras",
-    "typePassphrase": "Skriv lösenfras…",
-    "passphraseRequired": "Lösenfras krävs",
-    "copy": "Kopiera",
+    "cancel": "Avbryt",
     "copied": "Kopierad",
-    "done": "Klar"
+    "copy": "Kopiera",
+    "done": "Slutför",
+    "gotIt": "Uppfattat",
+    "important": "Viktigt",
+    "next": "Nästa",
+    "show": "Visa",
+    "passphrase": "Lösenfras",
+    "passphraseRequired": "Lösenfras krävs",
+    "passphraseTooWeak": "Lösenfras för svag",
+    "typePassphrase": "Skriv lösenfras…"
   },
   "routes": {
     "create": {
@@ -118,7 +203,8 @@
       "typeSecret": "Skriv hemlighet…",
       "secretRequired": "Hemlighet krävs",
       "secretTooLong": "Hemlighet för lång",
-      "passphraseTooWeak": "Lösenfras för svag",
+      "detachedArchive": "Fristående arkiv",
+      "dragAndDropFileToProvisionDetachedArchive": "Dra och släpp fil för att etablera fristående arkiv",
       "passphraseUsed": "Lösenfras använd",
       "passphraseTooSimilar": "Lösenfras för lik",
       "label": "Etikett (valfritt)",
@@ -127,32 +213,50 @@
       "backupType": "Säkerhetskopieringstyp",
       "selectBackupType": "Välj säkerhetskopieringstyp…",
       "backupTypeRequired": "Säkerhetskopieringstyp krävs",
-      "standard": "Standard",
-      "2of3": "Distribuerad (2 av 3 block krävs)",
-      "3of5": "Distribuerad (3 av 5 block krävs)",
-      "4of7": "Distribuerad (4 av 7 block krävs)",
-      "addSecret": "Lägg till dold hemlighet",
-      "removeSecret": "Ta bort dold hemlighet",
-      "create": "Skapa",
-      "creating": "Skapar",
-      "couldNotEncryptSecret": "Kunde inte kryptera hemlighet",
-      "couldNotEncryptSecrets": "Kunde inte kryptera hemlighet(er)",
+      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Dra och släpp fil för att skapa eller återställa fristående arkiv",
+      "dragAndDropFilesToAddToDetachedArchive": "Dra och släpp filer för att lägga till i fristående arkiv",
+      "standard": "Enskilt block",
+      "standardDescription": "Blocket och lösenfrasen krävs för att återställa hemligheten",
+      "2of3": "Blockuppsättning (tröskel 2 av 3)",
+      "2of3Description": "2 av 3 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten",
+      "3of5": "Blockuppsättning (tröskel 3 av 5)",
+      "3of5Description": "3 av 5 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten",
+      "4of7": "Blockuppsättning (tröskel 4 av 7)",
+      "4of7Description": "4 av 7 block i blockuppsättningen och lösenfrasen krävs för att återställa hemligheten",
+      "addHiddenSecret": "Lägg till dold hemlighet",
+      "removeHiddenSecret": "Ta bort dold hemlighet",
+      "createBlock": "Skapa block",
+      "createBlockAndDetachedArchive_one": "Skapa block och fristående arkiv",
+      "createBlockAndDetachedArchive_other": "Skapa block och fristående arkiv",
+      "createBlockset": "Skapa blockuppsättning",
+      "createBlocksetAndDetachedArchive_one": "Skapa blockuppsättning och fristående arkiv",
+      "createBlocksetAndDetachedArchive_other": "Skapa blockuppsättning och fristående arkiv",
+      "couldNotCreateDetachedArchive_one": "Kunde inte skapa separat arkiv",
+      "couldNotCreateDetachedArchive_other": "Kunde inte skapa separata arkiv",
+      "couldNotCreateBlock": "Kunde inte skapa block",
+      "couldNotCreateBlockset": "Kunde inte skapa blockuppsättning",
+      "detachedArchiveCreated_one": "Separat arkiv skapat",
+      "detachedArchiveCreated_other": "Separata arkiv skapade",
       "print": "Skriv ut",
       "pleaseConnectPrinter": "Vänligen anslut skrivare",
       "pleaseSelectPrinter": "Vänligen välj skrivare",
       "printer": "Skrivare",
       "selectPrinter": "Välj skrivare",
-      "printing": "Skriver ut",
-      "save": "Spara"
+      "printingBlock": "Skriver ut blocket",
+      "printingBlockset": "Skriver ut blockuppsättningen",
+      "save": "Spara",
+      "blockSaved": "Block sparat",
+      "blocksetSaved": "Blockuppsättning sparad"
     },
-    "duplicate": {
-      "couldNotDuplicateBlock": "Kunde inte duplicera block"
-    },
+    "duplicate": { "couldNotDuplicateBlock": "Kunde inte duplicera block" },
     "restore": {
-      "enterPassphrase": "Ange lösenfras",
-      "unlock": "Lås upp",
-      "unlocking": "Låser upp",
-      "scanNextBlock": "Skanna nästa block",
+      "scanOrDragAndDropBlock": "Skanna eller dra block",
+      "scanOrDragAndDropNextBlock": "Skanna eller dra nästa block",
+      "couldNotUnlockBlock": "Kunde inte låsa upp blocket",
+      "dragAndDropArchiveToRestore": "Dra och släpp {{filename}} för att återställa arkivet",
+      "restoringDetachedArchive": "Återställer fristående arkiv",
+      "couldNotRestoreDetachedArchive": "Kunde inte återställa frånkopplat arkiv",
+      "detachedArchiveRestored": "Frånkopplat arkiv återställt",
       "showSecret": "Visa hemlighet"
     }
   }

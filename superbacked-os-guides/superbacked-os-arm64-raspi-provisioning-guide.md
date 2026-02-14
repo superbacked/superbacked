@@ -1,25 +1,11 @@
-# Superbacked OS ARM64-raspi provisioning guide
+# Superbacked OS amd64 base image provisioning guide
 
-### Step 1: download [Ubuntu 24.04.3 LTS](https://ubuntu.com/download/raspberry-pi) to `~/Downloads/patch` and double-click `ubuntu-24.04.3-preinstalled-desktop-arm64+raspi.img.xz` and move `ubuntu-24.04.3-preinstalled-desktop-arm64+raspi.img` to ~/Downloads/patch folder
+### Step 1 (Mac): download [Ubuntu 24.04.3 LTS](https://ubuntu.com/download/raspberry-pi)
 
-### Step 2: patch Ubuntu 24.04.3 LTS using `./superbacked-os-utilities/superbacked-os-patch-growroot-disabled.sh`
+### Step 2 (Mac): run `ubuntu-desktop-utilities/provision-ubuntu-desktop-for-raspberry-pi-image.sh /Users/sunknudsen/Downloads/ubuntu-desktop-for-raspberry-pi/ubuntu-24.04.3-preinstalled-desktop-arm64+raspi.img.xz`
 
-### Step 3: write patched OS to microSD card using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
+### Step 3 (Mac): copy `ubuntu-24.04.3-preinstalled-desktop-arm64+raspi.img` to “SAMSUNG_MZVL4256HBJD” disk using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 
-### Step 4: boot Ubuntu 24.04.3 LTS (Intel) and select “Try Ubuntu”
+### Step 4 (Raspberry Pi): connect Ethernet cable and “SAMSUNG_MZVL4256HBJD” disk and follow instructions.
 
-### Step 5: open GParted, insert microSD card, refresh devices and grow `ext4` partition to `10240MiB`
-
-### Step 6: boot Ubuntu 24.04.3 LTS (Raspberry Pi 4 or 5, 4GB recommended)
-
-### Step 7: Set name to “Superbacked”, computer name to “superbacked-os”, username and password to “superbacked” and select “Log in automatically”
-
-### Step 8: select “No, don’t send system data”
-
-### Step 9: update Ubuntu 24.04.3 LTS using `update-manager` without rebooting
-
-### Step 10: insert USB flash drive with `superbacked-os-utilities`, cd to `superbacked-os-utilities` and run `source superbacked-os-arm64-raspi-bootstrap.sh`
-
-### Step 11: boot Ubuntu 24.04.3 LTS (Intel) and select “Try Ubuntu”
-
-### Step 12: insert USB flash drive with `superbacked-os-utilities`, cd to `superbacked-os-utilities` and run `./superbacked-os-image.sh superbacked-os-arm64-raspi-24.04.3`.
+### Step 5 (Mac): run `superbacked-os-utilities/superbacked-os-image.sh superbacked-os-arm64-raspi-24.04.3`

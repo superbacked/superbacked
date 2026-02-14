@@ -1,4 +1,4 @@
-import { zxcvbn, zxcvbnOptions, ZxcvbnResult } from "@zxcvbn-ts/core"
+import { ZxcvbnResult, zxcvbn, zxcvbnOptions } from "@zxcvbn-ts/core"
 import {
   adjacencyGraphs as languageCommonAdjacencyGraphs,
   dictionary as languageCommonDictionary,

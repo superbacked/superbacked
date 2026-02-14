@@ -1,10 +1,10 @@
 import { changeLanguage, use as i18nextUse } from "i18next"
 import { initReactI18next } from "react-i18next"
 
-import en from "./locales/en.json"
-import fr from "./locales/fr.json"
-import pt from "./locales/pt.json"
-import sv from "./locales/sv.json"
+import en from "@/src/locales/en.json"
+import fr from "@/src/locales/fr.json"
+import pt from "@/src/locales/pt.json"
+import sv from "@/src/locales/sv.json"
 
 export const resources = {
   en: {
@@ -13,15 +13,15 @@ export const resources = {
   },
   fr: {
     label: "Français",
-    translation: fr,
+    translation: fr satisfies typeof en,
   },
   pt: {
     label: "Português",
-    translation: pt,
+    translation: pt satisfies typeof en,
   },
   sv: {
     label: "Svenska",
-    translation: sv,
+    translation: sv satisfies typeof en,
   },
 }
 
@@ -44,4 +44,5 @@ await i18nextUse(initReactI18next).init({
     escapeValue: false,
   },
   resources,
+  showSupportNotice: false,
 })

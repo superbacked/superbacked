@@ -2,38 +2,39 @@ import styled from "@emotion/styled"
 import {
   ActionIcon,
   Avatar,
+  Button,
   ComboboxItem,
-  Dialog,
   Group,
-  Loader,
   Select,
   Space,
   Text,
-  useMantineColorScheme,
 } from "@mantine/core"
+import {
+  IconDeviceDesktop,
+  IconSettings,
+  IconVideo,
+  IconX,
+} from "@tabler/icons-react"
 import decodeQR from "qr/decode.js"
 import {
   Fragment,
+  forwardRef,
+  useCallback,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
-  useCallback,
-  useImperativeHandle,
-  forwardRef,
 } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  DeviceDesktop as DeviceDesktopIcon,
-  Settings as SettingsIcon,
-  Video as VideoIcon,
-  X as XIcon,
-} from "tabler-icons-react"
 
-import { ValidateTranslationKeys } from "@/src/@types/react-i18next"
-import { CustomDesktopCapturerSource } from "@/src/index"
-import ErrorModal from "@/src/main/components/ErrorModal"
+import { CustomDesktopCapturerSource } from "@/src/handlers/getDesktopCapturerSources"
+import ActionBadge from "@/src/main/components/ActionBadge"
+import Dropzone from "@/src/main/components/Dropzone"
+import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
+import Loading from "@/src/main/components/Loading"
 import confirmationSound from "@/src/main/confirmation.wav"
 import { useDebounce } from "@/src/main/utilities/debounce"
+import { fileToImageData } from "@/src/main/utilities/fileToImageData"
 
 const audio = new Audio(confirmationSound)
 
@@ -60,10 +61,23 @@ const Container = styled.div`
   z-index: 0;
 `
 
+const CenterContainer = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+`
+
 const TopRightContainer = styled.div`
   position: absolute;
   top: 24px;
   right: 24px;
+  z-index: 2;
 `
 
 interface VideoProps {
@@ -85,7 +99,7 @@ const Video = styled.video<VideoProps>`
   z-index: -1;
 `
 
-const OverlayContainer = styled.div`
+const GuideContainer = styled.div`
   position: absolute;
   top: 0;
   left: 0;
@@ -97,7 +111,7 @@ const OverlayContainer = styled.div`
   justify-content: center;
 `
 
-const Overlay = styled.div`
+const Guide = styled.div`
   height: 75%;
   aspect-ratio: 1;
   box-shadow: 0 0 0 100vh rgba(0, 0, 0, 0.25);
@@ -132,14 +146,19 @@ export interface Code {
 
 export interface ScannerRef {
   beep: () => void
+  clear: () => void
   start: () => void
   stop: () => void
+  isUsingCamera: () => boolean
 }
 
-interface ScannerProps {
+type ScannerProps = {
   handleCode: (code: string, imageDataUrl?: string) => void
   autoBeep?: boolean
+  autoStart?: boolean
   autoStop?: boolean
+  dropzone?: boolean
+  badge?: string
 }
 
 class NoDeviceError extends Error {
@@ -150,52 +169,74 @@ class NoDeviceError extends Error {
 }
 
 /**
- * Scanner component for detecting QR codes using camera or screen capture
+ * Scanner component for detecting QR codes using camera or screen capture or optional dropzone
  *
- * @param handleCode - Callback function when QR code is detected (required)
- * @param autoBeep - Whether to play confirmation sound (optional, defaults to true)
- * @param autoStop - Whether to automatically stop scanning after detecting code (optional, defaults to true)
+ * @param handleCode callback function that handles detected codes
+ * @param autoBeep automatically play confirmation sound when code is detected, defaults to `true`
+ * @param autoStart automatically start camera on mount, defaults to `false`
+ * @param autoStop automatically stop scanning once code is detected, defaults to `true`
+ * @param dropzone enable dropzone, defaults to `false`
+ * @param badge display badge (optional)
  *
  * @example
- * ```tsx
  * const scannerRef = useRef<ScannerRef>(null)
  *
  * <Scanner
  *   ref={scannerRef}
  *   handleCode={(code) => console.log(code)}
  * />
- * ```
  */
 const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const { t } = useTranslation()
-  const { colorScheme } = useMantineColorScheme()
   const videoRef = useRef<null | HTMLVideoElement>(null)
   const mediaStreamRef = useRef<null | MediaStream>(null)
-  const imageDataUrlRef = useRef<null | string>(null)
-  const sourceRef = useRef<null | Source>(null)
   const computingRef = useRef(false)
   const handleCodeRef = useRef(props.handleCode)
+  const getInitialSource = (): null | Source => {
+    const deviceId = window.api.invokeSync.getConfig("scannerDevice")
+    if (deviceId) {
+      return { id: deviceId, type: "device" }
+    }
+    const sourceId = window.api.invokeSync.getConfig("scannerSource")
+    if (sourceId) {
+      return { id: sourceId, type: "source" }
+    }
+    return null
+  }
+  const sourceRef = useRef<null | Source>(getInitialSource())
   const [showSourceSettings, setShowSourceSettings] = useState(false)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
-  const [deviceValue, setDeviceValue] = useState<null | string>(null)
-  const [sourceValue, setSourceValue] = useState<null | string>(null)
+  const [source, setSource] = useState<null | Source>(sourceRef.current)
   const [deviceDropdownOpened, setDeviceDropdownOpened] = useState(false)
   const [sourceDropdownOpened, setSourceDropdownOpened] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<null | ValidateTranslationKeys<
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<null | ErrorState<
     | "components.scanner.pleaseAllowCameraAccess"
     | "components.scanner.pleaseConnectCamera"
     | "components.scanner.cameraDoesNotMeetMinimumRequirementOf720p"
     | "components.scanner.pleaseAllowScreenRecording"
     | "components.scanner.couldNotRunScanner"
+    | "components.scanner.couldNotHandleFile"
   >>(null)
-  const [showError, setShowError] = useState(false)
-  const [streaming, setStreaming] = useState(false)
-  const { handleCode, autoBeep = true, autoStop = true } = props
+  const [isUsingCamera, setIsUsingCamera] = useState(false)
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [imageDataUrl, setImageDataUrl] = useState<null | string>(null)
+  const {
+    handleCode,
+    autoBeep = true,
+    autoStart = false,
+    autoStop = true,
+    dropzone = false,
+  } = props
+
+  const updateSource = useCallback((newSource: null | Source) => {
+    sourceRef.current = newSource
+    setSource(newSource)
+  }, [])
 
   const stop = useCallback(() => {
-    setStreaming(false)
+    setIsStreaming(false)
     if (mediaStreamRef.current) {
       for (const track of mediaStreamRef.current.getTracks()) {
         if (track.readyState === "live") {
@@ -210,10 +251,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   }, [])
 
   const compute = useCallback(
-    async (imageData?: ImageData) => {
+    async (imageData?: ImageData, isUsingDropzone = false) => {
       computingRef.current = true
       let canvas: null | HTMLCanvasElement = null
-      if (!imageData && videoRef.current) {
+      if (imageData === undefined && videoRef.current) {
         if (
           videoRef.current.videoWidth === 0 ||
           videoRef.current.videoHeight === 0
@@ -226,8 +267,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         canvas.width = videoRef.current.videoWidth
         canvas.height = videoRef.current.videoHeight
         const canvas2d = canvas.getContext("2d")
-        if (!canvas2d) {
-          // This should never happen, but tracking edge case (required by TypeScript type check)
+        if (canvas2d === null) {
           throw new Error("Could not get canvas context")
         }
         const ratio = canvas.width / canvas.height
@@ -251,8 +291,17 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         const y = -(height - canvas.height) / 2
         canvas2d.drawImage(videoRef.current, x, y, width, height)
         imageData = canvas2d.getImageData(x, y, width, height)
+      } else if (imageData) {
+        canvas = document.createElement("canvas")
+        canvas.width = imageData.width
+        canvas.height = imageData.height
+        const canvas2d = canvas.getContext("2d")
+        if (canvas2d === null) {
+          throw new Error("Could not get canvas context")
+        }
+        canvas2d.putImageData(imageData, 0, 0)
       }
-      if (!imageData) {
+      if (imageData === undefined) {
         // Wait for image data
         computingRef.current = false
         return
@@ -274,12 +323,12 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         }
       }
       if (
-        videoRef.current !== null &&
-        mediaStreamRef.current !== null &&
         canvas &&
-        code
+        code &&
+        (isUsingDropzone ||
+          (videoRef.current !== null && mediaStreamRef.current !== null))
       ) {
-        imageDataUrlRef.current = canvas.toDataURL("image/png", 100)
+        setImageDataUrl(canvas.toDataURL("image/jpeg", 100))
         handleCodeRef.current(code)
         if (autoBeep) {
           void play()
@@ -303,6 +352,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         videoInputDevices.push(enumerateDevice)
       }
     }
+    videoInputDevices.sort((a, b) => a.label.localeCompare(b.label))
     setDevices(videoInputDevices)
     return videoInputDevices
   }, [])
@@ -310,27 +360,45 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   const capture = useCallback(async () => {
     try {
       setError(null)
-      setShowError(false)
-      setLoading(true)
+      setIsLoading(true)
       const updatedDevices = await updateDevices()
-      if (!sourceRef.current) {
+      let currentSource = sourceRef.current
+      if (currentSource === null) {
         if (updatedDevices[0]) {
-          sourceRef.current = {
+          currentSource = {
             id: updatedDevices[0].deviceId,
             type: "device",
           }
+          updateSource(currentSource)
+        }
+      } else if (currentSource.type === "device") {
+        const deviceExists = updatedDevices.some(
+          (device) => device.deviceId === currentSource?.id
+        )
+        if (deviceExists === false) {
+          window.api.invokeSync.unsetConfig("scannerDevice")
+          if (updatedDevices[0]) {
+            currentSource = {
+              id: updatedDevices[0].deviceId,
+              type: "device",
+            }
+            updateSource(currentSource)
+          } else {
+            currentSource = null
+            updateSource(null)
+          }
         }
       }
-      if (sourceRef.current === null) {
+      if (currentSource === null) {
         throw new NoDeviceError("No device available")
       }
       let constraints: MediaStreamConstraints
-      if (sourceRef.current.type === "device") {
+      if (currentSource.type === "device") {
         constraints = {
           audio: false,
           video: {
             deviceId: {
-              exact: sourceRef.current.id,
+              exact: currentSource.id,
             },
             frameRate: { max: maxFrameRate },
             width: { min: minVideoWidth, max: maxVideoWidth },
@@ -343,7 +411,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           video: {
             mandatory: {
               chromeMediaSource: "desktop",
-              chromeMediaSourceId: sourceRef.current.id,
+              chromeMediaSourceId: currentSource.id,
               maxFrameRate: maxFrameRate,
             },
           } as MediaTrackConstraints,
@@ -351,12 +419,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       }
       mediaStreamRef.current =
         await navigator.mediaDevices.getUserMedia(constraints)
-      setLoading(false)
+      setIsLoading(false)
       if (videoRef.current) {
         const metadataTimeout = setTimeout(() => {
-          if (sourceRef.current?.type === "device") {
-            setError("components.scanner.pleaseAllowCameraAccess")
-            setShowError(true)
+          if (currentSource?.type === "device") {
+            setError({
+              message: "components.scanner.pleaseAllowCameraAccess",
+            })
             stop()
           }
         }, 1000)
@@ -373,85 +442,103 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         }
       }
     } catch (captureError) {
-      setLoading(false)
+      setIsLoading(false)
       if (
         captureError instanceof Error &&
         captureError.name === "NoDeviceError"
       ) {
-        setError("components.scanner.pleaseConnectCamera")
+        setError({ message: "components.scanner.pleaseConnectCamera" })
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotAllowedError"
       ) {
-        setError("components.scanner.pleaseAllowCameraAccess")
+        setError({ message: "components.scanner.pleaseAllowCameraAccess" })
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
-        setError("components.scanner.pleaseConnectCamera")
+        setError({ message: "components.scanner.pleaseConnectCamera" })
       } else if (
         sourceRef.current?.type === "device" &&
         captureError instanceof Error &&
         captureError.name === "OverconstrainedError"
       ) {
-        setError("components.scanner.cameraDoesNotMeetMinimumRequirementOf720p")
+        setError({
+          message:
+            "components.scanner.cameraDoesNotMeetMinimumRequirementOf720p",
+        })
       } else if (
         sourceRef.current?.type === "source" &&
         captureError instanceof Error &&
         captureError.name === "NotReadableError"
       ) {
-        setError("components.scanner.pleaseAllowScreenRecording")
+        setError({ message: "components.scanner.pleaseAllowScreenRecording" })
       } else {
-        setError("components.scanner.couldNotRunScanner")
+        setError({ message: "components.scanner.couldNotRunScanner" })
       }
-      setShowError(true)
     }
-  }, [updateDevices, stop, debouncedCompute])
+  }, [updateDevices, updateSource, stop, debouncedCompute])
 
   const start = useCallback(() => {
-    if (!mediaStreamRef.current || mediaStreamRef.current.active === false) {
-      setStreaming(true)
+    if (
+      mediaStreamRef.current === null ||
+      mediaStreamRef.current.active === false
+    ) {
+      setIsUsingCamera(true)
+      setIsStreaming(true)
       void capture()
     }
   }, [capture])
 
   const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
-    const result = await window.api.getDesktopCapturerSources()
+    const result = await window.api.invoke.getDesktopCapturerSources()
     if (result.success === false) {
-      setError("components.scanner.pleaseAllowScreenRecording")
-      setShowError(true)
+      setError({ message: "components.scanner.pleaseAllowScreenRecording" })
       return []
     }
-    setSources(result.customDesktopCapturerSources)
+    const sortedSources = result.customDesktopCapturerSources.sort((a, b) =>
+      a.label.localeCompare(b.label)
+    )
+    setSources(sortedSources)
     // On Linux, set source to selected window
     // See https://www.electronjs.org/docs/latest/api/desktop-capturer#caveats
-    const sourceId = result.customDesktopCapturerSources[0]?.id
+    const sourceId = sortedSources[0]?.id
     if (window.api.platform === "linux" && sourceId) {
-      sourceRef.current = {
+      updateSource({
         id: sourceId,
-        type: "source",
-      }
-      setSourceValue(sourceId)
+        type: "source" as const,
+      })
+      window.api.invokeSync.setConfig("scannerSource", sourceId)
       setShowSourceSettings(false)
       start()
     }
-    return result.customDesktopCapturerSources
+    return sortedSources
   }
 
   const beep = useCallback(() => {
     void play()
   }, [])
 
+  const clear = useCallback(() => {
+    setImageDataUrl(null)
+  }, [])
+
+  const getIsUsingCamera = useCallback(() => {
+    return isUsingCamera
+  }, [isUsingCamera])
+
   useImperativeHandle(
     ref,
     () => ({
       beep,
+      clear,
       start,
       stop,
+      isUsingCamera: getIsUsingCamera,
     }),
-    [beep, start, stop]
+    [beep, clear, start, stop, getIsUsingCamera]
   )
 
   useEffect(() => {
@@ -459,11 +546,16 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   }, [handleCode])
 
   useEffect(() => {
-    start()
+    if (autoStart) {
+      start()
+    }
+  }, [autoStart, start])
+
+  useEffect(() => {
     return () => {
       stop()
     }
-  }, [start, stop])
+  }, [stop])
 
   if (showSourceSettings === true) {
     const deviceData: ComboboxItem[] = []
@@ -474,11 +566,11 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       thumbnailDataUrl: string
     }
     const sourceData: CustomComboboxItem[] = []
-    for (const source of sources) {
+    for (const sourceItem of sources) {
       sourceData.push({
-        label: source.label,
-        thumbnailDataUrl: source.thumbnailDataUrl,
-        value: source.id,
+        label: sourceItem.label,
+        thumbnailDataUrl: sourceItem.thumbnailDataUrl,
+        value: sourceItem.id,
       })
     }
     return (
@@ -487,29 +579,23 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           <Select
             comboboxProps={{ keepMounted: false }}
             data={deviceData}
-            defaultValue={
-              sourceRef.current?.type === "device" ? sourceRef.current.id : null
-            }
             dropdownOpened={deviceDropdownOpened}
-            leftSection={<VideoIcon size={16} />}
+            leftSection={<IconVideo size={16} />}
             label={t("components.scanner.device")}
             maxDropdownHeight={240}
             placeholder={`${t("components.scanner.selectDevice")}…`}
-            value={
-              (deviceValue ?? sourceRef.current?.type === "device")
-                ? sourceRef.current?.id
-                : null
-            }
+            value={source?.type === "device" ? source.id : null}
             onChange={(value) => {
               if (value) {
-                sourceRef.current = {
+                updateSource({
                   id: value,
-                  type: "device",
-                }
-                setDeviceValue(value)
+                  type: "device" as const,
+                })
+                window.api.invokeSync.setConfig("scannerDevice", value)
+                window.api.invokeSync.unsetConfig("scannerSource")
+                setShowSourceSettings(false)
+                start()
               }
-              setShowSourceSettings(false)
-              start()
             }}
             onDropdownClose={() => setDeviceDropdownOpened(false)}
             onDropdownOpen={async () => {
@@ -521,11 +607,8 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           <Select
             comboboxProps={{ keepMounted: false }}
             data={sourceData}
-            defaultValue={
-              sourceRef.current?.type === "source" ? sourceRef.current.id : null
-            }
             dropdownOpened={sourceDropdownOpened}
-            leftSection={<DeviceDesktopIcon size={16} />}
+            leftSection={<IconDeviceDesktop size={16} />}
             label={t("components.scanner.source")}
             maxDropdownHeight={240}
             placeholder={`${t("components.scanner.selectSource")}…`}
@@ -535,21 +618,18 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
                 <Text>{option.label}</Text>
               </Group>
             )}
-            value={
-              (sourceValue ?? sourceRef.current?.type === "source")
-                ? sourceRef.current?.id
-                : null
-            }
+            value={source?.type === "source" ? source.id : null}
             onChange={(value) => {
               if (value) {
-                sourceRef.current = {
+                updateSource({
                   id: value,
-                  type: "source",
-                }
-                setSourceValue(value)
+                  type: "source" as const,
+                })
+                window.api.invokeSync.unsetConfig("scannerDevice")
+                window.api.invokeSync.setConfig("scannerSource", value)
+                setShowSourceSettings(false)
+                start()
               }
-              setShowSourceSettings(false)
-              start()
             }}
             onDropdownClose={() => setSourceDropdownOpened(false)}
             onDropdownOpen={async () => {
@@ -572,14 +652,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               start()
             }}
           >
-            <XIcon size={16} />
+            <IconX size={16} />
           </ActionIcon>
         </TopRightContainer>
         <ErrorModal
           error={error}
-          opened={showError}
           onClose={() => {
-            setShowError(false)
+            setError(null)
             setShowSourceSettings(true)
           }}
         />
@@ -588,33 +667,56 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   } else {
     return (
       <Fragment>
+        <Dropzone
+          accept={["application/pdf", "image/jpeg"]}
+          active={dropzone}
+          maxFiles={1}
+          maxSize={1 * 1024 ** 2} // 1 MB
+          onDrop={async (files) => {
+            const file = files[0]
+            if (file === undefined) {
+              return
+            }
+            try {
+              setIsUsingCamera(false)
+              const imageData = await fileToImageData(file)
+              await compute(imageData, true)
+            } catch {
+              setError({ message: "components.scanner.couldNotHandleFile" })
+            }
+          }}
+        />
         <Video ref={videoRef} />
-        {loading === true ? (
+        {isLoading === true ? (
+          <Loading visible={isLoading} dialog="components.scanner.loading" />
+        ) : null}
+        {autoStart === false &&
+        isLoading === false &&
+        isStreaming === false &&
+        isUsingCamera === false &&
+        imageDataUrl === null ? (
           <Fragment>
-            <Container>
-              <Loader
-                color={colorScheme === "dark" ? "white" : "dark"}
-                size="sm"
-              />
-            </Container>
-            <Dialog
-              opened={true}
-              withCloseButton
-              onClose={() => setLoading(false)}
-              radius="sm"
-              size="md"
-            >
-              {t("components.scanner.loading")}…
-            </Dialog>
+            <CenterContainer>
+              <Button size="sm" onClick={start} variant="signatureTextGradient">
+                {t("components.scanner.useCameraOrScreenCapture")}
+              </Button>
+            </CenterContainer>
           </Fragment>
         ) : null}
-        {loading === false && streaming === true ? (
-          <OverlayContainer>
-            <Overlay />
-          </OverlayContainer>
+        {isLoading === false && isStreaming === true ? (
+          <Fragment>
+            <GuideContainer>
+              <Guide />
+            </GuideContainer>
+          </Fragment>
         ) : null}
-        {loading === false && streaming === false && imageDataUrlRef.current ? (
-          <Image src={imageDataUrlRef.current} />
+        {isLoading === false &&
+        isStreaming === false &&
+        imageDataUrl !== null ? (
+          <Image src={imageDataUrl} />
+        ) : null}
+        {props.badge && error === null ? (
+          <ActionBadge color="dark">{props.badge}</ActionBadge>
         ) : null}
         <TopRightContainer>
           <ActionIcon
@@ -627,14 +729,13 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               stop()
             }}
           >
-            <SettingsIcon size={16} />
+            <IconSettings size={16} />
           </ActionIcon>
         </TopRightContainer>
         <ErrorModal
           error={error}
-          opened={showError}
           onClose={() => {
-            setShowError(false)
+            setError(null)
             setShowSourceSettings(true)
           }}
         />
