@@ -1,14 +1,14 @@
 # Superbacked
 
-## Don’t lose your secrets
+## Protect what matters most
 
-Superbacked is a secret management platform used to back up and pass on sensitive data from one generation to the next.
+Whether you are planning for tomorrow or the unthinkable, Superbacked helps the right people access what they need.
 
-## Disclaimer
+Superbacked runs on your computer, never connects to internet and requires no account. Your secrets never leave your device unencrypted.
 
-**Do not** use Superbacked on computer that is not specifically provisioned for secret management (no data persistence or network connectivity) unless secret is already present on computer.
+For high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
-Superbacked, Inc., along with its employees, operators and shareholders and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets. **USE AT YOUR OWN RISK.**
+[Become an operator](https://superbacked.com/operators) · [Security model](https://superbacked.com/security) · [Guides](https://superbacked.com/guides) · [Download](https://superbacked.com/download)
 
 ## End-user license agreement
 
@@ -20,37 +20,11 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 
 Copyright (c) Superbacked, Inc. — All rights reserved
 
-## Usage guide (macOS)
-
-### Step 1: download (and, optionally, [verify](#how-to-verify-integrity-of-release)) [latest release](https://github.com/superbacked/superbacked/releases/latest), double-click `.dmg` file and drag “Superbacked” app to “Applications” folder
-
-### Step 2: open “Applications” folder and double-click “Superbacked” app
-
-## Usage guide (Tails)
-
-### Step 1: download (and, optionally, [verify](#how-to-verify-integrity-of-release)) [latest release](https://github.com/superbacked/superbacked/releases/latest)
-
-### Step 2: right-click `.AppImage` file and select “Run”
-
-## Usage guide (Ubuntu)
-
-### Step 1: download (and, optionally, [verify](#how-to-verify-integrity-of-release)) [latest release](https://github.com/superbacked/superbacked/releases/latest)
-
-### Step 2: install dependencies
-
-```console
-$ sudo apt install --yes libfuse2 zlib1g-dev
-```
-
-### Step 3: right-click `.AppImage` file and select “Run as a program”
-
-> Heads-up: Ubuntu Desktop 24.04.3 LTS has AppArmor enabled by default so running `.AppImage` file using terminal with `--no-sandbox` flag might be necessary.
-
 ## Contribution guide (macOS)
 
-Before contributing and submitting a [signed](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) [PR](https://github.com/superbacked/superbacked/pulls), please create or join [discussion](https://github.com/superbacked/superbacked/discussions) to discuss changes.
+Before contributing and submitting [signed](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) [PR](https://github.com/superbacked/superbacked/pulls), please create or join [discussion](https://github.com/superbacked/superbacked/discussions) to discuss changes.
 
-**If you believe you have found a security vulnerability, we encourage you to let us know immediately using email found on https://superbacked.com/contact.**
+**If you believe you have found security vulnerability, we encourage you to let us know immediately using email found on https://superbacked.com/contact.**
 
 ### Step 1: clone [repo](https://github.com/superbacked/superbacked)
 
@@ -92,68 +66,6 @@ $ npm install
 $ npm run code
 ```
 
-## How to verify integrity of release
-
-### Step 1: download [release](https://github.com/superbacked/superbacked/releases)’s `SHA256SUMS` and `SHA256SUMS.asc` to same folder as app (`superbacked-arm64-1.9.0.dmg` in example below)
-
-```console
-$ ls
-SHA256SUMS
-SHA256SUMS.asc
-superbacked-arm64-1.9.0.dmg
-```
-
-### Step 2 (optional): verify integrity of `SHA256SUMS` using [GnuPG](https://gnupg.org/)
-
-> Heads-up: integrity of Sun’s PGP public key can be confirmed using fingerprint published on https://sunknudsen.com/contact, https://github.com/sunknudsen/pgp-public-key, https://twitter.com/sunknudsen and https://www.youtube.com/sunknudsen/about.
-
-> Heads-up: “1 signature not checked due to a missing key” warning can be ignored as it refers to Sun’s [legacy](https://github.com/sunknudsen/pgp-public-key/tree/master/legacy) PGP public key.
-
-```console
-$ curl https://sunknudsen.com/sunknudsen.asc | gpg --import
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100  2070  100  2070    0     0   6044      0 --:--:-- --:--:-- --:--:--  6160
-gpg: key 0x8C9CA674C47CA060: 1 signature not checked due to a missing key
-gpg: key 0x8C9CA674C47CA060: public key "Sun Knudsen <hello@sunknudsen.com>" imported
-gpg: Total number processed: 1
-gpg:               imported: 1
-gpg: no ultimately trusted keys found
-
-$ gpg --verify SHA256SUMS.asc
-gpg: assuming signed data in 'SHA256SUMS'
-gpg: Signature made Thu 18 Dec 06:40:08 2025 EST
-gpg:                using EDDSA key 9C7887E1B5FCBCE2DFED0E1C02C43AD072D57783
-gpg: Good signature from "Sun Knudsen <hello@sunknudsen.com>" [unknown]
-gpg: WARNING: This key is not certified with a trusted signature!
-gpg:          There is no indication that the signature belongs to the owner.
-Primary key fingerprint: E786 274B C92B 47C2 3C1C  F44B 8C9C A674 C47C A060
-     Subkey fingerprint: 9C78 87E1 B5FC BCE2 DFED  0E1C 02C4 3AD0 72D5 7783
-```
-
-Good signature from "Sun Knudsen <hello@sunknudsen.com>"
-
-👍
-
-Primary key fingerprint: E786 274B C92B 47C2 3C1C F44B 8C9C A674 C47C A060
-
-👍
-
-### Step 3: verify integrity of release
-
-```console
-$ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
-./superbacked-arm64-1.9.0.dmg: OK
-```
-
-OK
-
-👍
-
 ## Support this project
 
-Superbacked was created by [Sun Knudsen](https://sunknudsen.com/), a privacy and security researcher and [YouTuber](https://www.youtube.com/sunknudsen) and is maintained by [Sun Knudsen](https://sunknudsen.com/) and [Christoffer Carlsson](https://christoffercarlsson.se/).
-
-Thanks to past contributors including Zean Moore and to our generous patrons without whom Superbacked would not exist 🙌.
-
-If you love Superbacked, please star the [repo](https://github.com/superbacked/superbacked) and consider [supporting](https://sunknudsen.com/donate) the project.
+If Superbacked is useful to you, please star [repo](https://github.com/superbacked/superbacked) and consider [supporting](https://sunknudsen.com/donate) project.
