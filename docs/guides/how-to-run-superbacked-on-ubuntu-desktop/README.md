@@ -15,8 +15,6 @@ Superbacked is distributed as AppImage binary — a portable format that runs on
 $ sudo apt install --yes libfuse2 zlib1g-dev
 ```
 
-`libfuse2` is required by AppImage to mount filesystem. `zlib1g-dev` is required by Superbacked for data compression.
-
 ### Step 2: download Superbacked
 
 Download latest release from [superbacked.com/download](https://superbacked.com/download) and optionally [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
