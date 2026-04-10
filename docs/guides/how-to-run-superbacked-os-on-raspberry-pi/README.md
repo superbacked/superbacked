@@ -1,6 +1,6 @@
 <!--
 Title: How to run Superbacked OS on Raspberry Pi
-Description: Learn how to run Superbacked OS on Raspberry Pi
+Description: Learn how to install and run Superbacked OS on Raspberry Pi 4 or 5
 Publication date: 2026-01-29T17:55:21.467Z
 Pinned: 2
 -->

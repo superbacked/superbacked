@@ -1,11 +1,11 @@
 <!--
-Title: How to verify that data persistence is disabled
-Description: Learn how to verify that data persistence is disabled
+Title: How to verify data persistence is disabled
+Description: Learn how to verify that Superbacked OS persists nothing to disk by comparing partition checksums before and after use
 Publication date: 2026-01-29T18:12:16.210Z
 Pinned:
 -->
 
-## How to verify that data persistence is disabled
+## How to verify data persistence is disabled
 
 Superbacked OS disables data persistence by default to make sure secrets are not written to disk… this is how one can verify claim.
 
@@ -46,8 +46,12 @@ Password:
 Unmount of all volumes on disk4 was successful
 
 $ sudo sha256sum /dev/rdisk4s1 /dev/rdisk4s2
-6cdca6aab0db8d2a893883085eed84a642ebb3b65990de02540bb3c198c643cb  /dev/rdisk4s1
-0e33c330624ba3ef1ecc0a8fa3a8c4821c36ba46fb08791e74eff4787b7d6b27  /dev/rdisk4s2
+4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be  /dev/rdisk4s1
+bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d  /dev/rdisk4s2
+
+$ cat superbacked-os-amd64-1.10.0.img.sha256sums
+Boot partition: 4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be
+Root partition: bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d
 ```
 
 ### Ubuntu
@@ -75,6 +79,10 @@ umount: /dev/sdb1: not mounted.
 umount: /dev/sdb2: not mounted.
 
 $ sudo sha256sum /dev/sdb1 /dev/sdb2
-6cdca6aab0db8d2a893883085eed84a642ebb3b65990de02540bb3c198c643cb  /dev/sdb1
-0e33c330624ba3ef1ecc0a8fa3a8c4821c36ba46fb08791e74eff4787b7d6b27  /dev/sdb2
+4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be  /dev/sdb1
+bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d  /dev/sdb2
+
+$ cat superbacked-os-amd64-1.10.0.img.sha256sums
+Boot partition: 4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be
+Root partition: bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d
 ```
