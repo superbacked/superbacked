@@ -2,7 +2,7 @@
 
 ## Protect what matters most
 
-Whether you are planning for tomorrow or the unthinkable, Superbacked helps the right people access what they need.
+Whether you are planning for tomorrow or the unthinkable, Superbacked helps the right people recover what matters.
 
 Superbacked runs on your computer, never connects to internet and requires no account. Your secrets never leave your device unencrypted.
 
