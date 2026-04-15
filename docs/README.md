@@ -9,7 +9,7 @@
 
 - [How to run Superbacked on Tails](./guides/how-to-run-superbacked-on-tails/README.md)
 - [How to run Superbacked on Ubuntu Desktop](./guides/how-to-run-superbacked-on-ubuntu-desktop/README.md)
-- [How to run Superbacked OS on Intel or AMD computer](./guides/how-to-run-superbacked-os-on-intel-or-amd-computer/README.md)
+- [How to run Superbacked OS on desktop or laptop](./guides/how-to-run-superbacked-os-on-desktop-or-laptop/README.md)
 - [How to run Superbacked OS on Raspberry Pi](./guides/how-to-run-superbacked-os-on-raspberry-pi/README.md)
 - [How to verify data persistence is disabled](./guides/how-to-verify-data-persistence-is-disabled/README.md)
 - [How to verify integrity of release](./guides/how-to-verify-integrity-of-release/README.md)

@@ -1,13 +1,13 @@
 <!--
 Title: How to run Superbacked OS on Raspberry Pi
-Description: Learn how to install and run Superbacked OS on Raspberry Pi 4 or 5
+Description: Learn how to run Superbacked OS on Raspberry Pi 4 or 5 with at least 4GB of RAM
 Publication date: 2026-01-29T17:55:21.467Z
 Pinned: 2
 -->
 
 ## Requirements
 
-- Raspberry Pi [4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/) or [5](https://www.raspberrypi.com/products/raspberry-pi-5/) (4GB min, 8GB or more recommended)
+- Raspberry Pi [4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/) or [5](https://www.raspberrypi.com/products/raspberry-pi-5/) (at least 4GB of RAM, 8GB or more recommended)
 - Raspberry Pi [15W USB-C Power Supply](https://www.raspberrypi.com/products/type-c-power-supply/)
 - Raspberry Pi [keyboard](https://www.raspberrypi.com/products/raspberry-pi-keyboard-and-hub/) and [mouse](https://www.raspberrypi.com/products/raspberry-pi-mouse/) (or equivalent)
 - Raspberry Pi [Micro HDMI to Standard HDMI (A/M) Cable](https://www.raspberrypi.com/products/micro-hdmi-to-standard-hdmi-a-cable/) (or equivalent)
