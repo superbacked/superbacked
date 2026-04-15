@@ -8,7 +8,7 @@ Superbacked runs on your computer, never connects to internet and requires no ac
 
 For high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
-[Become an operator](https://superbacked.com/operators) · [Security model](https://superbacked.com/security) · [Guides](https://superbacked.com/guides) · [Download](https://superbacked.com/download)
+Learn more about Superbacked and download latest release at [superbacked.com](https://superbacked.com).
 
 ## End-user license agreement
 
