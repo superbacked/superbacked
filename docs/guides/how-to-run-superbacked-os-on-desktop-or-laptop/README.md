@@ -41,7 +41,7 @@ Select “App Options”, disable “Enable anonymous statistics (telemetry) col
 
 ### Step 3: download Superbacked OS
 
-> Heads-up: for additional security, [verify](https://github.com/superbacked/superbacked?tab=readme-ov-file#how-to-verify-integrity-of-release) Superbacked OS release.
+> Heads-up: for additional security, [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
 
 #### macOS or Ubuntu
 
