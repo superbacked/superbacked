@@ -4,7 +4,7 @@
 
 Whether you are planning for tomorrow or the unthinkable, Superbacked helps the right people recover what matters.
 
-Superbacked runs on your computer, never connects to internet and requires no account. Your secrets never leave your device unencrypted.
+Superbacked runs on your computer, never connects to the internet and requires no account. Your secrets never leave your device unencrypted.
 
 For high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
@@ -68,4 +68,4 @@ $ npm run code
 
 ## Support this project
 
-If Superbacked is useful to you, please star [repo](https://github.com/superbacked/superbacked) and consider [supporting](https://sunknudsen.com/donate) project.
+If Superbacked is useful to you, please [star repo](https://github.com/superbacked/superbacked) and [support project](https://sunknudsen.com/donate).
