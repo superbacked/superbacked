@@ -1,6 +1,6 @@
 <!--
-Title: How to run Superbacked OS on Intel or AMD computer
-Description: Learn how to run Superbacked OS on Intel or AMD computer
+Title: How to run Superbacked OS on desktop or laptop
+Description: Learn how to run Superbacked OS on any 64-bit Intel or AMD desktop or laptop
 Publication date: 2026-01-29T17:55:20.856Z
 Pinned: 1
 -->
@@ -41,7 +41,7 @@ Select “App Options”, disable “Enable anonymous statistics (telemetry) col
 
 ### Step 3: download Superbacked OS
 
-> Heads-up: for additional security, [verify](https://github.com/superbacked/superbacked?tab=readme-ov-file#how-to-verify-integrity-of-release) Superbacked OS release.
+> Heads-up: for additional security, [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
 
 #### macOS or Ubuntu
 
