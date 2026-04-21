@@ -2,12 +2,16 @@
 Title: How to verify integrity of release
 Description: Learn how to verify integrity of a Superbacked release using SHA256 checksums and PGP signatures
 Publication date: 2026-04-06T09:47:11.109Z
-Pinned: 3
+Pinned:
 -->
 
-## How to verify integrity of release
+# How to verify integrity of release
 
-Every Superbacked release is PGP-signed by Sun Knudsen. This guide walks through verifying that a downloaded release has not been tampered with.
+## Overview
+
+This guide walks through verifying that a downloaded Superbacked release has not been tampered with using SHA256 checksums and PGP signatures.
+
+## Guide
 
 ### Step 1: download release’s `SHA256SUMS` and `SHA256SUMS.asc`
 

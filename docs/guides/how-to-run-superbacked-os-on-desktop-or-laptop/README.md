@@ -5,10 +5,17 @@ Publication date: 2026-01-29T17:55:20.856Z
 Pinned: 1
 -->
 
+# How to run Superbacked OS on desktop or laptop
+
+## Overview
+
+This guide walks through flashing Superbacked OS to a USB drive and booting from dedicated hardware. Superbacked OS prevents data exfiltration and data persistence by running offline and persisting nothing to disk.
+
 ## Requirements
 
 - Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS
 - USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
+- [Brother HL-L2460DW](https://www.brother-usa.com/products/hll2460dw) or equivalent USB printer (used to print blocks)
 - Plug-and-play or built-in webcam (1080p min)
 
 ## Recommendations (optional)
@@ -17,7 +24,7 @@ Physically removing internal disk(s) and wireless interface(s) if not soldered t
 
 Running Superbacked OS on flash drive with signed firmware and write protection enabled such as [Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive (WP-KFT3-16G)](https://www.kanguru.com/products/kanguru-flashtrust-secure-firmware-usb-3-0-flash-drive) is recommended.
 
-## Superbacked OS USB flash drive guide
+## Setup guide
 
 ### Step 1: install [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 

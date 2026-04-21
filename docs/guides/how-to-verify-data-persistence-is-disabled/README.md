@@ -1,17 +1,17 @@
 <!--
 Title: How to verify data persistence is disabled
-Description: Learn how to verify that Superbacked OS persists nothing to disk by comparing partition checksums before and after use
+Description: Learn how to verify that Superbacked OS persists nothing to disk
 Publication date: 2026-01-29T18:12:16.210Z
 Pinned:
 -->
 
-## How to verify data persistence is disabled
+# How to verify data persistence is disabled
 
-Superbacked OS disables data persistence by default to make sure secrets are not written to disk… this is how one can verify claim.
+## Overview
 
-Using terminal, compute disk checksum before and after using Superbacked OS and make sure checksums match.
+This guide walks through verifying that Superbacked OS persists nothing to disk by comparing partition checksums before and after use.
 
-Confirm checksums match Superbacked OS release boot (1) and root (2) partition PGP-signed checksums.
+## Guide
 
 ### macOS
 
