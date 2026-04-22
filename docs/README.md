@@ -7,6 +7,7 @@
 
 ## Guides (source of [superbacked.com/guides](https://superbacked.com/guides))
 
+- [How to run Superbacked on factory-reset Mac](./guides/how-to-run-superbacked-on-factory-reset-mac/README.md)
 - [How to run Superbacked on Tails](./guides/how-to-run-superbacked-on-tails/README.md)
 - [How to run Superbacked on Ubuntu Desktop](./guides/how-to-run-superbacked-on-ubuntu-desktop/README.md)
 - [How to run Superbacked OS on desktop or laptop](./guides/how-to-run-superbacked-os-on-desktop-or-laptop/README.md)
