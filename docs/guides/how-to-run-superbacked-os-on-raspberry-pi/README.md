@@ -5,21 +5,28 @@ Publication date: 2026-01-29T17:55:21.467Z
 Pinned: 2
 -->
 
+# How to run Superbacked OS on Raspberry Pi
+
+## Overview
+
+This guide walks through flashing Superbacked OS to a microSD card or USB drive and booting on Raspberry Pi. Superbacked OS prevents data exfiltration and data persistence by running offline and persisting nothing to disk.
+
 ## Requirements
 
 - Raspberry Pi [4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/) or [5](https://www.raspberrypi.com/products/raspberry-pi-5/) (at least 4GB of RAM, 8GB or more recommended)
-- Raspberry Pi [15W USB-C Power Supply](https://www.raspberrypi.com/products/type-c-power-supply/)
+- Raspberry Pi [15W USB-C Power Supply](https://www.raspberrypi.com/products/type-c-power-supply/) (Pi 4) or [27W USB-C Power Supply](https://www.raspberrypi.com/products/27w-power-supply/) (Pi 5)
 - Raspberry Pi [keyboard](https://www.raspberrypi.com/products/raspberry-pi-keyboard-and-hub/) and [mouse](https://www.raspberrypi.com/products/raspberry-pi-mouse/) (or equivalent)
 - Raspberry Pi [Micro HDMI to Standard HDMI (A/M) Cable](https://www.raspberrypi.com/products/micro-hdmi-to-standard-hdmi-a-cable/) (or equivalent)
-- microSD card or USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
-- Plug-and-play webcam with USB-A connector (1080p min)
 - HDMI display (1080p min)
+- microSD card or USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
+- [Brother HL-L2460DW](https://www.brother-usa.com/products/hll2460dw) or equivalent USB printer (used to print blocks)
+- Plug-and-play webcam with USB-A connector (1080p min)
 
 ## Recommendations (optional)
 
 Running Superbacked OS on flash drive with signed firmware and write protection enabled such as [Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive (WP-KFT3-16G)](https://www.kanguru.com/products/kanguru-flashtrust-secure-firmware-usb-3-0-flash-drive) is recommended.
 
-## Superbacked OS microSD or USB flash drive guide
+## Setup guide
 
 ### Step 1: install [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 
