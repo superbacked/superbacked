@@ -6,7 +6,7 @@
   "main": ".webpack/main/index.js",
   "scripts": {
     "code": "tsx scripts/code.ts",
-    "lint": "eslint --ext .ts,.tsx .",
+    "lint": "eslint",
     "prebuild": "npx tsx node_modules/webpack-cli/bin/cli.js --config webpack.main.production.config.ts --config webpack.preload.production.config.ts --config webpack.renderer.production.config.ts",
     "build": "npm run build:darwin:arm64 && npm run build:darwin:x64 && npm run build:linux:arm64 && npm run build:linux:x64",
     "build:darwin:arm64": "electron-builder --config ./builder.config.ts --mac --arm64",

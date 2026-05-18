@@ -1,4 +1,5 @@
 {
+  "eslint.workingDirectories": ["."],
   "search.exclude": {
     "package-lock.json": true,
     "package.json": true
