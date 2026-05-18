@@ -1,5 +1,5 @@
 #! /bin/bash
-# Used to patch Ubuntu for desktops 24.04.3 LTS (arm64-raspi)
+# Used to patch Ubuntu for desktops 24.04.4 LTS (arm64-raspi)
 #
 # Usage:
 # bash -c "$(curl -fsSL https://github.com/superbacked/superbacked/releases/download/v__VERSION__/superbacked-os-arm64-raspi-bootstrap-__VERSION__.sh)"

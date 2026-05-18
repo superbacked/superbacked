@@ -4,7 +4,7 @@
 set -e
 
 if [ -z "$1" ] || [ "$1" = "--help" ]; then
-  printf "%s\n" "Usage: provision-ubuntu-desktop-for-raspberry-pi-image.sh /path/to/ubuntu-24.04.3-preinstalled-desktop-arm64+raspi.img.xz"
+  printf "%s\n" "Usage: provision-ubuntu-desktop-for-raspberry-pi-image.sh /path/to/ubuntu-24.04.4-preinstalled-desktop-arm64+raspi.img.xz"
   exit 0
 fi
 

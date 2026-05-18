@@ -1,5 +1,5 @@
 #! /bin/bash
-# Used to patch Ubuntu for desktops 24.04.3 LTS (amd64)
+# Used to patch Ubuntu for desktops 24.04.4 LTS (amd64)
 #
 # Usage:
 # bash -c "$(curl -fsSL https://github.com/superbacked/superbacked/releases/download/v__VERSION__/superbacked-os-amd64-bootstrap-__VERSION__.sh)"

@@ -13,7 +13,7 @@ This guide walks through flashing Superbacked OS to a USB drive and booting from
 
 ## Requirements
 
-- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS
+- Computer compatible with Ubuntu 24.04.4 LTS
 - USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
 - [Brother HL-L2460DW](https://www.brother-usa.com/products/hll2460dw) or equivalent USB printer (used to print blocks)
 - Plug-and-play or built-in webcam (1080p min)
