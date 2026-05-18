@@ -59,7 +59,7 @@ export const PassphraseInputWithStrength: FunctionComponent<
       withArrow
     >
       <Popover.Dropdown>
-        <Text c="dimmed" fw="bold" size="sm" ta="center">
+        <Text fw="bold" size="sm" ta="center" variant="signatureGradient">
           {t("components.passphraseInputWithStrength.passphraseStrength")}
         </Text>
         <Space h="lg" />

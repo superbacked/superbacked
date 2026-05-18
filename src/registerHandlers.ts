@@ -28,7 +28,7 @@ import {
 } from "@/src/handlers/standaloneArchive"
 import toggleMaximize from "@/src/handlers/toggleMaximize"
 import { Locale } from "@/src/i18n"
-import { locale, shouldUseDarkColors } from "@/src/index"
+import { locale } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import {
@@ -37,7 +37,6 @@ import {
   wordlist,
 } from "@/src/utilities/bip39"
 import {
-  ColorScheme,
   get as getConfig,
   set as setConfig,
   unset as unsetConfig,
@@ -56,7 +55,6 @@ type EventListener<TCallback extends (...args: any[]) => void> = (
 
 // Main → Renderer event signatures
 export interface IpcEvents {
-  systemColorSchemeChange: EventListener<(colorScheme: ColorScheme) => void>
   systemLocaleChange: EventListener<(locale: Locale) => void>
   menuAbout: EventListener<() => void>
   menuTriggeredRoute: EventListener<(to: string) => void>
@@ -112,7 +110,6 @@ export const registerHandlers = () => {
 
 // Sync handler map
 const syncHandlers = {
-  getColorScheme: () => (shouldUseDarkColors() === true ? "dark" : "light"),
   getLocale: () => locale,
   getVersion: () => app.getVersion(),
   getConfig,
