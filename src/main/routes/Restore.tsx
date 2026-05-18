@@ -219,6 +219,9 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         message: t("routes.restore.scanOrDragAndDropNextBlock"),
       })
       scannerRef.current?.clear()
+      if (scannerRef.current?.isUsingCamera()) {
+        scannerRef.current?.start()
+      }
       return
     }
     let payload: Payload
