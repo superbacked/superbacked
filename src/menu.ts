@@ -5,6 +5,7 @@ import {
   app,
   ipcMain,
   systemPreferences,
+  webContents,
 } from "electron"
 
 import { t } from "i18next"
@@ -62,12 +63,18 @@ export const setMenu = () => {
         {
           visible: runningMacOS,
           label: `${t("menu.superbacked.hide")} ${app.getName()}`,
-          role: "hide",
+          accelerator: "Command+H",
+          click() {
+            app.hide()
+          },
         },
         { type: "separator" },
         {
           label: `${t("menu.superbacked.quit")} ${app.getName()}`,
-          role: "quit",
+          accelerator: runningMacOS ? "Command+Q" : "Ctrl+Q",
+          click() {
+            app.quit()
+          },
         },
       ],
     },
@@ -129,64 +136,46 @@ export const setMenu = () => {
       label: t("menu.edit.edit"),
       submenu: [
         {
-          label: `${t("menu.edit.undo")}`,
+          label: t("menu.edit.undo"),
           accelerator: runningMacOS ? "Command+Z" : "Ctrl+Z",
           click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              focusedWindow.webContents.undo()
-            }
+            webContents.getFocusedWebContents()?.undo()
           },
         },
         {
-          label: `${t("menu.edit.redo")}`,
+          label: t("menu.edit.redo"),
           accelerator: runningMacOS ? "Shift+Command+Z" : "Shift+Ctrl+Z",
           click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              focusedWindow.webContents.redo()
-            }
+            webContents.getFocusedWebContents()?.redo()
           },
         },
         { type: "separator" },
         {
-          label: `${t("menu.edit.cut")}`,
+          label: t("menu.edit.cut"),
           accelerator: runningMacOS ? "Command+X" : "Ctrl+X",
           click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              focusedWindow.webContents.cut()
-            }
+            webContents.getFocusedWebContents()?.cut()
           },
         },
         {
-          label: `${t("menu.edit.copy")}`,
+          label: t("menu.edit.copy"),
           accelerator: runningMacOS ? "Command+C" : "Ctrl+C",
           click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              focusedWindow.webContents.copy()
-            }
+            webContents.getFocusedWebContents()?.copy()
           },
         },
         {
-          label: `${t("menu.edit.paste")}`,
+          label: t("menu.edit.paste"),
           accelerator: runningMacOS ? "Command+V" : "Ctrl+V",
           click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              focusedWindow.webContents.paste()
-            }
+            webContents.getFocusedWebContents()?.paste()
           },
         },
         {
-          label: `${t("menu.edit.selectAll")}`,
+          label: t("menu.edit.selectAll"),
           accelerator: runningMacOS ? "Command+A" : "Ctrl+A",
           click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              focusedWindow.webContents.selectAll()
-            }
+            webContents.getFocusedWebContents()?.selectAll()
           },
         },
       ],
@@ -254,12 +243,21 @@ export const setMenu = () => {
         {
           visible: debuggingModeEnabled,
           label: t("menu.view.reload"),
-          role: "reload",
+          accelerator: runningMacOS ? "Command+R" : "Ctrl+R",
+          click() {
+            webContents.getFocusedWebContents()?.reload()
+          },
         },
         {
           visible: debuggingModeEnabled,
           label: t("menu.view.toggleDeveloperTools"),
-          role: "toggleDevTools",
+          accelerator: runningMacOS ? "Alt+Command+I" : "Ctrl+Shift+I",
+          click() {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.toggleDevTools()
+            }
+          },
         },
       ],
     },
