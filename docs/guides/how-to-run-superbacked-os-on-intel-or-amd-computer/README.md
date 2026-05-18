@@ -7,7 +7,7 @@ Pinned: 1
 
 ## Requirements
 
-- Computer [compatible](https://ubuntu.com/download/desktop) with Ubuntu 24.04.3 LTS
+- Computer compatible with Ubuntu 24.04.4 LTS
 - USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
 - Plug-and-play or built-in webcam (1080p min)
 

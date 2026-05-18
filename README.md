@@ -44,7 +44,7 @@ $ sudo apt install --yes libfuse2 zlib1g-dev
 
 ### Step 3: right-click `.AppImage` file and select “Run as a program”
 
-> Heads-up: Ubuntu Desktop 24.04.3 LTS has AppArmor enabled by default so running `.AppImage` file using terminal with `--no-sandbox` flag might be necessary.
+> Heads-up: Ubuntu Desktop 24.04.4 LTS has AppArmor enabled by default so running `.AppImage` file using terminal with `--no-sandbox` flag might be necessary.
 
 ## Contribution guide (macOS)
 
@@ -82,11 +82,21 @@ $ echo 'export PATH=$PATH:/opt/homebrew/opt/node@22/bin' >> ~/.zshrc && source ~
 
 ### Step 5: install dependencies
 
+> Heads-up: using `--ignore-scripts` is recommended to prevent third-party `postinstall` scripts from executing arbitrary code on host.
+
 ```console
-$ npm install
+$ npm install --ignore-scripts
 ```
 
-### Step 6: run app in development mode
+### Step 6: install Electron binary
+
+> Heads-up: because `--ignore-scripts` was used in Step 5, Electron’s `postinstall` script (which downloads and extracts the platform-specific binary to `node_modules/electron/dist/`) must be run manually. Without this step, `npm run code` fails with `Electron failed to install correctly`. Re-run this step whenever `node_modules/electron` is recreated (for example, after an Electron version bump).
+
+```console
+$ node node_modules/electron/install.js
+```
+
+### Step 7: run app in development mode
 
 ```console
 $ npm run code
@@ -131,11 +141,11 @@ Primary key fingerprint: E786 274B C92B 47C2 3C1C  F44B 8C9C A674 C47C A060
      Subkey fingerprint: 9C78 87E1 B5FC BCE2 DFED  0E1C 02C4 3AD0 72D5 7783
 ```
 
-Good signature from "Sun Knudsen <hello@sunknudsen.com>"
+Good signature from Sun Knudsen
 
 👍
 
-Primary key fingerprint: E786 274B C92B 47C2 3C1C F44B 8C9C A674 C47C A060
+Primary key fingerprint is E786 274B C92B 47C2 3C1C F44B 8C9C A674 C47C A060
 
 👍
 
