@@ -323,7 +323,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                 width: "10px",
               },
               "::-webkit-scrollbar-track": {
-                backgroundColor: theme.colors.dark[5],
+                backgroundColor: theme.colors.dark[6],
                 borderTopRightRadius: "3px",
                 borderBottomRightRadius: "3px",
               },
@@ -367,12 +367,12 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                   width: "10px",
                 },
                 "::-webkit-scrollbar-track": {
-                  backgroundColor: theme.colors.dark[5],
+                  backgroundColor: theme.colors.dark[6],
                   borderTopRightRadius: "3px",
                   borderBottomRightRadius: "3px",
                 },
                 "::-webkit-scrollbar-thumb": {
-                  backgroundColor: theme.colors.dark[7],
+                  backgroundColor: theme.colors.dark[5],
                   borderRadius: "5px",
                 },
               },
