@@ -24,7 +24,6 @@ export interface Api {
 
 const api: Api = {
   events: {
-    systemColorSchemeChange: createEventListener("systemColorSchemeChange"),
     systemLocaleChange: createEventListener("systemLocaleChange"),
     menuAbout: createEventListener("menuAbout"),
     menuTriggeredRoute: createEventListener("menuTriggeredRoute"),
@@ -58,7 +57,6 @@ const api: Api = {
     restoreStandaloneArchive: invoke("restoreStandaloneArchive"),
   } satisfies IpcHandlers,
   invokeSync: {
-    getColorScheme: invokeSync("getColorScheme"),
     getLocale: invokeSync("getLocale"),
     getVersion: invokeSync("getVersion"),
     getConfig: invokeSync("getConfig"),

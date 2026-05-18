@@ -10,7 +10,6 @@ import {
   Textarea,
   TextareaProps,
   rgba,
-  useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
 import {
@@ -64,7 +63,6 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
 ) => {
   const { t } = useTranslation()
   const theme = useMantineTheme()
-  const { colorScheme } = useMantineColorScheme()
   const textRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const prevousSelectionRef = useRef<SelectionWithElement>(null)
@@ -202,8 +200,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                     width: "60px",
                   },
                   inner: {
-                    color:
-                      colorScheme === "dark" ? theme.colors.dark[0] : "#000",
+                    color: theme.colors.dark[0],
                   },
                 }}
               >
@@ -264,7 +261,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
       withArrow
     >
       <Popover.Dropdown>
-        <Text c="dimmed" fw="bold" size="sm" ta="center">
+        <Text fw="bold" size="sm" ta="center" variant="signatureGradient">
           {t("components.secretTextareaWithLength.secretLength")}
         </Text>
         <Space h="lg" />
@@ -309,11 +306,8 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
               right: 0,
               bottom: otherProps.error ? undefined : 0,
               left: 0,
-              backgroundColor:
-                colorScheme === "dark" ? theme.colors.dark[6] : "#ffffff",
-              border: `solid 1px ${
-                colorScheme === "dark" ? theme.colors.dark[6] : "#ffffff"
-              }`,
+              backgroundColor: theme.colors.dark[7],
+              border: `solid 1px ${theme.colors.dark[7]}`,
               borderRadius: "4px",
               color: "transparent",
               fontSize: "14px",
@@ -329,10 +323,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                 width: "10px",
               },
               "::-webkit-scrollbar-track": {
-                backgroundColor:
-                  colorScheme === "dark"
-                    ? theme.colors.dark[5]
-                    : theme.colors.pink[0],
+                backgroundColor: theme.colors.dark[5],
                 borderTopRightRadius: "3px",
                 borderBottomRightRadius: "3px",
               },
@@ -376,18 +367,12 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                   width: "10px",
                 },
                 "::-webkit-scrollbar-track": {
-                  backgroundColor:
-                    colorScheme === "dark"
-                      ? theme.colors.dark[5]
-                      : theme.colors.gray[0],
+                  backgroundColor: theme.colors.dark[5],
                   borderTopRightRadius: "3px",
                   borderBottomRightRadius: "3px",
                 },
                 "::-webkit-scrollbar-thumb": {
-                  backgroundColor:
-                    colorScheme === "dark"
-                      ? theme.colors.dark[7]
-                      : theme.colors.gray[2],
+                  backgroundColor: theme.colors.dark[7],
                   borderRadius: "5px",
                 },
               },

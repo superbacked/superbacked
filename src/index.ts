@@ -1,11 +1,4 @@
-import {
-  BrowserWindow,
-  WebFrameMain,
-  app,
-  ipcMain,
-  nativeTheme,
-  session,
-} from "electron"
+import { BrowserWindow, WebFrameMain, app, ipcMain, session } from "electron"
 import { URL } from "url"
 
 import { Argument as CommanderArgument, program as cli } from "commander"
@@ -33,7 +26,7 @@ cli.helpOption("-h, --help", "display help")
 
 cli
   .command("config")
-  .addArgument(new CommanderArgument("<key>", "key").choices(["colorScheme"]))
+  .addArgument(new CommanderArgument("<key>", "key").choices([]))
   .argument("<value>", "value")
   .action((key, value) => {
     try {
@@ -83,13 +76,6 @@ export const setLocale = async (updatedLocale: Locale) => {
   }
 }
 
-export const shouldUseDarkColors = () => {
-  const colorScheme = getConfig("colorScheme")
-  return (
-    (colorScheme && colorScheme === "dark") ?? nativeTheme.shouldUseDarkColors
-  )
-}
-
 let mainWindowId: null | number = null
 
 export const createWindow = async (): Promise<BrowserWindow> => {
@@ -98,7 +84,7 @@ export const createWindow = async (): Promise<BrowserWindow> => {
     const windowWidth = 800
     const windowHeight = 600
     const mainWindow = new BrowserWindow({
-      backgroundColor: shouldUseDarkColors() === true ? "#1c1b24" : "#ffffff",
+      backgroundColor: "#0f0e19",
       width: savedBounds?.width ?? windowWidth,
       height: savedBounds?.height ?? windowHeight,
       x: savedBounds?.x,
@@ -213,17 +199,6 @@ cli
 
     ipcMain.on("newWindow", async () => {
       await createWindow()
-    })
-
-    nativeTheme.on("updated", () => {
-      if (!getConfig("colorScheme")) {
-        const colorScheme =
-          nativeTheme.shouldUseDarkColors === true ? "dark" : "light"
-        const windows = BrowserWindow.getAllWindows()
-        for (const window of windows) {
-          sendEvent(window, "systemColorSchemeChange", colorScheme)
-        }
-      }
     })
 
     registerSyncHandlers()

@@ -8,7 +8,6 @@ import {
   Space,
   Text,
   rgba,
-  useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core"
 import { FileWithPath } from "@mantine/dropzone"
@@ -63,7 +62,6 @@ interface SmartPopoverProps {
 
 const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
   const theme = useMantineTheme()
-  const { colorScheme } = useMantineColorScheme()
   const [opened, { close, open }] = useDisclosure(false)
   return (
     <Popover opened={opened} position="bottom" width={props.width} withArrow>
@@ -73,7 +71,7 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
           onMouseLeave={close}
           sx={{
             backgroundColor: rgba(theme.colors.pink[8], 0.35),
-            color: colorScheme === "dark" ? theme.colors.dark[0] : "#000",
+            color: theme.colors.dark[0],
             cursor: "default",
             overflowWrap: "anywhere",
             whiteSpace: "pre-wrap",

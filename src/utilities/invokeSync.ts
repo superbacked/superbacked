@@ -23,8 +23,8 @@ type InvokeSyncParams<Channel extends InvokeSyncChannel> =
  * Returns a handler function that can be called with the appropriate arguments.
  *
  * @example
- * const getColorScheme = invokeSync("getColorScheme")
- * const colorScheme = getColorScheme()
+ * const getLocale = invokeSync("getLocale")
+ * const locale = getLocale()
  *
  * @example
  * const generateMnemonic = invokeSync("generateMnemonic")

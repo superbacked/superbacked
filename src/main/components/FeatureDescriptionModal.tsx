@@ -38,11 +38,6 @@ const InfoButton: FunctionComponent<InfoButtonProps> = (props) => {
         onClose={() => setOpened(false)}
         opened={opened}
         title={t("components.featureDescriptionModal.learnMore")}
-        styles={{
-          title: {
-            fontWeight: "bold",
-          },
-        }}
       >
         <Text size="sm">{children}</Text>
       </Modal>

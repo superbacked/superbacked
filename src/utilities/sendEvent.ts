@@ -26,10 +26,7 @@ type EventParameters<EventName extends EventNames> =
  * sendEvent(window, "menuTriggeredRoute", "/restore")
  *
  * @example
- * sendEvent(window, "systemColorSchemeChange", "dark")
- *
- * @example
- * sendEvent(window, "systemLocaleChange", "en")
+ * sendEvent(window, "windowEnteredFullScreen")
  */
 export function sendEvent<EventName extends EventNames>(
   window: BrowserWindow,
