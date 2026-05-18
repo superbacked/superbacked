@@ -6,6 +6,8 @@ import { defineConfig, globalIgnores } from "eslint/config"
 import prettier from "eslint-config-prettier/flat"
 import globals from "globals"
 
+import { configs as typographyConfigs } from "./eslint/typography"
+
 const compat = new FlatCompat({
   baseDirectory: __dirname,
   recommendedConfig: js.configs.recommended,
@@ -161,6 +163,9 @@ const eslintConfig = defineConfig([
       "react/react-in-jsx-scope": "off",
     },
   },
+  ...typographyConfigs.markdown,
+  ...typographyConfigs.json(["**/locales/**/*.json"]),
+  ...typographyConfigs.jsx,
   prettier,
   globalIgnores([".webpack/**", "dist/**", "node_modules/**"]),
 ])
