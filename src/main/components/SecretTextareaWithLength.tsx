@@ -360,7 +360,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                 width: "100%",
               },
               input: {
-                backgroundColor: "transparent",
+                backgroundColor: "transparent !important",
                 overflowX: "hidden",
                 overflowY: "scroll",
                 "::-webkit-scrollbar": {
