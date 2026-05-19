@@ -103,6 +103,6 @@ If using Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive or equivalent
 
 > Heads-up: password is “superbacked”.
 
-Boot Superbacked OS using “Advanced options for Ubuntu” and “Ubuntu, with Linux 6.14.0-37-generic” (required when using write-protected hardware).
+Boot Superbacked OS using “Advanced options for Ubuntu” and “Ubuntu, with Linux 6.17.0-29-generic” (required when using write-protected hardware).
 
 If scanning blocks does not work, please try using a higher quality 1080p webcam such as the [Razer Kiyo X](https://www.razer.com/streaming-cameras/razer-kiyo-x).
