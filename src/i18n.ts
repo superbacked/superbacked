@@ -44,5 +44,4 @@ await i18nextUse(initReactI18next).init({
     escapeValue: false,
   },
   resources,
-  showSupportNotice: false,
 })

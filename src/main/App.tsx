@@ -1,8 +1,8 @@
 import { Global, css } from "@emotion/react"
-import { MantineProvider, darken } from "@mantine/core"
+import { MantineProvider, MantineTheme, darken } from "@mantine/core"
 import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
 import { Notifications, notifications } from "@mantine/notifications"
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useEffect } from "react"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 
 import { emotionCache } from "@/emotion-cache"
@@ -18,7 +18,6 @@ import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
 import Duplicate from "@/src/main/routes/Duplicate"
 import Restore from "@/src/main/routes/Restore"
-import { ColorScheme } from "@/src/utilities/config"
 
 import "@fontsource/roboto-mono/latin-400.css"
 import "@fontsource/roboto-mono/latin-700.css"
@@ -35,16 +34,6 @@ declare global {
 }
 
 const App = () => {
-  const [colorScheme, setColorScheme] = useState<ColorScheme>(
-    window.api.invokeSync.getColorScheme()
-  )
-  useEffect(() => {
-    const removeListener =
-      window.api.events.systemColorSchemeChange(setColorScheme)
-    return () => {
-      removeListener()
-    }
-  }, [])
   useEffect(() => {
     const removeListener = window.api.events.systemLocaleChange((locale) => {
       notifications.clean()
@@ -57,21 +46,31 @@ const App = () => {
   return (
     <MantineEmotionProvider cache={emotionCache}>
       <MantineProvider
-        forceColorScheme={colorScheme}
+        forceColorScheme="dark"
         stylesTransform={emotionTransform}
+        cssVariablesResolver={(theme) => ({
+          variables: {
+            "--sb-border": "rgba(255,255,255,0.07)",
+          },
+          dark: {
+            "--mantine-color-body": theme.colors.dark[9],
+            "--mantine-color-dark-filled-hover": theme.colors.dark[8],
+          },
+          light: {},
+        })}
         theme={{
           colors: {
             dark: [
-              "#d5d7e0",
-              "#acaebf",
-              "#8c8fa3",
-              "#666980",
-              "#4d4f66",
-              "#34354a",
-              "#2b2c3d",
-              "#1c1b24",
-              "#1c1b24",
-              "#1c1b24",
+              "#d8d7e0",
+              "#b3b1c4",
+              "#8d8aa8",
+              "#6b678e",
+              "#4d4969",
+              "#343149",
+              "#2a283e",
+              "#1a1829",
+              "#151321",
+              "#0f0e19",
             ],
             pink: [
               "#fafafa",
@@ -88,14 +87,14 @@ const App = () => {
           },
           components: {
             Button: {
-              styles: {
+              styles: (theme: MantineTheme) => ({
                 root: {
                   "&[data-variant='signatureGradient']": {
                     background:
                       "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
-                    color: "#ffffff",
+                    color: theme.colors.dark[9],
                     "&:disabled": {
-                      color: darken("#ffffff", 0.25),
+                      color: darken(theme.colors.dark[9], 0.25),
                       backgroundImage: `linear-gradient(45deg, ${darken(
                         "#fdc0ee",
                         0.25
@@ -117,12 +116,28 @@ const App = () => {
                     },
                   },
                 },
+              }),
+            },
+            Input: {
+              styles: {
+                input: {
+                  backgroundColor: "var(--mantine-color-dark-7)",
+                  borderColor: "var(--sb-border)",
+                },
               },
             },
             Modal: {
+              defaultProps: {
+                padding: "lg",
+              },
               styles: {
                 title: {
                   fontWeight: "bold",
+                  backgroundImage:
+                    "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
                 },
                 overlay: {
                   backdropFilter: "blur(4px)",
@@ -149,6 +164,14 @@ const App = () => {
                 },
               },
             },
+            Textarea: {
+              styles: {
+                input: {
+                  backgroundColor: "var(--mantine-color-dark-7)",
+                  borderColor: "var(--sb-border)",
+                },
+              },
+            },
           },
           fontFamily: "'Roboto Mono', monospace",
           fontFamilyMonospace: "'Roboto Mono', monospace",
@@ -160,6 +183,10 @@ const App = () => {
       >
         <Global
           styles={css`
+            html,
+            body {
+              background-color: var(--mantine-color-body);
+            }
             body {
               user-select: none;
             }

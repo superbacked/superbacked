@@ -1,7 +1,7 @@
 #! /bin/bash
 # Used to build and package Superbacked
 
-set -e
+set -o errexit
 set -o pipefail
 
 bold=$(tput bold)
@@ -30,7 +30,7 @@ EOF
 }
 
 while [[ $# -gt 0 ]]; do
-  case "$1" in
+  case "${1}" in
     -h|--help)
       show_help
       ;;
@@ -56,7 +56,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     *)
-      echo "Error: Unknown option: $1" >&2
+      echo "Error: Unknown option: ${1}" >&2
       exit 1
       ;;
   esac
@@ -205,7 +205,7 @@ if [ "${build_os}" = true ]; then
   printf "%s\n" "Building Superbacked OS (amd64)…"
 
   cp \
-    superbacked-os/superbacked-os-amd64-24.04.3.img \
+    superbacked-os/superbacked-os-amd64-24.04.4.img \
     dist/superbacked-os-amd64-${version}.img
 
   docker run \
@@ -236,7 +236,7 @@ if [ "${build_os}" = true ]; then
   printf "%s\n" "Building Superbacked OS (arm64-raspi)…"
 
   cp \
-    superbacked-os/superbacked-os-arm64-raspi-24.04.3.img \
+    superbacked-os/superbacked-os-arm64-raspi-24.04.4.img \
     dist/superbacked-os-arm64-raspi-${version}.img
 
   docker run \

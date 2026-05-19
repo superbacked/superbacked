@@ -265,6 +265,78 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     },
     []
   )
+  const updateSecretsState = useCallback(
+    (
+      values: FormValues,
+      fileUpdates?: Partial<Record<SecretNumber, FileWithAbsolutePath[]>>
+    ) => {
+      setSecrets((prevSecrets) => {
+        const newSecrets: SecretsState = { ...prevSecrets }
+
+        for (const secretNumber of secretNumbers) {
+          const currentSecret = prevSecrets[secretNumber]
+          const formSecret = values[`secret${secretNumber}`]
+          const files =
+            fileUpdates?.[secretNumber] ??
+            currentSecret.detachedArchive?.files ??
+            []
+
+          // Generate or clear detached archive based on files
+          let detachedArchive: SecretState["detachedArchive"] = null
+
+          if (files.length > 0) {
+            // Generate master key if needed
+            const masterKey =
+              currentSecret.detachedArchive?.masterKey ??
+              window.api.invokeSync.generateMasterKey()
+
+            // Derive encryption key, HMAC key and filename from master key
+            const encryptionKey = window.api.invokeSync.deriveKey(
+              masterKey,
+              "encryption-key-v1"
+            )
+            const hmacKey = window.api.invokeSync.deriveKey(
+              masterKey,
+              "hmac-v1"
+            )
+            const filename = window.api.invokeSync.deriveKey(
+              masterKey,
+              "filename-v1",
+              16,
+              "hex"
+            )
+
+            // Build block content with secret and master key
+            const blockContent = JSON.stringify(
+              {
+                secret: formSecret,
+                masterKey: masterKey,
+              },
+              null,
+              2
+            )
+
+            detachedArchive = {
+              files,
+              masterKey,
+              encryptionKey,
+              hmacKey,
+              filename,
+              blockContent,
+            }
+          }
+
+          newSecrets[secretNumber] = {
+            secret: formSecret,
+            detachedArchive,
+          }
+        }
+
+        return newSecrets
+      })
+    },
+    []
+  )
   const form = useForm<FormValues>({
     initialValues: {
       secret1: "",
@@ -275,6 +347,15 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       passphrase3: "",
       backupType: "",
       label: "",
+    },
+    onValuesChange: (values, previous) => {
+      if (
+        values.secret1 !== previous.secret1 ||
+        values.secret2 !== previous.secret2 ||
+        values.secret3 !== previous.secret3
+      ) {
+        updateSecretsState(values)
+      }
     },
     validate: {
       secret1: (value, values) => {
@@ -375,79 +456,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       },
     },
   })
-  const updateSecretsState = useCallback(
-    (fileUpdates?: Partial<Record<SecretNumber, FileWithAbsolutePath[]>>) => {
-      setSecrets((prevSecrets) => {
-        const newSecrets: SecretsState = { ...prevSecrets }
-
-        for (const secretNumber of secretNumbers) {
-          const currentSecret = prevSecrets[secretNumber]
-          const formSecret = form.values[`secret${secretNumber}`]
-          const files =
-            fileUpdates?.[secretNumber] ??
-            currentSecret.detachedArchive?.files ??
-            []
-
-          // Generate or clear detached archive based on files
-          let detachedArchive: SecretState["detachedArchive"] = null
-
-          if (files.length > 0) {
-            // Generate master key if needed
-            const masterKey =
-              currentSecret.detachedArchive?.masterKey ??
-              window.api.invokeSync.generateMasterKey()
-
-            // Derive encryption key, HMAC key and filename from master key
-            const encryptionKey = window.api.invokeSync.deriveKey(
-              masterKey,
-              "encryption-key-v1"
-            )
-            const hmacKey = window.api.invokeSync.deriveKey(
-              masterKey,
-              "hmac-v1"
-            )
-            const filename = window.api.invokeSync.deriveKey(
-              masterKey,
-              "filename-v1",
-              16,
-              "hex"
-            )
-
-            // Build block content with secret and master key
-            const blockContent = JSON.stringify(
-              {
-                secret: formSecret,
-                masterKey: masterKey,
-              },
-              null,
-              2
-            )
-
-            detachedArchive = {
-              files,
-              masterKey,
-              encryptionKey,
-              hmacKey,
-              filename,
-              blockContent,
-            }
-          }
-
-          newSecrets[secretNumber] = {
-            secret: formSecret,
-            detachedArchive,
-          }
-        }
-
-        return newSecrets
-      })
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [form.values.secret1, form.values.secret2, form.values.secret3]
-  )
   const resetForm = useCallback(() => {
     form.reset()
-    updateSecretsState({ 1: [], 2: [], 3: [] })
+    updateSecretsState(form.values, { 1: [], 2: [], 3: [] })
   }, [form, updateSecretsState])
   const handleCreate = useCallback(
     async (skipDisclaimerCheck = false) => {
@@ -628,9 +639,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       void window.api.invoke.disableModes(["insert"])
     }
   }, [])
-  useEffect(() => {
-    updateSecretsState()
-  }, [updateSecretsState])
   if (
     ["backupType", "secret1", "secret2", "secret3", "preview"].includes(
       step
@@ -646,7 +654,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             ref={fileManagerRef}
             mode="standalone"
             handleFiles={(handledFiles) => {
-              updateSecretsState({ 1: handledFiles })
+              updateSecretsState(form.values, { 1: handledFiles })
               if (handledFiles.length === 0) {
                 handlePopoverChange(false)
               }
@@ -993,7 +1001,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                 [`secret${secretNumber}`]: "",
                 [`passphrase${secretNumber}`]: "",
               })
-              updateSecretsState({ [secretNumber]: [] })
+              updateSecretsState(form.values, { [secretNumber]: [] })
               setStep(`secret${secretNumber - 1}` as Step)
             }}
           >
@@ -1033,7 +1041,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             ref={fileManagerRef}
             mode="detached"
             handleFiles={(handledFiles) => {
-              updateSecretsState({ [secretNumber]: handledFiles })
+              updateSecretsState(form.values, { [secretNumber]: handledFiles })
               if (handledFiles.length === 0) {
                 handlePopoverChange(false)
               }

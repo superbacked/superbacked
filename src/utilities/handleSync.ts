@@ -21,8 +21,8 @@ type SyncHandlerParams<Channel extends HandleSyncChannel> =
  * Wraps ipcMain.on with type inference and security validation for synchronous (sendSync) calls.
  *
  * @example
- * handleSync("getColorScheme", () => {
- *   return shouldUseDarkColors() === true ? "dark" : "light"
+ * handleSync("getLocale", () => {
+ *   return locale
  * })
  *
  * @example
