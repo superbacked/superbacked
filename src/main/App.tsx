@@ -123,6 +123,7 @@ const App = () => {
                 input: {
                   backgroundColor: "var(--mantine-color-dark-7)",
                   borderColor: "var(--sb-border)",
+                  fontSize: "var(--input-fz, var(--mantine-font-size-sm))",
                 },
               },
             },

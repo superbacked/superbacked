@@ -116,7 +116,7 @@ export const setMenu = () => {
           label: `${t("menu.file.newWindow")}`,
           accelerator: runningMacOS ? "Command+N" : "Ctrl+N",
           click() {
-            ipcMain.emit("app:newWindow")
+            ipcMain.emit("newWindow")
           },
         },
         { type: "separator" },
