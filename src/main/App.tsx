@@ -1,5 +1,5 @@
 import { Global, css } from "@emotion/react"
-import { MantineProvider, darken } from "@mantine/core"
+import { MantineProvider, MantineTheme, darken } from "@mantine/core"
 import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
 import { Notifications, notifications } from "@mantine/notifications"
 import { Fragment, useEffect } from "react"
@@ -61,15 +61,15 @@ const App = () => {
         theme={{
           colors: {
             dark: [
-              "#dad8e3",
-              "#b8b4c6",
-              "#9692a9",
-              "#75708d",
-              "#564f6e",
-              "#3d3852",
-              "#2a253c",
+              "#d8d7e0",
+              "#b3b1c4",
+              "#8d8aa8",
+              "#6b678e",
+              "#4d4969",
+              "#343149",
+              "#2a283e",
               "#1a1829",
-              "#161523",
+              "#151321",
               "#0f0e19",
             ],
             pink: [
@@ -87,14 +87,14 @@ const App = () => {
           },
           components: {
             Button: {
-              styles: {
+              styles: (theme: MantineTheme) => ({
                 root: {
                   "&[data-variant='signatureGradient']": {
                     background:
                       "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
-                    color: "#0f0e19",
+                    color: theme.colors.dark[9],
                     "&:disabled": {
-                      color: darken("#0f0e19", 0.25),
+                      color: darken(theme.colors.dark[9], 0.25),
                       backgroundImage: `linear-gradient(45deg, ${darken(
                         "#fdc0ee",
                         0.25
@@ -116,7 +116,7 @@ const App = () => {
                     },
                   },
                 },
-              },
+              }),
             },
             Input: {
               styles: {
@@ -128,7 +128,7 @@ const App = () => {
             },
             Modal: {
               defaultProps: {
-                padding: "xl",
+                padding: "lg",
               },
               styles: {
                 title: {
@@ -183,22 +183,15 @@ const App = () => {
       >
         <Global
           styles={css`
+            html,
             body {
               background-color: var(--mantine-color-body);
-              user-select: none;
             }
-            /* The background-color-fix div fixes a background color inconsistency */
-            #background-color-fix {
-              position: fixed;
-              inset: 0;
-              z-index: -1;
-              pointer-events: none;
-              background-color: var(--mantine-color-body);
-              transform: translateZ(0);
+            body {
+              user-select: none;
             }
           `}
         />
-        <div id="background-color-fix" />
         <TitleBar />
         <MemoryRouter>
           <MenuEvents>
