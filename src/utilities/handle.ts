@@ -2,6 +2,7 @@ import { IpcMainInvokeEvent, ipcMain } from "electron"
 
 import { validateSender } from "@/src/index"
 import { IpcHandlers } from "@/src/registerHandlers"
+import { runWithHandleContext } from "@/src/utilities/handleContext"
 
 // Extract channel names from IpcHandlers
 type HandleChannel = keyof IpcHandlers
@@ -41,7 +42,9 @@ export function handle<Channel extends HandleChannel>(
       if (event.senderFrame && validateSender(event.senderFrame) !== true) {
         throw new Error("Wrong sender")
       }
-      return handler(event, ...(args as HandlerParams<Channel>))
+      return runWithHandleContext({ event }, async () =>
+        handler(event, ...(args as HandlerParams<Channel>))
+      )
     }
   )
 }

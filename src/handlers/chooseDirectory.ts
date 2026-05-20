@@ -1,15 +1,16 @@
 import { dialog } from "electron"
 
 import { getMainWindow } from "@/src/index"
+import { getSenderWindow } from "@/src/utilities/handleContext"
 
 export type ChooseDirectoryResult =
   | { canceled: true; filePath: null }
   | { canceled: false; filePath: string }
 
 export default async (message: string): Promise<ChooseDirectoryResult> => {
-  const window = getMainWindow()
+  const window = getSenderWindow() ?? getMainWindow()
   if (!window) {
-    throw new Error("Could not get main window")
+    throw new Error("Could not get sender window")
   }
   const openDialogReturnValue = await dialog.showOpenDialog(window, {
     message: message,

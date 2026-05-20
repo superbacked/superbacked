@@ -1,4 +1,5 @@
 import { getMainWindow } from "@/src/index"
+import { getSenderWindow } from "@/src/utilities/handleContext"
 import spawn from "@/src/utilities/spawn"
 
 export interface Printer {
@@ -10,9 +11,9 @@ export interface Printer {
 export type PrinterStatus = "printing" | "standby"
 
 export const getPrinters = async (): Promise<Printer[]> => {
-  const window = getMainWindow()
+  const window = getSenderWindow() ?? getMainWindow()
   if (!window) {
-    throw new Error("Could not get main window")
+    throw new Error("Could not get sender window")
   }
   const printers = await window.webContents.getPrintersAsync()
 
