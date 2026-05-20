@@ -303,6 +303,11 @@ const App = () => {
                 description: {
                   color: "var(--mantine-color-text)",
                 },
+                closeButton: {
+                  "&:hover": {
+                    backgroundColor: "var(--mantine-color-dark-7)",
+                  },
+                },
               },
             },
             Popover: {
