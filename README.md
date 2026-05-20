@@ -64,7 +64,7 @@ $ npm install --ignore-scripts
 
 ### Step 6: install Electron binary
 
-> Heads-up: because `--ignore-scripts` was used in Step 5, Electron’s `postinstall` script (which downloads and extracts the platform-specific binary to `node_modules/electron/dist/`) must be run manually. Without this step, `npm run code` fails with `Electron failed to install correctly`. Re-run this step whenever `node_modules/electron` is recreated (for example, after an Electron version bump).
+> Heads-up: because `--ignore-scripts` was used in step 5, Electron’s `postinstall` script (which downloads and extracts the platform-specific binary to `node_modules/electron/dist/`) must be run manually. Without this step, `npm run code` fails with `Electron failed to install correctly`. Re-run this step whenever `node_modules/electron` is recreated (for example, after an Electron version bump).
 
 ```console
 $ node node_modules/electron/install.js
