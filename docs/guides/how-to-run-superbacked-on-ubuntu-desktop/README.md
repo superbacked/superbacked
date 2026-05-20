@@ -25,6 +25,6 @@ Download latest release from [superbacked.com/download](https://superbacked.com/
 
 ## Usage guide
 
-> Heads-up: Ubuntu Desktop 24.04+ ships with AppArmor enabled by default which may prevent Superbacked from launching. If Superbacked does not start, run from terminal with `--no-sandbox` flag. This disables Chromium sandbox used by Electron — AppArmor already provides equivalent process isolation at OS level so this does not reduce security.
+> Heads-up: Ubuntu Desktop 23.10+ ships with AppArmor restrictions on unprivileged user namespaces that may prevent Superbacked from launching. The cleanest fix is to use Superbacked OS, which comes pre-configured. On regular Ubuntu Desktop, either install an AppArmor profile granting Superbacked the userns capability (preserves Chromium’s sandbox) or run from terminal with --no-sandbox flag (easiest but weakens renderer isolation).
 
 Right-click `.AppImage` file and select “Run as a program”.
