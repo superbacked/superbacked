@@ -701,7 +701,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             {t(
               "routes.create.dragAndDropFileToCreateOrRestoreStandaloneArchive"
             )}{" "}
-            <InfoButton>
+            <InfoButton tabIndex={-1}>
               {t(
                 "components.featureDescriptionModal.standaloneArchiveDescription"
               )}
@@ -746,9 +746,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             <Fragment>
               <Space h="xs" />
               <Group align="center" gap="xs">
-                <Text c="dimmed" size="xs">
-                  {t("routes.create.detachedArchive")}
-                </Text>
+                <Text size="xs">{t("routes.create.detachedArchive")}</Text>
                 <Popover
                   onOpen={() => {
                     handlePopoverChange(true)
@@ -826,7 +824,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               : t(
                   "routes.create.dragAndDropFileToProvisionDetachedArchive"
                 )}{" "}
-            <InfoButton>
+            <InfoButton tabIndex={-1}>
               {t(
                 "components.featureDescriptionModal.detachedArchiveDescription"
               )}
@@ -863,9 +861,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             <Fragment>
               <Space h="xs" />
               <Group align="center" gap="xs">
-                <Text c="dimmed" size="xs">
-                  {t("routes.create.detachedArchive")}
-                </Text>
+                <Text size="xs">{t("routes.create.detachedArchive")}</Text>
                 <Popover
                   onOpen={() => {
                     handlePopoverChange(true)
@@ -939,7 +935,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               : t(
                   "routes.create.dragAndDropFileToProvisionDetachedArchive"
                 )}{" "}
-            <InfoButton>
+            <InfoButton tabIndex={-1}>
               {t(
                 "components.featureDescriptionModal.detachedArchiveDescription"
               )}

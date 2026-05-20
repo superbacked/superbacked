@@ -97,7 +97,6 @@ export const PassphraseInputWithStrength: FunctionComponent<
           }}
           rightSection={
             <ActionIcon
-              color="pink"
               disabled={otherProps.disabled}
               onMouseDown={(event) => {
                 event.preventDefault()

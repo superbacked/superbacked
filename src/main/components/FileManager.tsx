@@ -326,6 +326,11 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
                         disabled={selectedFiles.length === 0}
                         onClick={togglePopover}
                         size="xs"
+                        styles={{
+                          label: {
+                            color: "var(--mantine-color-gradient-0)",
+                          },
+                        }}
                         variant="filled"
                       >
                         {t("components.fileManager.showFiles", {

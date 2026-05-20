@@ -1,10 +1,4 @@
-import {
-  ActionIcon,
-  MantineSize,
-  Modal,
-  Text,
-  useMantineTheme,
-} from "@mantine/core"
+import { ActionIcon, MantineSize, Modal, Text } from "@mantine/core"
 import { IconInfoCircle } from "@tabler/icons-react"
 import { Fragment, FunctionComponent, ReactNode, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -12,13 +6,13 @@ import { useTranslation } from "react-i18next"
 type InfoButtonProps = {
   children: ReactNode
   size?: MantineSize
+  tabIndex?: number
 }
 
 const InfoButton: FunctionComponent<InfoButtonProps> = (props) => {
-  const { children, size = "xs" } = props
+  const { children, size = "xs", tabIndex } = props
 
   const { t } = useTranslation()
-  const theme = useMantineTheme()
   const [opened, setOpened] = useState(false)
 
   return (
@@ -29,9 +23,10 @@ const InfoButton: FunctionComponent<InfoButtonProps> = (props) => {
         radius="xl"
         size={size}
         sx={{ verticalAlign: "middle" }}
+        tabIndex={tabIndex}
         variant="subtle"
       >
-        <IconInfoCircle color={theme.colors.pink[6]} />
+        <IconInfoCircle />
       </ActionIcon>
       <Modal
         centered

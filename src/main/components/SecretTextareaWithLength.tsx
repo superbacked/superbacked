@@ -199,8 +199,8 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                     transition: "background-color 0.15s",
                     width: "60px",
                   },
-                  inner: {
-                    color: theme.colors.dark[0],
+                  label: {
+                    color: theme.colors.dark[9],
                   },
                 }}
               >
@@ -302,21 +302,21 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
             ref={textRef}
             sx={{
               position: "absolute",
-              top: "25px",
+              top: "33px",
               right: 0,
               bottom: otherProps.error ? undefined : 0,
               left: 0,
               backgroundColor: theme.colors.dark[7],
-              border: `solid 1px ${theme.colors.dark[7]}`,
+              border: `solid 2px ${theme.colors.dark[7]}`,
               borderRadius: "4px",
               color: "transparent",
               fontSize: "14px",
               overflowX: "hidden",
               overflowY: "scroll",
-              paddingTop: "5.5px",
-              paddingRight: "12px",
-              paddingBottom: "5.5px",
-              paddingLeft: "12px",
+              paddingTop: "8px",
+              paddingRight: "8px",
+              paddingBottom: "8px",
+              paddingLeft: "8px",
               whiteSpace: "pre-wrap",
               overflowWrap: "anywhere",
               "::-webkit-scrollbar": {
@@ -372,7 +372,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                   borderBottomRightRadius: "3px",
                 },
                 "::-webkit-scrollbar-thumb": {
-                  backgroundColor: theme.colors.dark[5],
+                  backgroundColor: theme.colors.dark[4],
                   borderRadius: "5px",
                 },
               },

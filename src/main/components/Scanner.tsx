@@ -114,6 +114,7 @@ const GuideContainer = styled.div`
 const Guide = styled.div`
   height: 75%;
   aspect-ratio: 1;
+  border-radius: 4px;
   box-shadow: 0 0 0 100vh rgba(0, 0, 0, 0.25);
 `
 
@@ -643,10 +644,17 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         </Container>
         <TopRightContainer>
           <ActionIcon
-            color="dark"
             radius="xl"
             size="sm"
-            variant="filled"
+            styles={{
+              root: {
+                backgroundColor: "var(--mantine-color-dark-filled)",
+                "&:hover, &:active, &[data-active]": {
+                  backgroundColor: "var(--mantine-color-dark-filled)",
+                },
+              },
+            }}
+            variant="transparent"
             onClick={() => {
               setShowSourceSettings(false)
               start()
@@ -720,10 +728,17 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         ) : null}
         <TopRightContainer>
           <ActionIcon
-            color="dark"
             radius="xl"
             size="sm"
-            variant="filled"
+            styles={{
+              root: {
+                backgroundColor: "var(--mantine-color-dark-filled)",
+                "&:hover, &:active, &[data-active]": {
+                  backgroundColor: "var(--mantine-color-dark-filled)",
+                },
+              },
+            }}
+            variant="transparent"
             onClick={() => {
               setShowSourceSettings(true)
               stop()

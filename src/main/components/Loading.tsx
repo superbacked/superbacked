@@ -19,7 +19,7 @@ const Loading: FunctionComponent<LoadingProps> = (props) => {
         loaderProps={{ size: "sm" }}
         overlayProps={{
           blur: 4,
-          color: "#000000",
+          color: "var(--mantine-color-dark-9)",
         }}
         visible={props.visible}
         zIndex={500}
@@ -35,7 +35,7 @@ const Loading: FunctionComponent<LoadingProps> = (props) => {
             },
           }}
         >
-          <Text c="pink" fw="bold" size="xs">
+          <Text c="gradient.0" fw="bold" size="xs">
             {t(props.dialog, { count: props.count })}…
           </Text>
         </Center>

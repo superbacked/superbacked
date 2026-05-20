@@ -26,7 +26,7 @@ export const Dropzone: FunctionComponent<DropzoneProps> = (props) => {
           padding: 0,
         },
         root: {
-          backgroundImage: "linear-gradient(45deg, #fdc0ee 0%, #fbd6cd 100%)",
+          backgroundImage: "var(--sb-gradient)",
           border: "none",
         },
       }}

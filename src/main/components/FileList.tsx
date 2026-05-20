@@ -16,7 +16,6 @@ const FileList: FunctionComponent<FileListProps> = (props) => {
         .map((file) => (
           <Tooltip
             key={file.absolutePath}
-            color="dark"
             fz="xs"
             label={file.absolutePath}
             style={{

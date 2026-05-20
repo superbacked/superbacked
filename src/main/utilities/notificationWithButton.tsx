@@ -17,9 +17,13 @@ export const showNotificationWithButton = ({
       <Group gap="xs" justify="space-between">
         {notificationData.message}
         <Button
-          color="gray"
           onClick={buttonOnClick}
           size="compact-sm"
+          styles={{
+            label: {
+              color: "var(--mantine-color-gradient-0)",
+            },
+          }}
           variant="transparent"
         >
           {buttonLabel}

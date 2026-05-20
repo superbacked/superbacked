@@ -71,7 +71,7 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
           onMouseLeave={close}
           sx={{
             backgroundColor: rgba(theme.colors.pink[8], 0.35),
-            color: theme.colors.dark[0],
+            color: "var(--mantine-color-gradient-0)",
             cursor: "default",
             overflowWrap: "anywhere",
             whiteSpace: "pre-wrap",
@@ -105,7 +105,7 @@ const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
     nodes.push(
       <Fragment key={`dropdown-node-${nodes.length}`}>
         <Text sx={{ display: "inline-block" }}>
-          <Text c="dimmed" span>
+          <Text c="dark.4" span>
             {index + 1}.{" "}
           </Text>
           {word}
@@ -150,7 +150,7 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
       {token}{" "}
       <RingProgress
         sections={[
-          { value: timeRemaining, color: "dimmed" },
+          { value: timeRemaining, color: "dark.4" },
           { value: 100 - timeRemaining, color: "pink" },
         ]}
         size={18}
