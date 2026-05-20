@@ -6,6 +6,8 @@
   "main": ".webpack/main/index.js",
   "scripts": {
     "code": "tsx scripts/code.ts",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier '**/*.{json,md,ts,tsx}' --ignore-path .gitignore --write",
     "lint": "eslint",
     "bundle": "npx tsx node_modules/webpack-cli/bin/cli.js --config webpack.main.production.config.ts --config webpack.preload.production.config.ts --config webpack.renderer.production.config.ts",
     "build:darwin:arm64": "electron-builder --config ./builder.config.ts --mac --arm64",
