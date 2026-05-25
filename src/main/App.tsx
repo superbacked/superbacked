@@ -376,6 +376,18 @@ const App = () => {
                 },
               },
             },
+            Title: {
+              styles: {
+                root: {
+                  "&[data-variant='signatureGradient']": {
+                    backgroundImage: "var(--sb-gradient)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  },
+                },
+              },
+            },
             Textarea: Textarea.extend({
               vars: (_theme, props) => {
                 const size = props.size ?? "sm"

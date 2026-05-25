@@ -29,16 +29,19 @@ const About: FunctionComponent = () => {
         <SuperbackedIcon style={{ width: "25%" }} />
       </Center>
       <Space h="lg" />
-      <Title ta="center">Superbacked</Title>
-      <Text c="dimmed" ta="center">
-        {t("components.about.version")}: {window.api.invokeSync.getVersion()}
-      </Text>
+      <Title ta="center" variant="signatureGradient">
+        Superbacked
+      </Title>
       <Space h="lg" />
       <Text fw="bold" size="sm" ta="center">
         {t("components.about.copyright")} (c) Superbacked, Inc.
       </Text>
       <Text fw="bold" size="sm" ta="center">
         {t("components.about.allRightsReserved")}
+      </Text>
+      <Space h="lg" />
+      <Text c="dark.4" size="sm" ta="center">
+        {t("components.about.version")} {window.api.invokeSync.getVersion()}
       </Text>
       <Space h="xl" />
     </Modal>
