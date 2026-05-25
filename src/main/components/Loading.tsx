@@ -19,7 +19,7 @@ const Loading: FunctionComponent<LoadingProps> = (props) => {
         loaderProps={{ size: "sm" }}
         overlayProps={{
           blur: 4,
-          color: "var(--mantine-color-dark-9)",
+          color: "dark.9",
         }}
         visible={props.visible}
         zIndex={500}
