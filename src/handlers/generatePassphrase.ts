@@ -36,7 +36,7 @@ export default async (
   const words = wordlists[wordlist]
   const passphrase = []
   for (let index = 1; index <= length; index++) {
-    const randomInt = await getRandomInt(0, words.length - 1)
+    const randomInt = await getRandomInt(0, words.length)
     const word = words[randomInt]
     passphrase.push(word)
   }
