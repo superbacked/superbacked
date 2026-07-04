@@ -171,24 +171,18 @@ cli
       })
       await createWindow()
       // Limit networking to trusted URLs
-      session.defaultSession.webRequest.onBeforeSendHeaders(
-        (details, callback) => {
-          if (
-            details.url.match(/^devtools:\/\//) === undefined &&
-            // #if process.env.ENV === "development"
-            details.url.match(/^(http|ws):\/\/localhost:3000/) === undefined &&
-            // #endif
-            // #if process.env.ENV === "production"
-            details.url.match(/^file:\/\//) === undefined &&
-            // #endif
-            details.url.match(/^https:\/\/superbacked\.com/) === undefined
-          ) {
-            callback({ cancel: true })
-          } else {
-            callback({ cancel: false })
-          }
-        }
-      )
+      session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+        const allowed =
+          /^devtools:\/\//.test(details.url) ||
+          // #if process.env.ENV === "development"
+          /^(http|ws):\/\/localhost:3000/.test(details.url) ||
+          // #endif
+          // #if process.env.ENV === "production"
+          /^file:\/\//.test(details.url) ||
+          // #endif
+          /^https:\/\/superbacked\.com/.test(details.url)
+        callback({ cancel: !allowed })
+      })
     })
 
     app.on("window-all-closed", () => {
