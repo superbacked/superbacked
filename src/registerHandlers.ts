@@ -4,7 +4,7 @@ import { getDataLength } from "blockcrypt"
 
 import { deriveKey, generateMasterKey } from "@/src/handlers/archiveCore"
 import chooseDirectory from "@/src/handlers/chooseDirectory"
-import create from "@/src/handlers/create"
+import create, { renderCarrierPdf } from "@/src/handlers/create"
 import {
   createDetachedArchive,
   restoreDetachedArchive,
@@ -18,6 +18,7 @@ import {
   getDefaultPrinter,
   getPrinterStatus,
   getPrinters,
+  getSupportedPaperSizes,
   print,
 } from "@/src/handlers/print"
 import restore, { restoreReset } from "@/src/handlers/restore"
@@ -75,10 +76,12 @@ const asyncHandlers = {
   toggleMaximize,
   generatePassphrase,
   create,
+  renderCarrierPdf,
   duplicate,
   getDefaultPrinter,
   getPrinters,
   getPrinterStatus,
+  getSupportedPaperSizes,
   print,
   save,
   restore,

@@ -7,10 +7,20 @@ export interface WindowBounds {
   y: number
 }
 
+export interface PrintSetting {
+  heavyweight: boolean
+  customScale: boolean
+  scale: number
+}
+
 export interface Store {
   scannerDevice?: string
   scannerSource?: string
   windowBounds?: WindowBounds
+  // Last selected printer, preferred over the system default when available
+  printer?: string
+  // Print settings nested by printer, then by paper size
+  printSettings?: Record<string, Record<string, PrintSetting>>
 }
 
 const schema: Schema<Store> = {
@@ -27,6 +37,23 @@ const schema: Schema<Store> = {
       width: { type: "number" },
       x: { type: "number" },
       y: { type: "number" },
+    },
+  },
+  printer: {
+    type: "string",
+  },
+  printSettings: {
+    type: "object",
+    additionalProperties: {
+      type: "object",
+      additionalProperties: {
+        type: "object",
+        properties: {
+          heavyweight: { type: "boolean" },
+          customScale: { type: "boolean" },
+          scale: { type: "number" },
+        },
+      },
     },
   },
 }

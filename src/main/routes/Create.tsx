@@ -5,10 +5,12 @@ import {
   ComboboxItem,
   Group,
   Modal,
+  NumberInput,
   Popover,
   ScrollArea,
   Select,
   Space,
+  Switch,
   Text,
   TextInput,
   rgba,
@@ -31,6 +33,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
 import { Qr, Result, Secret } from "@/src/handlers/create"
+import { PaperSize } from "@/src/handlers/print"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import CreateDisclaimerModal from "@/src/main/components/CreateDisclaimerModal"
 import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
@@ -52,6 +55,7 @@ import {
   restoreSelection,
 } from "@/src/main/utilities/selection"
 import zxcvbn from "@/src/main/utilities/zxcvbn"
+import { PrintSetting } from "@/src/utilities/config"
 
 const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },
@@ -59,8 +63,28 @@ const blocksetBackupTypes = [
   { value: "4of7", threshold: 4, shares: 7 },
 ] as const
 const secretNumbers = [1, 2, 3] as const
-const maxDataLength = 1024
+const maxDataLength = 512
 const maxLabelLength = 64
+
+const paperSizeOptions = [
+  { value: "letter", label: "paperLetter" },
+  { value: "statement", label: "paperStatement" },
+] as const satisfies readonly {
+  value: PaperSize
+  label: string
+}[]
+
+// True width between horizontal trim marks (4 inch block) in millimeters,
+// used to compute the scale from a measured width.
+const trimMarkWidthMm = 101.6
+
+// Built-in default custom scales for known printers at statement size (their
+// drivers shrink 5.5 × 8.5 media by a printer-specific amount). Any printer not
+// listed defaults to 1.
+const defaultStatementScale: Record<string, number> = {
+  Brother_HL_L2460DW: 1.04205,
+  Brother_HL_L2370DW_series: 1.08085,
+}
 
 const Container = styled.div`
   position: absolute;
@@ -183,14 +207,42 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [printerData, setPrinterData] = useState<ComboboxItem[]>([])
-  const [showSelectPrinter, setShowSelectPrinter] = useState(false)
+  const [showPrintModal, setShowPrintModal] = useState(false)
+  const [selectedPrinter, setSelectedPrinter] = useState<string | null>(null)
+  const [supportedPaperSizes, setSupportedPaperSizes] = useState<PaperSize[]>(
+    []
+  )
+  const [paperSize, setPaperSize] = useState<PaperSize | null>(null)
+  const [heavyweight, setHeavyweight] = useState(false)
+  // The driver shrinks media on macOS but not on Linux, so default the custom
+  // scale on for macOS only (still a manual toggle).
+  const [customScale, setCustomScale] = useState(
+    window.api.platform === "darwin"
+  )
+  // Allow the field to be empty (string) while editing; coerced to a number
+  // on blur and when printing.
+  const [scale, setScale] = useState<number | string>(1)
+  // Secondary modal mode that guides the user through a scale-1 calibration
+  // print, then computes the scale from a measured width.
+  const [determineScaleMode, setDetermineScaleMode] = useState(false)
+  const [determineScaleStep, setDetermineScaleStep] = useState<
+    "print" | "measure"
+  >("print")
+  const [measuredWidth, setMeasuredWidth] = useState<number | string>("")
+  const selectedPaperOption = paperSizeOptions.find(
+    (option) => option.value === paperSize
+  )
+  const selectedPrinterLabel =
+    printerData.find((item) => item.value === selectedPrinter)?.label ??
+    selectedPrinter ??
+    ""
   const [isPrinting, setIsPrinting] = useState(false)
   const [error, setError] = useState<null | ErrorState<
     | "routes.create.couldNotCreateDetachedArchive"
     | "routes.create.couldNotCreateBlock"
     | "routes.create.couldNotCreateBlockset"
     | "routes.create.pleaseConnectPrinter"
-    | "routes.create.pleaseSelectPrinter"
+    | "routes.create.printerDoesNotSupportPaperSize"
   >>(null)
   const [qrs, setQrs] = useState<Qr[]>(initialQrs)
   // The following refs are a temporary patch to help users avoid unintended button clicks (should be fixed using proper UI)
@@ -591,8 +643,67 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     },
     [form, secrets, t, resetForm]
   )
-  const handlePrint = useCallback(
+  // Apply persisted print settings, falling back to platform defaults and the
+  // built-in per-printer default scale for statement size.
+  const applyPrintSettings = useCallback(
+    (printerName: string, selectedPaperSize: PaperSize) => {
+      const printSettings = window.api.invokeSync.getConfig("printSettings")
+      const setting = printSettings?.[printerName]?.[selectedPaperSize]
+      const defaultScale =
+        selectedPaperSize === "statement"
+          ? (defaultStatementScale[printerName] ?? 1)
+          : 1
+      setHeavyweight(setting?.heavyweight ?? false)
+      setCustomScale(setting?.customScale ?? window.api.platform === "darwin")
+      setScale(setting?.scale ?? defaultScale)
+    },
+    []
+  )
+  const selectPrinter = useCallback(
     async (printerName: string) => {
+      setSelectedPrinter(printerName)
+      let sizes: PaperSize[]
+      try {
+        sizes = await window.api.invoke.getSupportedPaperSizes(printerName)
+      } catch {
+        // Fall back to all sizes; print() validates support as a safety net
+        sizes = paperSizeOptions.map((option) => option.value)
+      }
+      setSupportedPaperSizes(sizes)
+      // Keep the current selection if the new printer supports it (avoids the
+      // Print button flickering disabled during the async round-trip).
+      const nextSize =
+        paperSize && sizes.includes(paperSize) ? paperSize : (sizes[0] ?? null)
+      setPaperSize(nextSize)
+      if (nextSize) {
+        applyPrintSettings(printerName, nextSize)
+      }
+    },
+    [paperSize, applyPrintSettings]
+  )
+  // Persist the printer (so an auto-selected default also becomes the
+  // preferred printer) and its settings for the given paper size.
+  const savePrintSettings = useCallback(
+    (
+      printerName: string,
+      selectedPaperSize: PaperSize,
+      setting: PrintSetting
+    ) => {
+      window.api.invokeSync.setConfig("printer", printerName)
+      const printSettings =
+        window.api.invokeSync.getConfig("printSettings") ?? {}
+      window.api.invokeSync.setConfig("printSettings", {
+        ...printSettings,
+        [printerName]: {
+          ...printSettings[printerName],
+          [selectedPaperSize]: setting,
+        },
+      })
+    },
+    []
+  )
+  const handlePrint = useCallback(
+    async (printerName: string, selectedPaperSize: PaperSize) => {
       setIsPrinting(true)
       notifications.show({
         message:
@@ -600,16 +711,84 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             ? t("routes.create.printingBlockset")
             : t("routes.create.printingBlock"),
       })
-      for (const qr of qrs) {
-        await window.api.invoke.print(printerName, qr.pdf, qr.copies)
-      }
-      let done = false
-      while (done !== true) {
-        const status = await window.api.invoke.getPrinterStatus(printerName)
-        if (status === "standby") {
-          setIsPrinting(false)
-          done = true
+      const numericScale = typeof scale === "number" ? scale : 1
+      savePrintSettings(printerName, selectedPaperSize, {
+        heavyweight,
+        customScale,
+        scale: numericScale,
+      })
+      try {
+        const mediaSize =
+          selectedPaperSize === "statement"
+            ? { width: 5.5, height: 8.5 }
+            : { width: 8.5, height: 11 }
+        const printScale = customScale ? numericScale : 1
+        for (const qr of qrs) {
+          // Print PDF (block + trim marks) is rendered on demand, only when
+          // the user actually prints.
+          const pdf = await window.api.invoke.renderCarrierPdf(
+            qr.payload,
+            qr.label,
+            mediaSize,
+            printScale
+          )
+          await window.api.invoke.print(
+            printerName,
+            pdf,
+            qr.copies,
+            selectedPaperSize,
+            heavyweight
+          )
         }
+        let done = false
+        while (done !== true) {
+          const status = await window.api.invoke.getPrinterStatus(printerName)
+          if (status === "standby") {
+            setIsPrinting(false)
+            done = true
+          }
+        }
+      } catch {
+        setIsPrinting(false)
+        setError({ message: "routes.create.printerDoesNotSupportPaperSize" })
+      }
+    },
+    [qrs, t, customScale, scale, heavyweight, savePrintSettings]
+  )
+  // Calibration print: a single block at scale 1 on regular (non-heavyweight)
+  // paper, so the user can measure it and determine the scale.
+  const printCalibration = useCallback(
+    async (printerName: string, selectedPaperSize: PaperSize) => {
+      const qr = qrs[0]
+      if (!qr) {
+        return
+      }
+      setIsPrinting(true)
+      notifications.show({ message: t("routes.create.printingBlock") })
+      try {
+        const mediaSize =
+          selectedPaperSize === "statement"
+            ? { width: 5.5, height: 8.5 }
+            : { width: 8.5, height: 11 }
+        const pdf = await window.api.invoke.renderCarrierPdf(
+          qr.payload,
+          qr.label,
+          mediaSize,
+          1
+        )
+        await window.api.invoke.print(printerName, pdf, 1, selectedPaperSize)
+        let done = false
+        while (done !== true) {
+          const status = await window.api.invoke.getPrinterStatus(printerName)
+          if (status === "standby") {
+            setIsPrinting(false)
+            done = true
+          }
+        }
+        setDetermineScaleStep("measure")
+      } catch {
+        setIsPrinting(false)
+        setError({ message: "routes.create.printerDoesNotSupportPaperSize" })
       }
     },
     [qrs, t]
@@ -1170,28 +1349,39 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                 variant="default"
                 onClick={async () => {
                   const printers = await window.api.invoke.getPrinters()
-                  const defaultPrinter =
-                    await window.api.invoke.getDefaultPrinter()
                   if (printers.length === 0) {
                     setError({
                       message: "routes.create.pleaseConnectPrinter",
                     })
-                  } else if (!defaultPrinter) {
-                    const data: ComboboxItem[] = []
-                    for (const printer of printers) {
-                      data.push({
-                        label: printer.displayName,
-                        value: printer.name,
-                      })
-                    }
-                    setPrinterData(data)
-                    setShowSelectPrinter(true)
-                  } else {
-                    void handlePrint(defaultPrinter.name)
+                    return
                   }
+                  setPrinterData(
+                    printers.map((printer) => ({
+                      label: printer.displayName,
+                      value: printer.name,
+                    }))
+                  )
+                  // Prefer the last selected printer (if still available),
+                  // otherwise fall back to the system default.
+                  const savedPrinter =
+                    window.api.invokeSync.getConfig("printer")
+                  const target =
+                    printers.find((printer) => printer.name === savedPrinter)
+                      ?.name ??
+                    (await window.api.invoke.getDefaultPrinter())?.name ??
+                    null
+                  if (target) {
+                    void selectPrinter(target)
+                  } else {
+                    setSelectedPrinter(null)
+                    setSupportedPaperSizes([])
+                    setPaperSize(null)
+                  }
+                  setDetermineScaleMode(false)
+                  setShowPrintModal(true)
                 }}
               >
-                {t("routes.create.print")}
+                {t("routes.create.print")}…
               </Button>
               <Button
                 variant="default"
@@ -1216,7 +1406,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   }
                 }}
               >
-                {t("routes.create.save")}
+                {t("routes.create.save")}…
               </Button>
               <Button
                 variant="default"
@@ -1237,31 +1427,215 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         <Modal
           centered
           onClose={() => {
-            setShowSelectPrinter(false)
+            setShowPrintModal(false)
           }}
-          opened={showSelectPrinter}
-          title={t("routes.create.pleaseSelectPrinter")}
+          opened={showPrintModal}
+          title={
+            determineScaleMode
+              ? t("routes.create.determineScale")
+              : t("routes.create.print")
+          }
           styles={{
             title: {
               fontWeight: "bold",
             },
           }}
         >
-          <Select
-            comboboxProps={{ keepMounted: false }}
-            data={printerData}
-            disabled={printerData.length === 0}
-            leftSection={<IconPrinter size={16} />}
-            label={t("routes.create.printer")}
-            maxDropdownHeight={240}
-            placeholder={`${t("routes.create.selectPrinter")}…`}
-            onChange={(value) => {
-              if (value) {
-                setShowSelectPrinter(false)
-                void handlePrint(value)
-              }
-            }}
-          />
+          {determineScaleMode ? (
+            determineScaleStep === "print" ? (
+              <Fragment>
+                <Text c="dimmed" size="sm">
+                  {t("routes.create.determineScalePrint", {
+                    paper: selectedPaperOption
+                      ? t(`routes.create.${selectedPaperOption.label}`)
+                      : "",
+                    printer: selectedPrinterLabel,
+                  })}
+                </Text>
+                <Space h="xl" />
+                <Button
+                  fullWidth
+                  disabled={!selectedPrinter || !paperSize || isPrinting}
+                  loading={isPrinting}
+                  variant="signatureGradient"
+                  onClick={() => {
+                    if (selectedPrinter && paperSize) {
+                      void printCalibration(selectedPrinter, paperSize)
+                    }
+                  }}
+                >
+                  {t("routes.create.print")}
+                </Button>
+                <Space h="md" />
+                <Button
+                  fullWidth
+                  disabled={isPrinting}
+                  size="sm"
+                  variant="signatureTextGradient"
+                  onClick={() => {
+                    setDetermineScaleMode(false)
+                  }}
+                >
+                  {t("common.back")}
+                </Button>
+              </Fragment>
+            ) : (
+              <Fragment>
+                <Text c="dimmed" size="sm">
+                  {t("routes.create.determineScaleMeasure")}
+                </Text>
+                <Space h="md" />
+                <NumberInput
+                  allowNegative={false}
+                  data-autofocus
+                  decimalScale={2}
+                  hideControls
+                  label={t("routes.create.width")}
+                  min={0}
+                  value={measuredWidth}
+                  onChange={setMeasuredWidth}
+                />
+                <Space h="xl" />
+                <Button
+                  fullWidth
+                  disabled={
+                    typeof measuredWidth !== "number" || measuredWidth <= 0
+                  }
+                  variant="signatureGradient"
+                  onClick={() => {
+                    if (
+                      typeof measuredWidth === "number" &&
+                      measuredWidth > 0 &&
+                      selectedPrinter &&
+                      paperSize
+                    ) {
+                      // scale = true width ÷ measured width, rounded to the
+                      // precision of the scale field.
+                      const computedScale =
+                        Math.round((trimMarkWidthMm / measuredWidth) * 1e5) /
+                        1e5
+                      setScale(computedScale)
+                      savePrintSettings(selectedPrinter, paperSize, {
+                        heavyweight,
+                        customScale,
+                        scale: computedScale,
+                      })
+                    }
+                    setDetermineScaleMode(false)
+                  }}
+                >
+                  {t("common.done")}
+                </Button>
+              </Fragment>
+            )
+          ) : (
+            <Fragment>
+              <Select
+                comboboxProps={{ keepMounted: false }}
+                allowDeselect={false}
+                data={printerData}
+                label={t("routes.create.printer")}
+                maxDropdownHeight={240}
+                placeholder={`${t("routes.create.selectPrinter")}…`}
+                value={selectedPrinter}
+                onChange={(value) => {
+                  if (value) {
+                    window.api.invokeSync.setConfig("printer", value)
+                    void selectPrinter(value)
+                  }
+                }}
+              />
+              <Space h="md" />
+              <Select
+                comboboxProps={{ keepMounted: false }}
+                allowDeselect={false}
+                disabled={!selectedPrinter || supportedPaperSizes.length === 0}
+                label={t("routes.create.paper")}
+                placeholder={`${t("routes.create.selectPaper")}…`}
+                data={paperSizeOptions
+                  .filter((option) =>
+                    supportedPaperSizes.includes(option.value)
+                  )
+                  .map((option) => ({
+                    value: option.value,
+                    label: t(`routes.create.${option.label}`),
+                  }))}
+                value={paperSize}
+                onChange={(value) => {
+                  if (value && selectedPrinter) {
+                    setPaperSize(value as PaperSize)
+                    applyPrintSettings(selectedPrinter, value as PaperSize)
+                  }
+                }}
+              />
+              <Space h="md" />
+              <Switch
+                checked={heavyweight}
+                disabled={!selectedPrinter}
+                label={t("routes.create.heavyweight")}
+                withThumbIndicator={false}
+                onChange={(event) =>
+                  setHeavyweight(event.currentTarget.checked)
+                }
+              />
+              <Space h="md" />
+              <Switch
+                checked={customScale}
+                disabled={!selectedPrinter}
+                label={t("routes.create.customScale")}
+                withThumbIndicator={false}
+                onChange={(event) =>
+                  setCustomScale(event.currentTarget.checked)
+                }
+              />
+              {customScale ? (
+                <Fragment>
+                  <Space h="md" />
+                  <NumberInput
+                    allowNegative={false}
+                    decimalScale={5}
+                    hideControls
+                    label={t("routes.create.scale")}
+                    min={0}
+                    value={scale}
+                    onChange={setScale}
+                    onBlur={() => {
+                      if (typeof scale !== "number") {
+                        setScale(1)
+                      }
+                    }}
+                  />
+                  <Space h="xs" />
+                  <Button
+                    fullWidth
+                    size="sm"
+                    variant="signatureTextGradient"
+                    onClick={() => {
+                      setMeasuredWidth("")
+                      setDetermineScaleStep("print")
+                      setDetermineScaleMode(true)
+                    }}
+                  >
+                    {t("routes.create.determineScale")}
+                  </Button>
+                </Fragment>
+              ) : null}
+              <Space h="xl" />
+              <Button
+                fullWidth
+                disabled={!selectedPrinter || !paperSize}
+                variant="signatureGradient"
+                onClick={() => {
+                  setShowPrintModal(false)
+                  if (selectedPrinter && paperSize) {
+                    void handlePrint(selectedPrinter, paperSize)
+                  }
+                }}
+              >
+                {t("routes.create.print")}
+              </Button>
+            </Fragment>
+          )}
         </Modal>
         <ErrorModal error={error} onClose={() => setError(null)} />
       </Fragment>

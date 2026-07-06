@@ -7,7 +7,7 @@ interface QRCodeProps {
 
 const QRCode: FunctionComponent<QRCodeProps> = (props) => {
   const { path, size } = useMemo(() => {
-    const raw = encodeQR(props.value, "raw", { ecc: "low" })
+    const raw = encodeQR(props.value, "raw", { ecc: "medium" })
     const qrSize = raw.length
     let qrPath = ""
     for (let y = 0; y < qrSize; y++) {

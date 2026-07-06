@@ -46,6 +46,10 @@ export interface Data {
   payloadText: string
   shortHash: string
   label?: string
+  /** When set, render the print layout (block + trim marks) scaled by this factor. */
+  printScale?: number
+  /** When set, pad the print page to this media size (inches) and center the block. */
+  printMedia?: { width: number; height: number }
 }
 
 export type Result =
@@ -78,23 +82,17 @@ const jpegIpcMessage = async (
   })
 }
 
-export const compute = async (
-  payload: Payload,
-  label?: string
-): Promise<Qr> => {
-  const payloadText = JSON.stringify(payload, null, 2)
-  const payloadHash = hash(payloadText)
-  const payloadShortHash = shortHash(payloadText)
-  const data: Data = {
-    payloadText: payloadText,
-    shortHash: payloadShortHash,
-    label: label,
-  }
-  const windowWidth = 384
-  const windowHeight = 576
+const blockWindowSize = { width: 384, height: 576 } // 4x6in at 96dpi
+
+// Render block data to a PDF in an offscreen window. The window is returned
+// open so the caller can also derive a JPEG from it; the caller must close it.
+const renderToPdf = async (
+  data: Data,
+  size: { width: number; height: number }
+): Promise<{ blockWindow: BrowserWindow; pdfBuffer: Buffer }> => {
   const blockWindow = new BrowserWindow({
-    width: windowWidth,
-    height: windowHeight,
+    width: size.width,
+    height: size.height,
     darkTheme: false,
     useContentSize: true,
     webPreferences: {
@@ -114,6 +112,22 @@ export const compute = async (
     margins: { top: 0, right: 0, bottom: 0, left: 0 },
     preferCSSPageSize: true,
   })
+  return { blockWindow, pdfBuffer }
+}
+
+export const compute = async (
+  payload: Payload,
+  label?: string
+): Promise<Qr> => {
+  const payloadText = JSON.stringify(payload, null, 2)
+  const payloadHash = hash(payloadText)
+  const payloadShortHash = shortHash(payloadText)
+  const data: Data = {
+    payloadText: payloadText,
+    shortHash: payloadShortHash,
+    label: label,
+  }
+  const { blockWindow, pdfBuffer } = await renderToPdf(data, blockWindowSize)
   const pdf = pdfBuffer.toString("base64")
   blockWindow.webContents.send("pdfToJpeg", pdfBuffer)
   const jpeg = await jpegIpcMessage(blockWindow)
@@ -127,6 +141,33 @@ export const compute = async (
     pdf: pdf,
     copies: 1,
   }
+}
+
+// Render a print-only PDF (4x6 block + trim marks) on demand — generated only
+// when the user prints, not for every block and not when only saving. The
+// caller supplies the scale (1 = true size; > 1 compensates driver shrink).
+export const renderCarrierPdf = async (
+  payload: Payload,
+  label: string | undefined,
+  mediaSize: { width: number; height: number },
+  scale = 1
+): Promise<string> => {
+  const payloadText = JSON.stringify(payload, null, 2)
+  const data: Data = {
+    payloadText: payloadText,
+    shortHash: shortHash(payloadText),
+    label: label,
+    printScale: scale,
+    printMedia: mediaSize,
+  }
+  // The page is the sheet; the block is centered on it with a white margin.
+  const size = {
+    width: Math.round(mediaSize.width * 96), // px at 96dpi
+    height: Math.round(mediaSize.height * 96),
+  }
+  const { blockWindow, pdfBuffer } = await renderToPdf(data, size)
+  blockWindow.close()
+  return pdfBuffer.toString("base64")
 }
 
 export default async function create(

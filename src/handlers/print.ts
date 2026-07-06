@@ -56,6 +56,35 @@ export const getPrinterPageSizes = async (printer: string): Promise<string> => {
   return pageSizeLine.replace("PageSize/Media Size:", "").trim()
 }
 
+export type PaperSize = "letter" | "statement"
+
+// For each paper size: the named CUPS page size, and the custom media fallback
+// used when the printer supports custom sizes but not the named one.
+const paperSizeMedia: Record<PaperSize, { named: string; custom: string }> = {
+  letter: { named: "Letter", custom: "Custom.8.5x11in" },
+  statement: { named: "Statement", custom: "Custom.5.5x8.5in" },
+}
+
+// Printer's supported page sizes, with the default marker stripped
+const getPageSizes = async (printer: string): Promise<string[]> => {
+  return (await getPrinterPageSizes(printer))
+    .split(/\s+/)
+    .map((pageSize) => pageSize.replace(/^\*/, ""))
+}
+
+// Paper sizes the printer can produce, given its supported page sizes
+export const getSupportedPaperSizes = async (
+  printer: string
+): Promise<PaperSize[]> => {
+  const pageSizes = await getPageSizes(printer)
+  const supportsCustomPageSize = pageSizes.includes("Custom.WIDTHxHEIGHT")
+  return (Object.keys(paperSizeMedia) as PaperSize[]).filter(
+    (paperSize) =>
+      supportsCustomPageSize ||
+      pageSizes.includes(paperSizeMedia[paperSize].named)
+  )
+}
+
 /**
  * Print base64-encoded JPEG or PDF
  * @param printer printer name
@@ -65,11 +94,10 @@ export const getPrinterPageSizes = async (printer: string): Promise<string> => {
 export const print = async (
   printer: string,
   data: string,
-  copies: number
+  copies: number,
+  paperSize: PaperSize = "letter",
+  heavyweight = false
 ): Promise<string> => {
-  const pageSizes = await getPrinterPageSizes(printer)
-  const printersSupportsCustomPageSize =
-    pageSizes.indexOf("Custom.WIDTHxHEIGHT") !== -1
   const execaArguments: string[] = [
     "-d",
     printer,
@@ -78,21 +106,21 @@ export const print = async (
     "-o",
     "Duplex=None",
     "-o",
-    "MediaType=stationery-heavyweight",
-    "-o",
     "Quality=High",
-    "-o",
-    "fit-to-page",
   ]
-  if (printer === "Brother_HL_L2460DW") {
-    // Handle recommended printer
-    execaArguments.push(...["-o", "media=Custom.102x152mm"])
-  } else if (printersSupportsCustomPageSize === true) {
-    // Handle printers that support custom page size
-    execaArguments.push(...["-o", "media=Custom.4x6in"])
+  // Prefer the named page size, fall back to a custom size, else fail
+  const pageSizes = await getPageSizes(printer)
+  const { named, custom } = paperSizeMedia[paperSize]
+  if (pageSizes.includes(named)) {
+    execaArguments.push(...["-o", `media=${named}`])
+  } else if (pageSizes.includes("Custom.WIDTHxHEIGHT")) {
+    execaArguments.push(...["-o", `media=${custom}`])
   } else {
-    // Default to A6 page size
-    execaArguments.push(...["-o", "media=A6"])
+    throw new Error(`Printer does not support ${named} or custom page sizes`)
+  }
+  if (heavyweight) {
+    // Heavy / synthetic stock (cardstock, TerraSlate, index cards)
+    execaArguments.push(...["-o", "MediaType=stationery-heavyweight"])
   }
   const { stdout } = await spawn("lp", execaArguments, {
     input: Buffer.from(data, "base64"),
