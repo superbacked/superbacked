@@ -911,7 +911,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             minRows={2}
             placeholder={t("routes.create.typeSecret")}
             required
-            secretNumber={1}
             onFocus={() => {
               void window.api.invoke.enableModes(["insert"])
             }}
@@ -1024,7 +1023,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             minRows={2}
             placeholder={t("routes.create.typeSecret")}
             required
-            secretNumber={secretNumber}
             onFocus={() => {
               void window.api.invoke.enableModes(["insert"])
             }}

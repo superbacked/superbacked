@@ -34,7 +34,6 @@ import {
 
 interface SecretTextareaProps extends TextareaProps {
   dataLengths: DataLengths
-  secretNumber: number
   onPopoverChange?: (opened: boolean) => void
 }
 
@@ -71,7 +70,6 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     useState<SelectionWithElement>(() => captureSelection())
   const {
     dataLengths,
-    secretNumber,
     onBlur,
     onChange,
     onFocus,
@@ -79,18 +77,14 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     ...otherProps
   } = props
   const lengthPercentage = useMemo(() => {
-    const contextualizedMaxDataLength =
-      secretNumber === 1
-        ? dataLengths.totalDataLength
-        : dataLengths.maxHiddenSecretsDataLength
-    const contextualizedRemainingMaxDataLength =
-      secretNumber === 1
-        ? dataLengths.totalDataLength - dataLengths.secret1DataLength
-        : dataLengths.maxRemainingHiddenDataLength
-    const length =
-      contextualizedMaxDataLength - contextualizedRemainingMaxDataLength
-    return Math.min(Math.ceil((length / contextualizedMaxDataLength) * 100))
-  }, [secretNumber, dataLengths])
+    // All secrets share the same block, so measure usage against the shared
+    // pool consistently (rather than against each secret's own budget).
+    // maxRemainingHiddenDataLength is the block's true free space, so used =
+    // total − free.
+    const used =
+      dataLengths.totalDataLength - dataLengths.maxRemainingHiddenDataLength
+    return Math.ceil((used / dataLengths.totalDataLength) * 100)
+  }, [dataLengths])
   const memoizedExtractions = useMemo(() => {
     const { start, end } = currentSelection
     const results = extract(otherProps.value as string)
