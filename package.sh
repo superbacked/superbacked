@@ -150,21 +150,6 @@ if [ "${package_bootstrap_assets}" = true ]; then
     --gzip \
     .
 
-  printf "%s\n" "Packaging Superbacked OS bootstrap assets (arm64-raspi)…"
-
-  cp \
-    "dist/superbacked-arm64-${version}.AppImage" \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-
-  chmod +x \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-
-  tar --create \
-    --directory "${asset_folder}" \
-    --file "dist/superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz" \
-    --gzip \
-    .
-
   rm -rf "${asset_folder}"
 
   printf "%s\n" "Preparing Superbacked OS bootstrap script (amd64)…"
@@ -172,12 +157,6 @@ if [ "${package_bootstrap_assets}" = true ]; then
   sed "s|__VERSION__|${version}|g" \
     superbacked-os-utilities/superbacked-os-amd64-bootstrap.sh \
     > "dist/superbacked-os-amd64-bootstrap-${version}.sh"
-
-  printf "%s\n" "Preparing Superbacked OS bootstrap script (arm64-raspi)…"
-
-  sed "s|__VERSION__|${version}|g" \
-    superbacked-os-utilities/superbacked-os-arm64-raspi-bootstrap.sh \
-    > "dist/superbacked-os-arm64-raspi-bootstrap-${version}.sh"
 fi
 
 # Prompt to build OS if not specified
@@ -230,37 +209,6 @@ if [ "${build_os}" = true ]; then
   number=1
   for file in dist/superbacked-os-amd64-${version}.img.xz.part*; do
     mv "${file}" "dist/superbacked-os-amd64-${version}.img.xz.part${number}"
-    number=$((number + 1))
-  done
-
-  printf "%s\n" "Building Superbacked OS (arm64-raspi)…"
-
-  cp \
-    superbacked-os/superbacked-os-arm64-raspi-24.04.4.img \
-    dist/superbacked-os-arm64-raspi-${version}.img
-
-  docker run \
-    --interactive \
-    --privileged \
-    --rm \
-    --tty \
-    --volume $(pwd)/dist:/dist \
-    superbacked-os-docker:24.04 \
-    /root/provision-superbacked-os.sh \
-    superbacked-os-arm64-raspi-${version}.img \
-    superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz \
-    > /dev/null
-
-  printf "%s\n" "Compressing Superbacked OS (arm64-raspi)…"
-
-  xz -1 --threads 4 dist/superbacked-os-arm64-raspi-${version}.img
-
-  cat dist/superbacked-os-arm64-raspi-${version}.img.xz | split \
-    -b 2147483647B - dist/superbacked-os-arm64-raspi-${version}.img.xz.part
-
-  number=1
-  for file in dist/superbacked-os-arm64-raspi-${version}.img.xz.part*; do
-    mv "${file}" "dist/superbacked-os-arm64-raspi-${version}.img.xz.part${number}"
     number=$((number + 1))
   done
 

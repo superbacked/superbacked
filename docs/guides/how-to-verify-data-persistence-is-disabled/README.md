@@ -15,18 +15,7 @@ This guide walks through verifying that Superbacked OS persists nothing to disk 
 
 ### macOS
 
-#### Step 1 (if computing checksum of Superbacked OS for Raspberry Pi): disable automatic mounting of `/Volumes/system-boot`
-
-```console
-$ volume_path="/Volumes/system-boot"
-
-$ volume_uuid=$(diskutil info "$volume_path" | awk '/Volume UUID:/ { print $3 }')
-
-$ echo "UUID=$volume_uuid none auto ro,noauto" | sudo tee -a /etc/fstab
-UUID=C6651C15-1754-301D-B9DB-76371B6FE869 none auto ro,noauto
-```
-
-#### Step 2: compute disk checksum
+#### Step 1: compute disk checksum
 
 > Heads-up: replace `rdisk4` with disk found using `diskutil list`.
 
