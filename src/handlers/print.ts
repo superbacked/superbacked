@@ -65,7 +65,7 @@ const paperSizeMedia: Record<PaperSize, { named: string; custom: string }> = {
   statement: { named: "Statement", custom: "Custom.5.5x8.5in" },
 }
 
-// Printer's supported page sizes, with the default marker stripped
+// Printer’s supported page sizes, with the default marker stripped
 const getPageSizes = async (printer: string): Promise<string[]> => {
   return (await getPrinterPageSizes(printer))
     .split(/\s+/)

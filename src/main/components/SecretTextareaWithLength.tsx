@@ -78,8 +78,8 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
   } = props
   const lengthPercentage = useMemo(() => {
     // All secrets share the same block, so measure usage against the shared
-    // pool consistently (rather than against each secret's own budget).
-    // maxRemainingHiddenDataLength is the block's true free space, so used =
+    // pool consistently (rather than against each secret’s own budget).
+    // maxRemainingHiddenDataLength is the block’s true free space, so used =
     // total − free.
     const used =
       dataLengths.totalDataLength - dataLengths.maxRemainingHiddenDataLength
