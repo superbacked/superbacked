@@ -80,15 +80,15 @@ let mainWindowId: null | number = null
 
 export const createWindow = async (): Promise<BrowserWindow> => {
   return new Promise((resolve, reject) => {
-    const savedBounds = getConfig("windowBounds")
+    const savedGeometry = getConfig("windowGeometry")
     const windowWidth = 800
     const windowHeight = 600
     const mainWindow = new BrowserWindow({
       backgroundColor: "#0f0e19",
-      width: savedBounds?.width ?? windowWidth,
-      height: savedBounds?.height ?? windowHeight,
-      x: savedBounds?.x,
-      y: savedBounds?.y,
+      width: savedGeometry?.width ?? windowWidth,
+      height: savedGeometry?.height ?? windowHeight,
+      x: savedGeometry?.x,
+      y: savedGeometry?.y,
       minWidth: windowWidth,
       minHeight: windowHeight,
       show: false,
@@ -118,8 +118,9 @@ export const createWindow = async (): Promise<BrowserWindow> => {
     })
     mainWindow.on("close", () => {
       disableModes(["insert", "select"])
-      const bounds = mainWindow.getBounds()
-      setConfig("windowBounds", bounds)
+      const { width, height } = mainWindow.getContentBounds()
+      const { x, y } = mainWindow.getBounds()
+      setConfig("windowGeometry", { width, height, x, y })
     })
     if (app.inspect === true) {
       mainWindow.webContents.openDevTools()

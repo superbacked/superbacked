@@ -1,6 +1,8 @@
 import store, { Schema } from "electron-store"
 
-export interface WindowBounds {
+// width/height are the window’s *content* size (createWindow consumes them
+// with useContentSize: true); x/y are the outer window position.
+export interface WindowGeometry {
   height: number
   width: number
   x: number
@@ -16,7 +18,7 @@ export interface PrintSetting {
 export interface Store {
   scannerDevice?: string
   scannerSource?: string
-  windowBounds?: WindowBounds
+  windowGeometry?: WindowGeometry
   // Last selected printer, preferred over the system default when available
   printer?: string
   // Print settings nested by printer, then by paper size
@@ -30,7 +32,7 @@ const schema: Schema<Store> = {
   scannerSource: {
     type: "string",
   },
-  windowBounds: {
+  windowGeometry: {
     type: "object",
     properties: {
       height: { type: "number" },
@@ -61,6 +63,14 @@ const schema: Schema<Store> = {
 const config = new store<Store>({
   name: process.env.ENV === "development" ? `config.development` : undefined,
   schema: schema,
+  migrations: {
+    "1.13.0-beta.1": (configStore) => {
+      // windowBounds stored the outer window rectangle, which createWindow
+      // read back as a content size — on platforms with a real title bar,
+      // the window grew at every launch. windowGeometry replaces it.
+      configStore.delete("windowBounds" as never)
+    },
+  },
   serialize: (value: object) => {
     return JSON.stringify(value, null, 2)
   },
