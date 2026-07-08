@@ -1,8 +1,7 @@
 import { Payload, Qr, compute } from "@/src/handlers/create"
 
 export type Result =
-  | { error: string; success: false }
-  | { qr: Qr; success: true }
+  { error: string; success: false } | { qr: Qr; success: true }
 
 export default async (payload: Payload): Promise<Result> => {
   try {

@@ -126,9 +126,7 @@ const Block = styled.img`
 type SecretNumber = (typeof secretNumbers)[number]
 
 type BackupType =
-  | ""
-  | "standard"
-  | (typeof blocksetBackupTypes)[number]["value"]
+  "" | "standard" | (typeof blocksetBackupTypes)[number]["value"]
 
 type ValidBackupType = Exclude<BackupType, "">
 

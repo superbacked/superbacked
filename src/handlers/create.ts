@@ -53,8 +53,7 @@ export interface Data {
 }
 
 export type Result =
-  | { error: string; success: false }
-  | { qrs: Qr[]; success: true }
+  { error: string; success: false } | { qrs: Qr[]; success: true }
 
 const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
   return new Promise((resolve) => {

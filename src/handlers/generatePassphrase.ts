@@ -10,9 +10,7 @@ const wordlists = {
 }
 
 export type Wordlist =
-  | "eff_large_wordlist"
-  | "eff_short_wordlist_1"
-  | "eff_short_wordlist_2_0"
+  "eff_large_wordlist" | "eff_short_wordlist_1" | "eff_short_wordlist_2_0"
 
 /**
  * Generate passphrase

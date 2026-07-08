@@ -20,8 +20,7 @@ export const restoreReset = () => {
 }
 
 export type Result =
-  | { error: string; success: false }
-  | { message: string; success: true }
+  { error: string; success: false } | { message: string; success: true }
 
 export default async (
   passphrase: string,

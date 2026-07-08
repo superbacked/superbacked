@@ -266,9 +266,11 @@ const App = () => {
             styles={css`
               html {
                 @page {
-                  size: ${printMedia
-                    ? `${printMedia.width}in ${printMedia.height}in`
-                    : "4in 6in"};
+                  size: ${
+                    printMedia
+                      ? `${printMedia.width}in ${printMedia.height}in`
+                      : "4in 6in"
+                  };
                 }
               }
               body {
