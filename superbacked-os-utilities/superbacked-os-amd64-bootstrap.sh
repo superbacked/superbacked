@@ -210,8 +210,8 @@ EOF
 printf "%s\n" "Configuring clearnet user…"
 
 # Firefox runs as a separate user, clearnet — the only identity allowed
-# to reach the internet in browser mode (the “hardened browser” boot
-# entry). It has no shell and no sudo rights; lingering keeps its
+# to reach the internet in hardened browser mode (the “hardened browser”
+# boot entry). It has no shell and no sudo rights; lingering keeps its
 # session available without a graphical login, which snaps need.
 if ! getent passwd clearnet > /dev/null; then
   sudo useradd --create-home --shell /usr/sbin/nologin clearnet
@@ -558,7 +558,8 @@ printf "%s\n" "Overriding stock launchers…"
 
 # Replace the stock launchers with same-name entries in a
 # higher-priority directory, so the familiar icons do the right thing:
-#   Firefox   → starts through the clearnet wrapper (browser mode only)
+#   Firefox   → starts through the clearnet wrapper (hardened browser
+#               mode only)
 #   KeePassXC → pinned to Wayland
 sudo mkdir --parents /usr/local/share/applications
 
@@ -581,7 +582,7 @@ sudo sed --in-place \
 printf "%s\n" "Freezing and pre-warming snaps…"
 
 # Freeze snap updates for good — the image must not change itself, and
-# browser mode must not generate update traffic.
+# hardened browser mode must not generate update traffic.
 sudo snap refresh --hold
 
 # Refreshing keeps each snap’s previous revision around as a revert
@@ -807,7 +808,7 @@ sudo visudo --check
 
 printf "%s\n" "Configuring NTP…"
 
-# Browser mode has no system DNS, so the clock syncs against
+# Hardened browser mode has no system DNS, so the clock syncs against
 # time.cloudflare.com by IP address. Accurate time matters when
 # enrolling two-factor codes.
 sudo tee /etc/systemd/timesyncd.conf > /dev/null << 'EOF'
@@ -815,9 +816,9 @@ sudo tee /etc/systemd/timesyncd.conf > /dev/null << 'EOF'
 NTP=162.159.200.1 162.159.200.123
 EOF
 
-printf "%s\n" "Configuring browser mode firewall…"
+printf "%s\n" "Configuring hardened browser mode firewall…"
 
-# Used only in browser mode — replaces the default block-everything
+# Used only in hardened browser mode — replaces the default
 # rules with exactly three allowances:
 #   clearnet         → web traffic (Firefox; DNS rides inside HTTPS)
 #   systemd-timesync → time sync, to Cloudflare’s addresses only
@@ -868,7 +869,7 @@ Wants=systemd-timesyncd.service
 Type=oneshot
 RemainAfterExit=yes
 # Networking is masked in the base image (see “Disabling networking”
-# below). In browser mode only, this service unmasks it, installs the
+# below). In hardened browser mode only, this service unmasks it, installs the
 # Firefox-only firewall, and then brings the network up — the firewall
 # is always in place before the machine goes online. The unmask lives in
 # RAM, so offline boots stay offline. Wi-Fi is unblocked explicitly so
@@ -953,9 +954,9 @@ fi
 
 printf "%s\n" "Configuring boot mode selection…"
 
-# Show the boot menu with the offline system as default — an unattended
-# boot always lands in the hardened state; browser mode is a deliberate
-# choice.
+# Show the boot menu with the air-gapped system as default — an
+# unattended boot always lands in air-gapped mode; hardened browser mode
+# is a deliberate choice.
 sudo sed --in-place 's/GRUB_TIMEOUT_STYLE=hidden/GRUB_TIMEOUT_STYLE=menu/g' /etc/default/grub
 sudo sed --in-place 's/GRUB_TIMEOUT=[0-9]*/GRUB_TIMEOUT=5/g' /etc/default/grub
 
@@ -1021,14 +1022,15 @@ printf "%s\n" "Disabling networking…"
 # Networking is masked, not merely disabled — a disabled service can
 # still be woken in the background (the desktop’s network indicator does
 # this at login), and its DHCP traffic slips past the firewall. Masked,
-# it cannot start at all: offline mode is silent on the network. Browser
-# mode unmasks it (see “Configuring browser mode firewall” above).
+# it cannot start at all: air-gapped mode is silent on the network.
+# Hardened browser mode unmasks it (see “Configuring hardened browser
+# mode firewall” above).
 sudo systemctl mask NetworkManager.service NetworkManager-wait-online.service
 
 sudo systemctl enable nftables
 
 # The default firewall, loaded at every boot: nothing in, nothing out.
-# Browser mode replaces it with the Firefox-only rules above.
+# Hardened browser mode replaces it with the Firefox-only rules above.
 sudo tee /etc/nftables.conf > /dev/null << 'EOF'
 #!/usr/sbin/nft -f
 
@@ -1056,7 +1058,7 @@ printf "%s\n" "Disabling Bluetooth…"
 # Bluetooth has no role on this machine — keyboards and mice are wired.
 # A radio is a second way into hardware that handles secrets, so the
 # kernel driver is blocked and the service masked. Unlike networking,
-# browser mode does not bring it back.
+# hardened browser mode does not bring it back.
 sudo tee /etc/modprobe.d/superbacked-bluetooth.conf > /dev/null << 'EOF'
 install btusb /bin/false
 EOF
@@ -1067,7 +1069,7 @@ printf "%s\n" "Disabling Wi-Fi in air-gapped mode…"
 
 # In air-gapped mode the Wi-Fi radio is switched off — masked networking
 # already prevents connections; a blocked radio stops the card from
-# transmitting at all. Browser mode keeps Wi-Fi available (not every
+# transmitting at all. Hardened browser mode keeps Wi-Fi available (not every
 # machine has Ethernet), managed by NetworkManager behind the
 # Firefox-only firewall.
 sudo tee /etc/systemd/system/superbacked-airgap.service > /dev/null << 'EOF'
