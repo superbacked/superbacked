@@ -54,6 +54,29 @@ gsettings set \
 gsettings set \
   org.gnome.Terminal.ProfilesList list "['b1dcc9dd-5262-4d8d-a863-c897e6d979b9']"
 
+printf "%s\n" "Configuring audio…"
+
+# On some laptops the speaker amplifier ignores the hardware volume
+# control, so the volume keys move but the sound level never changes.
+# Forcing software volume makes WirePlumber scale the samples itself,
+# which always works. table.insert appends to the default rules — an
+# assignment would replace them, dropping the rules that start the codec
+# and silencing audio. This is WirePlumber 0.4 (Lua) syntax; 0.5 would
+# need the SPA-JSON format under wireplumber.conf.d instead.
+sudo mkdir --parents /etc/wireplumber/main.lua.d
+sudo tee /etc/wireplumber/main.lua.d/51-alsa-soft-mixer.lua > /dev/null << 'EOF'
+table.insert(alsa_monitor.rules, {
+  matches = {
+    {
+      { "device.name", "matches", "alsa_card.*" },
+    },
+  },
+  apply_properties = {
+    ["api.alsa.soft-mixer"] = true,
+  },
+})
+EOF
+
 printf "%s\n" "Adding universe repository…"
 
 # Six dependencies below (exfatprogs, libfuse2, pcscd, pipx, scdaemon
