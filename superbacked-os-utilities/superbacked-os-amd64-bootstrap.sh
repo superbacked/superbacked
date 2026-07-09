@@ -556,6 +556,17 @@ printf "%s\n" "Freezing and pre-warming snaps…"
 # browser mode must not generate update traffic.
 sudo snap refresh --hold
 
+# Refreshing keeps each snap’s previous revision around as a revert
+# fallback — pointless on a frozen, amnesic image, where every kept
+# revision ships as a full copy that compression cannot shrink. Remove
+# old revisions and the snap download cache.
+snap list --all | awk '/disabled/ { print $1, $3 }' \
+  | while read -r name revision; do
+      sudo snap remove "${name}" --revision="${revision}"
+    done
+
+sudo rm --recursive --force /var/lib/snapd/cache/*
+
 # Run each snap once so its per-user data folders exist and are baked
 # into the image — the KeePassXC theme and the downloads folder below
 # are written into them.
