@@ -86,13 +86,13 @@ If using Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive or equivalent
 
 ### Step 1 (optional): physically remove internal disk(s) and wireless interface(s) if not soldered to motherboard or disable interface(s) using BIOS if soldered
 
-![I/O Port Access, BIOS menu may differ](./assets/turn-off-i-o-port-access.jpg)
+![I/O Port Access, BIOS menu may differ](./assets/turn-off-i-o-port-access.png)
 
 ### Step 2 (if applicable): enable “Secure Boot” and disable “Boot Order Lock”
 
-![Secure Boot, BIOS menu may differ](./assets/enable-secure-boot.jpg)
+![Secure Boot, BIOS menu may differ](./assets/enable-secure-boot.png)
 
-![Boot Order Lock, BIOS menu may differ](./assets/disable-boot-order-lock.jpg)
+![Boot Order Lock, BIOS menu may differ](./assets/disable-boot-order-lock.png)
 
 ### Step 3: boot Superbacked OS
 
@@ -100,7 +100,7 @@ If using Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive or equivalent
 
 ### Step 5 (if applicable): enable “Boot Order Lock”
 
-![Boot Order Lock, BIOS menu may differ](./assets/enable-boot-order-lock.jpg)
+![Boot Order Lock, BIOS menu may differ](./assets/enable-boot-order-lock.png)
 
 ## Usage guide
 
