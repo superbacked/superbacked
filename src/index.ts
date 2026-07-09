@@ -170,8 +170,8 @@ cli
       app.configureHostResolver({
         secureDnsMode: "off",
       })
-      await createWindow()
-      // Limit networking to trusted URLs
+      // Limit networking to trusted URLs — registered before any window loads
+      // so every page (including the main window) goes through the filter.
       session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
         const allowed =
           /^devtools:\/\//.test(details.url) ||
@@ -184,6 +184,7 @@ cli
           /^https:\/\/superbacked\.com/.test(details.url)
         callback({ cancel: !allowed })
       })
+      await createWindow()
     })
 
     app.on("window-all-closed", () => {
