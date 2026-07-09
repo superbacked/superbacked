@@ -572,6 +572,69 @@ snap list --all | awk '/disabled/ { print $1, $3 }' \
 
 sudo rm --recursive --force /var/lib/snapd/cache/*
 
+# Remove orphaned snaps — snaps nothing else depends on. A snap is a
+# dependency in one of two ways: as a base (declared in each dependent’s
+# snap.yaml — snapd refuses to remove an in-use base) or as a content
+# provider (another snap connects to one of its slots — NOT protected by
+# snapd, so removing a connected one would break its consumers, e.g.
+# Firefox losing its gnome-platform content mount). Both are checked
+# explicitly. Only snaps that ship no apps are candidates, so
+# user-facing snaps (Firefox, KeePassXC…) are never removed even though
+# nothing connects to them. For example, the image ships two GNOME
+# platform snaps but only the newer one is connected — the older one is
+# orphaned. Passes repeat until nothing is removed, collapsing
+# dependency chains: removing an orphaned platform snap can orphan the
+# base it was the last user of. --purge skips the automatic snapshot
+# snapd would otherwise bake into the image.
+snap_removed=true
+while [ "${snap_removed}" = true ]; do
+  snap_removed=false
+  for name in $(snap list | awk 'NR > 1 { print $1 }'); do
+    snap_yaml="/snap/${name}/current/meta/snap.yaml"
+
+    # snapd itself, core-type, kernel and gadget snaps are system
+    # infrastructure — never candidates. core is also the implicit base
+    # of snaps whose snap.yaml declares none, so the base check below
+    # would not see its dependents.
+    snap_type="$(awk '/^type:/ { print $2; exit }' "${snap_yaml}")"
+    if [ "${snap_type}" = "snapd" ] \
+      || [ "${snap_type}" = "os" ] \
+      || [ "${snap_type}" = "kernel" ] \
+      || [ "${snap_type}" = "gadget" ]; then
+      continue
+    fi
+
+    # Ships apps → user-facing, keep
+    if grep --quiet "^apps:" "${snap_yaml}"; then
+      continue
+    fi
+
+    # Another installed snap declares it as base → keep
+    if grep --quiet "^base: ${name}$" /snap/*/current/meta/snap.yaml; then
+      continue
+    fi
+
+    # Something connects to one of its slots → keep. awk reads all of
+    # its input, unlike grep --quiet which can exit on first match and
+    # trip pipefail with a SIGPIPE upstream.
+    if snap connections | awk \
+      -v slot="${name}:" \
+      'index($3, slot) == 1 { found = 1 } END { exit !found }'; then
+      continue
+    fi
+
+    sudo snap remove --purge "${name}"
+    snap_removed=true
+  done
+done
+
+# The seed holds first-boot copies of the preinstalled snaps, duplicating
+# what is now installed (about a gigabyte). snapd records that it has
+# seeded, so it never reads these again — remove them.
+sudo rm --recursive --force \
+  /var/lib/snapd/seed/snaps/* \
+  /var/lib/snapd/seed/assertions/*
+
 # Run each snap once so its per-user data folders exist and are baked
 # into the image — the KeePassXC theme and the downloads folder below
 # are written into them.
