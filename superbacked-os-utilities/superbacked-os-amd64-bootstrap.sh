@@ -73,13 +73,16 @@ printf "%s\n" "Installing dependencies…"
 # provisioning. curl and gnupg download and verify software, exfatprogs
 # formats exFAT USB drives, language packs complete the English locale,
 # libfuse2 runs AppImages, overlayroot makes the system forget everything
-# at reboot, pcscd and scdaemon talk to smartcards and YubiKeys, waypipe
-# puts the browser on screen, and zenity shows error dialogs.
+# at reboot, pcscd and scdaemon talk to smartcards and YubiKeys, totem
+# plays video with gstreamer1.0-libav decoding it (H.264 including the
+# 4:2:2 profile, plus AAC — the minimal install ships no video decoder),
+# waypipe puts the browser on screen, and zenity shows error dialogs.
 packages=(
   build-essential
   curl
   exfatprogs
   gnupg
+  gstreamer1.0-libav
   language-pack-en
   # French is commented out but kept as a working example of how to add
   # a language — the app keeps its half in src/i18n.ts.
@@ -93,6 +96,7 @@ packages=(
   pipx
   python3-dev
   scdaemon
+  totem
   waypipe
   zenity
   zlib1g-dev
