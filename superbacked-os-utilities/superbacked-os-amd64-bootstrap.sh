@@ -182,8 +182,8 @@ EOF
 printf "%s\n" "Configuring clearnet user…"
 
 # Firefox runs as a separate user, clearnet — the only identity allowed
-# to reach the internet in browser mode (the “with hardened browser”
-# boot entry). It has no shell and no sudo rights; lingering keeps its
+# to reach the internet in browser mode (the “hardened browser” boot
+# entry). It has no shell and no sudo rights; lingering keeps its
 # session available without a graphical login, which snaps need.
 if ! getent passwd clearnet > /dev/null; then
   sudo useradd --create-home --shell /usr/sbin/nologin clearnet
@@ -634,7 +634,7 @@ sudo tee /usr/local/bin/clearnet-browser > /dev/null << 'EOF'
 set -e
 
 if ! grep -q superbacked.browser /proc/cmdline; then
-  zenity --error --text="Reboot and select “Superbacked OS (with hardened browser)” to use the browser" 2> /dev/null
+  zenity --error --text="Reboot and select “Superbacked OS (hardened browser)” to use the browser" 2> /dev/null
   exit 1
 fi
 
@@ -769,7 +769,9 @@ RemainAfterExit=yes
 # below). In browser mode only, this service unmasks it, installs the
 # Firefox-only firewall, and then brings the network up — the firewall
 # is always in place before the machine goes online. The unmask lives in
-# RAM, so offline boots stay offline.
+# RAM, so offline boots stay offline. Wi-Fi is unblocked explicitly so
+# stale rfkill state can never leave the radio off.
+ExecStartPre=/usr/sbin/rfkill unblock wifi
 ExecStartPre=/usr/bin/systemctl unmask NetworkManager.service
 ExecStartPre=/usr/bin/systemctl daemon-reload
 ExecStart=/usr/local/sbin/superbacked-browser-firewall.sh
@@ -859,20 +861,20 @@ root_uuid="$(findmnt --noheadings --output UUID /)"
 kernel="$(basename "$(readlink --canonicalize /boot/vmlinuz)")"
 initrd="$(basename "$(readlink --canonicalize /boot/initrd.img)")"
 
-# The two Superbacked entries come first, so plain “Superbacked OS” is
-# the default boot. They pin the exact kernel captured now and skip
-# stock behaviors known to misbehave on write-protected or picky
-# hardware, so every boot is identical. The stock entries remain under
-# “Advanced options for Ubuntu” for maintenance.
+# The two Superbacked entries come first, so “Superbacked OS
+# (air-gapped)” is the default boot. They pin the exact kernel captured
+# now and skip stock behaviors known to misbehave on write-protected or
+# picky hardware, so every boot is identical. (The stock Ubuntu entries
+# are hidden below.)
 sudo tee /etc/grub.d/09_superbacked > /dev/null << EOF
 #!/bin/sh
 exec tail -n +3 \$0
-menuentry "Superbacked OS" {
+menuentry "Superbacked OS (air-gapped)" {
   search --no-floppy --fs-uuid --set=root ${root_uuid}
   linux /boot/${kernel} root=UUID=${root_uuid} quiet splash fsck.repair=no ro
   initrd /boot/${initrd}
 }
-menuentry "Superbacked OS (with hardened browser)" {
+menuentry "Superbacked OS (hardened browser)" {
   search --no-floppy --fs-uuid --set=root ${root_uuid}
   linux /boot/${kernel} root=UUID=${root_uuid} quiet splash fsck.repair=no ro superbacked.browser
   initrd /boot/${initrd}
@@ -946,6 +948,41 @@ table inet filter {
 EOF
 
 sudo nft -f /etc/nftables.conf
+
+printf "%s\n" "Disabling Bluetooth…"
+
+# Bluetooth has no role on this machine — keyboards and mice are wired.
+# A radio is a second way into hardware that handles secrets, so the
+# kernel driver is blocked and the service masked. Unlike networking,
+# browser mode does not bring it back.
+sudo tee /etc/modprobe.d/superbacked-bluetooth.conf > /dev/null << 'EOF'
+install btusb /bin/false
+EOF
+
+sudo systemctl mask bluetooth.service
+
+printf "%s\n" "Disabling Wi-Fi in air-gapped mode…"
+
+# In air-gapped mode the Wi-Fi radio is switched off — masked networking
+# already prevents connections; a blocked radio stops the card from
+# transmitting at all. Browser mode keeps Wi-Fi available (not every
+# machine has Ethernet), managed by NetworkManager behind the
+# Firefox-only firewall.
+sudo tee /etc/systemd/system/superbacked-airgap.service > /dev/null << 'EOF'
+[Unit]
+Description=Superbacked OS air-gapped mode (Wi-Fi radio off)
+ConditionKernelCommandLine=!superbacked.browser
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/rfkill block wifi
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl enable superbacked-airgap.service
 
 printf "%s\n" "Disabling sudo…"
 
