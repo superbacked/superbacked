@@ -1,5 +1,7 @@
 import store, { Schema } from "electron-store"
 
+import type { PaperSize, PrintSetting } from "@/src/shared/types/print"
+
 // width/height are the window’s *content* size (createWindow consumes them
 // with useContentSize: true); x/y are the outer window position.
 export interface WindowGeometry {
@@ -9,18 +11,14 @@ export interface WindowGeometry {
   y: number
 }
 
-export interface PrintSetting {
-  heavyweight: boolean
-  customScale: boolean
-  scale: number
-}
-
 export interface Store {
   scannerDevice?: string
   scannerSource?: string
   windowGeometry?: WindowGeometry
   // Last selected printer, preferred over the system default when available
   printer?: string
+  // Last used paper size by printer
+  paperSizes?: Record<string, PaperSize>
   // Print settings nested by printer, then by paper size
   printSettings?: Record<string, Record<string, PrintSetting>>
 }
@@ -43,6 +41,12 @@ const schema: Schema<Store> = {
   },
   printer: {
     type: "string",
+  },
+  paperSizes: {
+    type: "object",
+    additionalProperties: {
+      type: "string",
+    },
   },
   printSettings: {
     type: "object",

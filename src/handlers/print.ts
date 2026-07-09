@@ -1,4 +1,5 @@
 import { getMainWindow } from "@/src/index"
+import { PaperSize } from "@/src/shared/types/print"
 import { getSenderWindow } from "@/src/utilities/handleContext"
 import spawn from "@/src/utilities/spawn"
 
@@ -55,8 +56,6 @@ export const getPrinterPageSizes = async (printer: string): Promise<string> => {
   }
   return pageSizeLine.replace("PageSize/Media Size:", "").trim()
 }
-
-export type PaperSize = "letter" | "statement"
 
 // For each paper size: the named CUPS page size, and the custom media fallback
 // used when the printer supports custom sizes but not the named one.

@@ -33,7 +33,6 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
 import { Qr, Result, Secret } from "@/src/handlers/create"
-import { PaperSize } from "@/src/handlers/print"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import CreateDisclaimerModal from "@/src/main/components/CreateDisclaimerModal"
 import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
@@ -55,7 +54,7 @@ import {
   restoreSelection,
 } from "@/src/main/utilities/selection"
 import zxcvbn from "@/src/main/utilities/zxcvbn"
-import { PrintSetting } from "@/src/utilities/config"
+import { PaperSize, PrintSetting } from "@/src/shared/types/print"
 
 const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },
@@ -669,9 +668,16 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       }
       setSupportedPaperSizes(sizes)
       // Keep the current selection if the new printer supports it (avoids the
-      // Print button flickering disabled during the async round-trip).
+      // Print button flickering disabled during the async round-trip), then
+      // fall back to the paper size last used with this printer.
+      const savedPaperSize =
+        window.api.invokeSync.getConfig("paperSizes")?.[printerName]
       const nextSize =
-        paperSize && sizes.includes(paperSize) ? paperSize : (sizes[0] ?? null)
+        paperSize && sizes.includes(paperSize)
+          ? paperSize
+          : savedPaperSize && sizes.includes(savedPaperSize)
+            ? savedPaperSize
+            : (sizes[0] ?? null)
       setPaperSize(nextSize)
       if (nextSize) {
         applyPrintSettings(printerName, nextSize)
@@ -680,7 +686,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     [paperSize, applyPrintSettings]
   )
   // Persist the printer (so an auto-selected default also becomes the
-  // preferred printer) and its settings for the given paper size.
+  // preferred printer), its paper size and its settings for that size.
   const savePrintSettings = useCallback(
     (
       printerName: string,
@@ -688,6 +694,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       setting: PrintSetting
     ) => {
       window.api.invokeSync.setConfig("printer", printerName)
+      const paperSizes = window.api.invokeSync.getConfig("paperSizes") ?? {}
+      window.api.invokeSync.setConfig("paperSizes", {
+        ...paperSizes,
+        [printerName]: selectedPaperSize,
+      })
       const printSettings =
         window.api.invokeSync.getConfig("printSettings") ?? {}
       window.api.invokeSync.setConfig("printSettings", {
