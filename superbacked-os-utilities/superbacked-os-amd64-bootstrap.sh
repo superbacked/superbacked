@@ -71,33 +71,34 @@ printf "%s\n" "Installing dependencies…"
 # compile the wallet and YubiKey tools installed just below — all but
 # zlib1g-dev (which the Superbacked app needs) are removed at the end of
 # provisioning. curl and gnupg download and verify software, exfatprogs
-# formats exFAT USB drives, language packs cover the supported locales,
+# formats exFAT USB drives, language packs complete the English locale,
 # libfuse2 runs AppImages, overlayroot makes the system forget everything
 # at reboot, pcscd and scdaemon talk to smartcards and YubiKeys, waypipe
 # puts the browser on screen, and zenity shows error dialogs.
-sudo apt install --yes \
-  build-essential \
-  curl \
-  exfatprogs \
-  gnupg \
-  language-pack-en \
-  language-pack-fr \
-  language-pack-pt \
-  language-pack-sv \
-  language-pack-gnome-en \
-  language-pack-gnome-fr \
-  language-pack-gnome-pt \
-  language-pack-gnome-sv \
-  libfuse2 \
-  libpcsclite-dev \
-  overlayroot \
-  pcscd \
-  pipx \
-  python3-dev \
-  scdaemon \
-  waypipe \
-  zenity \
+packages=(
+  build-essential
+  curl
+  exfatprogs
+  gnupg
+  language-pack-en
+  # French is commented out but kept as a working example of how to add
+  # a language — the app keeps its half in src/i18n.ts.
+  # language-pack-fr
+  language-pack-gnome-en
+  # language-pack-gnome-fr
+  libfuse2
+  libpcsclite-dev
+  overlayroot
+  pcscd
+  pipx
+  python3-dev
+  scdaemon
+  waypipe
+  zenity
   zlib1g-dev
+)
+
+sudo apt install --yes "${packages[@]}"
 
 pipx ensurepath
 

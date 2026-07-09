@@ -10,8 +10,9 @@ import {
 
 import { t } from "i18next"
 
-import { locales, resources } from "@/src/i18n"
-import { locale, setLocale } from "@/src/index"
+// Commented out with the language menu below — see src/i18n.ts.
+// import { locales, resources } from "@/src/i18n"
+// import { locale, setLocale } from "@/src/index"
 import { sendEvent } from "@/src/utilities/sendEvent"
 
 if (process.platform === "darwin") {
@@ -34,18 +35,21 @@ const enabledModes: Set<Mode> = new Set()
 export const setMenu = () => {
   const runningMacOS = process.platform === "darwin"
   const debuggingModeEnabled = app.isPackaged === false || app.inspect === true
-  const chooseLanguageSubmenu: MenuItemConstructorOptions[] = []
-  for (const chooseLanguageSubmenuLocale of locales) {
-    chooseLanguageSubmenu.push({
-      label: resources[chooseLanguageSubmenuLocale].label,
-      type: "checkbox",
-      checked: chooseLanguageSubmenuLocale === locale ? true : false,
-      async click() {
-        await setLocale(chooseLanguageSubmenuLocale)
-        setMenu()
-      },
-    })
-  }
+  // The language menu is commented out while English is the only locale —
+  // restore this block, the imports above and the menu item below to
+  // re-enable it (see src/i18n.ts for the kept example language).
+  // const chooseLanguageSubmenu: MenuItemConstructorOptions[] = []
+  // for (const chooseLanguageSubmenuLocale of locales) {
+  //   chooseLanguageSubmenu.push({
+  //     label: resources[chooseLanguageSubmenuLocale].label,
+  //     type: "checkbox",
+  //     checked: chooseLanguageSubmenuLocale === locale ? true : false,
+  //     async click() {
+  //       await setLocale(chooseLanguageSubmenuLocale)
+  //       setMenu()
+  //     },
+  //   })
+  // }
   const template: MenuItemConstructorOptions[] = [
     {
       label: app.getName(),
@@ -221,11 +225,11 @@ export const setMenu = () => {
     {
       label: t("menu.view.view"),
       submenu: [
-        {
-          label: t("menu.view.chooseLanguage"),
-          submenu: chooseLanguageSubmenu,
-        },
-        { type: "separator" },
+        // {
+        //   label: t("menu.view.chooseLanguage"),
+        //   submenu: chooseLanguageSubmenu,
+        // },
+        // { type: "separator" },
         {
           enabled: enabledModes.has("select"),
           label: t("menu.view.showSelectionAsQrCode"),
