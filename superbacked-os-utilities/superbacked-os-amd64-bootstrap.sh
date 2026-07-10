@@ -969,17 +969,22 @@ initrd="$(basename "$(readlink --canonicalize /boot/initrd.img)")"
 # now and skip stock behaviors known to misbehave on write-protected or
 # picky hardware, so every boot is identical. (The stock Ubuntu entries
 # are hidden below.)
+#
+# init_on_free=1 makes the kernel zero memory the moment it is freed,
+# so secrets do not linger in RAM after the app releases them — a
+# cold-boot attack recovers nothing. (Its counterpart init_on_alloc=1
+# is already Ubuntu’s default.)
 sudo tee /etc/grub.d/09_superbacked > /dev/null << EOF
 #!/bin/sh
 exec tail -n +3 \$0
 menuentry "Superbacked OS (air-gapped)" {
   search --no-floppy --fs-uuid --set=root ${root_uuid}
-  linux /boot/${kernel} root=UUID=${root_uuid} quiet splash fsck.repair=no ro
+  linux /boot/${kernel} fsck.repair=no init_on_free=1 quiet ro root=UUID=${root_uuid} splash
   initrd /boot/${initrd}
 }
 menuentry "Superbacked OS (hardened browser)" {
   search --no-floppy --fs-uuid --set=root ${root_uuid}
-  linux /boot/${kernel} root=UUID=${root_uuid} quiet splash fsck.repair=no ro superbacked.browser
+  linux /boot/${kernel} fsck.repair=no init_on_free=1 quiet ro root=UUID=${root_uuid} splash superbacked.browser
   initrd /boot/${initrd}
 }
 EOF
