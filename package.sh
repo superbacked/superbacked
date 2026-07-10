@@ -9,7 +9,6 @@ normal=$(tput sgr0)
 
 # Parse command-line options
 build_app=""
-package_bootstrap_assets=""
 build_os=""
 partial=false
 
@@ -19,7 +18,6 @@ Usage: package.sh [options]
 
 Options:
   --app               Build app only
-  --bootstrap-assets  Package Superbacked OS bootstrap assets only
   --os                Build Superbacked OS only
   --all               Build and package everything without prompts
   -h, --help          Show this help message
@@ -39,11 +37,6 @@ while [[ $# -gt 0 ]]; do
       partial=true
       shift
       ;;
-    --bootstrap-assets)
-      package_bootstrap_assets=true
-      partial=true
-      shift
-      ;;
     --os)
       build_os=true
       partial=true
@@ -51,7 +44,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --all)
       build_app=true
-      package_bootstrap_assets=true
       build_os=true
       shift
       ;;
@@ -89,59 +81,6 @@ if [ "${build_app}" = true ]; then
   done
 fi
 
-# Prompt to package bootstrap assets if not specified
-if [ "${partial}" != true ] && [ -z "${package_bootstrap_assets}" ]; then
-  printf "${bold}%s${normal}" "Do you wish to package Superbacked OS bootstrap assets (y or n)? "
-  read -r answer
-  if [ "${answer}" = "y" ]; then
-    package_bootstrap_assets=true
-  fi
-fi
-
-if [ "${package_bootstrap_assets}" = true ]; then
-  printf "%s\n" "Packaging Superbacked OS bootstrap assets…"
-
-  asset_folder="dist/superbacked-os-bootstrap-assets"
-
-  rm -rf "${asset_folder}"
-
-  mkdir -p "${asset_folder}/etc/apparmor.d"
-  mkdir -p "${asset_folder}/home/superbacked/.local/share/applications"
-  mkdir -p "${asset_folder}/home/superbacked/.local/superbacked"
-
-  cp \
-    superbacked-os-bootstrap-assets/superbacked.profile \
-    "${asset_folder}/etc/apparmor.d/superbacked.profile"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked.desktop \
-    "${asset_folder}/home/superbacked/.local/share/applications/superbacked.desktop"
-  cp \
-    "dist/superbacked-x64-${version}.AppImage" \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-  cp \
-    dist/.icon-icns/icon.icns \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.icns"
-
-  chmod +x \
-    "${asset_folder}/home/superbacked/.local/share/applications/superbacked.desktop"
-  chmod +x \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-
-  tar --create \
-    --directory "${asset_folder}" \
-    --file "dist/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz" \
-    --gzip \
-    .
-
-  rm -rf "${asset_folder}"
-
-  printf "%s\n" "Preparing Superbacked OS bootstrap script…"
-
-  sed "s|__VERSION__|${version}|g" \
-    superbacked-os-utilities/superbacked-os-amd64-bootstrap.sh \
-    > "dist/superbacked-os-amd64-bootstrap-${version}.sh"
-fi
-
 # Prompt to build OS if not specified
 if [ "${partial}" != true ] && [ -z "${build_os}" ]; then
   printf "${bold}%s${normal}" "Do you wish to build Superbacked OS (y or n)? "
@@ -164,43 +103,24 @@ if [ "${build_os}" = true ]; then
     --disk 20 \
     --memory 4
 
-  printf "%s\n" "Building Superbacked OS…"
-
-  cp \
-    superbacked-os/superbacked-os-amd64-24.04.4.img \
-    dist/superbacked-os-amd64-${version}.img
-
-  docker run \
-    --interactive \
-    --privileged \
-    --rm \
-    --tty \
-    --volume $(pwd)/dist:/dist \
-    superbacked-os-docker:24.04 \
-    /root/provision-superbacked-os.sh \
-    superbacked-os-amd64-${version}.img \
-    superbacked-os-amd64-bootstrap-assets-${version}.tar.gz \
-    > /dev/null
-
   printf "%s\n" "Creating live Superbacked OS image…"
 
-  # The live image is written straight to its distribution name
-  # (<product>-<arch>-<component>-<version>).
+  # Provisioning and live conversion happen in one pass: the source
+  # image is read-only input and the live image is written straight to
+  # its distribution name (<product>-<arch>-<component>-<version>).
   docker run \
     --interactive \
     --privileged \
     --rm \
     --tty \
     --volume $(pwd)/dist:/dist \
+    --volume $(pwd)/superbacked-os:/superbacked-os:ro \
+    --volume $(pwd)/superbacked-os-bootstrap-assets:/superbacked-os-bootstrap-assets:ro \
     superbacked-os-docker:24.04 \
-    /root/create-live-image.sh \
-    /dist/superbacked-os-amd64-${version}.img \
-    /dist/superbacked-os-amd64-live-${version}.img
-
-  # The installed-style intermediate is kept while the live format is
-  # validated — remove it before signing, or it ends up in the release
-  # manifest. Uncomment once the live format graduates:
-  # rm dist/superbacked-os-amd64-${version}.img
+    /root/create-superbacked-os-live-image.sh \
+    /superbacked-os/superbacked-os-amd64-24.04.4.img \
+    /dist/superbacked-os-amd64-live-${version}.img \
+    ${version}
 
   printf "%s\n" "Splitting live Superbacked OS image into parts…"
 
@@ -219,7 +139,7 @@ if [ "${build_os}" = true ]; then
   # build time on the live image — the squashfs payload is already
   # compressed, so xz mostly removes partition slack and ESP zeros.
   # Uncomment to restore compressed, split release artifacts (and
-  # remove the raw chunking above):
+  # remove the raw part splitting above):
   # printf "%s\n" "Compressing Superbacked OS…"
   #
   # xz -1 --threads 4 dist/superbacked-os-amd64-live-${version}.img

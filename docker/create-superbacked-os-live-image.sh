@@ -1,32 +1,42 @@
 #! /bin/bash
-# Creates a live Superbacked OS image (EFI + squashfs) from an
-# installed-style one (EFI + ext4 root). The live root filesystem is
-# copied to RAM at boot: the USB drive can be unplugged as soon as the
-# login screen appears, and amnesia becomes physical (the OS only ever
-# exists in RAM) instead of depending on overlayroot.
+# Creates the distributed Superbacked OS live image (EFI + squashfs)
+# from the source image (EFI + ext4 root), provisioning the Superbacked
+# app along the way. The live root filesystem is copied to RAM at boot:
+# the USB drive can be unplugged as soon as the login screen appears,
+# and amnesia becomes physical (the OS only ever exists in RAM) instead
+# of depending on overlayroot.
 #
 # The source image must ship live-boot preinstalled (the bootstrap
-# handles this) — conversion is fully offline, so the same input image
-# always yields the same live system.
+# handles this) — image creation is fully offline, so the same inputs
+# always yield the same live system.
 #
-# The source image is never modified — it is mounted read-only and the
-# changes below land in a tmpfs overlay that only the squashfs sees.
+# The source image is never modified — it is attached read-only and all
+# changes below (provisioning the app, adapting configuration) land in
+# a tmpfs overlay that only the squashfs sees.
 #
-# Usage (inside superbacked-os-docker container, against any mounted
-# path):
-# /root/create-live-image.sh /path/to/image.img [/path/to/output.img]
+# Usage (inside superbacked-os-docker container, with /dist holding the
+# app build and /superbacked-os-bootstrap-assets mounted from the
+# repository):
+# /root/create-superbacked-os-live-image.sh \
+#   /superbacked-os/superbacked-os-amd64-24.04.4.img \
+#   /dist/superbacked-os-amd64-live-1.13.0.img \
+#   1.13.0
 #
-# Writes the live image (and its .sha256sums) to the output path, which
-# defaults to <image>-live.img next to the source image.
+# Writes the live image (and its .sha256sums) to the output path.
 
 set -e
 set -o pipefail
 
 source_image="${1}"
-output_image="${2:-${source_image%.img}-live.img}"
+output_image="${2}"
+version="${3}"
+app_image="/dist/superbacked-x64-${version}.AppImage"
 
-if [ ! -f "${source_image}" ] || [ "${source_image}" = "${output_image}" ]; then
-  printf "%s\n" "Error: usage: create-live-image.sh /path/to/image.img [/path/to/output.img]" >&2
+if [ ! -f "${source_image}" ] \
+  || [ -z "${output_image}" ] \
+  || [ "${source_image}" = "${output_image}" ] \
+  || [ ! -f "${app_image}" ]; then
+  printf "%s\n" "Error: usage: create-superbacked-os-live-image.sh /path/to/source.img /path/to/output.img version" >&2
   exit 1
 fi
 
@@ -53,7 +63,7 @@ printf "%s\n" "Creating block device nodes…"
 
 printf "%s\n" "Attaching source image to loop device…"
 
-losetup --find --partscan "${source_image}"
+losetup --find --partscan --read-only "${source_image}"
 
 printf "%s\n" "Mounting root partition in RAM overlay…"
 
@@ -67,13 +77,42 @@ mount \
   --types overlay \
   overlay /mnt/root
 
+printf "%s\n" "Provisioning Superbacked app…"
+
+# Assets are staged straight from the repository and app build mounts —
+# no tarball intermediary — and land in the overlay, leaving the source
+# image untouched. Ownership matches the superbacked user (UID 1000).
+mkdir --parents \
+  /mnt/root/home/superbacked/.local/share/applications \
+  /mnt/root/home/superbacked/.local/superbacked
+
+cp \
+  /superbacked-os-bootstrap-assets/superbacked.profile \
+  /mnt/root/etc/apparmor.d/superbacked.profile
+cp \
+  /superbacked-os-bootstrap-assets/superbacked.desktop \
+  /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
+cp \
+  "${app_image}" \
+  /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
+cp \
+  /dist/.icon-icns/icon.icns \
+  /mnt/root/home/superbacked/.local/superbacked/superbacked.icns
+
+chmod +x \
+  /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
+chmod +x \
+  /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
+
+chown --recursive 1000:1000 /mnt/root/home/superbacked
+
 printf "%s\n" "Adapting system configuration for live boot…"
 
 # live-boot overlays the root filesystem with RAM — overlayroot
 # stacking a second overlay on top of it would misbehave. Adapted
-# before live-boot is installed because overlayroot embeds a copy of
-# this file into the initrd the installation below regenerates.
-# Tolerates source images that do not use overlayroot at all.
+# before the initramfs is regenerated below because overlayroot embeds
+# a copy of this file into the initrd. Tolerates source images that do
+# not use overlayroot at all.
 if [ -f /mnt/root/etc/overlayroot.conf ]; then
   sed --in-place 's/overlayroot="tmpfs"/overlayroot=""/g' \
     /mnt/root/etc/overlayroot.conf
@@ -118,9 +157,9 @@ if [ -f /mnt/root/etc/overlayroot.conf ]; then
   chroot /mnt/root update-initramfs -k all -u
 fi
 
-# Capture the kernel and initramfs (regenerated with live-boot support
-# by the installation above) before the boot folder is excluded from
-# the squashfs below.
+# Capture the kernel and initramfs (regenerated above when overlayroot
+# needed disabling) before the boot folder is excluded from the
+# squashfs below.
 kernel="$(basename "$(readlink --canonicalize /mnt/root/boot/vmlinuz)")"
 initrd="$(basename "$(readlink --canonicalize /mnt/root/boot/initrd.img)")"
 
@@ -138,19 +177,65 @@ fi
 
 # Capture the EFI system partition — it ships verbatim (same shim and
 # signed GRUB, so Secure Boot keeps working); only its stub grub.cfg is
-# retargeted further down.
+# rewritten further down to point at the boot partition.
 esp_size="$(blockdev --getsize64 /dev/loop0p1)"
 
 dd bs=1M if=/dev/loop0p1 of=/tmp/esp.img status=none
 
-printf "%s\n" "Purging residue…"
+printf "%s\n" "Purging source image artifacts…"
 
-# Cheap insurance: logs and apt indexes must not ship in the squashfs,
-# whether left in the source image or written by the tooling above.
+# The image ships whatever the source image and the steps above left
+# behind. Purged here, at live image creation time, so purge
+# improvements apply to every build without re-capturing the source
+# image. Logs, histories, caches and network state describe the
+# provisioning machine and network — purged for privacy; the rest is
+# dead weight.
+# Everything regenerates on demand at boot, in the RAM overlay.
+# Per-user snap data (~/snap) is deliberately kept — the bootstrap
+# pre-warms it.
+
+# Logs, including the installer logs (username, hardware and network of
+# the provisioning machine) and the systemd journal
 find /mnt/root/var/log -type f -delete
+
+# apt indexes and caches (which the frozen image never reads again) and
+# temporary files from the provisioning session
 rm --force --recursive \
-  /mnt/root/var/lib/apt/lists/* \
-  /mnt/root/var/cache/apt/*
+  /mnt/root/tmp/* \
+  /mnt/root/var/cache/apt/* \
+  /mnt/root/var/lib/apt/lists/*
+
+# Bash histories of the provisioning session (history -cw in the
+# bootstrap only covers its own shell)
+rm --force /mnt/root/home/*/.bash_history
+
+# User caches (thumbnails, pip downloads, tracker file index…) and
+# gvfs metadata (records which files were touched during provisioning)
+rm --force --recursive \
+  /mnt/root/home/*/.cache \
+  /mnt/root/home/*/.local/share/gvfs-metadata
+
+# GnuPG homedirs — only used at provisioning time to verify downloads
+rm --force --recursive /mnt/root/home/*/.gnupg
+
+# GNOME keyrings — locked with the provisioning password; a fresh one
+# is created transparently at login. Wi-Fi passwords stored “for this
+# user only” would land here.
+rm --force --recursive /mnt/root/home/*/.local/share/keyrings/*
+
+# NetworkManager state: connection profiles (Wi-Fi profiles, including
+# passwords stored system-wide, land in system-connections), DHCP
+# leases (named after the provisioning machine’s interface MAC), seen
+# access points and the per-machine secret key
+rm --force --recursive \
+  /mnt/root/etc/NetworkManager/system-connections/* \
+  /mnt/root/var/lib/NetworkManager/*
+
+# Entropy seed and clock state — shipping the same random seed to every
+# user is worse than shipping none; both regenerate at boot
+rm --force \
+  /mnt/root/var/lib/systemd/random-seed \
+  /mnt/root/var/lib/systemd/timesync/clock
 
 # mksquashfs cannot store POSIX ACLs, and /media/<user> mount folders
 # baked from the provisioning session depend on one — udisks grants
@@ -276,7 +361,7 @@ menuentry "Superbacked OS (hardened browser)" {
 }
 EOF
 
-printf "%s\n" "Retargeting GRUB at boot partition…"
+printf "%s\n" "Pointing GRUB at boot partition…"
 
 # Ubuntu’s signed GRUB reads this stub from the EFI system partition to
 # find its real configuration — point it at the boot partition.
@@ -292,9 +377,9 @@ umount /mnt/boot /mnt/esp
 
 printf "%s\n" "Calculating SHA256 checksums…"
 
-# Same format as provision-superbacked-os.sh so verification guides
-# keep working — the root filesystem now lives in partition 2 as a
-# squashfs.
+# Labels match the format historical releases used so verification
+# guides keep working — the root filesystem now lives in partition 2 as
+# a squashfs.
 printf "Boot partition: " > "${output_image}.sha256sums"
 sha256sum "${esp_device}" | cut --delimiter ' ' --fields 1 >> "${output_image}.sha256sums"
 

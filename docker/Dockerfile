@@ -5,12 +5,10 @@ FROM ubuntu:24.04
 USER root
 
 RUN apt update
-RUN apt install --yes bc parted squashfs-tools xorriso zerofree
+RUN apt install --yes bc parted squashfs-tools xorriso
 
-COPY create-live-image.sh /root/create-live-image.sh
-COPY optimize-image.sh /root/optimize-image.sh
+COPY create-superbacked-os-live-image.sh /root/create-superbacked-os-live-image.sh
 COPY provision-ubuntu-desktop-iso.sh /root/provision-ubuntu-desktop-iso.sh
-COPY provision-superbacked-os.sh /root/provision-superbacked-os.sh
 
 ENV HOME=/root
 

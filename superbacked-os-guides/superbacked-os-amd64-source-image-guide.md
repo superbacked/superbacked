@@ -1,4 +1,4 @@
-# Superbacked OS amd64 base image provisioning guide
+# Superbacked OS amd64 source image guide
 
 ### Step 1 (Mac): download `ubuntu-24.04.4-desktop-amd64.iso`, `SHA256SUMS` and `SHA256SUMS.gpg` from [Ubuntu 24.04 LTS releases](https://releases.ubuntu.com/24.04/) to same folder
 

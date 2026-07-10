@@ -1,8 +1,11 @@
 #! /bin/bash
-# Turns a stock Ubuntu Desktop 24.04.4 LTS (amd64) install into Superbacked OS.
+# Turns a stock Ubuntu Desktop 24.04.4 LTS (amd64) install into the
+# Superbacked OS source image (the Superbacked app is provisioned
+# later, at live image creation time — see
+# docker/create-superbacked-os-live-image.sh).
 #
 # Usage:
-# bash -c "$(curl -fsSL https://github.com/superbacked/superbacked/releases/download/v__VERSION__/superbacked-os-amd64-bootstrap-__VERSION__.sh)"
+# bash superbacked-os-amd64-bootstrap.sh
 
 set -e
 set -o pipefail
@@ -70,8 +73,8 @@ gsettings set org.gnome.shell favorite-apps "[
   'keepassxc_keepassxc.desktop',
   'com.yubico.yubioath.desktop',
   'firefox_firefox.desktop',
-  'org.gnome.Nautilus.desktop',
-  'org.gnome.Terminal.desktop'
+  'org.gnome.Terminal.desktop',
+  'org.gnome.Nautilus.desktop'
 ]"
 
 printf "%s\n" "Configuring audio…"
@@ -148,7 +151,8 @@ packages=(
 sudo apt install --yes "${packages[@]}"
 
 # live-boot provides the initramfs plumbing the distributed live image
-# boots with (see docker/create-live-image.sh) — installed at
+# boots with (see docker/create-superbacked-os-live-image.sh) —
+# installed at
 # provisioning time so image creation needs no network. Inert on this
 # installed system: it only activates when boot=live is on the kernel
 # command line. Recommends are skipped: they add only documentation and
@@ -925,31 +929,6 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl enable superbacked-browser.service
-
-version="__VERSION__"
-
-# Install the app assets before curl is removed and networking is
-# disabled (both below). Skipped when no version was stamped — automated
-# provisioning stages the assets itself.
-if [ "${version}" != "__""VERSION""__" ]; then
-  printf "%s\n" "Installing Superbacked app…"
-
-  if [ ! -f "/tmp/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz" ]; then
-    curl \
-      --fail \
-      --location \
-      --output "/tmp/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz" \
-      "https://github.com/superbacked/superbacked/releases/download/v${version}/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz"
-  fi
-
-  sudo tar \
-    --extract \
-    --gzip \
-    --file "/tmp/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz" \
-    --directory /
-
-  rm "/tmp/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz"
-fi
 
 printf "%s\n" "Uninstalling extraneous software…"
 
