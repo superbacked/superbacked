@@ -99,27 +99,19 @@ if [ "${partial}" != true ] && [ -z "${package_bootstrap_assets}" ]; then
 fi
 
 if [ "${package_bootstrap_assets}" = true ]; then
-  printf "%s\n" "Packaging Superbacked OS bootstrap assets (amd64)…"
+  printf "%s\n" "Packaging Superbacked OS bootstrap assets…"
 
   asset_folder="dist/superbacked-os-bootstrap-assets"
 
   rm -rf "${asset_folder}"
 
   mkdir -p "${asset_folder}/etc/apparmor.d"
-  mkdir -p "${asset_folder}/home/superbacked/.config/autostart"
   mkdir -p "${asset_folder}/home/superbacked/.local/share/applications"
   mkdir -p "${asset_folder}/home/superbacked/.local/superbacked"
-  mkdir -p "${asset_folder}/home/superbacked/Desktop"
 
   cp \
     superbacked-os-bootstrap-assets/superbacked.profile \
     "${asset_folder}/etc/apparmor.d/superbacked.profile"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked-autostart.desktop \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.desktop"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked-autostart.sh \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.sh"
   cp \
     superbacked-os-bootstrap-assets/superbacked.desktop \
     "${asset_folder}/home/superbacked/.local/share/applications/superbacked.desktop"
@@ -129,20 +121,11 @@ if [ "${package_bootstrap_assets}" = true ]; then
   cp \
     dist/.icon-icns/icon.icns \
     "${asset_folder}/home/superbacked/.local/superbacked/superbacked.icns"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked.desktop \
-    "${asset_folder}/home/superbacked/Desktop/superbacked.desktop"
 
-  chmod +x \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.desktop"
-  chmod +x \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.sh"
   chmod +x \
     "${asset_folder}/home/superbacked/.local/share/applications/superbacked.desktop"
   chmod +x \
     "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-  chmod +x \
-    "${asset_folder}/home/superbacked/Desktop/superbacked.desktop"
 
   tar --create \
     --directory "${asset_folder}" \
@@ -152,7 +135,7 @@ if [ "${package_bootstrap_assets}" = true ]; then
 
   rm -rf "${asset_folder}"
 
-  printf "%s\n" "Preparing Superbacked OS bootstrap script (amd64)…"
+  printf "%s\n" "Preparing Superbacked OS bootstrap script…"
 
   sed "s|__VERSION__|${version}|g" \
     superbacked-os-utilities/superbacked-os-amd64-bootstrap.sh \
@@ -181,7 +164,7 @@ if [ "${build_os}" = true ]; then
     --disk 20 \
     --memory 4
 
-  printf "%s\n" "Building Superbacked OS (amd64)…"
+  printf "%s\n" "Building Superbacked OS…"
 
   cp \
     superbacked-os/superbacked-os-amd64-24.04.4.img \
@@ -199,18 +182,56 @@ if [ "${build_os}" = true ]; then
     superbacked-os-amd64-bootstrap-assets-${version}.tar.gz \
     > /dev/null
 
-  printf "%s\n" "Compressing Superbacked OS (amd64)…"
+  printf "%s\n" "Creating live Superbacked OS image…"
 
-  xz -1 --threads 4 dist/superbacked-os-amd64-${version}.img
+  # The live image is written straight to its distribution name
+  # (<product>-<arch>-<component>-<version>).
+  docker run \
+    --interactive \
+    --privileged \
+    --rm \
+    --tty \
+    --volume $(pwd)/dist:/dist \
+    superbacked-os-docker:24.04 \
+    /root/create-live-image.sh \
+    /dist/superbacked-os-amd64-${version}.img \
+    /dist/superbacked-os-amd64-live-${version}.img
 
-  cat dist/superbacked-os-amd64-${version}.img.xz | split \
-    -b 2147483647B - dist/superbacked-os-amd64-${version}.img.xz.part
+  # The installed-style intermediate is kept while the live format is
+  # validated — remove it before signing, or it ends up in the release
+  # manifest. Uncomment once the live format graduates:
+  # rm dist/superbacked-os-amd64-${version}.img
+
+  printf "%s\n" "Splitting live Superbacked OS image into parts…"
+
+  # GitHub release assets are capped at 2 GiB — ship the raw image in
+  # parts (cat them back together before flashing).
+  cat dist/superbacked-os-amd64-live-${version}.img | split \
+    -b 2147483647B - dist/superbacked-os-amd64-live-${version}.img.part
 
   number=1
-  for file in dist/superbacked-os-amd64-${version}.img.xz.part*; do
-    mv "${file}" "dist/superbacked-os-amd64-${version}.img.xz.part${number}"
+  for file in dist/superbacked-os-amd64-live-${version}.img.part*; do
+    mv "${file}" "dist/superbacked-os-amd64-live-${version}.img.part${number}"
     number=$((number + 1))
   done
+
+  # Compression disabled while evaluating whether xz still earns its
+  # build time on the live image — the squashfs payload is already
+  # compressed, so xz mostly removes partition slack and ESP zeros.
+  # Uncomment to restore compressed, split release artifacts (and
+  # remove the raw chunking above):
+  # printf "%s\n" "Compressing Superbacked OS…"
+  #
+  # xz -1 --threads 4 dist/superbacked-os-amd64-live-${version}.img
+  #
+  # cat dist/superbacked-os-amd64-live-${version}.img.xz | split \
+  #   -b 2147483647B - dist/superbacked-os-amd64-live-${version}.img.xz.part
+  #
+  # number=1
+  # for file in dist/superbacked-os-amd64-live-${version}.img.xz.part*; do
+  #   mv "${file}" "dist/superbacked-os-amd64-live-${version}.img.xz.part${number}"
+  #   number=$((number + 1))
+  # done
 
   printf "%s\n" "Stopping Colima…"
 

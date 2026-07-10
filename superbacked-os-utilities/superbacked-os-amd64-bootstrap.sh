@@ -24,9 +24,10 @@ snap_disconnect() {
 
 printf "%s\n" "Configuring GNOME…"
 
-# A quiet, dark desktop: black background, no location services or
-# telemetry, USB media never mounts itself, new USB devices are rejected
-# while the screen is locked, and the terminal is white text on black.
+# A quiet, dark desktop: black background, no icons on the desktop, no
+# location services or telemetry, USB media never mounts itself, new
+# USB devices are rejected while the screen is locked, and the terminal
+# is white text on black.
 gsettings set org.gnome.desktop.background picture-uri 'none'
 gsettings set org.gnome.desktop.background picture-uri-dark 'none'
 gsettings set org.gnome.desktop.background primary-color '#000000'
@@ -39,6 +40,7 @@ gsettings set org.gnome.desktop.privacy send-software-usage-stats false
 gsettings set org.gnome.desktop.privacy usb-protection true
 gsettings set org.gnome.desktop.privacy usb-protection-level 'lockscreen'
 gsettings set org.gnome.mutter center-new-windows true
+gsettings set org.gnome.shell.extensions.ding show-home false
 gsettings set org.gnome.system.location enabled false
 gsettings set \
   org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/ \
@@ -53,6 +55,24 @@ gsettings set \
   org.gnome.Terminal.ProfilesList default 'b1dcc9dd-5262-4d8d-a863-c897e6d979b9'
 gsettings set \
   org.gnome.Terminal.ProfilesList list "['b1dcc9dd-5262-4d8d-a863-c897e6d979b9']"
+
+# Dock shows what the image is for: official apps first — Superbacked,
+# then the bundled apps, Firefox closing the set (in air-gapped mode
+# its launcher explains that hardened browser mode is required, making
+# the pin the discovery path into that mode rather than a dead icon) —
+# followed by Files and Terminal utilities. Favorites are
+# desktop-file ids resolved at session start, so superbacked.desktop
+# can be pinned now even though the app itself is injected later, at
+# image provisioning time (which is what lets app updates ship without
+# re-running this bootstrap).
+gsettings set org.gnome.shell favorite-apps "[
+  'superbacked.desktop',
+  'keepassxc_keepassxc.desktop',
+  'com.yubico.yubioath.desktop',
+  'firefox_firefox.desktop',
+  'org.gnome.Nautilus.desktop',
+  'org.gnome.Terminal.desktop'
+]"
 
 printf "%s\n" "Configuring audio…"
 
@@ -127,6 +147,14 @@ packages=(
 
 sudo apt install --yes "${packages[@]}"
 
+# live-boot provides the initramfs plumbing the distributed live image
+# boots with (see docker/create-live-image.sh) — installed at
+# provisioning time so image creation needs no network. Inert on this
+# installed system: it only activates when boot=live is on the kernel
+# command line. Recommends are skipped: they add only documentation and
+# live-tools, whose service would run at every boot for nothing.
+sudo apt install --no-install-recommends --yes live-boot
+
 pipx ensurepath
 
 # --force lets the script be re-run without errors on already-installed
@@ -142,6 +170,15 @@ sudo curl --fail --location https://data.trezor.io/udev/51-trezor.rules \
   --output /etc/udev/rules.d/51-trezor.rules
 sudo curl --fail --location https://raw.githubusercontent.com/Yubico/libfido2/main/udev/70-u2f.rules \
   --output /etc/udev/rules.d/70-u2f.rules
+
+# Internal disks are invisible to the desktop: USB drives are the only
+# user-facing storage on Superbacked OS, and offering to mount internal
+# disks with one click would invite the persistence and exfiltration
+# risks the OS exists to prevent. udisks skips devices marked
+# UDISKS_IGNORE, which hides them from Files and the dock alike.
+sudo tee /etc/udev/rules.d/99-superbacked-ignore-internal-disks.rules > /dev/null << 'EOF'
+SUBSYSTEM=="block", ENV{ID_BUS}!="usb", ENV{UDISKS_IGNORE}="1"
+EOF
 
 printf "%s\n" "Configuring yubikey-prov.sh…"
 
@@ -693,7 +730,10 @@ Description=Shared browser Downloads (clearnet → superbacked)
 What=/home/clearnet/snap/firefox/common/Downloads
 Where=/home/superbacked/Downloads
 Type=none
-Options=bind,noexec,nosuid,nodev,nosymfollow
+# x-gvfs-hide keeps the bind mount out of the file manager sidebar —
+# it would otherwise show as a mounted volume, inviting users to
+# unmount their own Downloads folder.
+Options=bind,noexec,nosuid,nodev,nosymfollow,x-gvfs-hide
 
 [Install]
 WantedBy=multi-user.target

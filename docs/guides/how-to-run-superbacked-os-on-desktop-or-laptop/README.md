@@ -9,12 +9,13 @@ Pinned: 1
 
 ## Overview
 
-This guide walks through flashing Superbacked OS to a USB drive and booting from dedicated hardware. Superbacked OS prevents data exfiltration and data persistence by running offline and persisting nothing to disk.
+This guide walks through flashing Superbacked OS to a USB drive and booting from dedicated hardware. Superbacked OS prevents data exfiltration and data persistence by booting air-gapped by default (hardened browser mode, used for tasks such as backing up TOTP secrets, is a deliberate choice) and persisting nothing to disk. Superbacked OS runs entirely from memory — the USB flash drive can be unplugged as soon as the login screen appears.
 
 ## Requirements
 
 - Computer compatible with Ubuntu 24.04.4 LTS
-- USB flash drive (used to run Superbacked OS, 16GB min, faster is better)
+- 8 GB of memory or more (4 GB min using tethered workaround)
+- USB flash drive (used to run Superbacked OS, 16 GB min, faster is better)
 - [Brother HL-L2460DW](https://www.brother-usa.com/products/hll2460dw) or equivalent USB printer (used to print blocks)
 - Plug-and-play or built-in webcam (1080p min)
 
@@ -55,7 +56,12 @@ Select “App Options”, disable “Enable anonymous statistics (telemetry) col
 ```console
 $ cd ~/Downloads
 
-$ for number in $(seq 1 2); do curl --fail --location "https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-amd64-${latestRelease}.img.xz.part$number" || break; done | cat > superbacked-os-amd64-${latestRelease}.img.xz
+$ part=1; \
+  url="https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-amd64-live-${latestRelease}.img.part"; \
+  while curl --fail --head --location --output /dev/null --retry 3 --silent "${url}${part}"; do \
+    curl --fail --location "${url}${part}" || break; \
+    part=$((part + 1)); \
+  done > superbacked-os-amd64-live-${latestRelease}.img
 ```
 
 #### Windows
@@ -69,12 +75,17 @@ $ wsl
 
 $ cd /mnt/c/Users/Sun\ Knudsen/Downloads
 
-$ for number in $(seq 1 2); do curl --fail --location "https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-amd64-${latestRelease}.img.xz.part$number" || break; done | cat > superbacked-os-amd64-${latestRelease}.img.xz
+$ part=1; \
+  url="https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-amd64-live-${latestRelease}.img.part"; \
+  while curl --fail --head --location --output /dev/null --retry 3 --silent "${url}${part}"; do \
+    curl --fail --location "${url}${part}" || break; \
+    part=$((part + 1)); \
+  done > superbacked-os-amd64-live-${latestRelease}.img
 ```
 
 ### Step 4: copy Superbacked OS to USB flash drive
 
-Open “Raspberry Pi Imager”, click “OS”, then “Use custom”, select `superbacked-os-amd64-${latestRelease}.img.xz`, click “Storage”, select USB flash drive, click “NEXT”, then “WRITE” and, finally, click “I UNDERSTAND, ERASE AND WRITE”.
+Open “Raspberry Pi Imager”, click “OS”, then “Use custom”, select `superbacked-os-amd64-live-${latestRelease}.img`, click “Storage”, select USB flash drive, click “NEXT”, then “WRITE” and, finally, click “I UNDERSTAND, ERASE AND WRITE”.
 
 ![Raspberry Pi Imager, release semver may differ](./assets/raspberry-pi-imager.png)
 
@@ -106,8 +117,16 @@ If using Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive or equivalent
 
 ### Step 1 (if applicable): unplug Ethernet cable
 
-### Step 2: boot Superbacked OS
+### Step 2: boot Superbacked OS and select mode
 
 > Heads-up: password is “superbacked”.
+
+Superbacked OS runs in two modes: air-gapped (default, booted automatically) and hardened browser (a deliberate choice, used for tasks such as backing up TOTP secrets).
+
+Both modes copy Superbacked OS to memory (8 GB or more required) — the USB flash drive can be unplugged as soon as the login screen appears.
+
+> Heads-up: on computers with less than 8 GB of memory (4 GB min), select mode at boot menu, press “e”, remove `toram` from the line starting with `linux` and press “F10” — Superbacked OS then runs from the USB flash drive, which must stay plugged in for the whole session (equally amnesic, nothing persists across reboots).
+
+### Step 3: use Superbacked
 
 If scanning blocks does not work, please try using a higher quality 1080p webcam such as the [Razer Kiyo X](https://www.razer.com/streaming-cameras/razer-kiyo-x).

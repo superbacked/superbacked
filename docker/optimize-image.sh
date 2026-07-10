@@ -26,7 +26,7 @@ fsck /dev/loop0p2
 
 printf "%s\n" "Mounting root partition…"
 
-mkdir -p /mnt/root
+mkdir --parents /mnt/root
 
 mount /dev/loop0p2 /mnt/root
 
@@ -49,7 +49,7 @@ find /mnt/root/var/log -type f -delete
 
 # apt package indexes (which the frozen image never reads again) and
 # temporary files from the provisioning session
-rm --recursive --force \
+rm --force --recursive \
   /mnt/root/var/lib/apt/lists/* \
   /mnt/root/tmp/*
 
@@ -59,23 +59,23 @@ rm --force /mnt/root/home/*/.bash_history
 
 # User caches (thumbnails, pip downloads, tracker file index…) and
 # gvfs metadata (records which files were touched during provisioning)
-rm --recursive --force \
+rm --force --recursive \
   /mnt/root/home/*/.cache \
   /mnt/root/home/*/.local/share/gvfs-metadata
 
 # GnuPG homedirs — only used at provisioning time to verify downloads
-rm --recursive --force /mnt/root/home/*/.gnupg
+rm --force --recursive /mnt/root/home/*/.gnupg
 
 # GNOME keyrings — locked with the provisioning password; a fresh one
 # is created transparently at login. Wi-Fi passwords stored “for this
 # user only” would land here.
-rm --recursive --force /mnt/root/home/*/.local/share/keyrings/*
+rm --force --recursive /mnt/root/home/*/.local/share/keyrings/*
 
 # NetworkManager state: connection profiles (Wi-Fi profiles, including
 # passwords stored system-wide, land in system-connections), DHCP
 # leases (named after the provisioning machine’s interface MAC), seen
 # access points and the per-machine secret key
-rm --recursive --force \
+rm --force --recursive \
   /mnt/root/etc/NetworkManager/system-connections/* \
   /mnt/root/var/lib/NetworkManager/*
 

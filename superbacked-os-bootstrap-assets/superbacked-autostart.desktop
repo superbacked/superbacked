@@ -1,5 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Superbacked autostart
-Exec=/home/superbacked/.config/autostart/superbacked-autostart.sh
