@@ -805,12 +805,14 @@ printf "%s\n" "Configuring toram status…"
 
 # live-boot copies Superbacked OS to memory (toram) when there is
 # enough of it and silently falls back to running from the USB flash
-# drive when there is not — the desktop looks identical either way, and
-# unplugging the drive in the fallback case crashes the session. This
-# warning, shown at login only in the fallback case, is the only signal
-# a user gets — with enough memory no dialog appears and the drive can
-# simply be unplugged, as documented. Exits quietly on non-live boots
-# (the source system).
+# drive when there is not — and users can also remove toram on purpose
+# at the GRUB menu to run tethered from the drive (documented in the
+# run guide). The desktop looks identical either way, and unplugging
+# the drive while running from it crashes the session. This warning,
+# shown at login only when running from the drive, states that fact
+# without guessing why — it is the only signal a user gets. When the OS
+# is in memory no dialog appears and the drive can simply be unplugged,
+# as documented. Exits quietly on non-live boots (the source system).
 sudo tee /usr/local/bin/superbacked-toram-status > /dev/null << 'EOF'
 #! /bin/bash
 
@@ -819,7 +821,7 @@ medium_fstype="$(findmnt --noheadings --output FSTYPE /run/live/medium 2> /dev/n
 if [ -n "${medium_fstype}" ] && [ "${medium_fstype}" != "tmpfs" ]; then
   zenity --warning \
     --no-wrap \
-    --text "Keep the USB flash drive plugged in — this computer does not have enough\nmemory to hold Superbacked OS, so it is running directly from the drive.\nUnplugging it would crash the session." \
+    --text "Superbacked OS is running directly from the USB flash drive.\nThe drive needs to stay plugged in for the session to keep running." \
     --title "Superbacked OS" 2> /dev/null
 fi
 EOF
