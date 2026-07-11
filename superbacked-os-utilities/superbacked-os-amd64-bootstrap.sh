@@ -97,15 +97,39 @@ sudo rm --force /usr/share/xsessions/*.desktop
 
 printf "%s\n" "Configuring audio…"
 
-# On some laptops the speaker amplifier ignores the hardware volume
-# control, so the volume keys move but the sound level never changes.
-# Forcing software volume makes WirePlumber scale the samples itself,
-# which always works. table.insert appends to the default rules — an
-# assignment would replace them, dropping the rules that start the codec
-# and silencing audio. This is WirePlumber 0.4 (Lua) syntax; 0.5 would
-# need the SPA-JSON format under wireplumber.conf.d instead.
-sudo mkdir --parents /etc/wireplumber/main.lua.d
-sudo tee /etc/wireplumber/main.lua.d/51-alsa-soft-mixer.lua > /dev/null << 'EOF'
+# On the ThinkPad X1 Carbon Gen 10 the speaker amplifier ignores the
+# hardware volume control — the volume keys move but the sound level
+# never changes. Forcing software volume (api.alsa.soft-mixer) makes
+# WirePlumber scale the samples itself, sidestepping the amplifier.
+#
+# The workaround must not apply everywhere: soft-mixer freezes the
+# hardware mixer at whatever level the driver initialized it to, and on
+# machines with a working amplifier that level can be low — capping
+# audio at a whisper even at full volume (seen on the ThinkPad X1
+# Carbon Gen 6). WirePlumber cannot scope the rule itself: its
+# sandboxed Lua cannot read the model from DMI, and every property its
+# matcher sees is generic (both ThinkPads above expose the same
+# "HDA Intel PCH" device). So the rule ships inert in /usr/local/share
+# and a udev rule copies it into WirePlumber's config the moment the
+# kernel registers a codec whose chip name and board subsystem id are
+# known bad (the same key the kernel's own HDA quirk tables use) on a
+# matching machine model (DMI) — so a model variant with different
+# audio hardware is left alone. Built-in codecs register during
+# early-boot device discovery, long before the login screen brings up
+# audio. The copy lands in the RAM overlay, so unaffected machines
+# never see it.
+#
+# table.insert appends to the default rules — an assignment would
+# replace them, dropping the rules that start the codec and silencing
+# audio. This is WirePlumber 0.4 (Lua) syntax; 0.5 would need the
+# SPA-JSON format under wireplumber.conf.d instead.
+sudo mkdir --parents /etc/wireplumber/main.lua.d /usr/local/share/superbacked
+
+# Earlier bootstraps wrote the rule straight into WirePlumber's config,
+# applying it to every machine — remove it so re-runs clean up.
+sudo rm --force /etc/wireplumber/main.lua.d/51-alsa-soft-mixer.lua
+
+sudo tee /usr/local/share/superbacked/51-alsa-soft-mixer.lua > /dev/null << 'EOF'
 table.insert(alsa_monitor.rules, {
   matches = {
     {
@@ -116,6 +140,20 @@ table.insert(alsa_monitor.rules, {
     ["api.alsa.soft-mixer"] = true,
   },
 })
+EOF
+
+# One rule line per affected machine, matching codec and model
+# together (the bracketed ATTR reads the DMI device, letting one rule
+# match across devices) and copying the WirePlumber rule into place
+# right there — cp is instant, well within what udev RUN allows. When
+# adding a machine, read the values off it with:
+#   cat /sys/class/dmi/id/product_version
+#   cat /sys/class/sound/hwC*D*/chip_name
+#   cat /sys/class/sound/hwC*D*/subsystem_id
+# and dry-run the match with udevadm test /sys/class/sound/hwC0D0
+sudo tee /etc/udev/rules.d/99-superbacked-soft-mixer.rules > /dev/null << 'EOF'
+# ThinkPad X1 Carbon Gen 10 (Realtek ALC287, Lenovo board 0x17aa22e7)
+ACTION=="add", SUBSYSTEM=="sound", KERNEL=="hwC?D?", ATTR{chip_name}=="ALC287", ATTR{subsystem_id}=="0x17aa22e7", ATTR{[dmi/id]product_version}=="ThinkPad X1 Carbon Gen 10", RUN+="/usr/bin/cp /usr/local/share/superbacked/51-alsa-soft-mixer.lua /etc/wireplumber/main.lua.d/51-alsa-soft-mixer.lua"
 EOF
 
 printf "%s\n" "Adding universe repository…"
