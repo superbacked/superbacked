@@ -34,9 +34,13 @@ app_image="/dist/superbacked-x64-${version}.AppImage"
 
 if [ ! -f "${source_image}" ] \
   || [ -z "${output_image}" ] \
-  || [ "${source_image}" = "${output_image}" ] \
-  || [ ! -f "${app_image}" ]; then
+  || [ "${source_image}" = "${output_image}" ]; then
   printf "%s\n" "Error: usage: create-superbacked-os-live-image.sh /path/to/source.img /path/to/output.img version" >&2
+  exit 1
+fi
+
+if [ ! -f "${app_image}" ]; then
+  printf "%s\n" "Error: ${app_image} not found" >&2
   exit 1
 fi
 
