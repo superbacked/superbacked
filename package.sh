@@ -17,10 +17,10 @@ function show_help() {
 Usage: package.sh [options]
 
 Options:
-  --app               Build app only
-  --os                Build Superbacked OS only
-  --all               Build and package everything without prompts
-  -h, --help          Show this help message
+  --app       Build app only
+  --os        Build Superbacked OS only
+  --all       Build and package everything without prompts
+  -h, --help  Show this help message
 
 If no options are provided, the script will prompt for each step.
 EOF
@@ -97,17 +97,22 @@ if [ "${build_os}" = true ]; then
 
   printf "%s\n" "Starting Colima…"
 
+  # 8 GB is load-bearing: the build stacks a tmpfs overlay (apt
+  # upgrade, Firefox, KeePassXC) on top of mksquashfs’ zstd-19 working
+  # set — 4 GB OOMs.
   colima start \
     --profile superbacked \
-    --cpu 2 \
+    --cpu 4 \
     --disk 20 \
-    --memory 4
+    --memory 8
 
   printf "%s\n" "Creating live Superbacked OS image…"
 
-  # Provisioning and live conversion happen in one pass: the source
-  # image is read-only input and the live image is written straight to
-  # its distribution name (<product>-<arch>-<component>-<version>).
+  # Provisioning and live conversion happen in one pass: the bootstrap
+  # runs in a chroot of the vanilla source image (read-only input,
+  # network required for the snapshot-pinned packages) and the live
+  # image is written straight to its distribution name
+  # (<product>-<arch>-<component>-<version>).
   docker run \
     --interactive \
     --privileged \
@@ -116,6 +121,7 @@ if [ "${build_os}" = true ]; then
     --volume $(pwd)/dist:/dist \
     --volume $(pwd)/superbacked-os:/superbacked-os:ro \
     --volume $(pwd)/superbacked-os-bootstrap-assets:/superbacked-os-bootstrap-assets:ro \
+    --volume $(pwd)/superbacked-os-utilities:/superbacked-os-utilities:ro \
     superbacked-os-docker:24.04 \
     /root/create-superbacked-os-live-image.sh \
     /superbacked-os/superbacked-os-amd64-24.04.4.img \

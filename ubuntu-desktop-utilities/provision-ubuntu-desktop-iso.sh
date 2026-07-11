@@ -28,7 +28,6 @@ docker run \
   --rm \
   --tty \
   --volume ${iso_dir}:/isos \
-  --volume $(pwd)/superbacked-os-utilities:/superbacked-os-utilities \
   --volume $(pwd)/ubuntu-desktop-utilities:/ubuntu-desktop-utilities \
   superbacked-os-docker:24.04 \
   /root/provision-ubuntu-desktop-iso.sh ${iso}

@@ -1,4 +1,6 @@
-# Superbacked OS amd64 source image guide
+# Superbacked OS source image guide
+
+> Heads-up: the source image is a **vanilla** Ubuntu Desktop install — all Superbacked provisioning happens later, in a chroot of this image at packaging time (`package.sh --os`, which needs network for the snapshot-pinned packages). The installed system is never logged into or booted beyond the installer, so the capture stays deterministic and free of session state.
 
 ### Step 1 (Mac): download `ubuntu-24.04.4-desktop-amd64.iso`, `SHA256SUMS` and `SHA256SUMS.gpg` from [Ubuntu 24.04 LTS releases](https://releases.ubuntu.com/24.04/) to same folder
 
@@ -36,7 +38,7 @@ ubuntu-24.04.4-desktop-amd64.iso: OK
 
 ### Step 5 (Mac): copy `ubuntu-24.04.4-desktop-amd64-autoinstall.iso` to USB flash drive using [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
 
-### Step 6 (ThinkPad): connect Ethernet cable, USB flash drive and “SAMSUNG_MZVL4256HBJD_DD56419884D9D” disk, boot Ubuntu Desktop installer and follow instructions
+### Step 6 (ThinkPad): connect Ethernet cable, USB flash drive and “SAMSUNG_MZVL4256HBJD_DD56419884D9D” disk, boot Ubuntu Desktop installer and follow instructions — then, when the installer finishes and reboots, **power the ThinkPad off without logging in** (the login screen is as far as the installed system may ever get)
 
 ### Step 7 (Mac): run `superbacked-os-utilities/superbacked-os-image.sh superbacked-os-amd64-24.04.4`
 

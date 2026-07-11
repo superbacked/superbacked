@@ -1,22 +1,27 @@
 #! /bin/bash
 # Creates the distributed Superbacked OS live image (EFI + squashfs)
-# from the source image (EFI + ext4 root), provisioning the Superbacked
-# app along the way. The live root filesystem is copied to RAM at boot:
-# the USB drive can be unplugged as soon as the login screen appears,
-# and amnesia becomes physical (the OS only ever exists in RAM) instead
-# of depending on overlayroot.
+# from a vanilla Ubuntu Desktop source image (EFI + ext4 root). The
+# bootstrap, running in a chroot of the source image overlay, authors
+# the entire root filesystem — packages, users, hardening, the
+# Superbacked app and its AppArmor profiles (see
+# superbacked-os-utilities/superbacked-os-bootstrap.sh); this
+# script assembles and sanitizes the artifact around it. The live root
+# filesystem is copied to RAM at boot: the USB drive can be unplugged
+# as soon as the login screen appears, and amnesia is physical — the OS
+# only ever exists in RAM.
 #
-# The source image must ship live-boot preinstalled (the bootstrap
-# handles this) — image creation is fully offline, so the same inputs
-# always yield the same live system.
+# Image creation is online: the bootstrap resolves packages against a
+# pinned Ubuntu archive snapshot (same timestamp, same packages) and
+# verifies every other download against pinned keys and fingerprints.
 #
 # The source image is never modified — it is attached read-only and all
-# changes below (provisioning the app, adapting configuration) land in
-# a tmpfs overlay that only the squashfs sees.
+# changes below land in a tmpfs overlay that only the squashfs sees.
 #
 # Usage (inside superbacked-os-docker container, with /dist holding the
-# app build and /superbacked-os-bootstrap-assets mounted from the
-# repository):
+# app build and /superbacked-os-bootstrap-assets plus
+# /superbacked-os-utilities mounted from the repository; set
+# APPARMOR_MODE=complain to build a test image whose app profiles log
+# denials instead of enforcing them):
 # /root/create-superbacked-os-live-image.sh \
 #   /superbacked-os/superbacked-os-amd64-24.04.4.img \
 #   /dist/superbacked-os-amd64-live-1.13.0.img \
@@ -46,10 +51,14 @@ fi
 
 function cleanup()
 {
+  # Not alphabetical — nested mounts unmount before their parents
+  # (dev/pts before dev, the overlay root before its lower and scratch
+  # backing).
   umount /mnt/root/dev/pts 2> /dev/null || true
   umount /mnt/root/dev 2> /dev/null || true
   umount /mnt/root/proc 2> /dev/null || true
   umount /mnt/root/sys 2> /dev/null || true
+  umount --recursive /mnt/root/run 2> /dev/null || true
   umount /mnt/root 2> /dev/null || true
   umount /mnt/scratch 2> /dev/null || true
   umount /mnt/lower 2> /dev/null || true
@@ -59,6 +68,8 @@ function cleanup()
 }
 
 trap cleanup ERR INT
+
+printf "%s\n" "Starting live image assembly…"
 
 printf "%s\n" "Creating block device nodes…"
 
@@ -71,100 +82,121 @@ losetup --find --partscan --read-only "${source_image}"
 
 printf "%s\n" "Mounting root partition in RAM overlay…"
 
-mkdir --parents /mnt/lower /mnt/scratch /mnt/root
+mkdir --parents /mnt/lower /mnt/root /mnt/scratch
 
 mount --read-only /dev/loop0p2 /mnt/lower
-mount --types tmpfs tmpfs /mnt/scratch
+# The upper layer absorbs everything the bootstrap does — apt indexes,
+# downloaded debs, upgraded files — so it needs a generous cap (tmpfs
+# allocates lazily; unused headroom costs nothing).
+mount --options size=8g --types tmpfs tmpfs /mnt/scratch
 mkdir --parents /mnt/scratch/upper /mnt/scratch/work
 mount \
   --options lowerdir=/mnt/lower,upperdir=/mnt/scratch/upper,workdir=/mnt/scratch/work \
   --types overlay \
   overlay /mnt/root
 
-printf "%s\n" "Provisioning Superbacked app…"
+printf "%s\n" "Preparing chroot…"
 
-# Assets are staged straight from the repository and app build mounts —
-# no tarball intermediary — and land in the overlay, leaving the source
-# image untouched. Ownership matches the superbacked user (UID 1000).
+# dev before dev/pts — nested mounts need their parent in place first.
+mount --bind /dev /mnt/root/dev
+mount --bind /dev/pts /mnt/root/dev/pts
+mount --types proc proc /mnt/root/proc
+mount --types tmpfs tmpfs /mnt/root/run
+mount --types sysfs sysfs /mnt/root/sys
+
+# The app build and repository assets ride into the chroot on the /run
+# tmpfs — the bootstrap installs the Superbacked app and the AppArmor
+# profiles from there, and the mounts (and their mount points) vanish
+# with the tmpfs, leaving no trace in the image.
 mkdir --parents \
-  /mnt/root/home/superbacked/.local/share/applications \
-  /mnt/root/home/superbacked/.local/superbacked
+  /mnt/root/run/dist \
+  /mnt/root/run/superbacked-os-bootstrap-assets
+mount --bind /dist /mnt/root/run/dist
+mount --bind /superbacked-os-bootstrap-assets \
+  /mnt/root/run/superbacked-os-bootstrap-assets
+
+# The source image’s /etc/resolv.conf is a dangling symlink into
+# /run/systemd/resolve — replace it with the container’s resolver for
+# the duration of provisioning (the stock symlink is restored in the
+# purge below).
+rm --force /mnt/root/etc/resolv.conf
+cp /etc/resolv.conf /mnt/root/etc/resolv.conf
+
+# Keep maintainer scripts from trying to start services in the chroot.
+printf '%s\n' '#!/bin/sh' 'exit 101' > /mnt/root/usr/sbin/policy-rc.d
+chmod +x /mnt/root/usr/sbin/policy-rc.d
+
+# update-grub is meaningless during provisioning — the live image’s
+# GRUB configuration is written further down and the rootfs /boot is
+# excluded from the squashfs — and it would fail anyway: grub-probe
+# cannot resolve the overlay root to a device. Kernel and memtest
+# maintainer scripts call it regardless, so divert it to true for the
+# duration (restored in the purge below).
+chroot /mnt/root dpkg-divert --local --rename --add /usr/sbin/update-grub
+ln --symbolic /usr/bin/true /mnt/root/usr/sbin/update-grub
 
 cp \
-  /superbacked-os-bootstrap-assets/superbacked.profile \
-  /mnt/root/etc/apparmor.d/superbacked.profile
-cp \
-  /superbacked-os-bootstrap-assets/superbacked.desktop \
-  /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
-cp \
-  "${app_image}" \
-  /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
-cp \
-  /dist/.icon-icns/icon.icns \
-  /mnt/root/home/superbacked/.local/superbacked/superbacked.icns
+  /superbacked-os-utilities/superbacked-os-bootstrap.sh \
+  /mnt/root/root/superbacked-os-bootstrap.sh
 
-chmod +x \
-  /mnt/root/home/superbacked/.local/share/applications/superbacked.desktop
-chmod +x \
-  /mnt/root/home/superbacked/.local/superbacked/superbacked.AppImage
+printf "%s\n" "Running bootstrap in chroot…"
 
-chown --recursive 1000:1000 /mnt/root/home/superbacked
-
-printf "%s\n" "Adapting system configuration for live boot…"
-
-# live-boot overlays the root filesystem with RAM — overlayroot
-# stacking a second overlay on top of it would misbehave. Adapted
-# before the initramfs is regenerated below because overlayroot embeds
-# a copy of this file into the initrd. Tolerates source images that do
-# not use overlayroot at all.
-if [ -f /mnt/root/etc/overlayroot.conf ]; then
-  sed --in-place 's/overlayroot="tmpfs"/overlayroot=""/g' \
-    /mnt/root/etc/overlayroot.conf
-fi
-
-# Replace the fstab outright. Its entries pin the provisioning machine
-# partitions by UUID: /boot/efi does not exist on the live image (so
-# its mount fails and drops boot to emergency mode) and the root
-# entry’s ro option makes systemd remount the live overlay read-only,
-# crashing everything that writes. live-boot mounts all the live
-# system needs.
-tee /mnt/root/etc/fstab > /dev/null << 'EOF'
-# Intentionally empty — the root filesystem is assembled by live-boot
-# (squashfs copied to RAM with a tmpfs overlay); nothing is mounted
-# from disk.
-EOF
+# --ignore-environment keeps container variables (and Docker’s PATH)
+# from leaking into the image; APPARMOR_MODE passes through explicitly.
+chroot /mnt/root /usr/bin/env --ignore-environment \
+  APPARMOR_MODE="${APPARMOR_MODE:-}" \
+  DEBIAN_FRONTEND=noninteractive \
+  HOME=/root \
+  LC_ALL=C.UTF-8 \
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  TERM="${TERM:-dumb}" \
+  bash /root/superbacked-os-bootstrap.sh "${version}"
 
 # live-boot provides the initramfs plumbing that finds
 # /live/filesystem.squashfs on the boot medium, copies it to RAM
 # (toram) and mounts it with a tmpfs overlay as the root filesystem.
 # Unlike casper it configures nothing at boot — the baked system comes
 # up exactly as provisioned — and it only activates when boot=live is
-# on the kernel command line. The bootstrap preinstalls it; refuse
-# source images that predate that rather than reaching for the archive
-# (online installs made output depend on archive state).
+# on the kernel command line. The bootstrap installs it; a boot whose
+# initramfs lacks it lands in an initramfs shell, so fail here instead.
 if ! chroot /mnt/root dpkg --status live-boot > /dev/null 2>&1; then
-  printf "%s\n" "Error: source image is missing live-boot — re-provision with the current bootstrap" >&2
+  printf "%s\n" "Error: bootstrap failed to install live-boot" >&2
   cleanup
   exit 1
 fi
 
-mount --bind /dev /mnt/root/dev
-mount --bind /dev/pts /mnt/root/dev/pts
-mount --types proc proc /mnt/root/proc
-mount --types sysfs sysfs /mnt/root/sys
+printf "%s\n" "Removing superseded kernels…"
 
-# Regenerate the initramfs so it embeds the overlayroot.conf adapted
-# above — skipped when the source image does not use overlayroot (the
-# initrd built at provisioning time is already correct).
-if [ -f /mnt/root/etc/overlayroot.conf ]; then
-  printf "%s\n" "Regenerating initramfs…"
+# The bootstrap’s apt upgrade may have installed a newer kernel; the
+# superseded one would ship as dead weight in the squashfs. apt’s
+# kernel-keep heuristic reads the *host* kernel version inside a
+# chroot, so the purge is explicit: keep the exact version
+# /boot/vmlinuz points at, purge every other versioned kernel package
+# (metapackages stay, or apt would reinstall on the next build of a
+# refreshed source image).
+keep_version="$(basename "$(readlink --canonicalize /mnt/root/boot/vmlinuz)")"
+keep_version="${keep_version#vmlinuz-}"
 
-  chroot /mnt/root update-initramfs -k all -u
+mapfile -t old_kernel_packages < <(
+  chroot /mnt/root dpkg-query --show --showformat '${Package}\n' \
+    'linux-headers-*' 'linux-image-*' 'linux-modules-*' 2> /dev/null \
+    | grep --extended-regexp '^linux-(image|modules|headers)(-extra)?-[0-9]' \
+    | grep --invert-match --fixed-strings "${keep_version}" || true
+)
+
+if [ "${#old_kernel_packages[@]}" -gt 0 ]; then
+  chroot /mnt/root apt-get purge --yes "${old_kernel_packages[@]}"
+  chroot /mnt/root apt-get clean
 fi
 
-# Capture the kernel and initramfs (regenerated above when overlayroot
-# needed disabling) before the boot folder is excluded from the
-# squashfs below.
+printf "%s\n" "Regenerating initramfs…"
+
+# Embeds live-boot (installed by the bootstrap) into the initrd of the
+# kernel captured below.
+chroot /mnt/root update-initramfs -u -k all
+
+# Capture the kernel and initramfs (regenerated above) before the boot
+# folder is excluded from the squashfs below.
 kernel="$(basename "$(readlink --canonicalize /mnt/root/boot/vmlinuz)")"
 initrd="$(basename "$(readlink --canonicalize /mnt/root/boot/initrd.img)")"
 
@@ -193,11 +225,31 @@ printf "%s\n" "Purging source image artifacts…"
 # behind. Purged here, at live image creation time, so purge
 # improvements apply to every build without re-capturing the source
 # image. Logs, histories, caches and network state describe the
-# provisioning machine and network — purged for privacy; the rest is
-# dead weight.
+# installer machine and the build container — purged for privacy; the
+# rest is dead weight.
 # Everything regenerates on demand at boot, in the RAM overlay.
-# Per-user snap data (~/snap) is deliberately kept — the bootstrap
-# pre-warms it.
+
+# Provisioning scaffolding: the service-start guard, the update-grub
+# diversion, the bootstrap script copy, root’s download-verification
+# and shell state, and the container’s resolver (the stock symlink
+# into systemd-resolved is restored).
+rm --force /mnt/root/usr/sbin/policy-rc.d
+rm --force /mnt/root/usr/sbin/update-grub
+chroot /mnt/root dpkg-divert --local --rename --remove /usr/sbin/update-grub
+rm --force /mnt/root/root/superbacked-os-bootstrap.sh
+rm --force --recursive \
+  /mnt/root/root/.bash_history \
+  /mnt/root/root/.cache \
+  /mnt/root/root/.gnupg
+rm --force /mnt/root/etc/resolv.conf
+ln --symbolic ../run/systemd/resolve/stub-resolv.conf /mnt/root/etc/resolv.conf
+
+# The machine-id describes the installer machine — shipping it would
+# make every user’s boot share one identity. Emptied (not removed) so
+# systemd treats it as uninitialized and generates a fresh one in the
+# RAM overlay at every boot.
+truncate --size 0 /mnt/root/etc/machine-id
+rm --force /mnt/root/var/lib/dbus/machine-id
 
 # Logs, including the installer logs (username, hardware and network of
 # the provisioning machine) and the systemd journal
@@ -250,7 +302,9 @@ rm --force \
 # overlay, ACL intact.
 rm --force --recursive /mnt/root/media/*
 
+# dev/pts before dev — nested mounts unmount before their parents.
 umount /mnt/root/dev/pts /mnt/root/dev /mnt/root/proc /mnt/root/sys
+umount --recursive /mnt/root/run
 
 printf "%s\n" "Creating squashfs (this takes a while)…"
 
@@ -389,4 +443,4 @@ losetup --detach "${boot_device}"
 
 rm --force "/tmp/${kernel}" "/tmp/${initrd}" /tmp/esp.img
 
-printf "%s\n" "Done: ${output_image} ($(du --human-readable --summarize "${output_image}" | cut --fields 1))"
+printf "%s\n" "Live image assembly complete"
