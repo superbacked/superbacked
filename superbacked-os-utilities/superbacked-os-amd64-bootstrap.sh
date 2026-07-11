@@ -27,8 +27,9 @@ snap_disconnect() {
 
 printf "%s\n" "Configuring GNOME…"
 
-# A quiet, dark desktop: black background, no icons on the desktop, no
-# location services or telemetry, USB media never mounts itself, new
+# A quiet, dark desktop: black background, floating bottom dock
+# limited to pinned apps and mounted drives, no icons on the desktop,
+# no location services or telemetry, USB media never mounts itself, new
 # USB devices are rejected while the screen is locked, and the terminal
 # is white text on black.
 gsettings set org.gnome.desktop.background picture-uri 'none'
@@ -43,6 +44,10 @@ gsettings set org.gnome.desktop.privacy send-software-usage-stats false
 gsettings set org.gnome.desktop.privacy usb-protection true
 gsettings set org.gnome.desktop.privacy usb-protection-level 'lockscreen'
 gsettings set org.gnome.mutter center-new-windows true
+gsettings set org.gnome.shell.extensions.dash-to-dock dash-max-icon-size 48
+gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'
+gsettings set org.gnome.shell.extensions.dash-to-dock extend-height false
+gsettings set org.gnome.shell.extensions.dash-to-dock show-show-apps-button false
 gsettings set org.gnome.shell.extensions.ding show-home false
 gsettings set org.gnome.system.location enabled false
 gsettings set \
