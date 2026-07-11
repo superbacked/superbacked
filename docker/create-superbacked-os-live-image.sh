@@ -119,10 +119,11 @@ if [ -f /mnt/root/etc/overlayroot.conf ]; then
 fi
 
 # Replace the fstab outright. Its entries pin the provisioning machine
-# partitions by UUID: /boot/efi no longer exists (so its mount fails
-# and drops boot to emergency mode) and the root entry’s ro option
-# makes systemd remount the live overlay read-only, crashing everything
-# that writes. live-boot mounts all the live system needs.
+# partitions by UUID: /boot/efi does not exist on the live image (so
+# its mount fails and drops boot to emergency mode) and the root
+# entry’s ro option makes systemd remount the live overlay read-only,
+# crashing everything that writes. live-boot mounts all the live
+# system needs.
 tee /mnt/root/etc/fstab > /dev/null << 'EOF'
 # Intentionally empty — the root filesystem is assembled by live-boot
 # (squashfs copied to RAM with a tmpfs overlay); nothing is mounted
@@ -319,12 +320,13 @@ mkdir --parents /mnt/boot/live /mnt/boot/boot/grub
 cp "/tmp/${kernel}" "/tmp/${initrd}" /mnt/boot/live/
 mv /tmp/filesystem.squashfs /mnt/boot/live/
 
-# Same modes as the installed system: air-gapped boots unattended,
-# hardened browser mode is a deliberate choice (selected by the
-# superbacked.browser kernel parameter, as before). boot=live hands
-# root mounting to live-boot. init_on_free=1 makes the kernel zero
-# memory the moment it is freed, so secrets do not linger in RAM after
-# the app releases them — a cold-boot attack recovers nothing.
+# Air-gapped boots unattended; hardened browser mode is a deliberate
+# choice, selected by the superbacked.browser kernel parameter that
+# the browser-mode service (baked in by the bootstrap) checks.
+# boot=live hands root mounting to live-boot. init_on_free=1 makes the
+# kernel zero memory the moment it is freed, so secrets do not linger
+# in RAM after the app releases them — a cold-boot attack recovers
+# nothing.
 #
 # toram copies the squashfs to RAM, so the USB drive can be unplugged
 # as soon as the login screen appears — which also makes mid-session

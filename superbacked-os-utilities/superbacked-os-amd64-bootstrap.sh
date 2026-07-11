@@ -165,11 +165,11 @@ sudo apt install --yes "${packages[@]}"
 
 # live-boot provides the initramfs plumbing the distributed live image
 # boots with (see docker/create-superbacked-os-live-image.sh) —
-# installed at
-# provisioning time so image creation needs no network. Inert on this
-# installed system: it only activates when boot=live is on the kernel
-# command line. Recommends are skipped: they add only documentation and
-# live-tools, whose service would run at every boot for nothing.
+# installed at provisioning time so image creation needs no network.
+# Inert on this installed system: it only activates when boot=live is
+# on the kernel command line. Recommends are skipped: they add only
+# documentation and live-tools, whose service would run at every boot
+# for nothing.
 sudo apt install --no-install-recommends --yes live-boot
 
 pipx ensurepath
