@@ -758,6 +758,37 @@ EOF
 
 sudo systemctl enable home-superbacked-Downloads.mount
 
+printf "%s\n" "Configuring toram status…"
+
+# live-boot copies Superbacked OS to memory (toram) when there is
+# enough of it and silently falls back to running from the USB flash
+# drive when there is not — the desktop looks identical either way, and
+# unplugging the drive in the fallback case crashes the session. This
+# warning, shown at login only in the fallback case, is the only signal
+# a user gets — with enough memory no dialog appears and the drive can
+# simply be unplugged, as documented. Exits quietly on non-live boots
+# (the source system).
+sudo tee /usr/local/bin/superbacked-toram-status > /dev/null << 'EOF'
+#! /bin/bash
+
+medium_fstype="$(findmnt --noheadings --output FSTYPE /run/live/medium 2> /dev/null)"
+
+if [ -n "${medium_fstype}" ] && [ "${medium_fstype}" != "tmpfs" ]; then
+  zenity --warning \
+    --text "Keep the USB flash drive plugged in — this computer does not have enough memory to hold Superbacked OS, so it is running directly from the drive. Unplugging it would crash the session." \
+    --title "Superbacked OS"
+fi
+EOF
+
+sudo chmod +x /usr/local/bin/superbacked-toram-status
+
+sudo tee /etc/xdg/autostart/superbacked-toram-status.desktop > /dev/null << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Superbacked toram status
+Exec=/usr/local/bin/superbacked-toram-status
+EOF
+
 printf "%s\n" "Configuring KeePassXC theme…"
 
 # The desktop is dark-mode only, but a snapped app cannot see GNOME’s

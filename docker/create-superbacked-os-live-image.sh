@@ -269,16 +269,6 @@ squashfs_size="$(stat --format=%s /tmp/filesystem.squashfs)"
 kernel_size="$(stat --format=%s "/tmp/${kernel}")"
 initrd_size="$(stat --format=%s "/tmp/${initrd}")"
 
-# The run guide documents 8 GB+ of memory, since both modes copy the
-# whole live payload to RAM on top of the ~2 GB the session needs.
-# Fail when the payload outgrows that promise rather than let 8 GB
-# machines die mid-boot with the docs still claiming they are enough.
-if [ "$(( squashfs_size + kernel_size + initrd_size ))" -gt 5368709120 ]; then
-  printf "%s\n" "Error: live payload exceeds 5 GB — booting needs more than 8 GB of RAM, update the run guide" >&2
-  cleanup
-  exit 1
-fi
-
 # Boot partition: payload plus 5% ext4 overhead (journal, bitmaps,
 # superblocks — inode tables are shrunk at mkfs below) and 64 MiB of
 # GRUB slack, rounded up to a whole MiB. Kept tight on purpose: unused
@@ -343,8 +333,10 @@ mv /tmp/filesystem.squashfs /mnt/boot/live/
 # tethered from the drive instead (documented in the run guide) —
 # equally amnesic, writes land in the same RAM overlay either way.
 #
-# The 8 GB+ memory requirement lives in the run guide rather than the
-# menu, and is enforced against payload growth by the check above.
+# The 8 GB memory requirement lives in the run guide rather than the
+# menu — with less memory, live-boot falls back to running from the
+# drive and the toram status warning tells the user to keep it plugged
+# in.
 cat > /mnt/boot/boot/grub/grub.cfg << EOF
 set default=0
 set timeout=5

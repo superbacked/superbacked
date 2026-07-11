@@ -14,8 +14,8 @@ This guide walks through flashing Superbacked OS to a USB drive and booting from
 ## Requirements
 
 - Computer compatible with Ubuntu 24.04.4 LTS
-- 8 GB of memory or more (4 GB min using tethered workaround)
 - USB flash drive (used to run Superbacked OS, 16 GB min, faster is better)
+- 4 GB of memory or more (8 GB required to run entirely from memory and unplug USB flash drive)
 - [Brother HL-L2460DW](https://www.brother-usa.com/products/hll2460dw) or equivalent USB printer (used to print blocks)
 - Plug-and-play or built-in webcam (1080p min)
 
@@ -123,9 +123,9 @@ If using Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive or equivalent
 
 Superbacked OS runs in two modes: air-gapped (default, booted automatically) and hardened browser (a deliberate choice, used for tasks such as backing up TOTP secrets).
 
-Both modes copy Superbacked OS to memory (8 GB or more required) — the USB flash drive can be unplugged as soon as the login screen appears.
+Both modes copy Superbacked OS to memory (8 GB required) — the USB flash drive can be unplugged as soon as the login screen appears.
 
-> Heads-up: on computers with less than 8 GB of memory (4 GB min), select mode at boot menu, press “e”, remove `toram` from the line starting with `linux` and press “F10” — Superbacked OS then runs from the USB flash drive, which must stay plugged in for the whole session (equally amnesic, nothing persists across reboots).
+> Heads-up: on computers with less than 8 GB of memory (4 GB min), Superbacked OS automatically runs from the USB flash drive instead, which must then stay plugged in for the whole session (equally amnesic, nothing persists across reboots) — when that happens, a warning is shown after login.
 
 ### Step 3: use Superbacked
 
