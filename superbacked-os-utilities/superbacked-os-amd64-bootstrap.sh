@@ -77,6 +77,19 @@ gsettings set org.gnome.shell favorite-apps "[
   'org.gnome.Nautilus.desktop'
 ]"
 
+printf "%s\n" "Disabling Xorg login sessions…"
+
+# Superbacked OS is Wayland-only — X11 has no window isolation (any
+# client can observe other windows and keystrokes), which is why every
+# bundled app pins Wayland and fails closed without it. Removing the
+# Xorg session files removes “Ubuntu on Xorg” from the login screen,
+# and the session cog with it (GDM only shows the cog when more than
+# one session exists). Hardware that cannot run Wayland then fails
+# loudly at login instead of silently offering a snoopable session.
+# (The Xorg server packages themselves are uninstalled with the other
+# extraneous software below.)
+sudo rm --force /usr/share/xsessions/*.desktop
+
 printf "%s\n" "Configuring audio…"
 
 # On some laptops the speaker amplifier ignores the hardware volume
@@ -935,6 +948,24 @@ printf "%s\n" "Uninstalling extraneous software…"
 # Remove the build tools used earlier (zlib1g-dev stays — the app needs
 # it) along with Ubuntu’s updaters and crash reporters: nothing on this
 # image should update itself or phone home.
+#
+# The Xorg server packages are also removed. Xorg is a session X
+# server: the desktop it runs owns one flat trust domain where any
+# client can log every keystroke and read every window, so with the
+# packages present, one selection at the login screen (open to anyone —
+# the password is public) flips the whole machine out of window
+# isolation. Ubuntu ships them purely as a compatibility fallback for
+# hardware where Wayland fails, nothing requires them beyond Recommends
+# from gdm3 and gnome-shell, and xserver-xorg-legacy adds a setuid-root
+# binary — privilege-escalation surface even if no X session ever runs.
+#
+# Xwayland stays (ubuntu-session hard-depends on it) but is a different
+# animal: a rootless, unprivileged Wayland client that owns no input
+# devices and cannot see Wayland windows or keystrokes. With every
+# bundled app pinned to Wayland — failing closed rather than falling
+# back — no X11 client exists, so it never even starts. Residual
+# surface: its codebase as an exploitation target for an already
+# compromised process.
 sudo apt remove --purge --yes \
   apport \
   build-essential \
@@ -947,7 +978,10 @@ sudo apt remove --purge --yes \
   update-manager-core \
   update-notifier \
   update-notifier-common \
-  whoopsie
+  whoopsie \
+  xserver-xorg \
+  xserver-xorg-core \
+  xserver-xorg-legacy
 
 sudo apt autoremove --purge --yes
 
