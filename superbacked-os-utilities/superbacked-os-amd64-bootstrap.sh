@@ -780,7 +780,8 @@ medium_fstype="$(findmnt --noheadings --output FSTYPE /run/live/medium 2> /dev/n
 
 if [ -n "${medium_fstype}" ] && [ "${medium_fstype}" != "tmpfs" ]; then
   zenity --warning \
-    --text "Keep the USB flash drive plugged in — this computer does not have enough memory to hold Superbacked OS, so it is running directly from the drive. Unplugging it would crash the session." \
+    --no-wrap \
+    --text "Keep the USB flash drive plugged in — this computer does not have enough\nmemory to hold Superbacked OS, so it is running directly from the drive.\nUnplugging it would crash the session." \
     --title "Superbacked OS" 2> /dev/null
 fi
 EOF
@@ -831,7 +832,8 @@ set -e
 
 if ! grep -q superbacked.browser /proc/cmdline; then
   zenity --error \
-    --text "Reboot and select “Superbacked OS (hardened browser)” to use browser" \
+    --no-wrap \
+    --text "Reboot and select “Superbacked OS (hardened browser)”\nto use browser" \
     --title "Superbacked OS" 2> /dev/null
   exit 1
 fi
@@ -860,6 +862,7 @@ done
 if [ ! -S "${bridge_socket}" ]; then
   kill "${waypipe_pid}" 2> /dev/null || true
   zenity --error \
+    --no-wrap \
     --text "Browser bridge failed to start" \
     --title "Superbacked OS" 2> /dev/null
   exit 1
@@ -885,6 +888,7 @@ if ! sudo --user clearnet --set-home \
   /usr/bin/waypipe --oneshot --socket "${bridge_socket}" server -- \
   /usr/bin/snap run firefox --no-remote; then
   zenity --error \
+    --no-wrap \
     --text "Browser failed to start" \
     --title "Superbacked OS" 2> /dev/null
 fi
