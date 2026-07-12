@@ -39,7 +39,7 @@ Precedent: the `mksquashfs` comment — “ordering is semantic where not alphab
 ## Comments
 
 - Comments explain **why** — constraints, threat-model rationale, upstream quirks — not what the next line does. Density is deliberately high; match it.
-- A comment must earn its place: explain only what a competent reader couldn't infer from the code itself. When the *why* is self-evident (obvious stock-package removals, a routine operation), omit it or keep it to a phrase — don't restate or enumerate what the code already shows. Comment the non-obvious exception, not the rule.
+- A comment must earn its place: explain only what a competent reader couldn't infer from the code itself. When the _why_ is self-evident (obvious stock-package removals, a routine operation), omit it or keep it to a phrase — don't restate or enumerate what the code already shows. Comment the non-obvious exception, not the rule.
 - Comments describe the **current** design only. Never reference abandoned attempts, prior revisions or why a change is correct — that belongs in commit messages. (Exception: a cleanup step whose only purpose is migrating away from an earlier shipped state may say so.)
 
 ## Typography
