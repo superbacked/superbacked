@@ -849,9 +849,9 @@ tee /usr/local/bin/clearnet-browser > /dev/null << 'EOF'
 set -e
 
 if ! grep --quiet superbacked.browser /proc/cmdline; then
-  zenity --error \
+  zenity --info \
     --no-wrap \
-    --text "Reboot and select “Superbacked OS (hardened browser)”\nto use browser" \
+    --text "Superbacked OS is running in air-gapped mode.\nRebooting and selecting “Superbacked OS (hardened browser)” enables the browser." \
     --title "Superbacked OS" 2> /dev/null
   exit 1
 fi
