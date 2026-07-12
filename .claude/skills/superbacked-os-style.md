@@ -19,7 +19,7 @@ Isolate purpose per file — place logic by role, not convenience:
 
 - `#! /bin/bash`, `set -e`, `set -o pipefail`.
 - Long-form flags always **in the Linux scripts** (the bootstrap and the `docker/` scripts, which run in the container/image): `rm --force --recursive`, `mkdir --parents`, `grep --quiet`, `curl --fail --location`. Short-form only when no long form exists (`mkfs.ext4 -m 0`, `mksquashfs -b`) — say so in a comment when it looks like an oversight.
-- **The macOS host scripts run BSD coreutils, which lack GNU long options — use short-form there.** These are `package.sh`, `superbacked-os-utilities/superbacked-os-image.sh` and `ubuntu-desktop-utilities/provision-ubuntu-desktop-iso.sh` (they drive `colima`/`docker`/`diskutil`/`dd` on the Mac). `mkdir --parents` fails there with "illegal option — -"; use `mkdir -p`, `rm -rf`, `split -b`. Rule of thumb: runs in the container → long-form; runs on the Mac → short-form.
+- **The macOS host scripts run BSD coreutils, which lack GNU long options — use short-form there.** These are `package.sh`, `superbacked-os-utilities/superbacked-os-image.sh` and `ubuntu-desktop-utilities/provision-ubuntu-desktop-iso.sh` (they drive `colima`/`docker`/`diskutil`/`dd` on the Mac). `mkdir --parents` fails there with “illegal option — -”; use `mkdir -p`, `rm -rf`, `split -b`. Rule of thumb: runs in the container → long-form; runs on the Mac → short-form.
 - Section banners: `printf "%s\n" "Doing thing…"` with a typographic ellipsis (`…`), phrased as a gerund.
 - Config files are written with `tee <path> > /dev/null << 'EOF'` heredocs (quoted delimiter unless interpolation is required).
 - Fail loudly, never silently drift: verify downloaded keys by fingerprint, assert expected file shapes before `sed`-ing them (e.g. `grep --quiet '^Exec=firefox'`), and exit with `printf "%s\n" "Error: …" >&2; exit 1`. A broken build beats a silently wrong image.
@@ -39,7 +39,7 @@ Precedent: the `mksquashfs` comment — “ordering is semantic where not alphab
 ## Comments
 
 - Comments explain **why** — constraints, threat-model rationale, upstream quirks — not what the next line does. Density is deliberately high; match it.
-- A comment must earn its place: explain only what a competent reader couldn't infer from the code itself. When the _why_ is self-evident (obvious stock-package removals, a routine operation), omit it or keep it to a phrase — don't restate or enumerate what the code already shows. Comment the non-obvious exception, not the rule.
+- A comment must earn its place: explain only what a competent reader couldn’t infer from the code itself. When the _why_ is self-evident (obvious stock-package removals, a routine operation), omit it or keep it to a phrase — don’t restate or enumerate what the code already shows. Comment the non-obvious exception, not the rule.
 - Comments describe the **current** design only. Never reference abandoned attempts, prior revisions or why a change is correct — that belongs in commit messages. (Exception: a cleanup step whose only purpose is migrating away from an earlier shipped state may say so.)
 
 ## Typography
