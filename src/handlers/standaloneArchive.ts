@@ -1,8 +1,9 @@
-import { unlink } from "fs/promises"
+import { rename, unlink } from "fs/promises"
 
 import argon2 from "@/src/utilities/argon2"
 import { generateSalt } from "@/src/utilities/crypto"
 import {
+  AuthenticationError,
   Manifest,
   RestoredFilePath,
   createStandaloneArchive as createStandaloneArchiveUtility,
@@ -29,31 +30,38 @@ export async function createStandaloneArchive(
   archivePath: string,
   passphrase: string
 ): Promise<CreateStandaloneArchiveResult> {
+  // Write to a temporary path and rename into place on success so a failed
+  // creation (disk full, unreadable input file) never destroys an existing
+  // archive at archivePath.
+  const temporaryPath = `${archivePath}.tmp`
   try {
     const salt = generateSalt()
     const key = await argon2(passphrase, salt.toString("base64"))
     const manifest = await createStandaloneArchiveUtility(
       filePaths,
-      archivePath,
+      temporaryPath,
       salt,
       key
     )
+    await rename(temporaryPath, archivePath)
     return {
       manifest,
       success: true,
     }
   } catch (error) {
-    await unlink(archivePath).catch(() => {})
+    await unlink(temporaryPath).catch(() => {})
     return {
       error:
-        error instanceof Error ? error.message : "Could not create archive",
+        error instanceof Error
+          ? error.message
+          : "Could not create standalone archive",
       success: false,
     }
   }
 }
 
 export type RestoreStandaloneArchiveResult =
-  | { error: string; success: false }
+  | { authenticationFailed: boolean; error: string; success: false }
   | { files: RestoredFilePath[]; success: true }
 
 /**
@@ -82,8 +90,11 @@ export async function restoreStandaloneArchive(
     }
   } catch (error) {
     return {
+      authenticationFailed: error instanceof AuthenticationError,
       error:
-        error instanceof Error ? error.message : "Could not restore archive",
+        error instanceof Error
+          ? error.message
+          : "Could not restore standalone archive",
       success: false,
     }
   }

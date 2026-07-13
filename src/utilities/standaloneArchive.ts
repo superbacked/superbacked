@@ -15,6 +15,10 @@ import {
 
 export type { Manifest, RestoredFilePath }
 
+// Thrown when an archive fails authentication — a wrong passphrase and a
+// corrupted archive are cryptographically indistinguishable (AES-256-GCM).
+export class AuthenticationError extends Error {}
+
 /**
  * Create standalone archive
  *
@@ -118,11 +122,24 @@ export const restoreStandaloneArchive = async (
     await createTarExtractStream(outputDir)
 
   // Stream: read file (excluding salt/nonce/tag) → decrypt → gunzip (optional) → extract tar
-  await pipeline(
-    createReadStream(filePath, { start: 28, end: fileSize - 17 }),
-    decipher,
-    extractor
-  )
+  try {
+    await pipeline(
+      createReadStream(filePath, { start: 28, end: fileSize - 17 }),
+      decipher,
+      extractor
+    )
+  } catch (error) {
+    // GCM only checks the tag at end of stream, so a wrong passphrase streams
+    // garbage plaintext into the tar extractor, which rejects it at the first
+    // 512-byte header with a parser internal (“invalid base256 encoding”) —
+    // long before the tag check. Genuine I/O failures (ENOSPC, EACCES) carry
+    // a syscall; anything else is the parser, gunzip or decipher rejecting
+    // garbage.
+    if (error instanceof Error && "syscall" in error) {
+      throw error
+    }
+    throw new AuthenticationError("Wrong passphrase or corrupted archive")
+  }
 
   return getExtractedFiles()
 }

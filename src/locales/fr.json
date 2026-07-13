@@ -105,6 +105,7 @@
       "couldNotHandleDroppedFiles": "Impossible de traiter les fichiers déposés",
       "couldNotCreateStandaloneArchive": "Impossible de créer l’archive autonome",
       "couldNotRestoreStandaloneArchive": "Impossible de restaurer l’archive autonome",
+      "wrongPassphraseOrCorruptedArchive": "Phrase de passe erronée ou archive corrompue",
       "standaloneArchiveCreated": "Archive autonome créée",
       "standaloneArchiveRestored": "Archive autonome restaurée"
     },

@@ -4,6 +4,10 @@ import { URL } from "url"
 import { Argument as CommanderArgument, program as cli } from "commander"
 
 import {
+  createStandaloneArchiveAction,
+  restoreStandaloneArchiveAction,
+} from "@/src/cli/standaloneArchive"
+import {
   Locale,
   defaultLocale,
   locales,
@@ -39,6 +43,27 @@ cli
       process.exit(1)
     }
   })
+
+cli
+  .command("create-standalone-archive")
+  .description("create standalone archive")
+  .argument("<path...>", "one or more files or directories to encrypt")
+  .requiredOption(
+    "-o, --output <archive>",
+    "archive path (.superbacked appended if absent)"
+  )
+  .option("-f, --force", "overwrite archive if it already exists")
+  .action(createStandaloneArchiveAction)
+
+cli
+  .command("restore-standalone-archive")
+  .description("restore standalone archive")
+  .argument("<archive>", "archive path")
+  .requiredOption(
+    "-o, --output <directory>",
+    "directory archive is extracted to"
+  )
+  .action(restoreStandaloneArchiveAction)
 
 // see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
 app.on("web-contents-created", (_event, contents) => {

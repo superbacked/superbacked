@@ -11,7 +11,7 @@ import { IconArrowsRandom } from "@tabler/icons-react"
 import { FunctionComponent, useLayoutEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import zxcvbn, { ZxcvbnTranslationKey } from "@/src/main/utilities/zxcvbn"
+import zxcvbn, { ZxcvbnTranslationKey } from "@/src/shared/utilities/zxcvbn"
 
 interface Time {
   key: ZxcvbnTranslationKey

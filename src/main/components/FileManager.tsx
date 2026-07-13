@@ -46,6 +46,7 @@ type FileManagerErrorMessage = ValidateTranslationKeys<
   | "components.fileManager.couldNotHandleDroppedFiles"
   | "components.fileManager.couldNotCreateStandaloneArchive"
   | "components.fileManager.couldNotRestoreStandaloneArchive"
+  | "components.fileManager.wrongPassphraseOrCorruptedArchive"
 >
 
 class FileManagerError extends CustomError<FileManagerErrorMessage> {
@@ -215,7 +216,9 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
         )
         if (result?.success === false && result.error) {
           throw new FileManagerError(
-            "components.fileManager.couldNotRestoreStandaloneArchive"
+            result.authenticationFailed
+              ? "components.fileManager.wrongPassphraseOrCorruptedArchive"
+              : "components.fileManager.couldNotRestoreStandaloneArchive"
           )
         }
         return {

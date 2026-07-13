@@ -104,6 +104,7 @@
       "couldNotHandleDroppedFiles": "Could not handle dropped files",
       "couldNotCreateStandaloneArchive": "Could not create standalone archive",
       "couldNotRestoreStandaloneArchive": "Could not restore standalone archive",
+      "wrongPassphraseOrCorruptedArchive": "Wrong passphrase or corrupted archive",
       "standaloneArchiveCreated": "Standalone archive created",
       "standaloneArchiveRestored": "Standalone archive restored"
     },

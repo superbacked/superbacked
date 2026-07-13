@@ -53,8 +53,8 @@ import {
   insertAtCursor,
   restoreSelection,
 } from "@/src/main/utilities/selection"
-import zxcvbn from "@/src/main/utilities/zxcvbn"
 import { PaperSize, PrintSetting } from "@/src/shared/types/print"
+import zxcvbn from "@/src/shared/utilities/zxcvbn"
 
 const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },

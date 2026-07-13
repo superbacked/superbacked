@@ -4,8 +4,8 @@ import { Fragment, FunctionComponent, useCallback, useEffect } from "react"
 import { useTranslation } from "react-i18next"
 
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
-import zxcvbn from "@/src/main/utilities/zxcvbn"
 import { TranslationKey } from "@/src/shared/types/i18n"
+import zxcvbn from "@/src/shared/utilities/zxcvbn"
 
 interface CreateStandaloneArchiveModalProps {
   isLoading?: boolean
