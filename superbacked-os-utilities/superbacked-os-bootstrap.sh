@@ -479,6 +479,16 @@ tee /etc/udev/rules.d/99-superbacked-ignore-internal-disks.rules > /dev/null << 
 SUBSYSTEM=="block", ENV{ID_BUS}!="usb", ENV{UDISKS_IGNORE}="1"
 EOF
 
+# The boot drive is not user-facing storage either: its SUPERBACKED
+# partition (the ext4 boot partition holding the squashfs — see
+# docker/create-superbacked-os-live-image.sh) is mounted by live-boot,
+# not by the user, so it has no reason to appear in Files or the dock.
+# Matching on filesystem type and label cannot catch backup drives,
+# which are exFAT.
+tee /etc/udev/rules.d/99-superbacked-ignore-boot-partition.rules > /dev/null << 'EOF'
+SUBSYSTEM=="block", ENV{ID_FS_TYPE}=="ext4", ENV{ID_FS_LABEL}=="SUPERBACKED", ENV{UDISKS_IGNORE}="1"
+EOF
+
 printf "%s\n" "Configuring yubikey-prov.sh…"
 
 # Helper script that provisions YubiKeys. (Home folder ownership is
