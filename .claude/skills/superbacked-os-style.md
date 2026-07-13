@@ -65,12 +65,19 @@ Typographic punctuation in all prose: `’` for apostrophes, `“ ”` for quote
 
 ## User-facing copy (zenity dialogs, GRUB entries)
 
-State facts affirmatively; avoid commanding or alarming tone. Lead with what is true, then the constraint:
+State facts affirmatively; avoid alarming tone. Lead with what is true, then the constraint:
 
 > Superbacked OS is running directly from the USB flash drive.
 > The drive needs to stay plugged in for the session to keep running.
 
 not “Keep the USB flash drive plugged in — unplugging it would crash the session.”
+
+When a dialog exists to route the user to an action, the fact still leads, then a gentle “Please …” directive names the action:
+
+> Superbacked OS is running in air-gapped mode.
+> Please reboot and select “Superbacked OS (hardened browser)” to use the browser.
+
+Dialog prose keeps articles (“the browser”); the terse, article-free register belongs to CLI help fragments.
 
 ## Verification
 

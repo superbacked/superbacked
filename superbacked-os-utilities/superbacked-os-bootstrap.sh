@@ -861,7 +861,7 @@ set -e
 if ! grep --quiet superbacked.browser /proc/cmdline; then
   zenity --info \
     --no-wrap \
-    --text "Superbacked OS is running in air-gapped mode.\nRebooting and selecting “Superbacked OS (hardened browser)” enables the browser." \
+    --text "Superbacked OS is running in air-gapped mode.\nPlease reboot and select “Superbacked OS (hardened browser)” to use browser." \
     --title "Superbacked OS" 2> /dev/null
   exit 1
 fi
