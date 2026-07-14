@@ -1,0 +1,117 @@
+import { app, clipboard } from "electron"
+
+import { InvalidArgumentError } from "commander"
+
+import readPassphrase, {
+  promptVisible,
+  waitForEnter,
+} from "@/src/cli/readPassphrase"
+import { timingSafeEqualStrings } from "@/src/utilities/crypto"
+import {
+  computeDerivedPassword,
+  maximumPasswordLength,
+  minimumPasswordLength,
+} from "@/src/utilities/derivedPassword"
+import { Slot } from "@/src/utilities/yubikey"
+
+// Command action (the CLI surface is declared in index.ts). The password is
+// copied to the clipboard by default, keeping it out of terminal scrollback.
+
+// Parse-time option validation — invalid values must fail before any
+// prompting or YubiKey interaction
+export const parseLength = (value: string): number => {
+  const length = Number(value)
+  if (
+    Number.isInteger(length) === false ||
+    length < minimumPasswordLength ||
+    length > maximumPasswordLength
+  ) {
+    throw new InvalidArgumentError(
+      `Length must be an integer between ${minimumPasswordLength} and ${maximumPasswordLength}.`
+    )
+  }
+  return length
+}
+
+export const parseClear = (value: string): number => {
+  const seconds = Number(value)
+  if (Number.isInteger(seconds) === false || seconds < 1) {
+    throw new InvalidArgumentError("Clear seconds must be a positive integer.")
+  }
+  return seconds
+}
+
+export const derivePasswordAction = async (
+  label: string | undefined,
+  options: {
+    clear: number
+    length: number
+    print?: boolean
+    slot: "1" | "2"
+    yubikey: boolean
+  }
+): Promise<void> => {
+  try {
+    // Prompting keeps labels out of shell history and process listings —
+    // when the passphrase is piped, the prompt reads from the controlling
+    // terminal, so the argument is only required fully non-interactively
+    let resolvedLabel = label
+    if (resolvedLabel === undefined) {
+      try {
+        resolvedLabel = (await promptVisible("Label: ")).trim()
+      } catch {
+        // No controlling terminal — fall through to the label requirement
+      }
+    }
+    if (resolvedLabel === undefined || resolvedLabel === "") {
+      throw new Error("Label required")
+    }
+    const slot: Slot | undefined =
+      options.yubikey === false ? undefined : options.slot === "1" ? 1 : 2
+    const masterPassphrase = await readPassphrase()
+    if (masterPassphrase === "") {
+      throw new Error("Passphrase required")
+    }
+    const password = await computeDerivedPassword(
+      masterPassphrase,
+      resolvedLabel,
+      {
+        length: options.length,
+        onTouchRequired: () => {
+          console.error("Touch YubiKey…")
+        },
+        slot: slot,
+      }
+    )
+    if (options.print === true) {
+      process.stdout.write(`${password}\n`)
+    } else {
+      // The clipboard module requires the ready event on Linux — and the
+      // process must stay alive while the password is on the clipboard, as
+      // X11 and Wayland drop a selection when its owner exits
+      await app.whenReady()
+      clipboard.writeText(password)
+      process.stderr.write(
+        `Password copied to clipboard, clearing in ${options.clear} second${
+          options.clear === 1 ? "" : "s"
+        }…`
+      )
+      const enterPressed = await waitForEnter(options.clear * 1000)
+      // Enter echoes its own newline in canonical mode — only the timeout
+      // path needs to terminate the status line
+      if (enterPressed === false) {
+        process.stderr.write("\n")
+      }
+      // Leave the clipboard alone if the user copied something else meanwhile
+      if (timingSafeEqualStrings(clipboard.readText(), password) === true) {
+        clipboard.clear()
+      }
+    }
+    process.exit(0)
+  } catch (error) {
+    console.error(
+      error instanceof Error ? error.message : "Could not derive password"
+    )
+    process.exit(1)
+  }
+}

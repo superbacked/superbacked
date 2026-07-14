@@ -12,10 +12,16 @@ const binDir =
         "app.asar.unpacked"
       )
 
-export default async (passphrase: string, salt: string): Promise<Buffer> => {
+// Blocks use Argon2d (blockcrypt compatibility); password derivation uses
+// Argon2id — cost parameters are shared
+export default async (
+  passphrase: string,
+  salt: string,
+  mode: "d" | "id" = "d"
+): Promise<Buffer> => {
   const { stdout } = await spawn(
     `${binDir}/argon2`,
-    [salt, "-d", "-p", "2", "-k", "65536", "-r", "-t", "10"],
+    [salt, `-${mode}`, "-p", "2", "-k", "65536", "-r", "-t", "10"],
     { input: passphrase }
   )
   return Buffer.from(stdout, "hex")

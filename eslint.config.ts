@@ -132,7 +132,17 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-non-null-assertion": "warn",
       "@typescript-eslint/prefer-nullish-coalescing": "warn",
       "@typescript-eslint/prefer-optional-chain": "warn",
-      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-floating-promises": [
+        "error",
+        {
+          // node:test registers tests with top-level calls whose returned
+          // promises the test runner itself awaits
+          allowForKnownSafeCalls: [
+            { from: "package", name: "suite", package: "node:test" },
+            { from: "package", name: "test", package: "node:test" },
+          ],
+        },
+      ],
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-misused-promises": [
         "error",

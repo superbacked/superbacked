@@ -4,6 +4,7 @@
 
 - [Block](block-technical-documentation.md)
 - [Blockset](blockset-technical-documentation.md)
+- [Derived password](derived-password-technical-documentation.md)
 - [Detached archive](detached-archive-technical-documentation.md)
 - [Standalone archive](standalone-archive-technical-documentation.md)
 - [Superbacked OS security model](superbacked-os-security-technical-documentation.md)

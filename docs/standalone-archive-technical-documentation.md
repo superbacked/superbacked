@@ -8,6 +8,8 @@ This document specifies the cryptographic design and implementation of the stand
 
 Superbacked is a secret management platform used to back up and pass on sensitive data such as BIP39 mnemonics, master passwords and TOTP secrets. Superbacked stores this data in encrypted QR code-encoded datasets called blocks.
 
+Standalone archives extend the platform with passphrase-encrypted files and folders.
+
 Superbacked supports two backup types: single block and blockset which embeds additional Shamir Secret Sharing key material alongside user-provided secrets to enable threshold-based recovery.
 
 While using QR code encoding allows users to print blocks on archival paper, a format ideal for cold storage, larger datasets cannot be efficiently encoded this way and some use-cases may not require these properties.

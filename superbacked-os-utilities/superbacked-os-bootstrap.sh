@@ -56,6 +56,15 @@ readonly yubico_authenticator_version="7.4.1"
 readonly yubikey_manager_sha256="19a1173106b104bea37722e61ce748fb2d39c87a02880c1964461837ddaa7fba"
 readonly yubikey_manager_version="5.9.2"
 
+printf "%s\n" "Writing release marker…"
+
+# Identifies the running system as Superbacked OS to the Superbacked app
+# (which recommends provisioning YubiKey secrets here) — the marker gates
+# recommendations only, not a security boundary, so a plain file is enough
+tee /etc/superbacked-os-release > /dev/null << EOF
+VERSION=${version}
+EOF
+
 printf "%s\n" "Configuring apt sources…"
 
 # Replaces the installer’s mirror configuration outright so nothing
@@ -580,6 +589,13 @@ chmod +x \
   /home/superbacked/.local/share/applications/superbacked.desktop
 chmod +x \
   /home/superbacked/.local/superbacked/superbacked.AppImage
+
+# Command line entry point (superbacked provision-yubikey, superbacked
+# derive-password…) — a symlink keeps AppArmor confinement intact, as the
+# kernel resolves it to the AppImage path the profile attaches to
+ln --symbolic \
+  /home/superbacked/.local/superbacked/superbacked.AppImage \
+  /usr/local/bin/superbacked
 
 printf "%s\n" "Installing AppArmor profiles…"
 

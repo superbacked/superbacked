@@ -26,5 +26,5 @@
     "useDefineForClassFields": true
   },
   "exclude": [".webpack", "dist", "node_modules"],
-  "include": ["*.ts", "scripts/**/*", "src/**/*"]
+  "include": ["*.ts", "scripts/**/*", "src/**/*", "tests/**/*"]
 }

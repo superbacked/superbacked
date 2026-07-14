@@ -1,4 +1,10 @@
-import { createHash, hkdfSync, randomBytes, randomInt } from "crypto"
+import {
+  createHash,
+  hkdfSync,
+  randomBytes,
+  randomInt,
+  timingSafeEqual,
+} from "crypto"
 
 /**
  * Hash string using SHA-256
@@ -38,6 +44,20 @@ export const hkdf = (
   return Buffer.from(
     hkdfSync("sha256", inputKeyingMaterial, salt, info, length)
   )
+}
+
+/**
+ * Compare strings in constant time
+ * @param a first string
+ * @param b second string
+ * @returns whether strings are equal
+ */
+export const timingSafeEqualStrings = (a: string, b: string): boolean => {
+  // Compared through fixed-length digests — comparing strings directly would
+  // leak the length and the position of the first difference through timing
+  const digest = (value: string): Buffer =>
+    createHash("sha256").update(value, "utf8").digest()
+  return timingSafeEqual(digest(a), digest(b))
 }
 
 /**

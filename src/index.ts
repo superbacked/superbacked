@@ -1,12 +1,18 @@
 import { BrowserWindow, WebFrameMain, app, ipcMain, session } from "electron"
 import { URL } from "url"
 
-import { Argument as CommanderArgument, program as cli } from "commander"
+import { Option as CommanderOption, program as cli } from "commander"
 
+import {
+  derivePasswordAction,
+  parseClear,
+  parseLength,
+} from "@/src/cli/derivedPassword"
 import {
   createStandaloneArchiveAction,
   restoreStandaloneArchiveAction,
 } from "@/src/cli/standaloneArchive"
+import { provisionYubikeyAction } from "@/src/cli/yubikey"
 import {
   Locale,
   defaultLocale,
@@ -29,22 +35,6 @@ cli.version(app.getVersion(), "--version", "output version")
 cli.helpOption("-h, --help", "display help")
 
 cli
-  .command("config")
-  .addArgument(new CommanderArgument("<key>", "key").choices([]))
-  .argument("<value>", "value")
-  .action((key, value) => {
-    try {
-      setConfig(key, value)
-      process.exit(0)
-    } catch (error) {
-      console.error(
-        error instanceof Error ? error.message : "Could not run config"
-      )
-      process.exit(1)
-    }
-  })
-
-cli
   .command("create-standalone-archive")
   .description("create standalone archive")
   .argument("<path...>", "one or more files or directories to encrypt")
@@ -64,6 +54,44 @@ cli
     "directory archive is extracted to"
   )
   .action(restoreStandaloneArchiveAction)
+
+cli
+  .command("provision-yubikey")
+  .description("provision YubiKey slot for HMAC-SHA1 challenge-response")
+  .option("-g, --generate", "generate secret and print it to stdout")
+  .addOption(
+    new CommanderOption("-s, --slot <slot>", "slot to provision")
+      .choices(["1", "2"])
+      .default("1")
+  )
+  .option("--no-touch", "compute responses without touch (weaker)")
+  .action(provisionYubikeyAction)
+
+cli
+  .command("derive-password")
+  .description("derive password from master passphrase and YubiKey")
+  .argument(
+    "[label]",
+    "memorized label (for example github or proton), prompted when omitted"
+  )
+  .option(
+    "--clear <seconds>",
+    "seconds before copied password is cleared from clipboard",
+    parseClear,
+    10
+  )
+  .option("-l, --length <length>", "password length", parseLength, 16)
+  .option("--no-yubikey", "derive without YubiKey (single factor, weaker)")
+  .option("-p, --print", "print password instead of copying it to clipboard")
+  .addOption(
+    new CommanderOption(
+      "-s, --slot <slot>",
+      "HMAC-SHA1 challenge-response slot"
+    )
+      .choices(["1", "2"])
+      .default("1")
+  )
+  .action(derivePasswordAction)
 
 // see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
 app.on("web-contents-created", (_event, contents) => {

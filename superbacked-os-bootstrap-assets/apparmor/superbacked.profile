@@ -95,6 +95,13 @@ profile superbacked /home/superbacked/.local/superbacked/superbacked.AppImage fl
   /sys/class/video4linux/ r,
   /sys/class/video4linux/** r,
 
+  # YubiKey challenge-response over raw hidraw (derived passwords) — the
+  # KeePassXC rule group; enumeration’s udev data and uevent reads are
+  # granted above. DAC keeps this narrow: only uaccess-tagged nodes
+  # (security keys, hardware wallets) are openable by the seat user.
+  /dev/hidraw* rw,
+  /sys/class/hidraw/ r,
+
   # The user’s home — its own config and cache, and the backups and
   # exports the user reads and writes. Broad, minus the sensitive
   # corners denied at the end; nothing in home survives a reboot.
