@@ -77,7 +77,7 @@ When a dialog exists to route the user to an action, the fact still leads, then 
 > Superbacked OS is running in air-gapped mode.
 > Please reboot and select “Superbacked OS (hardened browser)” to use the browser.
 
-Dialog prose keeps articles (“the browser”); the terse, article-free register belongs to CLI help fragments.
+Dialog prose keeps articles (“the browser”); the terse, article-free register belongs to compressed surfaces (CLI help fragments, labels, buttons). Documentation prose also keeps articles — there they are semantic (“a” introduces a new object, “the” refers back to a defined one).
 
 ## Verification
 
