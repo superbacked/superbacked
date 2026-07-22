@@ -239,6 +239,7 @@ Label is prompted when omitted, keeping labels out of shell history and process 
 **Options:**
 
 - `--clear <seconds>`: Seconds before copied password is cleared from clipboard (default `10`)
+- `--confirm`: Prompt for master passphrase twice and require a match — catches typos when creating a password (interactive prompts only; a piped passphrase is used as-is)
 - `-l, --length <length>`: Password length (default `16`, minimum `8`, maximum `128`)
 - `--no-yubikey`: Derive without YubiKey (single factor, weaker)
 - `-p, --print`: Print password to stdout instead of copying it to clipboard

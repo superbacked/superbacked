@@ -87,6 +87,10 @@ cli
     parseClear,
     10
   )
+  .option(
+    "--confirm",
+    "confirm master passphrase (recommended when creating passwords)"
+  )
   .option("-l, --length <length>", "password length", parseLength, 16)
   .option("--no-yubikey", "derive without YubiKey (single factor, weaker)")
   .option("-p, --print", "print password instead of copying it to clipboard")

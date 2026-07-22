@@ -45,6 +45,7 @@ export const derivePasswordAction = async (
   label: string | undefined,
   options: {
     clear: number
+    confirm?: boolean
     length: number
     print?: boolean
     slot: "1" | "2"
@@ -68,7 +69,9 @@ export const derivePasswordAction = async (
     }
     const slot: Slot | undefined =
       options.yubikey === false ? undefined : options.slot === "1" ? 1 : 2
-    const masterPassphrase = await readPassphrase()
+    // Confirmation catches typos when creating a password — a mistyped
+    // passphrase silently derives a different password
+    const masterPassphrase = await readPassphrase(options.confirm === true)
     if (masterPassphrase === "") {
       throw new Error("Passphrase required")
     }

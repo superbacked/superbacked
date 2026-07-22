@@ -61,7 +61,7 @@ By default, computing a response requires touching the YubiKey — every passwor
 
 ### Step 3: derive password
 
-> Heads-up: no fingerprint or checksum of the master passphrase is ever displayed or stored, so a mistyped passphrase silently derives a different password. Derive twice and compare before setting a password for the first time.
+> Heads-up: no fingerprint or checksum of the master passphrase is ever displayed or stored, so a mistyped passphrase silently derives a different password. Use `--confirm` when creating a password — the master passphrase is prompted twice and must match, catching typos before they become the password.
 
 ```console
 $ superbacked derive-password
