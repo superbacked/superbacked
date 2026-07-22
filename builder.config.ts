@@ -10,6 +10,9 @@ const files = [
   // node-hid is a webpack external (native module) — ship it and its
   // runtime dependency unbundled
   "node_modules/node-hid/**/*",
+  // pkg-prebuilds loads build/Release ahead of prebuilds, so a
+  // leftover host-built binary would shadow the target prebuild
+  "!node_modules/node-hid/build{,/**/*}",
   "node_modules/pkg-prebuilds/**/*",
   // See https://github.com/electron-userland/electron-builder/issues/7068
   {
@@ -31,6 +34,11 @@ const config: Configuration = {
     "**/node_modules/pkg-prebuilds/**/*",
   ],
   files: files,
+  // node-hid ships Node-API prebuilds for every target and loads them
+  // at runtime using pkg-prebuilds — a convention @electron/rebuild
+  // does not recognize, so it falls back to node-gyp which cannot
+  // cross-compile Linux targets from macOS
+  npmRebuild: false,
   productName: "Superbacked",
   dmg: {
     title: "${productName}",
