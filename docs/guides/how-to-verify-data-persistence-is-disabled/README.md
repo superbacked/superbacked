@@ -17,7 +17,7 @@ This guide walks through verifying that Superbacked OS persists nothing to disk 
 
 #### Step 1: compute disk checksum
 
-> Heads-up: replace `rdisk4` with disk found using `diskutil list`.
+> Heads-up: replace `rdisk4` with the disk found using `diskutil list`.
 
 ```console
 $ diskutil list
@@ -45,7 +45,7 @@ Root partition: bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d
 
 ### Ubuntu
 
-> Heads-up: replace `sdb` with disk found using `sudo fdisk --list`.
+> Heads-up: replace `sdb` with the disk found using `sudo fdisk --list`.
 
 ```console
 $ sudo fdisk --list

@@ -9,7 +9,7 @@ Pinned: 3
 
 ## Overview
 
-> Heads-up: factory resetting Mac erases all data. Back up anything important before proceeding.
+> Heads-up: factory resetting your Mac erases all data. Back up anything important before proceeding.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 

@@ -8,7 +8,7 @@ Two schemes are specified: the [current scheme](#current-scheme) (AES-256-GCM on
 
 ## Introduction
 
-Superbacked is a secret management platform used to back up and pass on sensitive data such as BIP39 mnemonics, master passwords and TOTP secrets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
 
 Fixed-size encryption is the primitive every block is built on. A block encrypted using it reveals only its size. Every byte — headers, data and padding — is either ciphertext or random, so the number of secrets, their sizes and their boundaries cannot be determined. Only the first secret is expected — every block holds at least one — so plausible deniability covers the secrets beyond it: additional secrets are concealed in the padding, and without their passphrases, no one can tell whether they exist at all. Decrypting the first secret reveals nothing about the others; decrypting a later secret reveals that one or more secrets precede it in the block — though nothing more, nor whether more secrets exist.
 

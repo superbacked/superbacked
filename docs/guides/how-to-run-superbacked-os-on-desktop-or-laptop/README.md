@@ -35,7 +35,7 @@ Go to https://www.raspberrypi.com/software/, download and install Raspberry Pi�
 
 #### Ubuntu
 
-> Heads-up: depends on [Qt](https://www.qt.io/).
+> Heads-up: Raspberry Pi Imager depends on [Qt](https://www.qt.io/).
 
 ```console
 $ sudo add-apt-repository --yes universe
@@ -66,7 +66,7 @@ $ part=1; \
 
 #### Windows
 
-> Heads-up: requires WSL to be [installed](https://learn.microsoft.com/en-us/windows/wsl/install) first using `wsl --install` (if applicable).
+> Heads-up: this step requires WSL to be [installed](https://learn.microsoft.com/en-us/windows/wsl/install) first using `wsl --install` (if applicable).
 
 > Heads-up: replace `Sun Knudsen` with your username.
 
@@ -119,7 +119,7 @@ If using Kanguru FlashTrust™ Secure Firmware USB 3.0 Flash Drive or equivalent
 
 ### Step 2: boot Superbacked OS and select mode
 
-> Heads-up: password is “superbacked”.
+> Heads-up: the password is “superbacked”.
 
 Superbacked OS runs in two modes: air-gapped (default, booted automatically) and hardened browser (a deliberate choice, used for tasks such as backing up TOTP secrets).
 

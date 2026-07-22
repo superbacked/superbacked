@@ -81,7 +81,7 @@
       "4of7WithMultipleDetachedArchivesDescription_other": "4 of 7 blocks of blockset and passphrases required to restore secrets and detached archives"
     },
     "disclaimer": {
-      "computerProvisioningWarning": "<bold>Do not</bold> use Superbacked on computer that is not specifically provisioned for secret management (no data persistence or network connectivity) unless secret is already present on computer.",
+      "computerProvisioningWarning": "<bold>Do not</bold> use Superbacked on a computer that is not specifically provisioned for secret management (no data persistence or network connectivity) unless the secret is already present on the computer.",
       "limitationOfLiability": "Superbacked, Inc., along with its employees, operators and shareholders and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets.",
       "useAtYourOwnRisk": "USE AT YOUR OWN RISK.",
       "agree": "I agree to above terms and accept underlying risks",
@@ -144,7 +144,7 @@
       "useCameraOrScreenRecording": "Use camera or screen recording",
       "pleaseAllowCameraAccess": "Please allow camera access",
       "pleaseConnectCamera": "Please connect camera",
-      "cameraDoesNotMeetMinimumRequirementOf720p": "Camera does not meet minimum requirement of 720p",
+      "cameraDoesNotMeetMinimumRequirementOf720p": "This camera does not meet the minimum requirement of 720p",
       "pleaseAllowScreenRecording": "Please allow screen recording",
       "couldNotRunScanner": "Could not run scanner",
       "couldNotHandleFile": "Could not handle file",

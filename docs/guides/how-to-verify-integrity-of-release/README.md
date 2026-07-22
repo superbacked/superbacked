@@ -26,9 +26,9 @@ superbacked-arm64-1.9.0.dmg
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using GnuPG
 
-> Heads-up: integrity of Sun’s PGP public key can be confirmed using fingerprint published on [sunknudsen.com/contact](https://sunknudsen.com/contact), [GitHub](https://github.com/sunknudsen/pgp-public-key), [Twitter](https://twitter.com/sunknudsen) and [YouTube](https://www.youtube.com/sunknudsen/about).
+> Heads-up: the integrity of Sun’s PGP public key can be confirmed using the fingerprint published on [sunknudsen.com/contact](https://sunknudsen.com/contact), [GitHub](https://github.com/sunknudsen/pgp-public-key), [Twitter](https://twitter.com/sunknudsen) and [YouTube](https://www.youtube.com/sunknudsen/about).
 
-> Heads-up: “1 signature not checked due to a missing key” warning can be ignored as it refers to Sun’s [legacy](https://github.com/sunknudsen/pgp-public-key/tree/master/legacy) PGP public key.
+> Heads-up: the “1 signature not checked due to a missing key” warning can be ignored as it refers to Sun’s [legacy](https://github.com/sunknudsen/pgp-public-key/tree/master/legacy) PGP public key.
 
 Import Sun’s PGP public key and verify the signature.
 

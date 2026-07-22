@@ -6,7 +6,7 @@ This document covers the Superbacked-level design of a blockset. A blockset encr
 
 ## Introduction
 
-Superbacked is a secret management platform used to back up and pass on sensitive data such as BIP39 mnemonics, master passwords and TOTP secrets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
 
 Blocksets extend the platform with threshold recovery. Some secrets need to outlive you. A blockset splits a secret among the people you trust — a set of blocks — so no single person can recover it alone, but together the right group can recover what matters, even without you.
 

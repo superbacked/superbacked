@@ -6,7 +6,7 @@ This document specifies the cryptographic design and implementation of the deriv
 
 ## Introduction
 
-Superbacked is a secret management platform used to back up and pass on sensitive data such as BIP39 mnemonics, master passwords and TOTP secrets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
 
 Derived passwords extend the platform with stateless password derivation: instead of storing passwords, users re-derive them on demand from two factors — a memorized master passphrase and the HMAC-SHA1 secret sealed inside a YubiKey slot. The same passphrase, label and YubiKey always produce the same password, on any machine, with no vault, sync or backup required.
 

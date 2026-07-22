@@ -6,9 +6,9 @@ This document covers the Superbacked-level design of a block. Superbacked encode
 
 ## Introduction
 
-Superbacked is a secret management platform used to back up and pass on sensitive data such as BIP39 mnemonics, master passwords and TOTP secrets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
 
-Blocks are the foundation of the platform. Some secrets are too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Superbacked encrypts them using a passphrase and encodes the result as a QR code called a block, printed on archival paper for cold storage or saved as a JPG or PDF file (printing is recommended). No account, no internet connection — only you can decrypt it.
+Blocks are the foundation of the platform. Some secrets are too important to lose and too sensitive to share — Superbacked encrypts them into blocks using a passphrase, and only you can decrypt them: no account, no internet connection. Printed blocks are ideal for cold storage, which is why printing is recommended.
 
 Blocks can hold multiple secrets, each protected by its own passphrase — the first is always present, additional secrets are concealed and capacity is bounded only by the fixed block size. Every block has the same fixed size — 768 bytes of encrypted data or random padding in current versions, bounded by QR code capacity at the low error correction level (see [src/utilities/block.ts](../src/utilities/block.ts)) — and additional secrets are indistinguishable from the random padding that fills unused block space. Without an additional secret’s passphrase, an adversary cannot tell whether it exists at all.
 

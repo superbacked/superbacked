@@ -6,7 +6,7 @@ This document specifies the cryptographic design and implementation of the detac
 
 ## Introduction
 
-Superbacked is a secret management platform used to back up and pass on sensitive data such as BIP39 mnemonics, master passwords and TOTP secrets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
 
 Detached archives extend the platform with encrypted files and folders that are cryptographically bound to blocks.
 
