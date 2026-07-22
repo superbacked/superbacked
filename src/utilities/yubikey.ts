@@ -29,9 +29,14 @@ const responsePendingFlag = 0x40
 const responseTimeoutWaitFlag = 0x20
 const sequenceMask = 0x1f
 
+// A report whose status byte has every flag set aborts the pending
+// operation and clears the device's read state
+const resetStateFlags = 0xff
+
 // Slot commands
 const configureSlot1 = 0x01
 const configureSlot2 = 0x03
+const writeScanMap = 0x12
 const challengeHmacSlot1 = 0x30
 const challengeHmacSlot2 = 0x38
 
@@ -66,11 +71,11 @@ const challengeButtonConfigurationFlag = 0x08
 
 // Status report: firmware version at bytes 1 to 3, programming sequence at
 // byte 4 and per-slot valid flags in the low touch-level byte at byte 5
+const firmwareVersionOffset = 1
 const programmingSequenceOffset = 4
 const touchLevelOffset = 5
 const slot1ValidFlag = 0x01
 const slot2ValidFlag = 0x02
-const slotsValidMask = 0x03
 
 // CRC-16/ISO-13239 (polynomial 0x8408 reflected, initial value 0xffff) — a
 // buffer followed by its own little-endian CRC always leaves this residual
@@ -133,6 +138,9 @@ const receive = async (device: HIDAsync): Promise<Buffer> => {
 }
 
 const send = async (device: HIDAsync, data: Buffer): Promise<void> => {
+  if (data.length !== featureReportSize) {
+    throw new Error(`Feature report must be ${featureReportSize} bytes`)
+  }
   await device.sendFeatureReport(Buffer.concat([Buffer.from([0]), data]))
 }
 
@@ -184,7 +192,9 @@ const sendFrame = async (
 
 // Signal the device to stop sending and clear its read state
 const resetState = async (device: HIDAsync): Promise<void> => {
-  await send(device, Buffer.from([0, 0, 0, 0, 0, 0, 0, 0xff]))
+  const report = Buffer.alloc(featureReportSize)
+  report.writeUInt8(resetStateFlags, featureReportDataSize)
+  await send(device, report)
 }
 
 const readFrame = async (
@@ -235,12 +245,19 @@ const readFrame = async (
 }
 
 // Challenge-response and its slot configuration require firmware 2.2 or
-// later (the per-slot valid flags exist from 2.1)
-const assertFirmwareSupport = (status: Buffer): void => {
-  const major = status.readUInt8(1)
-  const minor = status.readUInt8(2)
-  if (major < 2 || (major === 2 && minor < 2)) {
-    throw new Error("Challenge-response requires YubiKey firmware 2.2 or later")
+// later; the per-slot valid flags require 2.1
+const assertFirmwareVersion = (
+  status: Buffer,
+  major: number,
+  minor: number,
+  feature: string
+): void => {
+  const deviceMajor = status.readUInt8(firmwareVersionOffset)
+  const deviceMinor = status.readUInt8(firmwareVersionOffset + 1)
+  if (deviceMajor < major || (deviceMajor === major && deviceMinor < minor)) {
+    throw new Error(
+      `${feature} requires YubiKey firmware ${major}.${minor} or later`
+    )
   }
 }
 
@@ -269,7 +286,7 @@ export const calculateHmacSha1 = async (
   try {
     // Idle reads return a status report
     const status = await receive(device)
-    assertFirmwareSupport(status)
+    assertFirmwareVersion(status, 2, 2, "Challenge-response")
     // In HMAC_LT64 mode (the standard challenge-response configuration) the
     // device recovers the challenge length by stripping trailing copies of
     // the final byte, so the pad byte must differ from the last challenge
@@ -313,11 +330,11 @@ export const getStatus = async (): Promise<Status> => {
   })
   try {
     const status = await receive(device)
-    assertFirmwareSupport(status)
+    assertFirmwareVersion(status, 2, 1, "Reading slot status")
     const touchLevel = status.readUInt8(touchLevelOffset)
     return {
-      firmwareVersion: [1, 2, 3]
-        .map((offset) => status.readUInt8(offset))
+      firmwareVersion: [0, 1, 2]
+        .map((offset) => status.readUInt8(firmwareVersionOffset + offset))
         .join("."),
       slot1Provisioned: (touchLevel & slot1ValidFlag) !== 0,
       slot2Provisioned: (touchLevel & slot2ValidFlag) !== 0,
@@ -372,8 +389,9 @@ export const buildHmacSha1Configuration = (
 
 // A configuration write returns an updated status report instead of a data
 // frame — success is the programming sequence incrementing (a single byte,
-// wrapping at 255), or resetting to 0 when the last configuration was
-// deleted
+// wrapping at 255). The reference implementation also accepts a reset to 0,
+// which only deleting the last configuration produces — provisioning always
+// leaves the written slot valid, so only an increment counts here
 const awaitConfigurationWrite = async (
   device: HIDAsync,
   previousSequence: number
@@ -387,13 +405,7 @@ const awaitConfigurationWrite = async (
     }
     if (statusByte === 0) {
       const sequence = report.readUInt8(programmingSequenceOffset)
-      const touchLevel = report.readUInt8(touchLevelOffset)
-      if (
-        sequence === ((previousSequence + 1) & 0xff) ||
-        (sequence === 0 &&
-          previousSequence > 0 &&
-          (touchLevel & slotsValidMask) === 0)
-      ) {
+      if (sequence === ((previousSequence + 1) & 0xff)) {
         return
       }
       throw new Error(
@@ -402,6 +414,21 @@ const awaitConfigurationWrite = async (
     }
     // Device is busy applying the write
     await sleep(20)
+  }
+}
+
+// A NEO (firmware 3.x) may report a programming sequence cached by its
+// arbitrator before it went stale — following the reference implementation,
+// writing an invalid scan map (which the device rejects, changing nothing)
+// forces the applet to refresh it
+const refreshProgrammingSequence = async (device: HIDAsync): Promise<void> => {
+  const payload = Buffer.alloc(slotDataSize)
+  payload.fill("c", 0, 51)
+  await sendFrame(device, writeScanMap, payload)
+  try {
+    await readFrame(device)
+  } catch {
+    // Rejection is the expected outcome
   }
 }
 
@@ -422,8 +449,12 @@ export const provisionHmacSha1 = async (
     nonExclusive: true,
   })
   try {
-    const status = await receive(device)
-    assertFirmwareSupport(status)
+    let status = await receive(device)
+    assertFirmwareVersion(status, 2, 2, "Challenge-response")
+    if (status.readUInt8(firmwareVersionOffset) === 3) {
+      await refreshProgrammingSequence(device)
+      status = await receive(device)
+    }
     // The frame payload is the configuration followed by the current access
     // code — left zero, as access-code-protected slots are not supported
     // (the device rejects the write, leaving the slot untouched)
