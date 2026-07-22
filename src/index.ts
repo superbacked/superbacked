@@ -261,4 +261,16 @@ cli
     registerHandlers()
   })
 
+// Subcommands never open a window, but Electron still boots Chromium in
+// the background, whose GPU process can spill errors into interactive
+// prompts (for example a Wayland/Vulkan incompatibility complaint on
+// Superbacked OS) — drop GPU work and non-fatal Chromium logging before
+// any subcommand runs (parsing is synchronous, so the switches land
+// before Chromium is ready)
+cli.hook("preSubcommand", () => {
+  app.disableHardwareAcceleration()
+  app.commandLine.appendSwitch("disable-gpu")
+  app.commandLine.appendSwitch("log-level", "3")
+})
+
 cli.parse()
