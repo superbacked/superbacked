@@ -7,11 +7,14 @@
 - [Derived password](derived-password-technical-documentation.md)
 - [Detached archive](detached-archive-technical-documentation.md)
 - [Fixed-size encryption](fixed-size-encryption-technical-documentation.md)
+- [Legacy fixed-size encryption](legacy-fixed-size-encryption-technical-documentation.md)
 - [Standalone archive](standalone-archive-technical-documentation.md)
 - [Superbacked OS security model](superbacked-os-security-technical-documentation.md)
 
 ## Guides (source of [superbacked.com/guides](https://superbacked.com/guides))
 
+- [How to derive passwords using command-line interface](./guides/how-to-derive-passwords-using-command-line-interface/README.md)
+- [How to encrypt files using command-line interface](./guides/how-to-encrypt-files-using-command-line-interface/README.md)
 - [How to run Superbacked on factory-reset Mac](./guides/how-to-run-superbacked-on-factory-reset-mac/README.md)
 - [How to run Superbacked on Tails](./guides/how-to-run-superbacked-on-tails/README.md)
 - [How to run Superbacked on Ubuntu Desktop](./guides/how-to-run-superbacked-on-ubuntu-desktop/README.md)

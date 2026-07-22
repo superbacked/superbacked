@@ -51,7 +51,7 @@ export const generateSalt = (saltSize = 16): Buffer => {
 ### Security characteristics
 
 - **Salt strength**: 128-bit — provides strong security against rainbow table attacks
-- **Randomness source**: Node.js `crypto.randomBytes` — generates cryptographically secure pseudorandom bytes using `/dev/urandom`
+- **Randomness source**: Node.js `crypto.randomBytes` — cryptographically secure random bytes from the operating system’s CSPRNG
 - **Storage**: The salt is stored at the beginning of the encrypted standalone archive file (first 16 bytes)
 
 ## Encryption key generation
@@ -65,15 +65,21 @@ const key = await argon2(passphrase, salt.toString("base64"))
 ### Implementation
 
 ```typescript
-export default async (passphrase: string, salt: string): Promise<Buffer> => {
+export default async (
+  passphrase: string,
+  salt: string,
+  mode: "d" | "id" = "d"
+): Promise<Buffer> => {
   const { stdout } = await spawn(
     `${binDir}/argon2`,
-    [salt, "-d", "-p", "2", "-k", "65536", "-r", "-t", "10"],
+    [salt, `-${mode}`, "-p", "2", "-k", "65536", "-r", "-t", "10"],
     { input: passphrase }
   )
   return Buffer.from(stdout, "hex")
 }
 ```
+
+The `mode` parameter defaults to Argon2d, which standalone archives use; derived passwords use Argon2id (see the [derived password technical documentation](derived-password-technical-documentation.md)).
 
 ### Argon2d parameters
 
@@ -86,7 +92,7 @@ Argon2d is a memory-hard password hashing function designed to resist brute-forc
 - **Salt**: 128-bit salt
 - **Variant**: Argon2d (`-d`)
 - **Parallelism**: 2 threads (`-p 2`)
-- **Memory**: 65536 KiB or 64 MiB (`-k 65536`)
+- **Memory**: 65,536 KiB or 64 MiB (`-k 65536`)
 - **Output format**: Raw (`-r`)
 - **Iterations**: 10 (`-t 10`)
 
@@ -113,7 +119,7 @@ const iv = generateIv()
 ### Security characteristics
 
 - **Initialization vector strength**: 96-bit — recommended for AES-GCM
-- **Randomness source**: Node.js `crypto.randomBytes` — generates cryptographically secure pseudorandom bytes using `/dev/urandom`
+- **Randomness source**: Node.js `crypto.randomBytes` — cryptographically secure random bytes from the operating system’s CSPRNG
 - **Uniqueness**: Each standalone archive has a unique initialization vector, ensuring the encryption key never encrypts multiple standalone archives using the same initialization vector
 
 ## Standalone archive format

@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of the detached archive feature in Superbacked. Detached archives allow users to encrypt files and folders using master keys embedded alongside user-provided secrets in encrypted QR codes called blocks. The content of archives is stored separately from blocks or blocksets while being cryptographically bound to block content — restoring detached archives requires both blocks and passphrases, providing multi-factor authentication. The source ([src/utilities/detachedArchive.ts](../src/utilities/detachedArchive.ts) and [src/utilities/archiveCore.ts](../src/utilities/archiveCore.ts)) is the ground truth for this document.
+This document specifies the cryptographic design and implementation of the detached archive feature in Superbacked. Detached archives allow users to encrypt files and folders using master keys that are embedded — alongside user-provided secrets — in encrypted QR codes called blocks. The content of archives is stored separately from blocks or blocksets while being cryptographically bound to block content — restoring detached archives requires both blocks and passphrases, providing multi-factor authentication. The source ([src/utilities/detachedArchive.ts](../src/utilities/detachedArchive.ts) and [src/utilities/archiveCore.ts](../src/utilities/archiveCore.ts)) is the ground truth for this document.
 
 ## Introduction
 
@@ -51,7 +51,7 @@ masterKey = window.api.invokeSync.generateMasterKey()
 - **Key strength**: 256-bit — provides strong security against brute-force attacks
 - **Unpredictability**: Master keys cannot be predicted or reproduced — each generated key is cryptographically unique
 - **Key independence**: Master keys are generated independently for each secret to prevent correlation attacks
-- **Randomness source**: Node.js `crypto.randomBytes` — generates cryptographically secure pseudorandom bytes using `/dev/urandom`
+- **Randomness source**: Node.js `crypto.randomBytes` — cryptographically secure random bytes from the operating system’s CSPRNG
 
 ## Key derivation
 
@@ -213,5 +213,5 @@ With the app in restore mode:
 3. The app derives the encryption key, HMAC key and filename from the embedded master key.
 4. Drag and drop the detached archive with the filename matching the derived filename.
 5. Choose where to save the detached archive content.
-6. The app verifies the HMAC binding the detached archive to the block content.
-7. The app decrypts and saves the detached archive content.
+6. The app decrypts and saves the detached archive content.
+7. The app verifies the HMAC binding the detached archive to the block content and reports success only when it matches.

@@ -74,9 +74,9 @@ Reviewers who know these stacks will already know their sharp edges — the Chro
 
 ### Application confinement (AppArmor)
 
-**Intent:** Debian packages and tarballs ship unconfined, so each application is confined by its own AppArmor profile scoped to least privilege. The secret-handling apps additionally deny all network access, enforcing the air-gap _inside_ the process — a second layer beneath the firewall.
+**Intent:** each application can do only what its job requires; the secret-handling apps additionally deny all network access, enforcing the air-gap _inside_ the process — a second layer beneath the firewall.
 
-**Approach:** each of the four apps has a confined profile ([`superbacked-os-bootstrap-assets/apparmor/`](../superbacked-os-bootstrap-assets/apparmor/)) that grants what the app genuinely needs and denies the rest. Profiles are syntax-checked at build time (a syntax error fails the build) and compiled and loaded by `apparmor.service` at each boot; they ship enforcing, with an `APPARMOR_MODE=complain` flag (disabled by default) used to tune them against real behavior on hardware. A few cross-cutting decisions are worth noting:
+**Approach:** Debian packages and tarballs ship unconfined, so each of the four apps has a confined profile ([`superbacked-os-bootstrap-assets/apparmor/`](../superbacked-os-bootstrap-assets/apparmor/)) that grants what the app genuinely needs and denies the rest. Profiles are syntax-checked at build time (a syntax error fails the build) and compiled and loaded by `apparmor.service` at each boot; they ship enforcing, with an `APPARMOR_MODE=complain` flag (disabled by default) used to tune them against real behavior on hardware. A few cross-cutting decisions are worth noting:
 
 - The three apps that must never reach the network (KeePassXC, Superbacked, Yubico Authenticator) deny the inet families explicitly rather than using a bare `deny network`, which would also sweep the AF_UNIX sockets that D-Bus and Wayland depend on.
 - Firefox and the Superbacked app both keep the `userns` grant their content sandboxes require under Ubuntu 24.04’s restricted-user-namespace policy; removing it would break the sandbox.

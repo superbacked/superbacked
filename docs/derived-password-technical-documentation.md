@@ -66,7 +66,7 @@ export const computeMasterKey = async (
 - **Salt**: First 16 bytes (hex-encoded) of SHA-256 of `superbacked-derived-password-salt-` followed by label
 - **Variant**: Argon2id (`-id`)
 - **Parallelism**: 2 threads (`-p 2`)
-- **Memory**: 65536 KiB or 64 MiB (`-k 65536`)
+- **Memory**: 65,536 KiB or 64 MiB (`-k 65536`)
 - **Output format**: Raw (`-r`)
 - **Iterations**: 10 (`-t 10`)
 
@@ -100,7 +100,7 @@ export const computeChallenge = (masterKey: Buffer, label: string): Buffer => {
 
 ### Security characteristics
 
-- **Passphrase concealment**: YubiKey receives one 32-byte HMAC-SHA256 output per label — under the PRF assumption this value is computationally indistinguishable from random and reveals nothing about the master key, so even a backdoored device logging every challenge collects only PRF images (inverting one to the passphrase requires a memory-hard dictionary attack through Argon2id)
+- **Passphrase concealment**: YubiKey receives one 32-byte HMAC-SHA256 output per label — under the PRF assumption this value is computationally indistinguishable from random data and reveals nothing about the master key, so even a backdoored device logging every challenge collects only PRF images (inverting one to the passphrase requires a memory-hard dictionary attack through Argon2id)
 - **Hardware gating**: The challenge is a secret function of the master passphrase, so an attacker cannot pose the right question to the YubiKey without already knowing the passphrase — given a leaked derived password, each passphrase guess requires Argon2id plus a live round-trip through the physical YubiKey, capping brute-force throughput at USB challenge-response speed instead of GPU speed (no offline attack exists)
 - **Domain separation**: Context strings share the `superbacked-derived-password-` prefix followed by a role segment (`salt-`, `challenge-`, `no-yubikey`) — roles diverge at a fixed position so no label can make two contexts collide, and fixed 32-byte output keeps the challenge within the 64-byte HMAC-SHA1 challenge limit regardless of label length
 
@@ -114,15 +114,15 @@ const response = await calculateHmacSha1(slot, challenge, onTouchRequired)
 
 ### Slot configuration
 
-The slot must be configured once for HMAC-SHA1 challenge-response:
+The slot must be provisioned once for HMAC-SHA1 challenge-response:
 
 ```console
-ykman otp chalresp --generate 1
+superbacked provision-yubikey --generate
 ```
 
-Slot 1 ships from the factory configured for Yubico OTP — programming it for challenge-response replaces that configuration. To keep factory Yubico OTP, program slot 2 instead and derive with `--slot 2`.
+Slot 1 ships from the factory configured for Yubico OTP — provisioning it for challenge-response overwrites that configuration permanently. To keep factory Yubico OTP, provision slot 2 instead (`--slot 2`) and derive with `--slot 2`.
 
-Add `--touch` to require physical touch for each response. Requires YubiKey firmware 2.2 or later. Programming a second YubiKey with the same secret provides hardware redundancy — losing the only YubiKey loses all derived passwords.
+Computing a response requires physical touch by default — add `--no-touch` to compute responses without touch (weaker). Requires YubiKey firmware 2.2 or later. The generated secret is displayed once so a second YubiKey can be programmed with it, providing hardware redundancy — losing the only YubiKey loses all derived passwords. Slots provisioned with other tools (for example `ykman otp chalresp`) remain compatible.
 
 ### Protocol
 

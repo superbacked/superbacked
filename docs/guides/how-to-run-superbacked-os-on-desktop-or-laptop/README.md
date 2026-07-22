@@ -51,6 +51,8 @@ Select “App Options”, disable “Enable anonymous statistics (telemetry) col
 
 > Heads-up: for additional security, [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
 
+> Heads-up: when reading this guide on GitHub, replace the version placeholder in the following commands with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
+
 #### macOS or Ubuntu
 
 ```console

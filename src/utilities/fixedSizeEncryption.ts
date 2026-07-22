@@ -16,11 +16,11 @@ import {
 // Two HKDF-SHA256 subkeys are derived from each secret’s key — one keying
 // the length mask, one keying AES-256-GCM — so the two primitives never
 // share a key. The length is masked by XOR with a PRF of the length subkey
-// and iv (HMAC-SHA256), making it indistinguishable from random without the
-// key while sparing decryption a search over lengths: decryption slides
-// over every byte offset, unmasks the candidate length, bounds-checks it
-// and attempts authenticated decryption — the tag rejects false candidates,
-// costing O(block size) cheap attempts worst case.
+// and iv (HMAC-SHA256), making it indistinguishable from random data
+// without the key while sparing decryption a search over lengths:
+// decryption slides over every byte offset, unmasks the candidate length,
+// bounds-checks it and attempts authenticated decryption — the tag rejects
+// false candidates, costing O(block size) cheap attempts worst case.
 //
 // The format is frozen — blocks in the wild must decrypt forever. Blocks
 // created before this scheme use legacyFixedSizeEncryption.ts.

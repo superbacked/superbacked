@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using fixed-size encryption — a primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Its cryptographic design (ciphers, key derivation, header format and padding) is specified in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md). The source ([src/handlers/create.ts](../src/handlers/create.ts), [src/utilities/block.ts](../src/utilities/block.ts) and [src/block/App.tsx](../src/block/App.tsx)) is the ground truth for this document.
+This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using fixed-size encryption — a primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Its cryptographic design (ciphers, key derivation, block format and padding) is specified in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md). The source ([src/handlers/create.ts](../src/handlers/create.ts), [src/utilities/block.ts](../src/utilities/block.ts) and [src/block/App.tsx](../src/block/App.tsx)) is the ground truth for this document.
 
 ## Introduction
 
@@ -31,27 +31,29 @@ When you create a block, the app:
 
 ## Encryption
 
-Blocks are encrypted using [fixed-size encryption](fixed-size-encryption-technical-documentation.md). Superbacked supplies the key-derivation function (Argon2d, memory-hard, followed by the backup type’s HKDF domain key — see [src/utilities/block.ts](../src/utilities/block.ts)) and configures blocks to hold as many secrets as fit their fixed size; the primitive provides the properties a block relies on:
+Blocks are encrypted using [fixed-size encryption](fixed-size-encryption-technical-documentation.md). Superbacked derives each secret’s key (Argon2d, memory-hard, followed by the backup type’s HKDF domain key — see [src/utilities/block.ts](../src/utilities/block.ts)) and sets the fixed block size, which bounds how many secrets a block holds; the primitive provides the properties a block relies on:
 
 - **Authenticated encryption** of each secret under its own passphrase — a wrong passphrase or a tampered block fails to decrypt.
-- **Plausible deniability** — a block’s encrypted headers are indistinguishable from its encrypted data and from random padding, so the number of secrets it holds cannot be determined. At least one secret is always present; whether additional secrets exist cannot be determined.
+- **Plausible deniability** — every byte of a block is ciphertext or random padding, indistinguishable from random data, so a block reveals nothing about how many secrets it holds beyond the first, which is always present.
 - **A fixed block size** — every block is padded to the same size, so its size reveals nothing about how much it holds.
 
-The cryptographic design behind these properties — the ciphers, key derivation, header format and padding — lives in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md), not here.
+The cryptographic design behind these properties — the ciphers, key derivation, block format and padding — lives in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md), not here.
 
 ## Payload and artifact
 
-A block’s QR code encodes a JSON payload: the fixed-size encryption output (salt and data, base64-encoded) plus optional metadata such as a label. Legacy payloads carry iv and headers fields as well — their presence is how restoration tells the formats apart.
+A block’s QR code encodes a JSON payload: the key-derivation salt and the fixed-size encryption output (both base64-encoded) plus optional metadata such as a label. Legacy payloads carry iv and headers fields as well — their presence is how restoration tells the formats apart (see the [legacy fixed-size encryption technical documentation](legacy-fixed-size-encryption-technical-documentation.md)).
 
 ```typescript
-const payload = {
-  salt: salt.toString("base64"),
+return {
+  salt: saltBase64,
   data: encrypt(blockSecrets, blockSize).toString("base64"),
-  metadata: { label },
+  metadata: {
+    label: label,
+  },
 }
 ```
 
-Superbacked hashes the payload using SHA-256 for integrity and identification; the first eight characters (a **short hash**) are included on the block so you can identify and match blocks at a glance. The block itself is a 4×6-inch card designed to explain itself decades later: the QR code sits at its center, the label and short hash identify it, a recovery pointer (superbacked.com/recover) says how to restore it, an “Important document, do not discard” notice protects it from being discarded and trim marks frame the printed card for cutting to size. A block’s security rests entirely on its encrypted payload — the hash is for integrity and identification, not confidentiality.
+Superbacked hashes the payload using SHA-256 for integrity and identification; the first eight characters (a **short hash**) are included on the block so you can identify and match blocks at a glance. The block itself is a 4×6-inch card designed to explain itself decades later: the QR code sits at its center, the label and short hash identify it, a recovery pointer (superbacked.com/recover) says how to restore it, an “Important document, do not discard” notice guards it against accidental disposal and trim marks frame the printed card for cutting to size. A block’s security rests entirely on its encrypted payload — the hash is for integrity and identification, not confidentiality.
 
 ## Creation workflow
 

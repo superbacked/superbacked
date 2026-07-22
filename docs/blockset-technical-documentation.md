@@ -44,18 +44,26 @@ When a blockset holds several secrets, each block carries the encrypted secret a
 
 ```typescript
 for (const secret of secrets) {
-  const shares = await generateShares(secret.message, numberOfShares, threshold)
+  const shares = await generateShares(
+    secret.message,
+    numberOfShares,
+    threshold
+  )
   for (const [index, share] of shares.entries()) {
-    shamirBlockSecrets[index] ??= []
-    shamirBlockSecrets[index].push({
+    const shareSecret: ShareSecret = {
       message: share,
       passphrase: secret.passphrase,
-    })
+    }
+    if (shamirBlockSecrets[index]) {
+      shamirBlockSecrets[index].push(shareSecret)
+    } else {
+      shamirBlockSecrets[index] = [shareSecret]
+    }
   }
 }
 ```
 
-Encrypting twice is what gives a blockset its guarantees. Blocks and blocksets yield blocks that are indistinguishable from each other: the outer layer is always fixed-size encryption, so from the outside nothing tells a block of a blockset apart from any other block. And recovery is gated twice: a valid passphrase opens a block, and when the block belongs to a blockset, the secret stays sealed until enough blocks meet the threshold and rebuild the Shamir key — a requirement enforced by the encryption itself, not by policy. There is no separate linking metadata to protect — what binds the blocks of a blockset together is the shares themselves.
+Encrypting twice is what gives a blockset its guarantees. The block and blockset backup types yield indistinguishable blocks: the outer layer always uses the same fixed-size encryption, so a blockset’s block looks like any other. And recovery is gated twice: a valid passphrase opens a block, and when the block belongs to a blockset, the secret stays sealed until enough blocks meet the threshold and rebuild the Shamir key — a requirement enforced by the encryption itself, not by policy. There is no separate linking metadata to protect — what binds the blocks of a blockset together is the shares themselves.
 
 ## Restoration
 

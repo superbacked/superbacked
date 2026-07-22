@@ -27,10 +27,10 @@ $ echo 'alias superbacked="/Applications/Superbacked.app/Contents/MacOS/Superbac
 $ source "$HOME/.zshrc"
 ```
 
-On Linux, install the AppImage as `superbacked` in `~/.local/bin` (adjusting the path and version to the downloaded release and opening a new terminal if `~/.local/bin` did not exist).
+On Linux, install the AppImage as `superbacked` in `~/.local/bin` (adjusting the path and version to match the downloaded AppImage and opening a new terminal if `~/.local/bin` did not exist).
 
 ```console
-$ install -m 755 "$HOME/Downloads/superbacked-x64-1.13.0.AppImage" "$HOME/.local/bin/superbacked"
+$ install -m 755 "$HOME/Downloads/superbacked-x64-${latestRelease}.AppImage" "$HOME/.local/bin/superbacked"
 ```
 
 On Superbacked OS, the `superbacked` command is preinstalled.

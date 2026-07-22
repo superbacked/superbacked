@@ -7,7 +7,7 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "crypto"
 // blockcrypt package (vendored at 0.0.1-beta.24). The format is frozen —
 // printed blocks in the wild must decrypt forever — and pinned by the
 // reference vectors in tests/legacyFixedSizeEncryption.test.ts; the design
-// is specified in docs/fixed-size-encryption-technical-documentation.md.
+// is specified in docs/legacy-fixed-size-encryption-technical-documentation.md.
 // Superseded for new blocks by fixedSizeEncryption.ts.
 
 export type Message = Buffer | string
