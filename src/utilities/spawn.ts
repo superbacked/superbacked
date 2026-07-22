@@ -13,6 +13,37 @@ interface SpawnReturnValue {
   stderr: string
 }
 
+/**
+ * Spawn a guard that runs a command when this process dies — the guard
+ * blocks on a pipe held by this process, so normal exit and death by any
+ * signal alike close the pipe and trigger the command. Electron’s main
+ * process does not reliably dispatch POSIX signals to JavaScript handlers
+ * (Chromium installs its own), so in-process cleanup alone can be skipped.
+ * @param command shell command (positional arguments available as $1…)
+ * @param args positional arguments
+ * @returns release function, preventing the command from running
+ */
+export const spawnGuard = (
+  command: string,
+  args: readonly string[] = []
+): (() => void) => {
+  const guard = spawn(
+    "sh",
+    ["-c", `read -r _ || true; exec ${command}`, "sh", ...args],
+    {
+      // Ctrl-C signals the whole foreground process group — the guard must
+      // live in its own group and session or it dies alongside the very
+      // process it guards
+      detached: true,
+      stdio: ["pipe", "ignore", "ignore"],
+    }
+  )
+  guard.unref()
+  return () => {
+    guard.kill()
+  }
+}
+
 const stripFinalNewline = (input: string) => {
   if (input[input.length - 1] === "\n") {
     input = input.slice(0, -1)
@@ -32,6 +63,10 @@ export default async (
     const { input, ...otherOptions } = opts
     try {
       const spawned = spawn(command, args, otherOptions)
+      // Failing to spawn (for example a missing binary) emits “error”, then
+      // “close” with a null exit code — without this listener the null code
+      // reads as success with empty output
+      spawned.on("error", reject)
       let stdout = ""
       let stderr = ""
       if (spawned.stdout) {

@@ -1,10 +1,11 @@
-import { execFileSync, spawn } from "child_process"
+import { execFileSync } from "child_process"
 import { once } from "events"
 import { openSync } from "fs"
 import { ReadStream } from "tty"
 
 import { timingSafeEqualStrings } from "@/src/utilities/crypto"
 import sleep from "@/src/utilities/sleep"
+import { spawnGuard } from "@/src/utilities/spawn"
 
 const stripTrailingNewline = (value: string): string => {
   if (value.endsWith("\r\n")) {
@@ -137,26 +138,18 @@ export const promptHidden = async (query: string): Promise<string> => {
       stdio: ["inherit", "ignore", "inherit"],
     })
   }
-  // Canonical mode turns Ctrl-C back into a real SIGINT — and Electron’s
-  // main process does not reliably dispatch POSIX signals to JavaScript
-  // handlers (Chromium installs its own), so a signal can kill the process
-  // without running any cleanup, leaving the shell with echo off. The guard
-  // child blocks on a pipe held by this process: normal exit and death by
-  // any signal alike close the pipe, unblocking the guard, which restores
-  // the saved terminal state. Restoring twice is harmless, so the happy
-  // path also restores directly.
-  const guard = spawn(
-    "sh",
-    ["-c", 'read -r _ || true; exec stty "$1" < /dev/tty', "sh", savedState],
-    { stdio: ["pipe", "ignore", "ignore"] }
-  )
-  guard.unref()
+  // Canonical mode turns Ctrl-C back into a real SIGINT, and a signal can
+  // kill the process without running any cleanup, leaving the shell with
+  // echo off — the guard restores the saved terminal state whenever this
+  // process dies. Restoring twice is harmless, so the happy path also
+  // restores directly.
+  const releaseGuard = spawnGuard('stty "$1" < /dev/tty', [savedState])
   execFileSync("stty", ["-echo"], { stdio: ["inherit", "ignore", "inherit"] })
   try {
     return await readLine()
   } finally {
     restore()
-    guard.kill()
+    releaseGuard()
     stderr.write("\n")
   }
 }

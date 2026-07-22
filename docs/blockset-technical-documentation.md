@@ -44,11 +44,7 @@ When a blockset holds several secrets, each block carries the encrypted secret a
 
 ```typescript
 for (const secret of secrets) {
-  const shares = await generateShares(
-    secret.message,
-    numberOfShares,
-    threshold
-  )
+  const shares = await generateShares(secret.message, numberOfShares, threshold)
   for (const [index, share] of shares.entries()) {
     const shareSecret: ShareSecret = {
       message: share,

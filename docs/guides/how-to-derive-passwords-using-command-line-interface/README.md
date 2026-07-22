@@ -63,6 +63,8 @@ By default, computing a response requires touching the YubiKey — every passwor
 
 > Heads-up: no fingerprint or checksum of the master passphrase is ever displayed or stored, so a mistyped passphrase silently derives a different password. Use `--confirm` when creating a password — the master passphrase is prompted twice and must match, catching typos before they become the password.
 
+> Heads-up: on Linux, copying to the clipboard under Wayland requires wl-clipboard (`sudo apt install wl-clipboard`) — preinstalled on Superbacked OS. On GNOME, a dock icon may blink when the password is copied or cleared — wl-copy briefly opens an invisible window to acquire the clipboard, as GNOME offers windowless processes no other way to set it.
+
 ```console
 $ superbacked derive-password
 Label: github

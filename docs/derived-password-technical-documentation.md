@@ -253,7 +253,13 @@ Label is prompted when omitted, keeping labels out of shell history and process 
 4. User touches YubiKey if slot requires touch
 5. App copies password to clipboard, clearing it after 10 seconds or as soon as user presses enter (or prints it with `--print`)
 
-The password is copied to the clipboard by default, keeping it out of terminal scrollback (which tmux and some terminal emulators persist to disk). The process stays alive for the clearing delay (X11 and Wayland drop a selection when its owner exits) then clears the clipboard unless the user copied something else meanwhile — pressing enter ends the wait and clears immediately. Interrupting the wait leaves the password on the clipboard on macOS (the pasteboard survives the process) whereas X11 and Wayland drop the selection when the process dies. With `--print`, the password is written to stdout on its own so the command composes with other utilities — prompts and the touch notice go to stderr.
+The password is copied to the clipboard by default, keeping it out of terminal scrollback (which tmux and some terminal emulators persist to disk).
+
+Each platform copies through the mechanism it sanctions. Wayland lets only a focused surface set the selection and the command-line interface is windowless, so the password is copied through `wl-copy` (wl-clipboard, preinstalled on Superbacked OS), whose daemon owns the selection — when wl-clipboard is missing, the command fails with instructions instead of reporting a copy that never happened. On GNOME, wl-copy briefly maps an invisible window to acquire the selection (Mutter implements no data-control protocol), which can blink an icon in the dock when the password is copied or cleared — cosmetic and expected. On macOS the password is copied through `pbcopy`, which ships with the operating system; only X11 uses Electron’s clipboard, the platform preinstalling no utility and the selection living and dying with the process.
+
+The process stays alive for the clearing delay (X11 drops a selection when its owner exits) then clears the clipboard unless the user copied something else meanwhile — pressing enter ends the wait and clears immediately. Interrupting the wait cannot leave the password behind: on macOS (where the pasteboard survives the process) and on Wayland (where the wl-copy daemon does), a guard clears the clipboard whenever the command dies before clearing it and X11 drops the selection with the process.
+
+With `--print`, the password is written to stdout on its own so the command composes with other utilities — prompts and the touch notice go to stderr.
 
 ### Platform notes
 

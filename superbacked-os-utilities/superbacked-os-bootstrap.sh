@@ -159,9 +159,11 @@ printf "%s\n" "Installing dependencies…"
 # python3-pip downloads the pinned PyPI wheels just below,
 # totem plays video with gstreamer1.0-libav decoding it (H.264
 # including the 4:2:2 profile, plus AAC — the minimal install ships no
-# video decoder), waypipe puts the browser on screen, and zenity shows
-# error dialogs. (Firefox and KeePassXC come from their own
-# repositories — see the install sections below.)
+# video decoder), waypipe puts the browser on screen, wl-clipboard
+# copies derived passwords to the clipboard (Wayland lets only a
+# focused surface set the selection, and the command-line interface is
+# windowless) and zenity shows error dialogs. (Firefox and KeePassXC
+# come from their own repositories — see the install sections below.)
 packages=(
   build-essential
   curl
@@ -185,6 +187,7 @@ packages=(
   scdaemon
   totem
   waypipe
+  wl-clipboard
   zenity
   zlib1g-dev
 )

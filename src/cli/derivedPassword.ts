@@ -1,11 +1,15 @@
-import { app, clipboard } from "electron"
-
 import { InvalidArgumentError } from "commander"
 
 import readPassphrase, {
   promptVisible,
   waitForEnter,
 } from "@/src/cli/readPassphrase"
+import {
+  clearText,
+  copyText,
+  readText,
+  spawnClearGuard,
+} from "@/src/utilities/clipboard"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto"
 import {
   computeDerivedPassword,
@@ -89,11 +93,10 @@ export const derivePasswordAction = async (
     if (options.print === true) {
       process.stdout.write(`${password}\n`)
     } else {
-      // The clipboard module requires the ready event on Linux — and the
-      // process must stay alive while the password is on the clipboard, as
-      // X11 and Wayland drop a selection when its owner exits
-      await app.whenReady()
-      clipboard.writeText(password)
+      // The guard precedes the copy so no window exists where death leaves
+      // the password on the clipboard unguarded
+      const releaseClearGuard = spawnClearGuard()
+      await copyText(password)
       process.stderr.write(
         `Password copied to clipboard, clearing in ${options.clear} second${
           options.clear === 1 ? "" : "s"
@@ -106,9 +109,10 @@ export const derivePasswordAction = async (
         process.stderr.write("\n")
       }
       // Leave the clipboard alone if the user copied something else meanwhile
-      if (timingSafeEqualStrings(clipboard.readText(), password) === true) {
-        clipboard.clear()
+      if (timingSafeEqualStrings(await readText(), password) === true) {
+        await clearText()
       }
+      releaseClearGuard()
     }
     process.exit(0)
   } catch (error) {
