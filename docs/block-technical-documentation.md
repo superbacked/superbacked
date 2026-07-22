@@ -2,51 +2,51 @@
 
 ## Abstract
 
-This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using [Blockcrypt](https://github.com/superbacked/blockcrypt) — an open-source primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Blockcrypt’s cryptographic design (ciphers, key derivation, header format and padding) is specified in its own repository.
+This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using fixed-size encryption — a primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Its cryptographic design (ciphers, key derivation, header format and padding) is specified in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md). The source ([src/handlers/create.ts](../src/handlers/create.ts), [src/utilities/block.ts](../src/utilities/block.ts) and [src/block/App.tsx](../src/block/App.tsx)) is the ground truth for this document.
 
 ## Introduction
 
-Some secrets are too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Superbacked encrypts them using a passphrase and encodes the result as a QR code called a block, printed on archival paper for cold storage or saved as a JPG or PDF file (printing is recommended). No account, no internet connection — only you can decrypt it.
+Superbacked is a secret management platform used to back up and pass on sensitive data such as BIP39 mnemonics, master passwords and TOTP secrets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
 
-Blocks can hold up to three secrets, each protected by its own passphrase — the first is always present, a second or third secret is hidden. Every block has the same fixed size (512 bytes of encrypted data or random padding in current versions), and hidden secrets are indistinguishable from the random padding that fills unused block space. Without a hidden secret’s passphrase, an adversary cannot tell whether it exists at all.
+Blocks are the foundation of the platform. Some secrets are too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Superbacked encrypts them using a passphrase and encodes the result as a QR code called a block, printed on archival paper for cold storage or saved as a JPG or PDF file (printing is recommended). No account, no internet connection — only you can decrypt it.
+
+Blocks can hold multiple secrets, each protected by its own passphrase — the first is always present, additional secrets are concealed and capacity is bounded only by the fixed block size. Every block has the same fixed size — 768 bytes of encrypted data or random padding in current versions, bounded by QR code capacity at the low error correction level (see [src/utilities/block.ts](../src/utilities/block.ts)) — and additional secrets are indistinguishable from the random padding that fills unused block space. Without an additional secret’s passphrase, an adversary cannot tell whether it exists at all.
 
 ## Terminology
 
-- **Block**: an encrypted QR code backup, printed on paper or saved as a JPG or PDF file.
-- **Blockcrypt**: the open-source primitive Superbacked uses to encrypt secrets — see [github.com/superbacked/blockcrypt](https://github.com/superbacked/blockcrypt).
-- **Hidden secret**: second or third secret of a block — indistinguishable from padding, so its existence cannot be proven without knowing its passphrase. Hidden secrets are the basis of a block’s plausible deniability.
-- **Payload**: the JSON, carrying Blockcrypt’s output, that a block’s QR code encodes.
+- **Additional secret**: any secret of a block beyond the first — indistinguishable from padding, so its existence cannot be proven without knowing its passphrase. Additional secrets are the basis of a block’s plausible deniability.
+- **Block**: an encrypted QR code printed on archival paper or saved as a JPG or PDF file.
+- **Fixed-size encryption**: the primitive Superbacked uses to encrypt secrets — see the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md).
+- **Payload**: the JSON, carrying the fixed-size encryption output, that a block’s QR code encodes.
 - **Plausible deniability**: the property that the number of secrets in a block, and the existence of any undisclosed secret, cannot be determined from the block.
 
 ## How a block is created
 
 When you create a block, the app:
 
-1. Takes up to three secrets, each with its own passphrase and an optional label.
-2. Derives a key from each passphrase using Argon2d and encrypts the secrets using Blockcrypt.
-3. Serializes Blockcrypt’s output as a JSON payload.
+1. Takes one or more secrets — as many as fit the block — each with its own passphrase and an optional label.
+2. Derives a key from each passphrase using Argon2d and the block-key-v1 HKDF domain key, then encrypts the secrets using fixed-size encryption.
+3. Serializes the fixed-size encryption output as a JSON payload.
 4. Encodes the payload as a QR code and renders the block — a 4×6-inch card carrying the QR code alongside a label and a short hash — printed or saved as a JPG or PDF file.
 
 ## Encryption
 
-Blocks are encrypted using [Blockcrypt](https://github.com/superbacked/blockcrypt). Superbacked supplies the key-derivation function (Argon2d, memory-hard) and configures blocks to hold up to three secrets; Blockcrypt provides the properties a block relies on:
+Blocks are encrypted using [fixed-size encryption](fixed-size-encryption-technical-documentation.md). Superbacked supplies the key-derivation function (Argon2d, memory-hard, followed by the backup type’s HKDF domain key — see [src/utilities/block.ts](../src/utilities/block.ts)) and configures blocks to hold as many secrets as fit their fixed size; the primitive provides the properties a block relies on:
 
 - **Authenticated encryption** of each secret under its own passphrase — a wrong passphrase or a tampered block fails to decrypt.
-- **Plausible deniability** — a block’s encrypted headers are indistinguishable from its encrypted data and from random padding, so the number of secrets it holds cannot be determined. At least one secret is always present; whether a second or third (hidden) secret exists cannot be determined.
+- **Plausible deniability** — a block’s encrypted headers are indistinguishable from its encrypted data and from random padding, so the number of secrets it holds cannot be determined. At least one secret is always present; whether additional secrets exist cannot be determined.
 - **A fixed block size** — every block is padded to the same size, so its size reveals nothing about how much it holds.
 
-The cryptographic design behind these properties — the ciphers, key derivation, header format and padding — lives in the [Blockcrypt repository](https://github.com/superbacked/blockcrypt), not here.
+The cryptographic design behind these properties — the ciphers, key derivation, header format and padding — lives in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md), not here.
 
 ## Payload and artifact
 
-A block’s QR code encodes a JSON payload: Blockcrypt’s output (salt, initialization vector, headers and data, base64-encoded) plus optional metadata such as a label.
+A block’s QR code encodes a JSON payload: the fixed-size encryption output (salt and data, base64-encoded) plus optional metadata such as a label. Legacy payloads carry iv and headers fields as well — their presence is how restoration tells the formats apart.
 
 ```typescript
 const payload = {
-  salt: block.salt.toString("base64"),
-  iv: block.iv.toString("base64"),
-  headers: block.headers.toString("base64"),
-  data: block.data.toString("base64"),
+  salt: salt.toString("base64"),
+  data: encrypt(blockSecrets, blockSize).toString("base64"),
   metadata: { label },
 }
 ```
@@ -57,9 +57,9 @@ Superbacked hashes the payload using SHA-256 for integrity and identification; t
 
 With the app in create mode:
 
-1. Select the single block backup type (blocksets are covered in the [blockset technical documentation](blockset-technical-documentation.md)).
+1. Select the block backup type (blocksets are covered in the [blockset technical documentation](blockset-technical-documentation.md)).
 2. Enter a secret, its passphrase and an optional label.
-3. Optionally, click the add hidden secret button to add a second or third secret, each with its own passphrase.
+3. Optionally, click the add secret button to add additional secrets — each with its own passphrase — until remaining block capacity runs out.
 4. Click the create button.
 5. The app encrypts the secret(s) and asks the user to print the block or save it as a JPG or PDF file.
 

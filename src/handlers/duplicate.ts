@@ -1,9 +1,9 @@
-import { Payload, Qr, compute } from "@/src/handlers/create"
+import { LegacyPayload, Payload, Qr, compute } from "@/src/handlers/create"
 
 export type Result =
   { error: string; success: false } | { qr: Qr; success: true }
 
-export default async (payload: Payload): Promise<Result> => {
+export default async (payload: Payload | LegacyPayload): Promise<Result> => {
   try {
     const qr = await compute(payload, payload.metadata.label)
     return {

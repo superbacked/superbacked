@@ -95,7 +95,7 @@ const RestoreStandaloneArchiveModal: FunctionComponent<
           <Button
             disabled={props.isUnlocking}
             onClick={handleAddToArchive}
-            variant="default"
+            variant="signatureTextGradient"
           >
             {t("components.fileManager.addToStandaloneArchive")}
           </Button>

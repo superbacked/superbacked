@@ -12,10 +12,10 @@ export type Manifest = {
 export type RestoredFilePath = string
 
 /**
- * Generate random nonce for AES-GCM
- * @returns 12-byte nonce
+ * Generate random initialization vector for AES-GCM
+ * @returns 12-byte initialization vector
  */
-export const generateNonce = (): Buffer => {
+export const generateIv = (): Buffer => {
   return randomBytes(12)
 }
 
@@ -39,26 +39,26 @@ export const createManifest = async (
 /**
  * Create AES-256-GCM cipher stream
  * @param key 32-byte encryption key
- * @param nonce 12-byte nonce
+ * @param iv 12-byte initialization vector
  * @returns cipher stream
  */
-export const createEncryptionStream = (key: Buffer, nonce: Buffer) => {
-  return createCipheriv("aes-256-gcm", key, nonce)
+export const createEncryptionStream = (key: Buffer, iv: Buffer) => {
+  return createCipheriv("aes-256-gcm", key, iv)
 }
 
 /**
  * Create AES-256-GCM decipher stream
  * @param key 32-byte decryption key
- * @param nonce 12-byte nonce
+ * @param iv 12-byte initialization vector
  * @param authTag 16-byte authentication tag
  * @returns decipher stream
  */
 export const createDecryptionStream = (
   key: Buffer,
-  nonce: Buffer,
+  iv: Buffer,
   authTag: Buffer
 ) => {
-  const decipher = createDecipheriv("aes-256-gcm", key, nonce)
+  const decipher = createDecipheriv("aes-256-gcm", key, iv)
   decipher.setAuthTag(authTag)
   return decipher
 }

@@ -1,4 +1,4 @@
-import { BrowserWindow, IpcMainInvokeEvent } from "electron"
+import { BrowserWindow, IpcMainInvokeEvent, WebContents } from "electron"
 import { AsyncLocalStorage } from "node:async_hooks"
 
 interface HandleContext {
@@ -20,4 +20,12 @@ export const getSenderWindow = (): BrowserWindow | null => {
     return null
   }
   return BrowserWindow.fromWebContents(context.event.sender)
+}
+
+export const getSenderWebContents = (): WebContents | null => {
+  const context = storage.getStore()
+  if (!context) {
+    return null
+  }
+  return context.event.sender
 }

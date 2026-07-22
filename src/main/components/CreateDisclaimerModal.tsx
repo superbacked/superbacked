@@ -7,7 +7,7 @@ import { TranslationKey } from "@/src/shared/types/i18n"
 interface CreateDisclaimerModalProps {
   backupType: "standard" | "2of3" | "3of5" | "4of7"
   detachedArchiveCount?: number
-  hiddenSecretCount?: number
+  secretCount?: number
   opened: boolean
   onClose: () => void
   onConfirm: () => void
@@ -18,7 +18,7 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
 ) => {
   const { t } = useTranslation()
 
-  const totalSecretCount = 1 + (props.hiddenSecretCount ?? 0)
+  const secretCount = props.secretCount ?? 1
   const detachedArchiveCount = props.detachedArchiveCount ?? 0
 
   let descriptionKey: TranslationKey
@@ -43,7 +43,7 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
         },
       }}
     >
-      <Text size="sm">{t(descriptionKey, { count: totalSecretCount })}</Text>
+      <Text size="sm">{t(descriptionKey, { count: secretCount })}</Text>
       <Space h="lg" />
       <Group justify="flex-end">
         <Button onClick={props.onConfirm} variant="signatureGradient">

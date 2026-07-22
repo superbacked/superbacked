@@ -7,7 +7,7 @@ import { FunctionComponent, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { emotionCache } from "@/emotion-cache"
-import QRCode from "@/src/block/components/QRCode"
+import QrCode from "@/src/block/components/QrCode"
 import Logo from "@/src/block/logo.svg"
 import { BlockApi } from "@/src/block/preload"
 import { Data } from "@/src/handlers/create"
@@ -157,7 +157,7 @@ const BlockContent: FunctionComponent<{ data: Data; t: TFunction }> = ({
   t,
 }) => (
   <>
-    <QRCode value={data.payloadText} />
+    <QrCode ecc={data.ecc} value={data.payloadText} />
     <Hash>
       {data.shortHash}
       {data.label ? ` ${data.label}` : null}

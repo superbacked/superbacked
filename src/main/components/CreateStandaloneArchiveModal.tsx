@@ -77,7 +77,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
       }}
     >
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Text c="dimmed" size="xs">
+        <Text size="xs">
           {t("components.featureDescriptionModal.standaloneArchiveDescription")}
         </Text>
         <Space h="lg" />

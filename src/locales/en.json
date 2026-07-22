@@ -45,6 +45,9 @@
       "copyright": "Copyright",
       "allRightsReserved": "All rights reserved"
     },
+    "addSecretDisclaimerModal": {
+      "description": "Additional secrets use separate passphrases and are concealed in unused block space."
+    },
     "createStandaloneArchiveModal": {
       "createStandaloneArchive": "Create standalone archive",
       "filename": "Filename",
@@ -108,9 +111,6 @@
       "standaloneArchiveCreated": "Standalone archive created",
       "standaloneArchiveRestored": "Standalone archive restored"
     },
-    "hiddenSecretDisclaimerModal": {
-      "description": "Hidden secrets use separate passphrases and are concealed in unused blockspace."
-    },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Passphrase strength",
       "estimatedAttackTime": "Estimated attack time",
@@ -141,7 +141,7 @@
     },
     "scanner": {
       "loading": "Loading",
-      "useCameraOrScreenCapture": "Use camera or screen capture",
+      "useCameraOrScreenRecording": "Use camera or screen recording",
       "pleaseAllowCameraAccess": "Please allow camera access",
       "pleaseConnectCamera": "Please connect camera",
       "cameraDoesNotMeetMinimumRequirementOf720p": "Camera does not meet minimum requirement of 720p",
@@ -153,11 +153,12 @@
       "source": "Source",
       "selectSource": "Select source"
     },
-    "secretTextareaWithLength": {
-      "secretLength": "Secret length",
-      "lengthRemaining": "Length remaining",
-      "validBip39Mnemonic_one": "valid mnemonic",
-      "validBip39Mnemonic_other": "valid mnemonics",
+    "secretTextareaWithUsage": {
+      "blockCapacity": "Block capacity",
+      "blocksetCapacity": "Blockset capacity",
+      "spaceRemaining": "Space remaining",
+      "bip39Mnemonic_one": "mnemonic",
+      "bip39Mnemonic_other": "mnemonics",
       "totpUri_one": "URI",
       "totpUri_other": "URIs",
       "found_one": "found",
@@ -225,8 +226,8 @@
       "3of5Description": "3 of 5 blocks of blockset and passphrase required to restore secret",
       "4of7": "Blockset (4-of-7 threshold)",
       "4of7Description": "4 of 7 blocks of blockset and passphrase required to restore secret",
-      "addHiddenSecret": "Add hidden secret",
-      "removeHiddenSecret": "Remove hidden secret",
+      "addSecret": "Add secret",
+      "removeSecret": "Remove secret",
       "createBlock": "Create block",
       "createBlockAndDetachedArchive_one": "Create block and detached archive",
       "createBlockAndDetachedArchive_other": "Create block and detached archives",

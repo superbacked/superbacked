@@ -24,7 +24,7 @@ import {
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 
-import { Payload } from "@/src/handlers/create"
+import { LegacyPayload, Payload } from "@/src/handlers/create"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import Dropzone from "@/src/main/components/Dropzone"
 import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
@@ -75,7 +75,7 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
             cursor: "default",
             overflowWrap: "anywhere",
             whiteSpace: "pre-wrap",
-            transition: "background-color 0.15s",
+            transition: "background-color 100ms ease",
             "&:hover": {
               backgroundColor: rgba(theme.colors.pink[8], 0.7),
             },
@@ -165,7 +165,9 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
   )
 }
 
-export type HandlePayload = (payload: Payload) => Promise<boolean>
+export type HandlePayload = (
+  payload: Payload | LegacyPayload
+) => Promise<boolean>
 
 interface RestoreProps {
   exportMode?: boolean
@@ -224,10 +226,12 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       }
       return
     }
-    let payload: Payload
+    let payload: Payload | LegacyPayload
     try {
       payload = JSON.parse(code)
-      if (!payload.salt || !payload.iv || !payload.headers || !payload.data) {
+      // Legacy payloads carry iv and headers as well — salt and data are
+      // what every payload shares
+      if (!payload.salt || !payload.data) {
         // Payload not Superbacked-compatible
         return
       }
@@ -328,7 +332,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           } else {
             for (const result of results) {
               lineNodes.push(line.substring(startIndex, result.start))
-              if (result.type === "validBip39Mnemonic") {
+              if (result.type === "bip39Mnemonic") {
                 lineNodes.push(
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}

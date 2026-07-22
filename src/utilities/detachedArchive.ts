@@ -12,7 +12,7 @@ import {
   createManifest,
   createTarExtractStream,
   createTarStream,
-  generateNonce,
+  generateIv,
 } from "@/src/utilities/archiveCore"
 
 export type { Manifest, RestoredFilePath }
@@ -54,7 +54,7 @@ const createHmacStream = (hmacKey: Buffer, initialData: Buffer[]) => {
  * Create detached archive
  *
  * Creates encrypted tar archive with HMAC binding to block content.
- * Format: [nonce (12 bytes)][encrypted data][tag (16 bytes)][hmac (32 bytes)]
+ * Format: [iv (12 bytes)][encrypted data][tag (16 bytes)][hmac (32 bytes)]
  *
  * @param filePaths array of absolute file paths to encrypt
  * @param outputPath path where encrypted archive will be written
@@ -72,20 +72,20 @@ export const createDetachedArchive = async (
   blockContent: Buffer,
   gzip = false
 ): Promise<Manifest> => {
-  const nonce = generateNonce()
-  const cipher = createEncryptionStream(key, nonce)
+  const iv = generateIv()
+  const cipher = createEncryptionStream(key, iv)
   const output = createWriteStream(outputPath)
 
   const manifest = await createManifest(filePaths)
 
-  // Initialize HMAC with block content and nonce
+  // Initialize HMAC with block content and initialization vector
   const { transform: hmacTransform, finalize: finalizeHmac } = createHmacStream(
     hmacKey,
-    [blockContent, nonce]
+    [blockContent, iv]
   )
 
-  // Write nonce at beginning of file
-  output.write(nonce)
+  // Write initialization vector at beginning of file
+  output.write(iv)
 
   // Stream: tar → gzip (optional) → encrypt → hmac → write to file
   await pipeline(
@@ -114,7 +114,7 @@ export const createDetachedArchive = async (
  * Restore detached archive
  *
  * Decrypts encrypted tar archive with HMAC binding to block content.
- * Expected format: [nonce (12 bytes)][encrypted data][tag (16 bytes)][hmac (32 bytes)]
+ * Expected format: [iv (12 bytes)][encrypted data][tag (16 bytes)][hmac (32 bytes)]
  *
  * @param filePath path to encrypted archive
  * @param outputDir directory where files will be extracted
@@ -135,9 +135,9 @@ export const restoreDetachedArchive = async (
 
   const fd = await open(filePath, "r")
 
-  // Read nonce from beginning (bytes 0-11)
-  const nonceBuffer = Buffer.alloc(12)
-  await fd.read(nonceBuffer, 0, 12, 0)
+  // Read initialization vector from beginning (bytes 0-11)
+  const ivBuffer = Buffer.alloc(12)
+  await fd.read(ivBuffer, 0, 12, 0)
 
   // Read authentication tag (bytes fileSize-48 to fileSize-33)
   const authenticationTagBuffer = Buffer.alloc(16)
@@ -148,23 +148,23 @@ export const restoreDetachedArchive = async (
   await fd.read(hmacBuffer, 0, 32, fileSize - 32)
   await fd.close()
 
-  // Initialize HMAC with block content and nonce
+  // Initialize HMAC with block content and initialization vector
   const { transform: hmacTransform, finalize: finalizeHmac } = createHmacStream(
     hmacKey,
-    [blockContent, nonceBuffer]
+    [blockContent, ivBuffer]
   )
 
-  // Initialize decipher with nonce and tag
+  // Initialize decipher with initialization vector and tag
   const decipher = createDecryptionStream(
     key,
-    nonceBuffer,
+    ivBuffer,
     authenticationTagBuffer
   )
 
   const { extractor, getExtractedFiles } =
     await createTarExtractStream(outputDir)
 
-  // Stream: read file (excluding nonce/tag/hmac) → hmac → decrypt → gunzip (optional) → extract tar
+  // Stream: read file (excluding iv/tag/hmac) → hmac → decrypt → gunzip (optional) → extract tar
   await pipeline(
     createReadStream(filePath, { start: 12, end: fileSize - 49 }),
     hmacTransform,

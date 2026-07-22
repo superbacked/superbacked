@@ -12,8 +12,8 @@ const binDir =
         "app.asar.unpacked"
       )
 
-// Blocks use Argon2d (blockcrypt compatibility); password derivation uses
-// Argon2id — cost parameters are shared
+// Blocks use Argon2d (frozen fixed-size encryption format); password
+// derivation uses Argon2id — cost parameters are shared
 export default async (
   passphrase: string,
   salt: string,

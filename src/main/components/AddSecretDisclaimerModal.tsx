@@ -2,14 +2,14 @@ import { Button, Group, Modal, Space, Text } from "@mantine/core"
 import { FunctionComponent } from "react"
 import { useTranslation } from "react-i18next"
 
-interface HiddenSecretDisclaimerModalProps {
+interface AddSecretDisclaimerModalProps {
   opened: boolean
   onClose: () => void
   onConfirm: () => void
 }
 
-const HiddenSecretDisclaimerModal: FunctionComponent<
-  HiddenSecretDisclaimerModalProps
+const AddSecretDisclaimerModal: FunctionComponent<
+  AddSecretDisclaimerModalProps
 > = (props) => {
   const { t } = useTranslation()
 
@@ -27,7 +27,7 @@ const HiddenSecretDisclaimerModal: FunctionComponent<
       }}
     >
       <Text size="sm">
-        {t("components.hiddenSecretDisclaimerModal.description")}
+        {t("components.addSecretDisclaimerModal.description")}
       </Text>
       <Space h="lg" />
       <Group justify="flex-end">
@@ -39,4 +39,4 @@ const HiddenSecretDisclaimerModal: FunctionComponent<
   )
 }
 
-export default HiddenSecretDisclaimerModal
+export default AddSecretDisclaimerModal

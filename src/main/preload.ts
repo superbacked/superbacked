@@ -67,7 +67,7 @@ const api: Api = {
     generateMnemonic: invokeSync("generateMnemonic"),
     validateMnemonic: invokeSync("validateMnemonic"),
     getWordlist: invokeSync("getWordlist"),
-    getDataLength: invokeSync("getDataLength"),
+    getBlockUsage: invokeSync("getBlockUsage"),
     generateMasterKey: invokeSync("generateMasterKey"),
     deriveKey: invokeSync("deriveKey"),
     generateToken: invokeSync("generateToken"),

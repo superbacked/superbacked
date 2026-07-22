@@ -1,10 +1,20 @@
 import { BrowserWindow, ipcMain } from "electron"
 
-import { Secret as BlockcryptSecret, encrypt } from "blockcrypt"
+import { ErrorCorrection } from "qr"
 
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 import argon2 from "@/src/utilities/argon2"
-import { hash, shortHash } from "@/src/utilities/crypto"
+import {
+  blockSize,
+  deriveBlockKey,
+  deriveBlocksetKey,
+  qrCodeEcc,
+} from "@/src/utilities/block"
+import { generateSalt, hash, shortHash } from "@/src/utilities/crypto"
+import {
+  Secret as BlockSecret,
+  encrypt,
+} from "@/src/utilities/fixedSizeEncryption"
 import { generateShares } from "@/src/utilities/shamir"
 
 declare const BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -15,16 +25,31 @@ export interface Secret {
   passphrase: string
 }
 
-export interface ShamirBlockcryptSecret {
-  [index: number]: BlockcryptSecret[]
+// Internal to the Shamir path — a share-carrying secret whose message is the
+// raw share bytes, unlike the string messages of the renderer-facing Secret
+interface ShareSecret {
+  message: Buffer
+  passphrase: string
+}
+
+interface ShamirBlockSecret {
+  [index: number]: ShareSecret[]
 }
 
 export interface Metadata {
   label?: string
-  challenge?: string
 }
 
 export interface Payload {
+  salt: string
+  data: string
+  metadata: Metadata
+}
+
+// Legacy payloads (legacy fixed-size encryption) carry iv and headers as
+// well — their presence is how restoration tells the formats apart. Kept
+// separate from Payload so legacy support can be removed cleanly.
+export interface LegacyPayload {
   salt: string
   iv: string
   headers: string
@@ -33,7 +58,9 @@ export interface Payload {
 }
 
 export interface Qr {
-  payload: Payload
+  // Scanned payloads flow back through duplication, so a Qr may carry either
+  // format
+  payload: Payload | LegacyPayload
   hash: string
   shortHash: string
   label?: string
@@ -44,6 +71,7 @@ export interface Qr {
 
 export interface Data {
   payloadText: string
+  ecc: ErrorCorrection
   shortHash: string
   label?: string
   /** When set, render the print layout (block + trim marks) scaled by this factor. */
@@ -115,7 +143,7 @@ const renderToPdf = async (
 }
 
 export const compute = async (
-  payload: Payload,
+  payload: Payload | LegacyPayload,
   label?: string
 ): Promise<Qr> => {
   const payloadText = JSON.stringify(payload, null, 2)
@@ -123,6 +151,7 @@ export const compute = async (
   const payloadShortHash = shortHash(payloadText)
   const data: Data = {
     payloadText: payloadText,
+    ecc: qrCodeEcc,
     shortHash: payloadShortHash,
     label: label,
   }
@@ -146,7 +175,7 @@ export const compute = async (
 // when the user prints, not for every block and not when only saving. The
 // caller supplies the scale (1 = true size; > 1 compensates driver shrink).
 export const renderCarrierPdf = async (
-  payload: Payload,
+  payload: Payload | LegacyPayload,
   label: string | undefined,
   mediaSize: { width: number; height: number },
   scale = 1
@@ -154,6 +183,7 @@ export const renderCarrierPdf = async (
   const payloadText = JSON.stringify(payload, null, 2)
   const data: Data = {
     payloadText: payloadText,
+    ecc: qrCodeEcc,
     shortHash: shortHash(payloadText),
     label: label,
     printScale: scale,
@@ -169,9 +199,36 @@ export const renderCarrierPdf = async (
   return pdfBuffer.toString("base64")
 }
 
+// Derives one key per secret from its passphrase and the block’s salt
+// (Argon2d, then the backup type’s HKDF domain key so restoration classifies
+// messages by which key authenticates), then encrypts all secrets into a
+// single fixed-size block
+const encryptBlock = async (
+  secrets: (Secret | ShareSecret)[],
+  blockset: boolean,
+  label?: string
+): Promise<Payload> => {
+  const salt = generateSalt()
+  const saltBase64 = salt.toString("base64")
+  const blockSecrets: BlockSecret[] = []
+  for (const secret of secrets) {
+    const kdfKey = await argon2(secret.passphrase, saltBase64)
+    blockSecrets.push({
+      key: blockset ? deriveBlocksetKey(kdfKey) : deriveBlockKey(kdfKey),
+      message: secret.message,
+    })
+  }
+  return {
+    salt: saltBase64,
+    data: encrypt(blockSecrets, blockSize).toString("base64"),
+    metadata: {
+      label: label,
+    },
+  }
+}
+
 export default async function create(
   secrets: Secret[],
-  dataLength: number,
   label: string | undefined,
   shamir: true,
   numberOfShares: number,
@@ -179,13 +236,11 @@ export default async function create(
 ): Promise<Result>
 export default async function create(
   secrets: Secret[],
-  dataLength: number,
   label?: string,
   shamir?: false
 ): Promise<Result>
 export default async function create(
   secrets: Secret[],
-  dataLength: number,
   label?: string,
   shamir?: boolean,
   numberOfShares?: number,
@@ -202,7 +257,7 @@ export default async function create(
     }
     const qrs = []
     if (shamir === true) {
-      const shamirBlockcryptSecrets: ShamirBlockcryptSecret = {}
+      const shamirBlockSecrets: ShamirBlockSecret = {}
       for (const secret of secrets) {
         const shares = await generateShares(
           secret.message,
@@ -210,56 +265,24 @@ export default async function create(
           threshold
         )
         for (const [index, share] of shares.entries()) {
-          const blockcryptSecret = {
-            message: Buffer.concat([Buffer.from("shamir:"), share]),
+          const shareSecret: ShareSecret = {
+            message: share,
             passphrase: secret.passphrase,
           }
-          if (shamirBlockcryptSecrets[index]) {
-            shamirBlockcryptSecrets[index].push(blockcryptSecret)
+          if (shamirBlockSecrets[index]) {
+            shamirBlockSecrets[index].push(shareSecret)
           } else {
-            shamirBlockcryptSecrets[index] = [blockcryptSecret]
+            shamirBlockSecrets[index] = [shareSecret]
           }
         }
       }
-      for (const shamirBlockcryptSecret of Object.values(
-        shamirBlockcryptSecrets
-      )) {
-        const block = await encrypt(
-          shamirBlockcryptSecret,
-          argon2,
-          48,
-          dataLength
-        )
-        const payload: Payload = {
-          salt: block.salt.toString("base64"),
-          iv: block.iv.toString("base64"),
-          headers: block.headers.toString("base64"),
-          data: block.data.toString("base64"),
-          metadata: {
-            label: label,
-          },
-        }
+      for (const shamirBlockSecret of Object.values(shamirBlockSecrets)) {
+        const payload = await encryptBlock(shamirBlockSecret, true, label)
         const qr = await compute(payload, label)
         qrs.push(qr)
       }
     } else {
-      const blockcryptSecrets: BlockcryptSecret[] = []
-      for (const secret of secrets) {
-        blockcryptSecrets.push({
-          message: secret.message,
-          passphrase: secret.passphrase,
-        })
-      }
-      const block = await encrypt(blockcryptSecrets, argon2, 48, dataLength)
-      const payload: Payload = {
-        salt: block.salt.toString("base64"),
-        iv: block.iv.toString("base64"),
-        headers: block.headers.toString("base64"),
-        data: block.data.toString("base64"),
-        metadata: {
-          label: label,
-        },
-      }
+      const payload = await encryptBlock(secrets, false, label)
       const qr = await compute(payload, label)
       qrs.push(qr)
     }

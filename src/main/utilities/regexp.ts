@@ -16,7 +16,7 @@ export const totpUriRegExp = new RegExp(
   /otpauth:\/\/totp\/((.+)(:|%3A))?(.+)\?secret=([a-zA-Z2-7]+)&issuer=([^&\s]+)(&algorithm=(SHA1))?(&digits=(6))?(&period=(30))?/g
 )
 
-export type ExtractionType = "validBip39Mnemonic" | "totpUri"
+export type ExtractionType = "bip39Mnemonic" | "totpUri"
 
 interface ResultBase {
   string: string
@@ -25,7 +25,7 @@ interface ResultBase {
 }
 
 export interface Bip39MnemonicResult extends ResultBase {
-  type: "validBip39Mnemonic"
+  type: "bip39Mnemonic"
   properties: {
     words: string[]
   }
@@ -66,7 +66,7 @@ export const extract = (secret: string) => {
         lastWordIndex = firstWordIndex + mnemonic.length
         results.push({
           string: mnemonic,
-          type: "validBip39Mnemonic",
+          type: "bip39Mnemonic",
           start: firstWordIndex,
           end: lastWordIndex,
           properties: {

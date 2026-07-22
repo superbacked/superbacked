@@ -45,9 +45,11 @@
       "copyright": "Copyright",
       "allRightsReserved": "Tous droits réservés"
     },
+    "addSecretDisclaimerModal": {
+      "description": "Les secrets additionnels utilisent des phrases de passe distinctes et sont dissimulés dans l’espace de bloc inutilisé."
+    },
     "createStandaloneArchiveModal": {
       "createStandaloneArchive": "Créer une archive autonome",
-
       "filename": "Nom de fichier",
       "typeFilename": "Taper le nom de fichier…",
       "createArchive": "Créer"
@@ -109,9 +111,6 @@
       "standaloneArchiveCreated": "Archive autonome créée",
       "standaloneArchiveRestored": "Archive autonome restaurée"
     },
-    "hiddenSecretDisclaimerModal": {
-      "description": "Les secrets cachés utilisent des phrases de passe distinctes et sont dissimulés dans l’espace de bloc inutilisé."
-    },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Force de la phrase de passe",
       "estimatedAttackTime": "Temps estimé d’attaque",
@@ -142,7 +141,7 @@
     },
     "scanner": {
       "loading": "Chargement",
-      "useCameraOrScreenCapture": "Utiliser la caméra ou la capture d’écran",
+      "useCameraOrScreenRecording": "Utiliser la caméra ou l’enregistrement de l’écran",
       "pleaseAllowCameraAccess": "Veuillez autoriser l’accès à la caméra",
       "pleaseConnectCamera": "Veuillez connecter la caméra",
       "cameraDoesNotMeetMinimumRequirementOf720p": "La caméra ne répond pas à l’exigence minimale de 720p",
@@ -154,11 +153,12 @@
       "source": "Source",
       "selectSource": "Sélectionner la source"
     },
-    "secretTextareaWithLength": {
-      "secretLength": "Longueur du secret",
-      "lengthRemaining": "Longueur restante",
-      "validBip39Mnemonic_one": "mnémonique valide",
-      "validBip39Mnemonic_other": "mnémoniques valides",
+    "secretTextareaWithUsage": {
+      "blockCapacity": "Capacité du bloc",
+      "blocksetCapacity": "Capacité de l’ensemble de blocs",
+      "spaceRemaining": "Espace restant",
+      "bip39Mnemonic_one": "mnémonique",
+      "bip39Mnemonic_other": "mnémoniques",
       "totpUri_one": "URI",
       "totpUri_other": "URIs",
       "found_one": "trouvé",
@@ -207,7 +207,7 @@
       "secretRequired": "Secret requis",
       "secretTooLong": "Secret trop long",
       "detachedArchive": "Archive détachée",
-      "dragAndDropFileToProvisionDetachedArchive": "Glisser et déposer un fichier pour provisionner une archive détachée",
+      "dragAndDropFileToProvisionDetachedArchive": "Glisser-déposer un fichier pour provisionner une archive détachée",
       "passphraseUsed": "Phrase de passe utilisée",
       "passphraseTooSimilar": "Phrase de passe trop similaire",
       "label": "Étiquette (facultatif)",
@@ -217,7 +217,7 @@
       "selectBackupType": "Sélectionner le type de sauvegarde…",
       "backupTypeRequired": "Type de sauvegarde requis",
       "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Glisser-déposer un fichier pour créer ou restaurer une archive autonome",
-      "dragAndDropFilesToAddToDetachedArchive": "Glisser et déposer des fichiers pour ajouter à l’archive détachée",
+      "dragAndDropFilesToAddToDetachedArchive": "Glisser-déposer des fichiers pour ajouter à l’archive détachée",
       "standard": "Bloc unique",
       "standardDescription": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
       "2of3": "Ensemble de blocs (seuil 2 sur 3)",
@@ -226,8 +226,8 @@
       "3of5Description": "3 des 5 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
       "4of7": "Ensemble de blocs (seuil 4 sur 7)",
       "4of7Description": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
-      "addHiddenSecret": "Ajouter un secret caché",
-      "removeHiddenSecret": "Supprimer le secret caché",
+      "addSecret": "Ajouter un secret",
+      "removeSecret": "Supprimer le secret",
       "createBlock": "Créer le bloc",
       "createBlockAndDetachedArchive_one": "Créer le bloc et l’archive détachée",
       "createBlockAndDetachedArchive_other": "Créer le bloc et les archives détachées",
@@ -266,10 +266,10 @@
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
     "restore": {
-      "scanOrDragAndDropBlock": "Scanner ou déposer le bloc",
-      "scanOrDragAndDropNextBlock": "Scanner or déposer le bloc suivant",
+      "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
+      "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
       "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
-      "dragAndDropArchiveToRestore": "Glisser et déposer {{filename}} pour restaurer l’archive",
+      "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
       "restoringDetachedArchive": "Restauration de l’archive détachée",
       "couldNotRestoreDetachedArchive": "Impossible de restaurer l’archive détachée",
       "detachedArchiveRestored": "Archive détachée restaurée",

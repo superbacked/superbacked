@@ -25,15 +25,16 @@ import {
 } from "react"
 import { useTranslation } from "react-i18next"
 
-import { DataLengths } from "@/src/main/routes/Create"
 import { ExtractionType, extract } from "@/src/main/utilities/regexp"
 import {
   SelectionWithElement,
   captureSelection,
 } from "@/src/main/utilities/selection"
+import { BlockUsage } from "@/src/utilities/block"
 
 interface SecretTextareaProps extends TextareaProps {
-  dataLengths: DataLengths
+  blockUsage: BlockUsage
+  blockset?: boolean
   onPopoverChange?: (opened: boolean) => void
 }
 
@@ -57,7 +58,7 @@ type ExtractionBadges = {
   [type in ExtractionType]?: ExtractionBadge
 }
 
-const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
+const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
   props
 ) => {
   const { t } = useTranslation()
@@ -69,22 +70,20 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
   const [currentSelection, setCurrentSelection] =
     useState<SelectionWithElement>(() => captureSelection())
   const {
-    dataLengths,
+    blockUsage,
+    blockset = false,
     onBlur,
     onChange,
     onFocus,
     onPopoverChange,
     ...otherProps
   } = props
-  const lengthPercentage = useMemo(() => {
+  const usagePercentage = useMemo(() => {
     // All secrets share the same block, so measure usage against the shared
     // pool consistently (rather than against each secret’s own budget).
-    // maxRemainingHiddenDataLength is the block’s true free space, so used =
-    // total − free.
-    const used =
-      dataLengths.totalDataLength - dataLengths.maxRemainingHiddenDataLength
-    return Math.ceil((used / dataLengths.totalDataLength) * 100)
-  }, [dataLengths])
+    const usedSpace = blockUsage.blockSize - blockUsage.remainingSpace
+    return Math.ceil((usedSpace / blockUsage.blockSize) * 100)
+  }, [blockUsage])
   const memoizedExtractions = useMemo(() => {
     const { start, end } = currentSelection
     const results = extract(otherProps.value as string)
@@ -98,7 +97,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
       ) {
         selected = true
       }
-      if (result.type === "validBip39Mnemonic") {
+      if (result.type === "bip39Mnemonic") {
         extractions.push({
           string: result.string,
           type: result.type,
@@ -122,7 +121,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     }
     return extractions
   }, [currentSelection, otherProps.value, theme])
-  const color = lengthPercentage > 100 ? "red" : "pink"
+  const color = usagePercentage > 100 ? "red" : "pink"
   const updateScrollTop = useCallback(() => {
     if (textRef.current && textareaRef.current) {
       textRef.current.scrollTop = textareaRef.current.scrollTop
@@ -190,7 +189,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
                 styles={{
                   root: {
                     backgroundColor: badge.color,
-                    transition: "background-color 0.15s",
+                    transition: "background-color 100ms ease",
                     width: "60px",
                   },
                   label: {
@@ -200,12 +199,12 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
               >
                 {badge.label}
               </Badge>
-              <Text c="dimmed" size="sm">
+              <Text size="sm">
                 {badge.count}{" "}
-                {t(`components.secretTextareaWithLength.${type}`, {
+                {t(`components.secretTextareaWithUsage.${type}`, {
                   count: badge.count,
                 })}{" "}
-                {t("components.secretTextareaWithLength.found", {
+                {t("components.secretTextareaWithUsage.found", {
                   count: badge.count,
                 })}
               </Text>
@@ -237,7 +236,7 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
             backgroundColor: memoizedExtraction.color,
             color: "transparent",
             overflowWrap: "anywhere",
-            transition: "background-color 0.15s",
+            transition: "background-color 100ms ease",
             whiteSpace: "pre-wrap",
           }}
         />
@@ -256,14 +255,18 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
     >
       <Popover.Dropdown>
         <Text fw="bold" size="sm" ta="center" variant="signatureGradient">
-          {t("components.secretTextareaWithLength.secretLength")}
+          {t(
+            blockset
+              ? "components.secretTextareaWithUsage.blocksetCapacity"
+              : "components.secretTextareaWithUsage.blockCapacity"
+          )}
         </Text>
         <Space h="lg" />
-        <Progress color={color} value={lengthPercentage} />
+        <Progress color={color} value={usagePercentage} />
         <Space h="lg" />
-        <Text c={lengthPercentage > 100 ? "red" : "dimmed"} size="sm">
-          {t("components.secretTextareaWithLength.lengthRemaining")}:{" "}
-          {100 - lengthPercentage}%
+        <Text c={usagePercentage > 100 ? "red" : undefined} size="sm">
+          {t("components.secretTextareaWithUsage.spaceRemaining")}:{" "}
+          {100 - usagePercentage}%
         </Text>
         {markBadges.length > 0 ? (
           <Fragment>
@@ -378,4 +381,4 @@ const SecretTextareaWithLength: FunctionComponent<SecretTextareaProps> = (
   )
 }
 
-export default SecretTextareaWithLength
+export default SecretTextareaWithUsage

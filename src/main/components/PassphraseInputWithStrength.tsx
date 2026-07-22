@@ -66,7 +66,7 @@ export const PassphraseInputWithStrength: FunctionComponent<
         <Progress color={color} value={strength ?? 0} />
         <Space h="lg" />
         {time !== null ? (
-          <Text c={strength && strength < 50 ? "red" : "dimmed"} size="sm">
+          <Text c={strength && strength < 50 ? "red" : undefined} size="sm">
             {t("components.passphraseInputWithStrength.estimatedAttackTime")}:{" "}
             {t(`components.passphraseInputWithStrength.zxcvbn.${time.key}`, {
               base: time.base,

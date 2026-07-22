@@ -34,6 +34,7 @@ import { useNavigate } from "react-router-dom"
 
 import { Qr, Result, Secret } from "@/src/handlers/create"
 import ActionBadge from "@/src/main/components/ActionBadge"
+import AddSecretDisclaimerModal from "@/src/main/components/AddSecretDisclaimerModal"
 import CreateDisclaimerModal from "@/src/main/components/CreateDisclaimerModal"
 import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
 import InfoButton from "@/src/main/components/FeatureDescriptionModal"
@@ -42,10 +43,9 @@ import FileManager, {
   FileManagerRef,
   FileWithAbsolutePath,
 } from "@/src/main/components/FileManager"
-import HiddenSecretDisclaimerModal from "@/src/main/components/HiddenSecretDisclaimerModal"
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
-import SecretTextareaWithLength from "@/src/main/components/SecretTextareaWithLength"
+import SecretTextareaWithUsage from "@/src/main/components/SecretTextareaWithUsage"
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   SelectionWithElement,
@@ -55,14 +55,13 @@ import {
 } from "@/src/main/utilities/selection"
 import { PaperSize, PrintSetting } from "@/src/shared/types/print"
 import zxcvbn from "@/src/shared/utilities/zxcvbn"
+import { BlockUsage } from "@/src/utilities/block"
 
 const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },
   { value: "3of5", threshold: 3, shares: 5 },
   { value: "4of7", threshold: 4, shares: 7 },
 ] as const
-const secretNumbers = [1, 2, 3] as const
-const maxDataLength = 512
 const maxLabelLength = 64
 
 const paperSizeOptions = [
@@ -122,8 +121,6 @@ const Block = styled.img`
   -webkit-user-drag: none;
 `
 
-type SecretNumber = (typeof secretNumbers)[number]
-
 type BackupType =
   "" | "standard" | (typeof blocksetBackupTypes)[number]["value"]
 
@@ -141,16 +138,11 @@ type SecretState = {
   } | null
 }
 
-type SecretsState = Record<SecretNumber, SecretState>
+// First entry is the primary secret — additional secrets are bounded only by
+// remaining block capacity, not by a fixed count
+type SecretsState = SecretState[]
 
-export interface DataLengths {
-  totalDataLength: number
-  secret1DataLength: number
-  maxHiddenSecretsDataLength: number
-  maxRemainingHiddenDataLength: number
-}
-
-type Step = "backupType" | "secret1" | "secret2" | "secret3" | "preview"
+type Step = "setup" | "secrets" | "preview"
 
 type CreateProps = {
   exportMode?: boolean
@@ -164,7 +156,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     initialQrs = props.qrs
     initialStep = "preview"
   } else {
-    initialStep = "backupType"
+    initialStep = "setup"
   }
 
   const navigate = useNavigate()
@@ -182,26 +174,17 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     toggle: toggleDetachedArchivePopover,
   } = detachedArchivePopoverHandlers
 
-  const [secrets, setSecrets] = useState<SecretsState>({
-    1: {
-      secret: "",
-      detachedArchive: null,
-    },
-    2: {
-      secret: "",
-      detachedArchive: null,
-    },
-    3: {
-      secret: "",
-      detachedArchive: null,
-    },
-  })
+  const [secrets, setSecrets] = useState<SecretsState>([
+    { secret: "", detachedArchive: null },
+  ])
   const [step, setStep] = useState<Step>(initialStep)
+  // Index of the secret being edited on the secrets step — the flow is
+  // linear, so the current secret is always the last one
+  const [secretIndex, setSecretIndex] = useState(0)
   const [selection, setSelection] = useState<null | SelectionWithElement>(null)
   const [showScanner, setShowScanner] = useState(false)
   const [showDisclaimer, setShowDisclaimer] = useState(false)
-  const [showHiddenSecretDisclaimer, setShowHiddenSecretDisclaimer] =
-    useState(false)
+  const [showAddSecretDisclaimer, setShowAddSecretDisclaimer] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [printerData, setPrinterData] = useState<ComboboxItem[]>([])
   const [showPrintModal, setShowPrintModal] = useState(false)
@@ -245,13 +228,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   // The following refs are a temporary patch to help users avoid unintended button clicks (should be fixed using proper UI)
   const openedPopoversRef = useRef(0)
   const blockedClicksRef = useRef(0)
+  type SecretFormValues = {
+    secret: string
+    passphrase: string
+  }
   type FormValues = {
-    secret1: string
-    passphrase1: string
-    secret2: string
-    passphrase2: string
-    secret3: string
-    passphrase3: string
+    secrets: SecretFormValues[]
     backupType: BackupType
     label: string
   }
@@ -277,58 +259,28 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     blockedClicksRef.current = 0
     return false
   }, [])
-  const getDataLengths = useCallback(
-    (backupType: BackupType, secretsData: SecretsState): DataLengths => {
-      let secret1DataLength = window.api.invokeSync.getDataLength(
-        secretsData[1].detachedArchive?.blockContent ?? secretsData[1].secret
+  const getBlockUsage = useCallback(
+    (backupType: BackupType, secretsData: SecretsState): BlockUsage => {
+      return window.api.invokeSync.getBlockUsage(
+        secretsData.map(
+          (secretState) =>
+            secretState.detachedArchive?.blockContent ?? secretState.secret
+        ),
+        blocksetBackupTypes.some((type) => type.value === backupType)
       )
-      // Account for Shamir Secret Sharing overhead (if applicable)
-      if (blocksetBackupTypes.some((type) => type.value === backupType)) {
-        secret1DataLength += 56
-      }
-      const totalDataLength = maxDataLength
-      let concatenatedHiddenSecretsLength = 0
-      for (const secretNumber of [2, 3] as const) {
-        const hiddenSecret =
-          secretsData[secretNumber].detachedArchive?.blockContent ??
-          secretsData[secretNumber].secret
-        if (hiddenSecret !== "") {
-          let hiddenSecretLength =
-            window.api.invokeSync.getDataLength(hiddenSecret)
-          // Account for Shamir Secret Sharing overhead (if applicable)
-          if (blocksetBackupTypes.some((type) => type.value === backupType)) {
-            hiddenSecretLength += 56
-          }
-          concatenatedHiddenSecretsLength += hiddenSecretLength
-        }
-      }
-      const maxHiddenSecretsDataLength = totalDataLength - secret1DataLength
-      const maxRemainingHiddenDataLength =
-        maxHiddenSecretsDataLength - concatenatedHiddenSecretsLength
-      return {
-        totalDataLength: totalDataLength,
-        secret1DataLength: secret1DataLength,
-        maxHiddenSecretsDataLength: maxHiddenSecretsDataLength,
-        maxRemainingHiddenDataLength: maxRemainingHiddenDataLength,
-      }
     },
     []
   )
   const updateSecretsState = useCallback(
     (
       values: FormValues,
-      fileUpdates?: Partial<Record<SecretNumber, FileWithAbsolutePath[]>>
+      fileUpdates?: Record<number, FileWithAbsolutePath[]>
     ) => {
-      setSecrets((prevSecrets) => {
-        const newSecrets: SecretsState = { ...prevSecrets }
-
-        for (const secretNumber of secretNumbers) {
-          const currentSecret = prevSecrets[secretNumber]
-          const formSecret = values[`secret${secretNumber}`]
+      setSecrets((prevSecrets) =>
+        values.secrets.map((formSecret, index) => {
+          const currentSecret = prevSecrets[index]
           const files =
-            fileUpdates?.[secretNumber] ??
-            currentSecret.detachedArchive?.files ??
-            []
+            fileUpdates?.[index] ?? currentSecret?.detachedArchive?.files ?? []
 
           // Generate or clear detached archive based on files
           let detachedArchive: SecretState["detachedArchive"] = null
@@ -336,7 +288,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           if (files.length > 0) {
             // Generate master key if needed
             const masterKey =
-              currentSecret.detachedArchive?.masterKey ??
+              currentSecret?.detachedArchive?.masterKey ??
               window.api.invokeSync.generateMasterKey()
 
             // Derive encryption key, HMAC key and filename from master key
@@ -358,7 +310,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             // Build block content with secret and master key
             const blockContent = JSON.stringify(
               {
-                secret: formSecret,
+                secret: formSecret.secret,
                 masterKey: masterKey,
               },
               null,
@@ -375,57 +327,76 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             }
           }
 
-          newSecrets[secretNumber] = {
-            secret: formSecret,
-            detachedArchive,
+          return {
+            secret: formSecret.secret,
+            detachedArchive: detachedArchive,
           }
-        }
-
-        return newSecrets
-      })
+        })
+      )
     },
     []
   )
   const form = useForm<FormValues>({
     initialValues: {
-      secret1: "",
-      passphrase1: "",
-      secret2: "",
-      passphrase2: "",
-      secret3: "",
-      passphrase3: "",
+      secrets: [{ secret: "", passphrase: "" }],
       backupType: "",
       label: "",
     },
     onValuesChange: (values, previous) => {
       if (
-        values.secret1 !== previous.secret1 ||
-        values.secret2 !== previous.secret2 ||
-        values.secret3 !== previous.secret3
+        values.secrets.length !== previous.secrets.length ||
+        values.secrets.some(
+          (entry, index) => entry.secret !== previous.secrets[index]?.secret
+        )
       ) {
         updateSecretsState(values)
       }
     },
     validate: {
-      secret1: (value, values) => {
-        const dataLengths = getDataLengths(values.backupType, secrets)
-        if (!value || value === "") {
-          return t("routes.create.secretRequired")
-        } else if (
-          dataLengths.secret1DataLength > dataLengths.totalDataLength
-        ) {
-          return t("routes.create.secretTooLong")
-        }
-        return null
-      },
-      passphrase1: (value) => {
-        const result = zxcvbn(value)
-        if (!value || value === "") {
-          return t("common.passphraseRequired")
-        } else if (result.strength < 50) {
-          return t("common.passphraseTooWeak")
-        }
-        return null
+      secrets: {
+        secret: (value, values, path) => {
+          const index = Number(path.split(".")[1])
+          // Additional secrets are validated on their own step only
+          if (index > 0 && index !== secretIndex) {
+            return null
+          }
+          const blockUsage = getBlockUsage(values.backupType, secrets)
+          if (!value || value === "") {
+            return t("routes.create.secretRequired")
+          } else if (blockUsage.remainingSpace < 0) {
+            return t("routes.create.secretTooLong")
+          }
+          return null
+        },
+        passphrase: (value, values, path) => {
+          const index = Number(path.split(".")[1])
+          // Additional secrets are validated on their own step only
+          if (index > 0 && index !== secretIndex) {
+            return null
+          }
+          const result = zxcvbn(value)
+          if (!value || value === "") {
+            return t("common.passphraseRequired")
+          } else if (result.strength < 50) {
+            return t("common.passphraseTooWeak")
+          }
+          if (index > 0) {
+            for (const [entryIndex, entry] of values.secrets.entries()) {
+              if (entryIndex === index) {
+                continue
+              }
+              if (entry.passphrase === value) {
+                return t("routes.create.passphraseUsed")
+              } else if (
+                leven(entry.passphrase, value) <
+                entry.passphrase.length / 2
+              ) {
+                return t("routes.create.passphraseTooSimilar")
+              }
+            }
+          }
+          return null
+        },
       },
       backupType: (value) => {
         if (!value) {
@@ -439,76 +410,17 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         }
         return null
       },
-      secret2: (value, values) => {
-        if (step === "secret2") {
-          const dataLengths = getDataLengths(values.backupType, secrets)
-          if (!value || value === "") {
-            return t("routes.create.secretRequired")
-          } else if (dataLengths.maxRemainingHiddenDataLength < 0) {
-            return t("routes.create.secretTooLong")
-          }
-        }
-        return null
-      },
-      passphrase2: (value, values) => {
-        if (step === "secret2") {
-          const result = zxcvbn(value)
-          if (!value || value === "") {
-            return t("common.passphraseRequired")
-          } else if (result.strength < 50) {
-            return t("common.passphraseTooWeak")
-          }
-          for (const [entryKey, entryValue] of Object.entries(values)) {
-            if (entryKey.match(/^passphrase(1|3)$/) && entryValue === value) {
-              return t("routes.create.passphraseUsed")
-            } else if (
-              entryKey.match(/^passphrase(1|3)$/) &&
-              leven(entryValue, value) < entryValue.length / 2
-            ) {
-              return t("routes.create.passphraseTooSimilar")
-            }
-          }
-        }
-        return null
-      },
-      secret3: (value, values) => {
-        if (step === "secret3") {
-          const dataLengths = getDataLengths(values.backupType, secrets)
-          if (!value || value === "") {
-            return t("routes.create.secretRequired")
-          } else if (dataLengths.maxRemainingHiddenDataLength < 0) {
-            return t("routes.create.secretTooLong")
-          }
-        }
-        return null
-      },
-      passphrase3: (value, values) => {
-        if (step === "secret3") {
-          const result = zxcvbn(value)
-          if (!value || value === "") {
-            return t("common.passphraseRequired")
-          } else if (result.strength < 50) {
-            return t("common.passphraseTooWeak")
-          }
-          for (const [entryKey, entryValue] of Object.entries(values)) {
-            if (entryKey.match(/^passphrase(1|2)$/) && entryValue === value) {
-              return t("routes.create.passphraseUsed")
-            } else if (
-              entryKey.match(/^passphrase(1|2)$/) &&
-              leven(entryValue, value) < entryValue.length / 2
-            ) {
-              return t("routes.create.passphraseTooSimilar")
-            }
-          }
-        }
-        return null
-      },
     },
   })
   const resetForm = useCallback(() => {
     form.reset()
-    updateSecretsState(form.values, { 1: [], 2: [], 3: [] })
-  }, [form, updateSecretsState])
+    setSecrets([{ secret: "", detachedArchive: null }])
+    setSecretIndex(0)
+  }, [form])
+  const addSecretEntry = useCallback(() => {
+    form.insertListItem("secrets", { secret: "", passphrase: "" })
+    setSecretIndex((index) => index + 1)
+  }, [form])
   const handleCreate = useCallback(
     async (skipDisclaimerCheck = false) => {
       const validation = form.validate()
@@ -523,18 +435,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           number = 3,
           threshold = 2
         const secretsList: Secret[] = []
-        for (const secretNumber of secretNumbers) {
-          const secret =
-            form.values[`secret${secretNumber}` as keyof typeof form.values]
-          const passphrase =
-            form.values[`passphrase${secretNumber}` as keyof typeof form.values]
-          if (secret && secret !== "" && passphrase && passphrase !== "") {
-            const message =
-              secrets[secretNumber].detachedArchive?.blockContent ??
-              secrets[secretNumber].secret
+        for (const [index, entry] of form.values.secrets.entries()) {
+          if (entry.secret !== "" && entry.passphrase !== "") {
             secretsList.push({
-              message: message,
-              passphrase: passphrase,
+              message:
+                secrets[index]?.detachedArchive?.blockContent ?? entry.secret,
+              passphrase: entry.passphrase,
             })
           }
         }
@@ -548,8 +454,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           threshold = blocksetBackup.threshold
         }
         // Create detached archives if applicable
-        const detachedArchives = secretNumbers.filter(
-          (secretNumber) => secrets[secretNumber].detachedArchive !== null
+        const detachedArchives = secrets.flatMap((secretState) =>
+          secretState.detachedArchive ? [secretState.detachedArchive] : []
         )
         if (detachedArchives.length > 0) {
           // Prompt for output directory once
@@ -569,10 +475,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           if (saveDialogReturnValue.filePath) {
             const outputDir = saveDialogReturnValue.filePath
             // Create archives
-            for (const secretNumber of detachedArchives) {
-              const detachedArchive = secrets[secretNumber].detachedArchive
-              if (!detachedArchive) continue
-
+            for (const detachedArchive of detachedArchives) {
               const filePaths = detachedArchive.files.map(
                 (file) => file.absolutePath
               )
@@ -609,18 +512,13 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         if (isBlockset === true) {
           result = await window.api.invoke.create(
             secretsList,
-            maxDataLength,
             label,
             true,
             number,
             threshold
           )
         } else {
-          result = await window.api.invoke.create(
-            secretsList,
-            maxDataLength,
-            label
-          )
+          result = await window.api.invoke.create(secretsList, label)
         }
         if (result.success === false) {
           setError({
@@ -629,7 +527,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               : "routes.create.couldNotCreateBlock",
           })
           setIsCreating(false)
-          setStep("secret1")
+          setStep("secrets")
+          setSecretIndex(0)
           return
         }
         resetForm()
@@ -827,14 +726,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       void window.api.invoke.disableModes(["insert"])
     }
   }, [])
-  if (
-    ["backupType", "secret1", "secret2", "secret3", "preview"].includes(
-      step
-    ) === false
-  ) {
+  if (["setup", "secrets", "preview"].includes(step) === false) {
     throw new Error("Invalid step")
   }
-  if (step === "backupType") {
+  if (step === "setup") {
     return (
       <Container>
         <Box px="xl">
@@ -842,7 +737,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             ref={fileManagerRef}
             mode="standalone"
             handleFiles={(handledFiles) => {
-              updateSecretsState(form.values, { 1: handledFiles })
+              updateSecretsState(form.values, { 0: handledFiles })
               if (handledFiles.length === 0) {
                 handlePopoverChange(false)
               }
@@ -867,10 +762,16 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             {...form.getInputProps("backupType")}
           />
           {form.values.backupType ? (
-            <Text c="dimmed" size="sm" mt="xs">
+            <Text size="sm" mt="xs">
               {t(`routes.create.${form.values.backupType}Description`)}
             </Text>
           ) : null}
+          <Space h="lg" />
+          <TextInput
+            label={t("routes.create.label")}
+            placeholder={t("routes.create.typeLabel")}
+            {...form.getInputProps("label", { withFocus: false })}
+          />
           <Space h="xl" />
           <Button
             disabled={!form.values.backupType}
@@ -878,8 +779,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             size="md"
             variant="signatureGradient"
             onClick={() => {
-              if (form.values.backupType) {
-                setStep("secret1")
+              if (
+                form.values.backupType &&
+                form.validateField("label").hasError === false
+              ) {
+                setStep("secrets")
               }
             }}
           >
@@ -899,58 +803,62 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       </Container>
     )
   }
-  const stepMatch = step.match(/^secret([1-3])$/)
-  if (stepMatch?.[1]) {
+  if (step === "secrets") {
     // Show form
-    const dataLengths = getDataLengths(form.values.backupType, secrets)
-    const secretNumber: SecretNumber = parseInt(stepMatch[1]) as SecretNumber
-    let stepFields: ReactNode
-    let addHiddenSecret: ReactNode
-    let removeHiddenSecret: ReactNode
-    if (secretNumber === 1) {
-      stepFields = (
-        <Fragment>
-          <SecretTextareaWithLength
-            key="secret1"
-            autosize
-            dataLengths={dataLengths}
-            disabled={isCreating}
-            label={t("routes.create.secret")}
-            maxRows={5}
-            minRows={2}
-            placeholder={t("routes.create.typeSecret")}
-            required
-            onFocus={() => {
-              void window.api.invoke.enableModes(["insert"])
-            }}
-            onBlur={() => {
-              void window.api.invoke.disableModes(["insert"])
-            }}
-            onPopoverChange={handlePopoverChange}
-            {...form.getInputProps("secret1", { withFocus: false })}
-          />
-          {secrets[1].detachedArchive !== null ? (
-            <Fragment>
-              <Space h="xs" />
-              <Group align="center" gap="xs">
-                <Text size="xs">{t("routes.create.detachedArchive")}</Text>
-                <Popover
-                  onOpen={() => {
-                    handlePopoverChange(true)
-                  }}
-                  onChange={(opened) => {
-                    if (!opened) {
-                      closeDetachedArchivePopover()
-                    }
-                  }}
-                  onExitTransitionEnd={() => {
-                    handlePopoverChange(false)
-                  }}
-                  opened={detachedArchivePopoverOpened}
-                  width={"440px"}
-                  withArrow
-                >
-                  <Popover.Target>
+    const blockUsage = getBlockUsage(form.values.backupType, secrets)
+    const currentSecret = secrets[secretIndex]
+    const currentEntry = form.values.secrets[secretIndex]
+    const isPrimarySecret = secretIndex === 0
+    const isBlockset = blocksetBackupTypes.some(
+      (type) => type.value === form.values.backupType
+    )
+    const stepFields = (
+      <Fragment>
+        <SecretTextareaWithUsage
+          key={`secret${secretIndex}`}
+          autosize
+          blockUsage={blockUsage}
+          blockset={isBlockset}
+          disabled={isCreating}
+          label={t("routes.create.secret")}
+          maxRows={isPrimarySecret ? 5 : 4}
+          minRows={2}
+          placeholder={t("routes.create.typeSecret")}
+          required
+          onFocus={() => {
+            void window.api.invoke.enableModes(["insert"])
+          }}
+          onBlur={() => {
+            void window.api.invoke.disableModes(["insert"])
+          }}
+          onPopoverChange={handlePopoverChange}
+          {...form.getInputProps(`secrets.${secretIndex}.secret`, {
+            withFocus: false,
+          })}
+        />
+        {currentSecret?.detachedArchive ? (
+          <Fragment>
+            <Space h="xs" />
+            <Group align="center" gap="xs">
+              <Text size="xs">{t("routes.create.detachedArchive")}</Text>
+              <Popover
+                onOpen={() => {
+                  handlePopoverChange(true)
+                }}
+                onChange={(opened) => {
+                  if (!opened) {
+                    closeDetachedArchivePopover()
+                  }
+                }}
+                onExitTransitionEnd={() => {
+                  handlePopoverChange(false)
+                }}
+                opened={detachedArchivePopoverOpened}
+                width={"440px"}
+                withArrow
+              >
+                <Popover.Target>
+                  {isPrimarySecret ? (
                     <Button
                       color="dark"
                       onClick={toggleDetachedArchivePopover}
@@ -958,246 +866,119 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                       variant="filled"
                     >
                       <Text fw="bold" size="xs" variant="signatureGradient">
-                        {secrets[1].detachedArchive?.filename}.superbacked
+                        {currentSecret.detachedArchive.filename}.superbacked
                       </Text>
                     </Button>
-                  </Popover.Target>
-                  <Popover.Dropdown>
-                    <ScrollArea.Autosize
-                      mah={150}
-                      scrollHideDelay={0}
-                      type="scroll"
-                    >
-                      <FileList
-                        files={secrets[1].detachedArchive?.files ?? []}
-                        onRemoveFile={(file) => {
-                          fileManagerRef.current?.removeFile(file)
-                        }}
-                      />
-                    </ScrollArea.Autosize>
-                  </Popover.Dropdown>
-                </Popover>
-              </Group>
-            </Fragment>
-          ) : null}
-          <Space h="lg" />
-          <PassphraseInputWithStrength
-            key="passphrase1"
-            disabled={isCreating}
-            label={t("common.passphrase")}
-            placeholder={t("common.typePassphrase")}
-            required
-            generatePassphrase={async () => {
-              const passphrase = await window.api.invoke.generatePassphrase(
-                5,
-                "eff_short_wordlist_1"
-              )
-              form.setFieldValue("passphrase1", passphrase)
-              return passphrase
-            }}
-            onPopoverChange={handlePopoverChange}
-            {...form.getInputProps("passphrase1", { withFocus: false })}
-          />
-          <Space h="lg" />
-          <TextInput
-            disabled={isCreating}
-            label={t("routes.create.label")}
-            placeholder={t("routes.create.typeLabel")}
-            {...form.getInputProps("label", { withFocus: false })}
-          />
-          <ActionBadge>
-            {secrets[1].detachedArchive !== null
-              ? t("routes.create.dragAndDropFilesToAddToDetachedArchive")
-              : t(
-                  "routes.create.dragAndDropFileToProvisionDetachedArchive"
-                )}{" "}
-            <InfoButton tabIndex={-1}>
-              {t(
-                "components.featureDescriptionModal.detachedArchiveDescription"
-              )}
-            </InfoButton>
-          </ActionBadge>
-        </Fragment>
-      )
-    } else if (secretNumber > 1) {
-      stepFields = (
-        <Fragment>
-          <SecretTextareaWithLength
-            key={`secret${secretNumber}`}
-            autosize
-            dataLengths={dataLengths}
-            disabled={isCreating}
-            label={t("routes.create.secret")}
-            maxRows={4}
-            minRows={2}
-            placeholder={t("routes.create.typeSecret")}
-            required
-            onFocus={() => {
-              void window.api.invoke.enableModes(["insert"])
-            }}
-            onBlur={() => {
-              void window.api.invoke.disableModes(["insert"])
-            }}
-            onPopoverChange={handlePopoverChange}
-            {...form.getInputProps(`secret${secretNumber}`, {
-              withFocus: false,
-            })}
-          />
-          {secrets[secretNumber].detachedArchive !== null ? (
-            <Fragment>
-              <Space h="xs" />
-              <Group align="center" gap="xs">
-                <Text size="xs">{t("routes.create.detachedArchive")}</Text>
-                <Popover
-                  onOpen={() => {
-                    handlePopoverChange(true)
-                  }}
-                  onChange={(opened) => {
-                    if (!opened) {
-                      closeDetachedArchivePopover()
-                    }
-                  }}
-                  onExitTransitionEnd={() => {
-                    handlePopoverChange(false)
-                  }}
-                  opened={detachedArchivePopoverOpened}
-                  width={"440px"}
-                  withArrow
-                >
-                  <Popover.Target>
+                  ) : (
                     <Button
                       color="dark"
                       onClick={toggleDetachedArchivePopover}
                       size="xs"
                       variant="signatureTextGradient"
                     >
-                      {secrets[secretNumber].detachedArchive?.filename}
-                      .superbacked
+                      {currentSecret.detachedArchive.filename}.superbacked
                     </Button>
-                  </Popover.Target>
-                  <Popover.Dropdown>
-                    <ScrollArea.Autosize
-                      mah={150}
-                      scrollHideDelay={0}
-                      type="scroll"
-                    >
-                      <FileList
-                        files={
-                          secrets[secretNumber].detachedArchive?.files ?? []
-                        }
-                        onRemoveFile={(file) => {
-                          fileManagerRef.current?.removeFile(file)
-                        }}
-                      />
-                    </ScrollArea.Autosize>
-                  </Popover.Dropdown>
-                </Popover>
-              </Group>
-            </Fragment>
-          ) : null}
-          <Space h="lg" />
-          <PassphraseInputWithStrength
-            key={`passphrase${secretNumber}`}
-            disabled={isCreating}
-            label={t("common.passphrase")}
-            placeholder={t("common.typePassphrase")}
-            required
-            generatePassphrase={async () => {
-              const passphrase = await window.api.invoke.generatePassphrase(
-                5,
-                "eff_short_wordlist_1"
-              )
-              form.setFieldValue(`passphrase${secretNumber}`, passphrase)
-              return passphrase
-            }}
-            onPopoverChange={handlePopoverChange}
-            {...form.getInputProps(`passphrase${secretNumber}`, {
-              withFocus: false,
-            })}
-          />
-          <ActionBadge>
-            {secrets[secretNumber].detachedArchive !== null
-              ? t("routes.create.dragAndDropFilesToAddToDetachedArchive")
-              : t(
-                  "routes.create.dragAndDropFileToProvisionDetachedArchive"
-                )}{" "}
-            <InfoButton tabIndex={-1}>
-              {t(
-                "components.featureDescriptionModal.detachedArchiveDescription"
-              )}
-            </InfoButton>
-          </ActionBadge>
-        </Fragment>
-      )
-    }
-    if ([1, 2].includes(secretNumber)) {
-      const secretValue =
-        form.values[`secret${secretNumber}` as keyof typeof form.values]
-      const passphraseValue =
-        form.values[`passphrase${secretNumber}` as keyof typeof form.values]
-      addHiddenSecret = (
-        <Fragment>
-          <Space h="lg" />
-          <Button
-            disabled={
-              !secretValue ||
-              secretValue === "" ||
-              !passphraseValue ||
-              passphraseValue === "" ||
-              !form.values.backupType ||
-              dataLengths.maxRemainingHiddenDataLength <= 40 ||
-              isCreating
-            }
-            fullWidth
-            size="sm"
-            variant="signatureTextGradient"
-            onClick={() => {
-              if (shouldIgnoreClick()) return
-              const validation = form.validate()
-              if (validation.hasErrors === false) {
-                if (secretNumber === 1) {
-                  setShowHiddenSecretDisclaimer(true)
-                } else {
-                  setStep(`secret${secretNumber + 1}` as Step)
-                }
-              }
-            }}
-          >
-            {t("routes.create.addHiddenSecret")}
-          </Button>
-        </Fragment>
-      )
-    }
-    if ([2, 3].includes(secretNumber)) {
-      removeHiddenSecret = (
-        <Fragment>
-          <Space h="lg" />
-          <Button
-            disabled={isCreating}
-            fullWidth
-            size="sm"
-            variant="signatureTextGradient"
-            onClick={() => {
-              if (shouldIgnoreClick()) return
-              form.setValues({
-                [`secret${secretNumber}`]: "",
-                [`passphrase${secretNumber}`]: "",
-              })
-              updateSecretsState(form.values, { [secretNumber]: [] })
-              setStep(`secret${secretNumber - 1}` as Step)
-            }}
-          >
-            {t("routes.create.removeHiddenSecret")}
-          </Button>
-        </Fragment>
-      )
-    }
-    const detachedArchiveCount = secretNumbers.filter(
-      (num) => secrets[num].detachedArchive !== null
-    ).length
-    const isBlockset = blocksetBackupTypes.some(
-      (type) => type.value === form.values.backupType
+                  )}
+                </Popover.Target>
+                <Popover.Dropdown>
+                  <ScrollArea.Autosize
+                    mah={150}
+                    scrollHideDelay={0}
+                    type="scroll"
+                  >
+                    <FileList
+                      files={currentSecret.detachedArchive.files}
+                      onRemoveFile={(file) => {
+                        fileManagerRef.current?.removeFile(file)
+                      }}
+                    />
+                  </ScrollArea.Autosize>
+                </Popover.Dropdown>
+              </Popover>
+            </Group>
+          </Fragment>
+        ) : null}
+        <Space h="lg" />
+        <PassphraseInputWithStrength
+          key={`passphrase${secretIndex}`}
+          disabled={isCreating}
+          label={t("common.passphrase")}
+          placeholder={t("common.typePassphrase")}
+          required
+          generatePassphrase={async () => {
+            const passphrase = await window.api.invoke.generatePassphrase(
+              5,
+              "eff_short_wordlist_1"
+            )
+            form.setFieldValue(`secrets.${secretIndex}.passphrase`, passphrase)
+            return passphrase
+          }}
+          onPopoverChange={handlePopoverChange}
+          {...form.getInputProps(`secrets.${secretIndex}.passphrase`, {
+            withFocus: false,
+          })}
+        />
+        <ActionBadge>
+          {currentSecret?.detachedArchive
+            ? t("routes.create.dragAndDropFilesToAddToDetachedArchive")
+            : t("routes.create.dragAndDropFileToProvisionDetachedArchive")}{" "}
+          <InfoButton tabIndex={-1}>
+            {t("components.featureDescriptionModal.detachedArchiveDescription")}
+          </InfoButton>
+        </ActionBadge>
+      </Fragment>
     )
+    const addSecret = (
+      <Fragment>
+        <Space h="lg" />
+        <Button
+          disabled={
+            !currentEntry?.secret ||
+            !currentEntry?.passphrase ||
+            !form.values.backupType ||
+            blockUsage.remainingSpace <= 40 ||
+            isCreating
+          }
+          fullWidth
+          size="sm"
+          variant="signatureTextGradient"
+          onClick={() => {
+            if (shouldIgnoreClick()) return
+            const validation = form.validate()
+            if (validation.hasErrors === false) {
+              if (isPrimarySecret) {
+                setShowAddSecretDisclaimer(true)
+              } else {
+                addSecretEntry()
+              }
+            }
+          }}
+        >
+          {t("routes.create.addSecret")}
+        </Button>
+      </Fragment>
+    )
+    const removeSecret = isPrimarySecret ? null : (
+      <Fragment>
+        <Space h="lg" />
+        <Button
+          disabled={isCreating}
+          fullWidth
+          size="sm"
+          variant="signatureTextGradient"
+          onClick={() => {
+            if (shouldIgnoreClick()) return
+            form.removeListItem("secrets", secretIndex)
+            setSecretIndex(secretIndex - 1)
+          }}
+        >
+          {t("routes.create.removeSecret")}
+        </Button>
+      </Fragment>
+    )
+    const detachedArchiveCount = secrets.filter(
+      (secretState) => secretState.detachedArchive !== null
+    ).length
     let createButtonLabel: string
     if (detachedArchiveCount === 0) {
       createButtonLabel = isBlockset
@@ -1219,11 +1000,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       <Fragment>
         <Container>
           <FileManager
-            key={secretNumber}
+            key={secretIndex}
             ref={fileManagerRef}
             mode="detached"
             handleFiles={(handledFiles) => {
-              updateSecretsState(form.values, { [secretNumber]: handledFiles })
+              updateSecretsState(form.values, { [secretIndex]: handledFiles })
               if (handledFiles.length === 0) {
                 handlePopoverChange(false)
               }
@@ -1245,8 +1026,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             >
               {createButtonLabel}
             </Button>
-            {removeHiddenSecret}
-            {addHiddenSecret}
+            {removeSecret}
+            {addSecret}
           </form>
           <Modal
             centered
@@ -1274,12 +1055,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         </Container>
         <CreateDisclaimerModal
           backupType={backupType}
-          detachedArchiveCount={
-            secretNumbers.filter((num) => secrets[num].detachedArchive !== null)
-              .length
-          }
-          hiddenSecretCount={
-            [2, 3].filter((num) => secrets[num as 2 | 3].secret !== "").length
+          detachedArchiveCount={detachedArchiveCount}
+          secretCount={
+            secrets.filter((secretState) => secretState.secret !== "").length
           }
           opened={showDisclaimer}
           onClose={() => setShowDisclaimer(false)}
@@ -1288,12 +1066,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             void handleCreate(true)
           }}
         />
-        <HiddenSecretDisclaimerModal
-          opened={showHiddenSecretDisclaimer}
-          onClose={() => setShowHiddenSecretDisclaimer(false)}
+        <AddSecretDisclaimerModal
+          opened={showAddSecretDisclaimer}
+          onClose={() => setShowAddSecretDisclaimer(false)}
           onConfirm={() => {
-            setShowHiddenSecretDisclaimer(false)
-            setStep("secret2" as Step)
+            setShowAddSecretDisclaimer(false)
+            addSecretEntry()
           }}
         />
         <ErrorModal error={error} onClose={() => setError(null)} />
@@ -1307,7 +1085,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         <BlockContainer key={qr.shortHash}>
           <Block src={`data:image/jpeg;base64,${qr.jpg}`} />
           <Select
-            allowDeselect={false}
             comboboxProps={{ keepMounted: false }}
             data={[
               { value: "1", label: "1" },
@@ -1320,7 +1097,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               { value: "8", label: "8" },
               { value: "9", label: "9" },
             ]}
-            defaultValue="1"
             leftSection={<IconPrinter size={14} />}
             size="xs"
             sx={{
@@ -1329,10 +1105,14 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               left: "45px",
               maxWidth: "70px",
             }}
-            onChange={(value) => {
+            value={qr.copies.toString()}
+            // onOptionSubmit rather than onChange — deselecting the current
+            // count must not clear the field, and the controlled value keeps
+            // the display on the last submitted option
+            onOptionSubmit={(value) => {
               const updatedQr = {
                 ...qr,
-                copies: parseInt(value ?? "1"),
+                copies: parseInt(value),
               }
               const updatedQrs = qrs.map((mappedQr) =>
                 mappedQr.hash === qr.hash ? updatedQr : mappedQr
@@ -1421,7 +1201,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   if (props.exportMode === true) {
                     void navigate("/")
                   } else {
-                    setStep("backupType")
+                    setStep("setup")
                     setQrs([])
                   }
                 }}
@@ -1451,7 +1231,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           {determineScaleMode ? (
             determineScaleStep === "print" ? (
               <Fragment>
-                <Text c="dimmed" size="sm">
+                <Text size="sm">
                   {t("routes.create.determineScalePrint", {
                     paper: selectedPaperOption
                       ? t(`routes.create.${selectedPaperOption.label}`)
@@ -1488,7 +1268,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               </Fragment>
             ) : (
               <Fragment>
-                <Text c="dimmed" size="sm">
+                <Text size="sm">
                   {t("routes.create.determineScaleMeasure")}
                 </Text>
                 <Space h="md" />
@@ -1539,7 +1319,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             <Fragment>
               <Select
                 comboboxProps={{ keepMounted: false }}
-                allowDeselect={false}
                 data={printerData}
                 label={t("routes.create.printer")}
                 maxDropdownHeight={240}
@@ -1555,7 +1334,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               <Space h="md" />
               <Select
                 comboboxProps={{ keepMounted: false }}
-                allowDeselect={false}
                 disabled={!selectedPrinter || supportedPaperSizes.length === 0}
                 label={t("routes.create.paper")}
                 placeholder={`${t("routes.create.selectPaper")}…`}

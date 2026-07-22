@@ -1,7 +1,5 @@
 import { app } from "electron"
 
-import { getDataLength } from "blockcrypt"
-
 import { deriveKey, generateMasterKey } from "@/src/handlers/archiveCore"
 import chooseDirectory from "@/src/handlers/chooseDirectory"
 import create, { renderCarrierPdf } from "@/src/handlers/create"
@@ -37,6 +35,7 @@ import {
   validateMnemonic,
   wordlist,
 } from "@/src/utilities/bip39"
+import { getBlockUsage } from "@/src/utilities/block"
 import {
   get as getConfig,
   set as setConfig,
@@ -121,7 +120,7 @@ const syncHandlers = {
   generateMnemonic,
   validateMnemonic,
   getWordlist: () => wordlist,
-  getDataLength,
+  getBlockUsage,
   generateMasterKey,
   deriveKey,
   generateToken,
