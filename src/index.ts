@@ -27,6 +27,13 @@ import { sendEvent } from "@/src/utilities/sendEvent"
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 
+// Electron’s asar filesystem shim constructs fs.Stats (DEP0180), spilling
+// deprecation warnings into command-line interface output — suppress them
+// in packaged builds only, so development keeps surfacing them
+if (app.isPackaged) {
+  process.noDeprecation = true
+}
+
 app.setName("Superbacked")
 
 cli.name("superbacked")
