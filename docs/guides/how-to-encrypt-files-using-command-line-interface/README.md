@@ -17,18 +17,18 @@ Superbacked can encrypt files and folders as standalone archives — portable `.
 
 The command-line interface is built into the app.
 
-On macOS, create an alias to the app binary.
+On macOS, add a persistent alias to the app binary (running the following commands once).
 
 ```console
-$ alias superbacked="/Applications/Superbacked.app/Contents/MacOS/Superbacked"
+$ echo 'alias superbacked="/Applications/Superbacked.app/Contents/MacOS/Superbacked"' >> "$HOME/.zshrc"
+
+$ source "$HOME/.zshrc"
 ```
 
-On Linux, make the AppImage executable and create an alias (adjusting the path and version to the downloaded release).
+On Linux, install the AppImage as `superbacked` in `~/.local/bin` (adjusting the path and version to the downloaded release and opening a new terminal if `~/.local/bin` did not exist).
 
 ```console
-$ chmod +x "$HOME/Downloads/superbacked-x64-1.13.0.AppImage"
-
-$ alias superbacked="$HOME/Downloads/superbacked-x64-1.13.0.AppImage"
+$ install -m 755 "$HOME/Downloads/superbacked-x64-1.13.0.AppImage" "$HOME/.local/bin/superbacked"
 ```
 
 On Superbacked OS, the `superbacked` command is preinstalled.
