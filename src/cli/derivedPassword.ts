@@ -4,6 +4,9 @@ import readPassphrase, {
   promptVisible,
   waitForEnter,
 } from "@/src/cli/readPassphrase"
+import zxcvbn, {
+  minimumPassphraseStrength,
+} from "@/src/shared/utilities/zxcvbn"
 import {
   clearText,
   copyText,
@@ -78,6 +81,13 @@ export const derivePasswordAction = async (
     const masterPassphrase = await readPassphrase(options.confirm === true)
     if (masterPassphrase === "") {
       throw new Error("Passphrase required")
+    }
+    // Matches the app’s passphrase gates, enforced since scheme v1 so
+    // every passphrase that ever derived a password passed it — derivation
+    // is deterministic and stateless, so the threshold can never rise
+    // without stranding established passphrases
+    if (zxcvbn(masterPassphrase).strength < minimumPassphraseStrength) {
+      throw new Error("Master passphrase too weak")
     }
     const password = await computeDerivedPassword(
       masterPassphrase,
