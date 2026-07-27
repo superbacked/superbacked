@@ -82,9 +82,8 @@
       "4of7WithMultipleDetachedArchivesDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées"
     },
     "disclaimer": {
-      "computerProvisioningWarning": "<bold>Ne pas</bold> utiliser Superbacked sur un ordinateur qui n’est pas spécifiquement provisionné pour la gestion de secret (pas de persistance de données ou de connectivité réseau) à moins que le secret soit déjà présent sur l’ordinateur.",
-      "limitationOfLiability": "Superbacked, Inc., ainsi que ses actionnaires, employés et opérateurs, et les contributeurs et mainteneurs de son code source, ne peuvent être tenus responsables des secrets perdus ou volés.",
-      "useAtYourOwnRisk": "UTILISER À VOS PROPRES RISQUES.",
+      "superbackedOsRecommendation": "Pour les secrets à enjeux élevés, utiliser <anchor><bold>Superbacked OS</bold></anchor> — un système d’exploitation durci qui fonctionne hors ligne et ne persiste rien sur le disque.",
+      "limitationOfLiability": "Superbacked, Inc. — ainsi que ses actionnaires, employés et opérateurs et les contributeurs et mainteneurs du code source de cette application — ne peut être tenue responsable des secrets perdus ou volés. <bold>UTILISER À VOS PROPRES RISQUES.</bold>",
       "agree": "J’accepte les termes ci-dessus et les risques sous-jacents",
       "useSuperbacked": "Utiliser Superbacked"
     },

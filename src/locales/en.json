@@ -82,10 +82,9 @@
       "4of7WithMultipleDetachedArchivesDescription_other": "4 of 7 blocks of blockset and passphrases required to restore secrets and detached archives"
     },
     "disclaimer": {
-      "computerProvisioningWarning": "<bold>Do not</bold> use Superbacked on a computer that is not specifically provisioned for secret management (no data persistence or network connectivity) unless the secret is already present on the computer.",
-      "limitationOfLiability": "Superbacked, Inc., along with its employees, operators and shareholders and the contributors and maintainers of its source code, cannot be held liable for lost or stolen secrets.",
-      "useAtYourOwnRisk": "USE AT YOUR OWN RISK.",
-      "agree": "I agree to above terms and accept underlying risks",
+      "superbackedOsRecommendation": "For high-stakes secrets, use <anchor><bold>Superbacked OS</bold></anchor> — a hardened operating system that runs offline and persists nothing to disk.",
+      "limitationOfLiability": "Superbacked, Inc. — along with its employees, operators and shareholders and the contributors and maintainers of this app’s source code — cannot be held liable for lost or stolen secrets. <bold>USE AT YOUR OWN RISK.</bold>",
+      "agree": "I agree to the above terms and accept the underlying risks",
       "useSuperbacked": "Use Superbacked"
     },
     "errorModal": {
