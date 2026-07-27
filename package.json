@@ -25,7 +25,7 @@
     "name": "Sun Knudsen",
     "email": "hello@sunknudsen.com"
   },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "devDependencies": {
     "@electron/notarize": "^3.1.1",
