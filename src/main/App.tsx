@@ -12,7 +12,7 @@ import {
 import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
 import { Notifications, notifications } from "@mantine/notifications"
 import { Fragment, useEffect } from "react"
-import { MemoryRouter, Route, Routes } from "react-router-dom"
+import { MemoryRouter, Route, Routes } from "react-router"
 
 import { emotionCache } from "@/emotion-cache"
 import { setLocale } from "@/src/i18n"
