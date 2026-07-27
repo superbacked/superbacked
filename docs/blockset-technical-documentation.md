@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document covers the Superbacked-level design of a blockset. A blockset encrypts a secret using a random encryption key — the Shamir key — and splits that key, not the secret, across several blocks using Shamir Secret Sharing (via [sss](https://github.com/dsprenkels/sss-cli)), so enough blocks reconstruct the secret while fewer reveal nothing. Each block is then encrypted (again) using [fixed-size encryption](fixed-size-encryption-technical-documentation.md), like the block backup type (see the [block technical documentation](block-technical-documentation.md)) — so a blockset keeps every property of a block while adding threshold recovery. The source ([src/handlers/create.ts](../src/handlers/create.ts) and [src/utilities/shamir.ts](../src/utilities/shamir.ts)) is the ground truth for this document.
+This document covers the Superbacked-level design of a blockset. A blockset encrypts a secret using a random encryption key — the Shamir key — and splits that key, not the secret, across several blocks using Shamir Secret Sharing (via [sss](https://github.com/dsprenkels/sss-cli)), so enough blocks reconstruct the secret while fewer reveal nothing. Each block is then encrypted (again) using [fixed-size encryption](fixed-size-encryption-technical-documentation.md), like the block backup type (see the [block technical documentation](block-technical-documentation.md)) — so a blockset keeps every property of a block while adding threshold recovery. The source ([src/handlers/create.ts](../src/handlers/create.ts) and [src/utilities/crypto/shamir.ts](../src/utilities/crypto/shamir.ts)) is the ground truth for this document.
 
 ## Introduction
 

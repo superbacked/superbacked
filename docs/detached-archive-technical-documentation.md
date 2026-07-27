@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of the detached archive feature in Superbacked. Detached archives allow users to encrypt files and folders using master keys that are embedded — alongside user-provided secrets — in encrypted QR codes called blocks. The content of archives is stored separately from blocks or blocksets while being cryptographically bound to block content — restoring detached archives requires both blocks and passphrases. The source ([src/utilities/detachedArchive.ts](../src/utilities/detachedArchive.ts) and [src/utilities/archiveCore.ts](../src/utilities/archiveCore.ts)) is the ground truth for this document.
+This document specifies the cryptographic design and implementation of the detached archive feature in Superbacked. Detached archives allow users to encrypt files and folders using master keys that are embedded — alongside user-provided secrets — in encrypted QR codes called blocks. The content of archives is stored separately from blocks or blocksets while being cryptographically bound to block content — restoring detached archives requires both blocks and passphrases. The source ([src/utilities/core/detachedArchive.ts](../src/utilities/core/detachedArchive.ts) and [src/utilities/core/archive.ts](../src/utilities/core/archive.ts)) is the ground truth for this document.
 
 ## Introduction
 

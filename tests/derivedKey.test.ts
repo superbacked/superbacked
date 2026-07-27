@@ -8,7 +8,7 @@ import {
   computeSingleFactorDerivedKey,
   deriveKey,
   noYubiKeySalt,
-} from "@/src/utilities/derivedKey"
+} from "@/src/utilities/crypto/derivedKey"
 
 // Reference vectors freeze the derivation scheme — changing any constant,
 // cost parameter or construction in the module breaks them. Context strings

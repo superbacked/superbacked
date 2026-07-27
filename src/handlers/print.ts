@@ -1,6 +1,6 @@
 import { getMainWindow } from "@/src/index"
 import { PaperSize } from "@/src/shared/types/print"
-import { getSenderWindow } from "@/src/utilities/handleContext"
+import { getSenderWindow } from "@/src/utilities/ipc/handleContext"
 import spawn from "@/src/utilities/spawn"
 
 export interface Printer {

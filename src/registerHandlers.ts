@@ -1,6 +1,6 @@
 import { app } from "electron"
 
-import { deriveKey, generateMasterKey } from "@/src/handlers/archiveCore"
+import { deriveKey, generateMasterKey } from "@/src/handlers/archive"
 import chooseDirectory from "@/src/handlers/chooseDirectory"
 import create, { renderCarrierPdf } from "@/src/handlers/create"
 import {
@@ -31,21 +31,21 @@ import { locale } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import {
-  generateMnemonic,
-  validateMnemonic,
-  wordlist,
-} from "@/src/utilities/bip39"
-import { getBlockUsage } from "@/src/utilities/block"
-import {
   get as getConfig,
   set as setConfig,
   unset as unsetConfig,
 } from "@/src/utilities/config"
-import { handle } from "@/src/utilities/handle"
-import { handleSync } from "@/src/utilities/handleSync"
-import { generateToken } from "@/src/utilities/totp"
-import { Slot } from "@/src/utilities/yubikey"
-import { broadcastYubiKeyTouchRequired } from "@/src/utilities/yubikeyTouch"
+import { getBlockUsage } from "@/src/utilities/core/block"
+import {
+  generateMnemonic,
+  validateMnemonic,
+  wordlist,
+} from "@/src/utilities/crypto/bip39"
+import { generateToken } from "@/src/utilities/crypto/totp"
+import { handle } from "@/src/utilities/ipc/handle"
+import { handleSync } from "@/src/utilities/ipc/handleSync"
+import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
+import { Slot } from "@/src/utilities/yubikey/otp"
 
 type InsertType = "mnemonic" | "passphrase" | "scanQrCode"
 

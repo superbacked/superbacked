@@ -11,9 +11,9 @@ import {
   createTarExtractStream,
   createTarStream,
   generateIv,
-} from "@/src/utilities/archiveCore"
-import { computePassphraseKey } from "@/src/utilities/passphraseKey"
-import { ChallengeResponseOptions } from "@/src/utilities/yubikey"
+} from "@/src/utilities/core/archive"
+import { computePassphraseKey } from "@/src/utilities/crypto/passphraseKey"
+import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 
 export type { Manifest, RestoredFilePath }
 

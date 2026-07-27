@@ -2,14 +2,14 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto"
 
 import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import { promptHidden, promptVisible } from "@/src/cli/readPassphrase"
-import { timingSafeEqualStrings } from "@/src/utilities/crypto"
+import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 import {
   Slot,
   calculateHmacSha1,
   getStatus,
   provisionHmacSha1,
-} from "@/src/utilities/yubikey"
+} from "@/src/utilities/yubikey/otp"
 
 // Command action (the CLI surface is declared in index.ts). Provisions a
 // slot for HMAC-SHA1 challenge-response and verifies the write end to end by

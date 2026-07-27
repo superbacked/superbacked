@@ -1,4 +1,4 @@
-import { generateEncryptionKey, hkdf } from "@/src/utilities/crypto"
+import { generateEncryptionKey, hkdf } from "@/src/utilities/crypto/primitives"
 
 /**
  * Generate master key

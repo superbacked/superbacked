@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of the derived password feature in Superbacked. Derived passwords are deterministic, high-entropy, per-label passwords rendered from a [derived key](derived-key-technical-documentation.md) — a 256-bit key binding a memorized master passphrase, a label and a YubiKey HMAC-SHA1 challenge-response — two-factor password derivation with nothing stored anywhere. The source ([src/utilities/derivedPassword.ts](../src/utilities/derivedPassword.ts) and [src/utilities/derivedKey.ts](../src/utilities/derivedKey.ts)) is the ground truth for this document, and the reference vectors in [tests/derivedPassword.test.ts](../tests/derivedPassword.test.ts) pin the scheme.
+This document specifies the cryptographic design and implementation of the derived password feature in Superbacked. Derived passwords are deterministic, high-entropy, per-label passwords rendered from a [derived key](derived-key-technical-documentation.md) — a 256-bit key binding a memorized master passphrase, a label and a YubiKey HMAC-SHA1 challenge-response — two-factor password derivation with nothing stored anywhere. The source ([src/utilities/crypto/derivedPassword.ts](../src/utilities/crypto/derivedPassword.ts) and [src/utilities/crypto/derivedKey.ts](../src/utilities/crypto/derivedKey.ts)) is the ground truth for this document, and the reference vectors in [tests/derivedPassword.test.ts](../tests/derivedPassword.test.ts) pin the scheme.
 
 ## Introduction
 

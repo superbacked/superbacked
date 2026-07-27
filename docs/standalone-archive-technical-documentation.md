@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of the standalone archive feature in Superbacked. Standalone archives allow users to encrypt files and folders using passphrases without having to create blocks or blocksets — restoring standalone archives requires only the passphrase, or, for archives created with the optional [YubiKey second factor](#yubikey-second-factor), the passphrase and a YubiKey provisioned with the same challenge-response secret. The source ([src/utilities/standaloneArchive.ts](../src/utilities/standaloneArchive.ts) and [src/utilities/archiveCore.ts](../src/utilities/archiveCore.ts)) is the ground truth for this document.
+This document specifies the cryptographic design and implementation of the standalone archive feature in Superbacked. Standalone archives allow users to encrypt files and folders using passphrases without having to create blocks or blocksets — restoring standalone archives requires only the passphrase, or, for archives created with the optional [YubiKey second factor](#yubikey-second-factor), the passphrase and a YubiKey provisioned with the same challenge-response secret. The source ([src/utilities/core/standaloneArchive.ts](../src/utilities/core/standaloneArchive.ts) and [src/utilities/core/archive.ts](../src/utilities/core/archive.ts)) is the ground truth for this document.
 
 ## Introduction
 

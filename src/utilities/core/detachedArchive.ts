@@ -13,7 +13,7 @@ import {
   createTarExtractStream,
   createTarStream,
   generateIv,
-} from "@/src/utilities/archiveCore"
+} from "@/src/utilities/core/archive"
 
 export type { Manifest, RestoredFilePath }
 

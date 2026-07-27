@@ -79,7 +79,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
   // The YubiKey step appears only when the hardware reports it is awaiting
   // touch (the key is blinking at that exact moment) — no-touch slots
   // derive without any step (see onTouchRequired in
-  // src/utilities/yubikey.ts)
+  // src/utilities/yubikey/otp.ts)
   const [touchAwaited, setTouchAwaited] = useState(false)
   useEffect(() => {
     return window.api.events.yubikeyTouchRequired(() => {

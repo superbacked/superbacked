@@ -39,7 +39,7 @@ import {
 } from "@/src/main/utilities/regexp"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import { yubikeyErrorMessage } from "@/src/shared/utilities/yubikeyErrorMessage"
-import type { Slot } from "@/src/utilities/yubikey"
+import type { Slot } from "@/src/utilities/yubikey/otp"
 
 const Container = styled.div`
   position: absolute;

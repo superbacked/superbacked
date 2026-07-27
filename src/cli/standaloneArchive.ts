@@ -10,7 +10,7 @@ import {
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
-import { Slot, YubiKeyError } from "@/src/utilities/yubikey"
+import { Slot, YubiKeyError } from "@/src/utilities/yubikey/otp"
 
 // Command actions (the CLI surface is declared in index.ts). Both call the
 // same handlers — and bundled argon2 binary — as the app, so archives are

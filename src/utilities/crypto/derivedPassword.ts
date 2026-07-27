@@ -1,12 +1,12 @@
-import { hkdf } from "@/src/utilities/crypto"
 import {
   computeDerivedKey,
   computeSingleFactorDerivedKey,
-} from "@/src/utilities/derivedKey"
-import { ChallengeResponseOptions } from "@/src/utilities/yubikey"
+} from "@/src/utilities/crypto/derivedKey"
+import { hkdf } from "@/src/utilities/crypto/primitives"
+import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 
 // Deterministic password rendering from a derived key (see
-// src/utilities/derivedKey.ts, which binds the master passphrase, the label
+// src/utilities/crypto/derivedKey.ts, which binds the master passphrase, the label
 // and the optional YubiKey response) — the key is the HKDF input keying
 // material for an unbounded byte stream that is rejection-sampled into the
 // password character set.
@@ -56,7 +56,7 @@ const streamContext = Buffer.from("superbacked-derived-password-v1", "utf8")
 
 /**
  * Derive password from derived key
- * @param derivedKey 32-byte derived key (see src/utilities/derivedKey.ts)
+ * @param derivedKey 32-byte derived key (see src/utilities/crypto/derivedKey.ts)
  * @param length password length
  * @returns derived password
  */

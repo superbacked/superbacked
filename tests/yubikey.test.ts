@@ -4,7 +4,7 @@ import { suite, test } from "node:test"
 import {
   buildHmacSha1Configuration,
   calculateCrc,
-} from "@/src/utilities/yubikey"
+} from "@/src/utilities/yubikey/otp"
 
 // The configuration layout is frozen against the reference implementation in
 // yubikey-manager (yubikit/yubiotp.py, _build_config and

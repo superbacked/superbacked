@@ -13,7 +13,7 @@ import { t } from "i18next"
 // Commented out with the language menu below — see src/i18n.ts.
 // import { locales, resources } from "@/src/i18n"
 // import { locale, setLocale } from "@/src/index"
-import { sendEvent } from "@/src/utilities/sendEvent"
+import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
 if (process.platform === "darwin") {
   systemPreferences.setUserDefault(

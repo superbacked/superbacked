@@ -61,7 +61,7 @@ import { yubikeyErrorMessage } from "@/src/shared/utilities/yubikeyErrorMessage"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
-import { BlockUsage } from "@/src/utilities/block"
+import { BlockUsage } from "@/src/utilities/core/block"
 
 const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },
@@ -214,7 +214,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   // The YubiKey step appears only when the hardware reports it is awaiting
   // touch (the key is blinking at that exact moment) — no-touch slots
   // derive without any step (see onTouchRequired in
-  // src/utilities/yubikey.ts)
+  // src/utilities/yubikey/otp.ts)
   const [touchAwaited, setTouchAwaited] = useState(false)
   const [printerData, setPrinterData] = useState<ComboboxItem[]>([])
   const [showPrintModal, setShowPrintModal] = useState(false)

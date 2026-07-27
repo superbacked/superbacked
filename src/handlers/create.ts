@@ -9,15 +9,23 @@ import {
   deriveBlockKey,
   deriveBlocksetKey,
   qrCodeEcc,
-} from "@/src/utilities/block"
-import { generateSalt, hash, shortHash } from "@/src/utilities/crypto"
+} from "@/src/utilities/core/block"
 import {
   Secret as BlockSecret,
   encrypt,
-} from "@/src/utilities/fixedSizeEncryption"
-import { generateShares } from "@/src/utilities/shamir"
-import { Slot, YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey"
-import { broadcastYubiKeyTouchRequired } from "@/src/utilities/yubikeyTouch"
+} from "@/src/utilities/crypto/fixedSizeEncryption"
+import {
+  generateSalt,
+  hash,
+  shortHash,
+} from "@/src/utilities/crypto/primitives"
+import { generateShares } from "@/src/utilities/crypto/shamir"
+import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
+import {
+  Slot,
+  YubiKeyError,
+  YubiKeyErrorCode,
+} from "@/src/utilities/yubikey/otp"
 
 declare const BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const BLOCK_WINDOW_WEBPACK_ENTRY: string
@@ -26,7 +34,7 @@ export interface Secret {
   message: string
   passphrase: string
   // Optional YubiKey slot binding the passphrase and the YubiKey response
-  // into a derived key (see computeBlockKdfKey in src/utilities/block.ts) —
+  // into a derived key (see computeBlockKdfKey in src/utilities/core/block.ts) —
   // standard blocks only, never blocksets
   slot?: Slot
 }

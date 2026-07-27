@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of legacy fixed-size encryption — the scheme used by blocks created before the [current scheme](fixed-size-encryption-technical-documentation.md). The scheme was formerly published as the standalone [Blockcrypt](https://github.com/superbacked/blockcrypt) package — the brand was discontinued, but the scheme is unchanged (vendored into Superbacked at 0.0.1-beta.24). The format is frozen — printed blocks in the wild must decrypt forever. The source ([src/utilities/legacyFixedSizeEncryption.ts](../src/utilities/legacyFixedSizeEncryption.ts)) is the ground truth for this document, and the reference vectors in [tests/legacyFixedSizeEncryption.test.ts](../tests/legacyFixedSizeEncryption.test.ts) pin the format.
+This document specifies the cryptographic design and implementation of legacy fixed-size encryption — the scheme used by blocks created before the [current scheme](fixed-size-encryption-technical-documentation.md). The scheme was formerly published as the standalone [Blockcrypt](https://github.com/superbacked/blockcrypt) package — the brand was discontinued, but the scheme is unchanged (vendored into Superbacked at 0.0.1-beta.24). The format is frozen — printed blocks in the wild must decrypt forever. The source ([src/utilities/crypto/legacyFixedSizeEncryption.ts](../src/utilities/crypto/legacyFixedSizeEncryption.ts)) is the ground truth for this document, and the reference vectors in [tests/legacyFixedSizeEncryption.test.ts](../tests/legacyFixedSizeEncryption.test.ts) pin the format.
 
 ## Introduction
 

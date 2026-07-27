@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of fixed-size encryption — the primitive behind blocks. Fixed-size encryption encrypts one or more secrets into a fixed-size block whose every byte is indistinguishable from random data, providing plausible deniability. The source ([src/utilities/fixedSizeEncryption.ts](../src/utilities/fixedSizeEncryption.ts)) is the ground truth for this document, and the reference vectors in [tests/fixedSizeEncryption.test.ts](../tests/fixedSizeEncryption.test.ts) pin the format.
+This document specifies the cryptographic design and implementation of fixed-size encryption — the primitive behind blocks. Fixed-size encryption encrypts one or more secrets into a fixed-size block whose every byte is indistinguishable from random data, providing plausible deniability. The source ([src/utilities/crypto/fixedSizeEncryption.ts](../src/utilities/crypto/fixedSizeEncryption.ts)) is the ground truth for this document, and the reference vectors in [tests/fixedSizeEncryption.test.ts](../tests/fixedSizeEncryption.test.ts) pin the format.
 
 The scheme specified here — AES-256-GCM only, headerless, caller-supplied 256-bit keys — encrypts every new block. Blocks created before it use the [legacy scheme](legacy-fixed-size-encryption-technical-documentation.md), which must decrypt forever.
 
@@ -16,7 +16,7 @@ Fixed-size encryption is the primitive every block is built on. A block encrypte
 
 - **Block**: the output of encryption — a single buffer carried in the JSON payload a Superbacked block’s QR code encodes (see the [block technical documentation](block-technical-documentation.md)).
 - **Entry**: one secret’s region of a block — initialization vector, masked length, ciphertext and authentication tag.
-- **Secret**: a message and the caller-supplied 256-bit key that protects it (see [src/utilities/fixedSizeEncryption.ts](../src/utilities/fixedSizeEncryption.ts)).
+- **Secret**: a message and the caller-supplied 256-bit key that protects it (see [src/utilities/crypto/fixedSizeEncryption.ts](../src/utilities/crypto/fixedSizeEncryption.ts)).
 
 ## Format
 
@@ -29,7 +29,7 @@ A block is a single buffer of the caller-requested size. Each secret occupies on
 | `ciphertext`    | message length | AES-256-GCM-encrypted message.                                           |
 | `tag`           | 16 bytes       | AES-256-GCM authentication tag.                                          |
 
-An entry occupies its message length plus 30 bytes of overhead (`secretOverhead`); messages may be at most 65,535 bytes. Encryption fails loudly when entries exceed the block size, and the `getDataLength` helper returns the space a message occupies (its length plus `secretOverhead`) so callers can measure before encrypting. Superbacked sets the block size to 768 bytes, bounded by QR code capacity (see [src/utilities/block.ts](../src/utilities/block.ts)).
+An entry occupies its message length plus 30 bytes of overhead (`secretOverhead`); messages may be at most 65,535 bytes. Encryption fails loudly when entries exceed the block size, and the `getDataLength` helper returns the space a message occupies (its length plus `secretOverhead`) so callers can measure before encrypting. Superbacked sets the block size to 768 bytes, bounded by QR code capacity (see [src/utilities/core/block.ts](../src/utilities/core/block.ts)).
 
 ## Key derivation
 

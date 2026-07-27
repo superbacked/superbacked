@@ -2,8 +2,8 @@ import { contextBridge, webUtils } from "electron"
 
 import { IpcEvents, IpcHandlers, IpcSyncHandlers } from "@/src/registerHandlers"
 import { createEventListener } from "@/src/shared/utilities/createEventListener"
-import { invoke } from "@/src/utilities/invoke"
-import { invokeSync } from "@/src/utilities/invokeSync"
+import { invoke } from "@/src/utilities/ipc/invoke"
+import { invokeSync } from "@/src/utilities/ipc/invokeSync"
 
 /**
  * Main window API exposed to renderer process via contextBridge.

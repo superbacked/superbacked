@@ -1,6 +1,5 @@
 import { rename, unlink } from "fs/promises"
 
-import { generateSalt } from "@/src/utilities/crypto"
 import {
   AuthenticationError,
   Manifest,
@@ -9,8 +8,13 @@ import {
   createStandaloneArchive as createStandaloneArchiveUtility,
   extractSalt,
   restoreStandaloneArchive as restoreStandaloneArchiveUtility,
-} from "@/src/utilities/standaloneArchive"
-import { Slot, YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey"
+} from "@/src/utilities/core/standaloneArchive"
+import { generateSalt } from "@/src/utilities/crypto/primitives"
+import {
+  Slot,
+  YubiKeyError,
+  YubiKeyErrorCode,
+} from "@/src/utilities/yubikey/otp"
 
 // Both surfaces pass the memorized passphrase and a slot — hardware access
 // lives in computeArchiveKey. The touch notice is injected per surface:
@@ -37,7 +41,7 @@ export type CreateStandaloneArchiveResult =
  * @param archivePath path where standalone archive will be written
  * @param passphrase memorized passphrase
  * @param slot optional YubiKey challenge-response slot (see
- * computeArchiveKey in src/utilities/standaloneArchive.ts)
+ * computeArchiveKey in src/utilities/core/standaloneArchive.ts)
  * @param onTouchRequired invoked while the YubiKey awaits touch
  * @returns result with manifest or error
  */
@@ -100,7 +104,7 @@ export type RestoreStandaloneArchiveResult =
  * @param outputDir directory where files will be extracted
  * @param passphrase memorized passphrase
  * @param slot optional YubiKey challenge-response slot (see
- * computeArchiveKey in src/utilities/standaloneArchive.ts)
+ * computeArchiveKey in src/utilities/core/standaloneArchive.ts)
  * @param onTouchRequired invoked while the YubiKey awaits touch
  * @returns result with extracted file paths or error
  */

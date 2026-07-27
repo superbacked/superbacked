@@ -6,13 +6,13 @@ import {
   computeSingleFactorDerivedKey,
   deriveKey,
   noYubiKeySalt,
-} from "@/src/utilities/derivedKey"
+} from "@/src/utilities/crypto/derivedKey"
 import {
   computeDerivedPassword,
   derivePassword,
   maximumPasswordLength,
   minimumPasswordLength,
-} from "@/src/utilities/derivedPassword"
+} from "@/src/utilities/crypto/derivedPassword"
 
 // Reference vectors freeze the rendering scheme — changing any constant or
 // construction in the module breaks them, as does any change to the derived

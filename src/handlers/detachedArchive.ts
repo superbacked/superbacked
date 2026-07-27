@@ -5,7 +5,7 @@ import {
   RestoredFilePath,
   createDetachedArchive as createDetachedArchiveUtility,
   restoreDetachedArchive as restoreDetachedArchiveUtility,
-} from "@/src/utilities/detachedArchive"
+} from "@/src/utilities/core/detachedArchive"
 
 export type CreateDetachedArchiveResult =
   | { error: string; success: false }

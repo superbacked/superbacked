@@ -1,5 +1,5 @@
 import { ValidateTranslationKeys } from "@/src/shared/types/i18n"
-import type { YubiKeyErrorCode } from "@/src/utilities/yubikey"
+import type { YubiKeyErrorCode } from "@/src/utilities/yubikey/otp"
 
 export type YubiKeyErrorMessage = ValidateTranslationKeys<
   | "common.couldNotCommunicateWithYubiKey"

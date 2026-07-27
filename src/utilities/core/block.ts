@@ -2,9 +2,9 @@ import { hkdfSync } from "crypto"
 
 import type { ErrorCorrection } from "qr"
 
-import { getDataLength } from "@/src/utilities/fixedSizeEncryption"
-import { computePassphraseKey } from "@/src/utilities/passphraseKey"
-import { ChallengeResponseOptions } from "@/src/utilities/yubikey"
+import { getDataLength } from "@/src/utilities/crypto/fixedSizeEncryption"
+import { computePassphraseKey } from "@/src/utilities/crypto/passphraseKey"
+import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 
 // Block density constants — QR code capacity bounds blockSize at the error
 // correction level set by qrCodeEcc, so the two must move together

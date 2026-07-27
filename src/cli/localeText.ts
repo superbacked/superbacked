@@ -3,7 +3,7 @@ import {
   YubiKeyErrorMessage,
   yubikeyErrorMessageKeys,
 } from "@/src/shared/utilities/yubikeyErrorMessage"
-import { YubiKeyError } from "@/src/utilities/yubikey"
+import { YubiKeyError } from "@/src/utilities/yubikey/otp"
 
 // The command-line interface is English-only by design (guides pin
 // verbatim transcripts), but strings the app also renders resolve from the

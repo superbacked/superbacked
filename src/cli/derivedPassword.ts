@@ -14,13 +14,13 @@ import {
   readText,
   spawnClearGuard,
 } from "@/src/utilities/clipboard"
-import { timingSafeEqualStrings } from "@/src/utilities/crypto"
 import {
   computeDerivedPassword,
   maximumPasswordLength,
   minimumPasswordLength,
-} from "@/src/utilities/derivedPassword"
-import { Slot } from "@/src/utilities/yubikey"
+} from "@/src/utilities/crypto/derivedPassword"
+import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
+import { Slot } from "@/src/utilities/yubikey/otp"
 
 // Command action (the CLI surface is declared in index.ts). The password is
 // copied to the clipboard by default, keeping it out of terminal scrollback.

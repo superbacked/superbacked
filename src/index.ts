@@ -22,7 +22,7 @@ import {
 import { disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
-import { sendEvent } from "@/src/utilities/sendEvent"
+import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string

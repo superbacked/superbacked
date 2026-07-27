@@ -3,13 +3,13 @@ import { createHmac } from "crypto"
 import { suite, test } from "node:test"
 
 import {
-  computeChallenge,
-  computeResponseBoundKey,
-} from "@/src/utilities/passphraseKey"
-import {
   computeArchiveKey,
   passphraseKeyInfo,
-} from "@/src/utilities/standaloneArchive"
+} from "@/src/utilities/core/standaloneArchive"
+import {
+  computeChallenge,
+  computeResponseBoundKey,
+} from "@/src/utilities/crypto/passphraseKey"
 
 // Reference vectors freeze both archive key derivation paths — the
 // single-factor path decrypts every existing archive and the two-factor
@@ -27,7 +27,7 @@ const stretchedKey = Buffer.from(
 suite("standaloneArchive", () => {
   test("freezes passphrase key info", () => {
     // Changing it changes the key of every archive created with --yubikey
-    // (see src/utilities/passphraseKey.ts)
+    // (see src/utilities/crypto/passphraseKey.ts)
     assert.strictEqual(passphraseKeyInfo, "encryption-key-v1")
   })
 

@@ -1,8 +1,8 @@
 import { createHash, createHmac } from "crypto"
 
-import argon2 from "@/src/utilities/argon2"
-import { hkdf } from "@/src/utilities/crypto"
-import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey"
+import argon2 from "@/src/utilities/crypto/argon2"
+import { hkdf } from "@/src/utilities/crypto/primitives"
+import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
 
 // Deterministic 256-bit key derivation bound to two factors: the master key
 // (the memorized master passphrase stretched with Argon2d) is the HKDF
@@ -24,7 +24,7 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey"
 //
 // The whole scheme is frozen: changing any constant, cost parameter or
 // construction below silently changes every derived key — and with it
-// every derived password (see src/utilities/derivedPassword.ts).
+// every derived password (see src/utilities/crypto/derivedPassword.ts).
 
 // Salt standing in for the YubiKey response when deriving without hardware —
 // fixed and public, and never equal to a real response (responses are 20

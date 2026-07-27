@@ -4,9 +4,13 @@ import { join, resolve } from "path"
 import spawn from "@/src/utilities/spawn"
 
 const env = process.env.ENV ?? "development"
+// Development runs from the package root (npm scripts and electron-forge
+// both set it), so the anchor is the working directory rather than
+// __dirname — which differs between the webpack bundle and tsx-run tests,
+// and would break if this module moved
 const binDir =
   env === "development"
-    ? resolve(__dirname, "../../bin", process.platform, process.arch)
+    ? resolve(process.cwd(), "bin", process.platform, process.arch)
     : join(app.getAppPath(), "bin", process.platform, process.arch).replace(
         "app.asar",
         "app.asar.unpacked"

@@ -1,4 +1,4 @@
-import { getRandomInt } from "@/src/utilities/crypto"
+import { getRandomInt } from "@/src/utilities/crypto/primitives"
 import effLargeWordlist from "@/wordlists/eff_large_wordlist.json"
 import effShortWordlist1 from "@/wordlists/eff_short_wordlist_1.json"
 import effShortWordlist20 from "@/wordlists/eff_short_wordlist_2_0.json"

@@ -30,7 +30,7 @@ import {
   SelectionWithElement,
   captureSelection,
 } from "@/src/main/utilities/selection"
-import { BlockUsage } from "@/src/utilities/block"
+import { BlockUsage } from "@/src/utilities/core/block"
 
 interface SecretTextareaProps extends TextareaProps {
   blockUsage: BlockUsage

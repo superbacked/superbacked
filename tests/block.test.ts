@@ -10,12 +10,12 @@ import {
   getBlockUsage,
   passphraseKeyInfo,
   qrCodeEcc,
-} from "@/src/utilities/block"
-import { getDataLength } from "@/src/utilities/fixedSizeEncryption"
+} from "@/src/utilities/core/block"
+import { getDataLength } from "@/src/utilities/crypto/fixedSizeEncryption"
 import {
   computeChallenge,
   computeResponseBoundKey,
-} from "@/src/utilities/passphraseKey"
+} from "@/src/utilities/crypto/passphraseKey"
 
 // Overhead a blockset adds to each message — the per-share overhead added by
 // secret-share-split
@@ -58,7 +58,7 @@ suite("block", () => {
   // computeBlockKdfKey through it requires hardware.
   test("freezes passphrase key info", () => {
     // Changing it changes the key of every YubiKey-protected block (see
-    // src/utilities/passphraseKey.ts)
+    // src/utilities/crypto/passphraseKey.ts)
     assert.strictEqual(passphraseKeyInfo, "kdf-key-v1")
   })
 

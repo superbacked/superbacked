@@ -7,7 +7,7 @@ import {
   decrypt,
   encrypt,
   getDataLength,
-} from "@/src/utilities/legacyFixedSizeEncryption"
+} from "@/src/utilities/crypto/legacyFixedSizeEncryption"
 
 const secrets: [Secret, Secret, Secret] = [
   {

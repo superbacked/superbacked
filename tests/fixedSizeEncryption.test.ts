@@ -8,7 +8,7 @@ import {
   encrypt,
   getDataLength,
   secretOverhead,
-} from "@/src/utilities/fixedSizeEncryption"
+} from "@/src/utilities/crypto/fixedSizeEncryption"
 
 const blockSize = 512
 

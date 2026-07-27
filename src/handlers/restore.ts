@@ -1,18 +1,22 @@
 import { isUtf8 } from "buffer"
 
 import { LegacyPayload, Payload } from "@/src/handlers/create"
-import argon2 from "@/src/utilities/argon2"
 import {
   computeBlockKdfKey,
   deriveBlockKey,
   deriveBlocksetKey,
-} from "@/src/utilities/block"
-import { decrypt } from "@/src/utilities/fixedSizeEncryption"
-import { getSenderWebContents } from "@/src/utilities/handleContext"
-import { decrypt as decryptLegacy } from "@/src/utilities/legacyFixedSizeEncryption"
-import { combineShares } from "@/src/utilities/shamir"
-import { Slot, YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey"
-import { broadcastYubiKeyTouchRequired } from "@/src/utilities/yubikeyTouch"
+} from "@/src/utilities/core/block"
+import argon2 from "@/src/utilities/crypto/argon2"
+import { decrypt } from "@/src/utilities/crypto/fixedSizeEncryption"
+import { decrypt as decryptLegacy } from "@/src/utilities/crypto/legacyFixedSizeEncryption"
+import { combineShares } from "@/src/utilities/crypto/shamir"
+import { getSenderWebContents } from "@/src/utilities/ipc/handleContext"
+import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
+import {
+  Slot,
+  YubiKeyError,
+  YubiKeyErrorCode,
+} from "@/src/utilities/yubikey/otp"
 
 // Shamir shares accumulate per sender, so concurrent restore sessions in
 // separate windows cannot mix shares from different blocksets
@@ -136,7 +140,7 @@ export default async (
     } else {
       // Hardware access lives in computeBlockKdfKey — with a slot, the key
       // comes from the derived key binding the passphrase and the YubiKey
-      // response (see src/utilities/block.ts)
+      // response (see src/utilities/core/block.ts)
       const kdfKey = await computeBlockKdfKey(
         passphrase,
         salt,

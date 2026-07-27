@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using fixed-size encryption — a primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Its cryptographic design (ciphers, key derivation, block format and padding) is specified in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md). Each secret is protected by a passphrase, optionally strengthened with a [YubiKey second factor](#yubikey-second-factor). The source ([src/handlers/create.ts](../src/handlers/create.ts), [src/utilities/block.ts](../src/utilities/block.ts) and [src/block/App.tsx](../src/block/App.tsx)) is the ground truth for this document.
+This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using fixed-size encryption — a primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Its cryptographic design (ciphers, key derivation, block format and padding) is specified in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md). Each secret is protected by a passphrase, optionally strengthened with a [YubiKey second factor](#yubikey-second-factor). The source ([src/handlers/create.ts](../src/handlers/create.ts), [src/utilities/core/block.ts](../src/utilities/core/block.ts) and [src/block/App.tsx](../src/block/App.tsx)) is the ground truth for this document.
 
 ## Introduction
 
@@ -10,7 +10,7 @@ Superbacked is a backup and succession planning platform for sensitive data such
 
 Blocks are the foundation of the platform. Some secrets are too important to lose and too sensitive to share — Superbacked encrypts them into blocks using a passphrase, and only you can decrypt them: no account, no internet connection. Printed blocks are ideal for cold storage, which is why printing is recommended.
 
-Blocks can hold multiple secrets, each protected by its own passphrase — the first is always present, additional secrets are concealed and capacity is bounded only by the fixed block size. Every block has the same fixed size — 768 bytes of encrypted data or random padding in current versions, bounded by QR code capacity at the low error correction level (see [src/utilities/block.ts](../src/utilities/block.ts)) — and additional secrets are indistinguishable from the random padding that fills unused block space. Without an additional secret’s passphrase, an adversary cannot tell whether it exists at all.
+Blocks can hold multiple secrets, each protected by its own passphrase — the first is always present, additional secrets are concealed and capacity is bounded only by the fixed block size. Every block has the same fixed size — 768 bytes of encrypted data or random padding in current versions, bounded by QR code capacity at the low error correction level (see [src/utilities/core/block.ts](../src/utilities/core/block.ts)) — and additional secrets are indistinguishable from the random padding that fills unused block space. Without an additional secret’s passphrase, an adversary cannot tell whether it exists at all.
 
 ## Terminology
 
@@ -31,7 +31,7 @@ When you create a block, the app:
 
 ## Encryption
 
-Blocks are encrypted using [fixed-size encryption](fixed-size-encryption-technical-documentation.md). Superbacked derives each secret’s key (Argon2d, memory-hard, followed by the backup type’s HKDF domain key — see [src/utilities/block.ts](../src/utilities/block.ts)) and sets the fixed block size, which bounds how many secrets a block holds; the primitive provides the properties a block relies on:
+Blocks are encrypted using [fixed-size encryption](fixed-size-encryption-technical-documentation.md). Superbacked derives each secret’s key (Argon2d, memory-hard, followed by the backup type’s HKDF domain key — see [src/utilities/core/block.ts](../src/utilities/core/block.ts)) and sets the fixed block size, which bounds how many secrets a block holds; the primitive provides the properties a block relies on:
 
 - **Authenticated encryption** of each secret under its own passphrase — a wrong passphrase or a tampered block fails to decrypt.
 - **Plausible deniability** — every byte of a block is ciphertext or random padding, indistinguishable from random data, so a block reveals nothing about how many secrets it holds beyond the first, which is always present.
@@ -76,7 +76,7 @@ With the app in restore mode:
 
 ## YubiKey second factor
 
-With the YubiKey switch in the app’s create and restore flows, a secret’s stretched key becomes the input keying material of a [passphrase key](passphrase-key-technical-documentation.md) derivation instead of the key derivation function key itself: the YubiKey answers a challenge derived from the stretched key and the response is mixed back in through HKDF-SHA256 under the frozen info `kdf-key-v1` — the backup type’s HKDF domain key is applied on top either way (see `computeBlockKdfKey` in [src/utilities/block.ts](../src/utilities/block.ts)):
+With the YubiKey switch in the app’s create and restore flows, a secret’s stretched key becomes the input keying material of a [passphrase key](passphrase-key-technical-documentation.md) derivation instead of the key derivation function key itself: the YubiKey answers a challenge derived from the stretched key and the response is mixed back in through HKDF-SHA256 under the frozen info `kdf-key-v1` — the backup type’s HKDF domain key is applied on top either way (see `computeBlockKdfKey` in [src/utilities/core/block.ts](../src/utilities/core/block.ts)):
 
 ```typescript
 export const computeBlockKdfKey = async (

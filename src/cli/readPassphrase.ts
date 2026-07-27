@@ -3,7 +3,7 @@ import { once } from "events"
 import { openSync } from "fs"
 import { ReadStream } from "tty"
 
-import { timingSafeEqualStrings } from "@/src/utilities/crypto"
+import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
 import sleep from "@/src/utilities/sleep"
 import { spawnGuard } from "@/src/utilities/spawn"
 

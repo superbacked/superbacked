@@ -1,35 +1,37 @@
 import { createHmac } from "crypto"
 
-import argon2 from "@/src/utilities/argon2"
-import { hkdf } from "@/src/utilities/crypto"
+import argon2 from "@/src/utilities/crypto/argon2"
+import { hkdf } from "@/src/utilities/crypto/primitives"
 import {
   ChallengeResponseOptions,
   calculateHmacSha1,
-} from "@/src/utilities/yubikey"
+} from "@/src/utilities/yubikey/otp"
 
 // Passphrase key derivation shared by standalone archives and blocks: the
-// memorized passphrase stretched with Argon2d over the artifact salt is
-// the key — or, when the caller requests YubiKey challenge-response, the
-// input keying material for a key mixed with the response. The salt enters
-// at the stretch, so every artifact derives a unique key, challenges are
-// unique per artifact and a leaked slot secret never lets one dictionary
-// pass attack more than one artifact. Each consumer freezes its own HKDF
-// info (see src/utilities/standaloneArchive.ts and src/utilities/block.ts).
+// memorized passphrase stretched with Argon2d over the stored salt is the
+// key — or, when the caller requests YubiKey challenge-response, the
+// input keying material for a key mixed with the response. The salt
+// enters at the stretch, so every block and standalone archive derives a
+// unique key, asks a unique challenge and a leaked slot secret never lets
+// one dictionary pass attack more than one of them. Each consumer freezes
+// its own HKDF info (see src/utilities/core/standaloneArchive.ts and
+// src/utilities/core/block.ts).
 //
 // The scheme is frozen: the single-factor arm is the derivation every
-// artifact in the wild already uses, and changing any constant or
-// construction below silently changes the key of every YubiKey-protected
-// artifact (see docs/passphrase-key-technical-documentation.md).
+// block and standalone archive in the wild already uses, and changing any
+// constant or construction below silently changes the key of every
+// YubiKey-protected block and standalone archive (see
+// docs/passphrase-key-technical-documentation.md).
 
-// Context keying the challenge — a fixed string, as per-artifact
-// uniqueness comes from the salt already stretched into the key
+// Context keying the challenge — a fixed string, as challenge uniqueness
+// comes from the salt already stretched into the key
 const challengeContext = "superbacked-passphrase-key-v1-challenge"
 
 /**
  * Stretch a memorized passphrase into a 32-byte key using Argon2d — the
  * single-factor arm, and the input keying material of the two-factor arm
  * @param passphrase memorized passphrase
- * @param salt artifact salt
+ * @param salt salt stored in the block or standalone archive
  * @returns 32-byte stretched key
  */
 export const computeStretchedKey = async (
@@ -47,9 +49,9 @@ export const computeStretchedKey = async (
 export const computeChallenge = (stretchedKey: Buffer): Buffer => {
   // Keying the challenge with the stretched key conceals the passphrase
   // (the YubiKey sees only a PRF image) and gates brute force through the
-  // hardware — an attacker holding the artifact cannot pose the right
-  // question without the passphrase, and the salt inside the stretched key
-  // makes every artifact ask a different one
+  // hardware — an attacker holding the block or standalone archive cannot
+  // pose the right question without the passphrase, and the salt inside
+  // the stretched key makes each one ask a different question
   return createHmac("sha256", stretchedKey)
     .update(challengeContext, "utf8")
     .digest()
@@ -76,11 +78,11 @@ export const computeResponseBoundKey = (
 }
 
 /**
- * Compute a consumer key from a memorized passphrase and artifact salt —
+ * Compute a consumer key from a memorized passphrase and stored salt —
  * the stretched key alone, or, when YubiKey challenge-response is
  * requested, the stretched key mixed with the response
  * @param passphrase memorized passphrase
- * @param salt artifact salt
+ * @param salt salt stored in the block or standalone archive
  * @param info frozen consumer HKDF info
  * @param yubikey optional YubiKey challenge-response request
  * @returns 32-byte key

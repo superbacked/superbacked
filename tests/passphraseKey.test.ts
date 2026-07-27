@@ -5,12 +5,12 @@ import { suite, test } from "node:test"
 import {
   computeChallenge,
   computeResponseBoundKey,
-} from "@/src/utilities/passphraseKey"
+} from "@/src/utilities/crypto/passphraseKey"
 
 // Reference vectors freeze the two-factor arm of the passphrase key scheme
 // — changing any constant or construction breaks them, and with it every
 // YubiKey-protected standalone archive and block. The single-factor arm
-// (Argon2d over the artifact salt) is pinned by the consumer suites (see
+// (Argon2d over the stored salt) is pinned by the consumer suites (see
 // tests/standaloneArchive.test.ts and tests/block.test.ts). Context
 // strings are pinned by raw crypto recomputation, not just output values.
 const stretchedKey = Buffer.alloc(32, 1)
@@ -35,8 +35,8 @@ suite("passphraseKey", () => {
   })
 
   test("computes distinct challenges for distinct stretched keys", () => {
-    // The artifact salt is stretched into the key, so every artifact asks
-    // the YubiKey a different question
+    // The stored salt is stretched into the key, so every block and
+    // standalone archive asks the YubiKey a different question
     assert.notDeepStrictEqual(
       computeChallenge(stretchedKey),
       computeChallenge(otherStretchedKey)

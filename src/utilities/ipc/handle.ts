@@ -2,7 +2,7 @@ import { IpcMainInvokeEvent, ipcMain } from "electron"
 
 import { validateSender } from "@/src/index"
 import { IpcHandlers } from "@/src/registerHandlers"
-import { runWithHandleContext } from "@/src/utilities/handleContext"
+import { runWithHandleContext } from "@/src/utilities/ipc/handleContext"
 
 // Extract channel names from IpcHandlers
 type HandleChannel = keyof IpcHandlers

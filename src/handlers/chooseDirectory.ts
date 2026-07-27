@@ -1,7 +1,7 @@
 import { dialog } from "electron"
 
 import { getMainWindow } from "@/src/index"
-import { getSenderWindow } from "@/src/utilities/handleContext"
+import { getSenderWindow } from "@/src/utilities/ipc/handleContext"
 
 export type ChooseDirectoryResult =
   { canceled: true; filePath: null } | { canceled: false; filePath: string }
