@@ -4,6 +4,7 @@
 
 - [Block](block-technical-documentation.md)
 - [Blockset](blockset-technical-documentation.md)
+- [Derived key](derived-key-technical-documentation.md)
 - [Derived password](derived-password-technical-documentation.md)
 - [Detached archive](detached-archive-technical-documentation.md)
 - [Fixed-size encryption](fixed-size-encryption-technical-documentation.md)
