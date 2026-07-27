@@ -1,0 +1,83 @@
+# Passphrase strength technical documentation
+
+## Abstract
+
+This document specifies how Superbacked estimates passphrase strength and gates new passphrases. Strength is a 0–100 score — estimated years of attack at a million-dollar standing budget against Superbacked’s KDF — and every point where Superbacked accepts a new passphrase requires a score of at least 50, with no override. The source ([src/shared/utilities/zxcvbn.ts](../src/shared/utilities/zxcvbn.ts)) is the ground truth for this document.
+
+## Introduction
+
+Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+
+Passphrases are the knowledge factor behind everything Superbacked protects — blocks, blocksets, standalone archives and derived keys — so a weak passphrase undermines guarantees no cipher or key derivation can restore. Superbacked therefore gates every new passphrase behind a single strength threshold, applied identically in the app and the command-line interface.
+
+## Terminology
+
+- **Entropy**: bits displayed alongside the attack time — the wordlist bound for passphrases matching a wordlist exactly or within one edit (exact matches alone display without a tilde), log2 of guesses otherwise.
+- **Gate**: the minimum strength required to accept a new passphrase (50).
+- **Guesses**: the number of attempts an informed attacker needs, as estimated by zxcvbn.
+- **Strength**: 0–100 score — estimated years of attack at a million-dollar standing budget, clamped.
+
+## Estimation
+
+Strength estimation uses [zxcvbn](https://github.com/zxcvbn-ts/zxcvbn) (the maintained TypeScript implementation, loaded with the common and English dictionaries — the common set contributes a breach-derived ranked password list of about 49,000 entries and the EFF large wordlist as a diceware dictionary), extended with product-context user inputs (`superbacked`). zxcvbn decomposes a passphrase into patterns — dictionary words with case and leet variants, keyboard walks, dates, sequences, repeats and brute-force filler — and estimates the number of guesses an attacker exploiting those patterns needs.
+
+Superbacked converts the estimate into a score by pricing zxcvbn’s guess count against the calibrated million-dollar attack budget (see below):
+
+```typescript
+export const computeStrength = (guesses: number) => {
+  return Math.min(
+    Math.max(
+      Math.round(budgetSeconds(guesses, millionDollarGuessesPerSecond) / year),
+      1
+    ),
+    100
+  )
+}
+```
+
+One point of strength is one estimated year of attack at a million-dollar standing budget, rounded to whole years — the same integer the display prints, so the meter and the displayed time can never disagree at the gate boundary — and clamped to 1–100. A score of 50 corresponds to fifty years, roughly 2⁵⁶ guesses (56 bits). The gate is fed the cheapest known attack — the smaller of zxcvbn’s guess count and the wordlist guess count (exact or within one edit, see below). An attacker knows the shipped wordlists, so five short-wordlist words cost at most 1296⁵ (~2⁵² — below the gate) however rare the words are in English; conversely, the wordlist bound assumes uniform random selection, so repeated or hand-picked wordlist words are caught by zxcvbn’s estimate instead.
+
+The strength meter displays the score alongside the estimated attack time and entropy in bits. When every word of a passphrase (split on spaces) belongs to a single shipped EFF wordlist, entropy is deterministic — length × log2(wordlist size), using the smallest qualifying wordlist since an attacker who knows the generator searches the smallest space containing every word. zxcvbn cannot provide this: it special-cases its diceware dictionary at a fixed 3,888 guesses per word (average-case credit for large wordlist words, about a bit per word under the full space) and prices short wordlist words by ordinary dictionary rank — arbitrarily off. Words within one Levenshtein edit of a list member qualify too — wordlist plus mangling rules is standard cracking methodology, and single-character edits cost the attacker at most about 2⁹ variants per word, so a near miss is priced identically to an exact match, understating attacker cost by at most ~9 bits per word and erring safe. Stray spaces — leading, trailing or doubled — are likewise trim variants costing the attacker a handful of guesses, so they are ignored for matching but downgrade an exact match to a bound. Near matches and stray-space matches display the same bits marked with a tilde — a bound under an attack model, not exact by construction — and feed the gate through the cheapest-attack minimum like exact matches. Any other passphrase displays zxcvbn’s estimate, log2 of guesses, also marked with a tilde (`~45 bits`) — exact deterministic entropy alone displays without one, while estimates can be off by orders of magnitude.
+
+Attack time scales inversely with attacker parallelism, so any single figure is a claim about a specific attacker. The display therefore shows the estimate at two budget points on the same curve: a million-dollar and a billion-dollar standing attack budget. Argon2d at 64 MiB and 10 passes is memory-bandwidth-bound at roughly 2–3 × 10³ guesses per second per ~$30k accelerator (about a gigabyte of memory traffic per guess against ~3 TB/s), so a billion dollars of current-generation hardware sustains about 10⁸ guesses per second (calibrated July 2026) — and rate scales linearly with capital, so a million dollars sustains 10⁵. Both figures account for the attacker reinvesting the same budget in improving hardware — compute per dollar doubling roughly every three years — by solving ∫ r·gᵗ dt = G for the time to reach G guesses. Growth is bounded: total improvement is capped at 1,000× (about thirty years of doublings), after which the attack proceeds flat at the final rate. The cap is physical, not just editorial caution — a guess moves about a gigabyte through memory (~0.04 J today) against a Landauer floor near 10⁻¹¹ J, so even a thermodynamically perfect machine caps the possible improvement near 10⁹ — 1,000× is a conservative pick well inside that headroom. The displayed guess count is the wordlist bound’s 2^bits when a passphrase matches a wordlist (exactly or within one edit) and zxcvbn’s estimate otherwise, keeping displayed times consistent with the displayed bits; times render in explicit magnitudes (up to million and billion years) rather than zxcvbn’s centuries bucket. The bracket collapses to the scenario making the stronger claim at both extremes: when the million-dollar figure falls under an hour, the billion-dollar figure is omitted (weakness is proven by the smaller budget — though the label stays, as under an hour at a million dollars is still about a day on a single GPU) and once even the billion-dollar attacker needs a century, the million-dollar figure is omitted (strength is proven by the larger). Only the middle band — where the contrast could change a decision — shows both. The gate shares the calibration, so the meter, the left figure and the gate speak the same units — though the gate reads the cheaper of zxcvbn’s estimate and the wordlist bound, so for repeated or hand-picked wordlist words the meter sits below the displayed times (which assume uniform selection). Because the calibration defines the gate, the calibrated constants are frozen.
+
+Budgets are standing capital, not cumulative spend: at any moment the attacker fields the budget in current-generation hardware, replacing gear as compute per dollar improves. Amortized, that is the initial budget plus refresh costs on the order of a third of the budget per year — a 20-year attack costs a single-digit multiple of the budget, not the budget per year. Brute force parallelizes freely, but under sustained growth extra budget buys time only logarithmically: each budget doubling merely skips one three-year doubling era, so a k× budget subtracts roughly 3 × log2(k) years rather than dividing time by k — the final doubling era performs as much work as all prior history combined, so most of any long attack is waiting for the curve. This is why, within the growth era, the display’s 1,000× budget spread separates the two figures by only about 30 years — beyond the cap budget matters linearly again, so figures past the era sit 1,000× apart — and a corollary is that a large fleet bought once and never refreshed loses to a smaller fleet that rides the curve over decade scales. The logarithm also makes the display robust to calibration error: a tenfold misestimate of the calibrated rate shifts in-era times by about ten years, not by a factor of ten.
+
+## The gate
+
+New passphrases must score a strength of at least **50**. The gate applies wherever a **new** passphrase is accepted:
+
+- Block and blockset creation (app)
+- Standalone archive creation (app modal and `create-standalone-archive`)
+- Master passphrase of `derive-password`
+
+Restoration is never gated — whatever decrypts, decrypts. This is also why the gate tolerates no override: a hard gate never traps data (reading remains free), it only prevents new commitments to weak protection and the generator sits one click away in every passphrase input. An override would additionally become part of the frozen contract for derived passwords — a weak master passphrase confirmed through the gate could never be locked out later.
+
+The passphrase generator draws uniformly random words from a chosen wordlist (by default seven EFF large wordlist words — 90 bits) — its entropy is exactly length × log2(wordlist size) by construction, so it never consults the estimator: the meter and the gate price generated passphrases like any other input and the gate applies to acceptance, not generation. Pathological draws (for example adjacent repeated words) can be rejected at acceptance — regenerating is the remedy. Under the gate floor, wordlist passphrases need at least five large wordlist words (about 2⁶⁵ guesses) or six short wordlist words (about 2⁶²) — five short words (about 2⁵²) fall below it.
+
+## Reference vectors
+
+[tests/zxcvbn.test.ts](../tests/zxcvbn.test.ts) freezes the scheme against three representative inputs, alongside behavioral pins for near matches, stray spaces, smallest-list selection, repeated words and product context:
+
+| Input                                                                                      | Entropy  | Million-dollar budget | Billion-dollar budget | Strength | Gate     |
+| ------------------------------------------------------------------------------------------ | -------- | --------------------- | --------------------- | -------- | -------- |
+| `trace synopsis retake enlarging liftoff snazzy chastity` (seven EFF large wordlist words) | 90 bits  | 535 billion years     | 535 million years     | 100      | passes   |
+| `blast dance visor jog broil` (five EFF short wordlist words)                              | 52 bits  | 24 years              | 1 year                | 24       | rejected |
+| `+^D*_d@R(p8LS[va` (sixteen random characters, generated with KeePassXC)                   | ~53 bits | 28 years              | 2 years               | 28       | rejected |
+
+The first is the generator’s default shape (seven large wordlist words): deterministic entropy, times past the growth era sitting 1,000× apart (the display collapses this vector to its billion-dollar figure; the table lists both computed values). The second shows the cheapest-attack minimum at work: zxcvbn prices these five words above the gate, but an attacker who knows the shipped wordlists searches 1296⁵ ≈ 2⁵² — the gate reads that. The third shows the estimator’s conservatism with random character passwords: about 105 real bits over the 95-symbol printable set, but zxcvbn charges brute force ten guesses per character (10¹⁶ ≈ 2⁵³) and Superbacked has no generator-aware path for character passwords.
+
+## Freeze
+
+The threshold — and the calibration that defines it — can never effectively rise. Derived passwords re-derive deterministically and statelessly, so a raised bar would strand master passphrases that legitimately passed the gate when their passwords were established. The gate was raised to the calibrated definition in the same release that first ships the derived key scheme, so no derivable passphrase predates it; from that release on, the floor (roughly 2⁵⁶ guesses) is frozen, which freezes the million-dollar rate and the growth constants with it. Passphrases that passed the pre-calibration gate can still restore everything they protect — restoration is never gated — but creating new blocks or archives may require a stronger passphrase.
+
+**Limitations:**
+
+- **Modeled scenario**: The calibrated rates and the growth constants are editorial order-of-magnitude figures, not measurements — displayed attack times and scores are estimates, not predictions
+- **Estimator drift**: zxcvbn dictionary and pattern improvements can lower the estimate for a given passphrase — an effective tightening. Dependency updates to zxcvbn must be reviewed for scoring regressions near the gate, as a master passphrase pushed below the threshold by an estimator update would be unable to re-derive its passwords
+- **No extended breach blocklist**: The built-in dictionaries already cover the breach-corpus head through zxcvbn’s ranked password list; extending deeper with an additional bundled corpus is deliberately absent. Under the flat ten-guesses-per-character brute-force floor and the ~2⁵⁶ gate, a corpus entry needs seventeen or more unrecognized characters to reach the gate and prevalence-ordered breach corpora contain essentially none that long that do not decompose — a deeper corpus would only re-price passphrases already rejected, while curating and shipping a raw plaintext credential dump beyond what the estimator library carries. Composite matching and product-context user inputs cover the decision-relevant classes
+- **Estimates, not proofs**: zxcvbn approximates an informed attacker — a passphrase leaked in a breach corpus zxcvbn does not know scores higher than it should. The gate is a floor, not a certificate
+- **Implementations disagree**: KeePassXC estimates through zxcvbn-c, a port of the original 2016 release that displays entropy bits rather than a crack-time score, with frozen dictionaries and the older entropy model — figures for the same passphrase differ between the two tools even though both build on zxcvbn’s pattern estimation
+- **Uniform selection assumed**: The wordlist bound models uniform random draws — hand-picked or repeated wordlist words (`abacus abacus abacus`) display theoretical bits above their real guessability, and near matching widens this surface, as much of ordinary English sits within one edit of an EFF word. The gate is unaffected: it reads the cheaper estimate, and zxcvbn does model repeats and common phrases
+- **Random character passwords undervalued**: zxcvbn charges brute force a flat ten guesses per character because it cannot verify uniform selection — a truly random sixteen-character password (~105 bits over the 95-symbol printable set) scores 10¹⁶ ≈ 2⁵³ and is rejected. Superbacked has no generator-aware path for character passwords (a string’s uniformity is unverifiable), so random character passwords need roughly seventeen characters — or use a wordlist passphrase
+- **Gate floor vs large budgets**: Strength 50 corresponds to roughly 2⁵⁶ guesses — fifty years at the million-dollar budget but about eight years at the billion-dollar budget. Resistance beyond that comes from generated passphrases, not the gate — the default seven large wordlist words carry 90 bits

@@ -8,6 +8,7 @@
 - [Detached archive](detached-archive-technical-documentation.md)
 - [Fixed-size encryption](fixed-size-encryption-technical-documentation.md)
 - [Legacy fixed-size encryption](legacy-fixed-size-encryption-technical-documentation.md)
+- [Passphrase strength](passphrase-strength-technical-documentation.md)
 - [Standalone archive](standalone-archive-technical-documentation.md)
 - [Superbacked OS security model](superbacked-os-security-technical-documentation.md)
 
