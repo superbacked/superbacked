@@ -50,6 +50,18 @@ cli
     "archive path (.superbacked appended if absent)"
   )
   .option("-f, --force", "overwrite archive if it already exists")
+  .addOption(
+    new CommanderOption(
+      "-s, --slot <slot>",
+      "HMAC-SHA1 challenge-response slot"
+    )
+      .choices(["1", "2"])
+      .default("2")
+  )
+  .option(
+    "--yubikey",
+    "protect archive with YubiKey (restoring requires a YubiKey provisioned with the same challenge-response secret)"
+  )
   .action(createStandaloneArchiveAction)
 
 cli
@@ -60,16 +72,27 @@ cli
     "-o, --output <directory>",
     "directory archive is extracted to"
   )
+  .addOption(
+    new CommanderOption(
+      "-s, --slot <slot>",
+      "HMAC-SHA1 challenge-response slot"
+    )
+      .choices(["1", "2"])
+      .default("2")
+  )
+  .option("--yubikey", "restore archive protected with YubiKey")
   .action(restoreStandaloneArchiveAction)
 
 cli
   .command("provision-yubikey")
-  .description("provision YubiKey slot for HMAC-SHA1 challenge-response")
+  .description(
+    "provision YubiKey slot with HMAC-SHA1 challenge-response credential"
+  )
   .option("-g, --generate", "generate secret and print it to stdout")
   .addOption(
     new CommanderOption("-s, --slot <slot>", "slot to provision")
       .choices(["1", "2"])
-      .default("1")
+      .default("2")
   )
   .option("--no-touch", "compute responses without touch (weaker)")
   .action(provisionYubikeyAction)
@@ -100,7 +123,7 @@ cli
       "HMAC-SHA1 challenge-response slot"
     )
       .choices(["1", "2"])
-      .default("1")
+      .default("2")
   )
   .action(derivePasswordAction)
 

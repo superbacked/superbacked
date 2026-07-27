@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using fixed-size encryption — a primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Its cryptographic design (ciphers, key derivation, block format and padding) is specified in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md). The source ([src/handlers/create.ts](../src/handlers/create.ts), [src/utilities/block.ts](../src/utilities/block.ts) and [src/block/App.tsx](../src/block/App.tsx)) is the ground truth for this document.
+This document covers the Superbacked-level design of a block. Superbacked encodes secrets as encrypted QR codes called blocks — 4×6-inch cards printed on archival paper or saved as JPG or PDF files (printing is recommended). Secrets are encrypted using fixed-size encryption — a primitive that provides plausible deniability — and the result is packaged as the block’s QR code. Its cryptographic design (ciphers, key derivation, block format and padding) is specified in the [fixed-size encryption technical documentation](fixed-size-encryption-technical-documentation.md). Each secret is protected by a passphrase, optionally strengthened with a [YubiKey second factor](#yubikey-second-factor). The source ([src/handlers/create.ts](../src/handlers/create.ts), [src/utilities/block.ts](../src/utilities/block.ts) and [src/block/App.tsx](../src/block/App.tsx)) is the ground truth for this document.
 
 ## Introduction
 
@@ -24,7 +24,7 @@ Blocks can hold multiple secrets, each protected by its own passphrase — the f
 
 When you create a block, the app:
 
-1. Takes one or more secrets — as many as fit the block — each with its own passphrase and an optional label.
+1. Takes one or more secrets — as many as fit the block — each with its own passphrase (optionally [YubiKey-protected](#yubikey-second-factor)) and an optional label.
 2. Derives a key from each passphrase using Argon2d and the block-key-v1 HKDF domain key, then encrypts the secrets using fixed-size encryption.
 3. Serializes the fixed-size encryption output as a JSON payload.
 4. Encodes the payload as a QR code and renders the block — a 4×6-inch card carrying the QR code alongside a label and a short hash — printed or saved as a JPG or PDF file.
@@ -60,7 +60,7 @@ Superbacked hashes the payload using SHA-256 for integrity and identification; t
 With the app in create mode:
 
 1. Select the block backup type (blocksets are covered in the [blockset technical documentation](blockset-technical-documentation.md)).
-2. Enter a secret, its passphrase and an optional label.
+2. Enter a secret, its passphrase and an optional label — and optionally enable the [YubiKey second factor](#yubikey-second-factor).
 3. Optionally, click the add secret button to add additional secrets — each with its own passphrase — until remaining block capacity runs out.
 4. Click the create button.
 5. The app encrypts the secret(s) and asks the user to print the block or save it as a JPG or PDF file.
@@ -70,6 +70,27 @@ With the app in create mode:
 With the app in restore mode:
 
 1. Scan a block.
-2. Enter a passphrase.
+2. Enter a passphrase — enabling the YubiKey switch for [YubiKey-protected](#yubikey-second-factor) secrets.
 3. Click the unlock button.
 4. The app decrypts the secret and asks whether to copy or show it. If a block belongs to a blockset, the app asks the user to scan the next block — see the [blockset technical documentation](blockset-technical-documentation.md).
+
+## YubiKey second factor
+
+With the YubiKey switch in the app’s create and restore flows, a secret’s stretched key becomes the input keying material of a [passphrase key](passphrase-key-technical-documentation.md) derivation instead of the key derivation function key itself: the YubiKey answers a challenge derived from the stretched key and the response is mixed back in through HKDF-SHA256 under the frozen info `kdf-key-v1` — the backup type’s HKDF domain key is applied on top either way (see `computeBlockKdfKey` in [src/utilities/block.ts](../src/utilities/block.ts)):
+
+```typescript
+export const computeBlockKdfKey = async (
+  passphrase: string,
+  salt: Buffer,
+  yubikey?: ChallengeResponseOptions
+): Promise<Buffer> => {
+  return computePassphraseKey(passphrase, salt, passphraseKeyInfo, yubikey)
+}
+```
+
+The scheme — stretching, challenge computation, response mixing and its security model — is specified in the [passphrase key technical documentation](passphrase-key-technical-documentation.md) and shared with [standalone archives](standalone-archive-technical-documentation.md#yubikey-second-factor). Block specifics:
+
+- **Blocks only**: The second factor applies to standard blocks, never blocksets — a blockset’s shares are meant to restore on any machine holding enough blocks, a property a hardware binding would defeat
+- **Per secret**: Each secret of a block opts in independently — a block can mix YubiKey-protected and passphrase-only secrets, and plausible deniability is unaffected (the format records nothing about how any key was derived)
+- **Format unchanged**: Only the key derivation differs — YubiKey-protected blocks are byte-compatible with the format above, so a block cannot announce the mode and restoring requires enabling the YubiKey switch again while holding a YubiKey provisioned with the same slot secret; a missing switch, wrong slot or wrong hardware fails exactly like a wrong passphrase
+- **Strength gate**: The passphrase strength requirement applies to the memorized passphrase — the second factor strengthens it rather than replacing it

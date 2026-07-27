@@ -4,21 +4,65 @@ import {
   Progress,
   Space,
   Text,
-  TextInput,
-  TextInputProps,
+  Textarea,
+  TextareaProps,
 } from "@mantine/core"
 import { IconArrowsRandom } from "@tabler/icons-react"
 import { FunctionComponent, useLayoutEffect, useRef, useState } from "react"
-import { useTranslation } from "react-i18next"
+import { Trans, useTranslation } from "react-i18next"
 
-import zxcvbn, { ZxcvbnTranslationKey } from "@/src/shared/utilities/zxcvbn"
+import zxcvbn, {
+  ZxcvbnTranslationKey,
+  minimumPassphraseStrength,
+} from "@/src/shared/utilities/zxcvbn"
 
 interface Time {
-  key: ZxcvbnTranslationKey
-  base: number
+  slowKey: ZxcvbnTranslationKey
+  slowBase: number
+  entropy: number
+  entropyDeterministic: boolean
+  fastKey: ZxcvbnTranslationKey
+  fastBase: number
 }
 
-interface PassphraseInputWithStrengthProps extends TextInputProps {
+const underHourKeys: ZxcvbnTranslationKey[] = [
+  "ltSecond",
+  "second",
+  "seconds",
+  "minute",
+  "minutes",
+]
+
+const overCenturyKeys: ZxcvbnTranslationKey[] = [
+  "millionYears",
+  "billionYears",
+  "overTrillionYears",
+]
+
+// The bracket collapses to the scenario making the stronger claim:
+// under an hour at the million-dollar budget, the billion-dollar figure
+// adds nothing (weakness is proven by the smaller budget) — and once
+// even the billion-dollar attacker needs a century, the million-dollar
+// figure is implied (strength is proven by the larger)
+const attackTimeScenariosKey = (
+  time: Time
+):
+  | "components.passphraseInputWithStrength.attackTimeScenarioMillion"
+  | "components.passphraseInputWithStrength.attackTimeScenarioBillion"
+  | "components.passphraseInputWithStrength.attackTimeScenarios" => {
+  if (underHourKeys.includes(time.slowKey)) {
+    return "components.passphraseInputWithStrength.attackTimeScenarioMillion"
+  }
+  if (
+    overCenturyKeys.includes(time.fastKey) ||
+    (time.fastKey === "years" && time.fastBase >= 100)
+  ) {
+    return "components.passphraseInputWithStrength.attackTimeScenarioBillion"
+  }
+  return "components.passphraseInputWithStrength.attackTimeScenarios"
+}
+
+interface PassphraseInputWithStrengthProps extends TextareaProps {
   generatePassphrase: () => Promise<string>
   onPopoverChange?: (opened: boolean) => void
 }
@@ -27,19 +71,24 @@ export const PassphraseInputWithStrength: FunctionComponent<
   PassphraseInputWithStrengthProps
 > = (props) => {
   const { t } = useTranslation()
-  const textInputRef = useRef<HTMLInputElement>(null)
+  const textInputRef = useRef<HTMLTextAreaElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout>(null)
   const [popoverOpened, setPopoverOpened] = useState(false)
   const [strength, setStrength] = useState<null | number>(null)
   const [time, setTime] = useState<null | Time>(null)
-  const color = strength && strength >= 50 ? "pink" : "red"
+  const color =
+    strength && strength >= minimumPassphraseStrength ? "pink" : "red"
   const { generatePassphrase, onChange, onPopoverChange, ...otherProps } = props
   const updatePopover = (passphrase: string) => {
     const result = zxcvbn(passphrase)
     setStrength(result.strength)
     setTime({
-      key: result.crackTimesDisplay.offlineSlowHashing1e4PerSecond,
-      base: result.base,
+      slowKey: result.slowKey,
+      slowBase: result.slowBase,
+      entropy: result.entropy,
+      entropyDeterministic: result.entropyDeterministic,
+      fastKey: result.fastKey,
+      fastBase: result.fastBase,
     })
   }
   useLayoutEffect(() => {
@@ -66,17 +115,47 @@ export const PassphraseInputWithStrength: FunctionComponent<
         <Progress color={color} value={strength ?? 0} />
         <Space h="lg" />
         {time !== null ? (
-          <Text c={strength && strength < 50 ? "red" : undefined} size="sm">
+          <Text
+            c={
+              strength && strength < minimumPassphraseStrength
+                ? "red"
+                : undefined
+            }
+            size="sm"
+          >
             {t("components.passphraseInputWithStrength.estimatedAttackTime")}:{" "}
-            {t(`components.passphraseInputWithStrength.zxcvbn.${time.key}`, {
-              base: time.base,
-            })}
+            <Trans
+              components={{
+                bold: <Text component="span" fw="bold" />,
+              }}
+              i18nKey={attackTimeScenariosKey(time)}
+              values={{
+                slow: t(
+                  `components.passphraseInputWithStrength.zxcvbn.${time.slowKey}`,
+                  { base: time.slowBase, count: time.slowBase }
+                ),
+                fast: t(
+                  `components.passphraseInputWithStrength.zxcvbn.${time.fastKey}`,
+                  { base: time.fastBase, count: time.fastBase }
+                ),
+              }}
+            />{" "}
+            (
+            {t(
+              time.entropyDeterministic
+                ? "components.passphraseInputWithStrength.entropy"
+                : "components.passphraseInputWithStrength.entropyEstimate",
+              { bits: time.entropy }
+            )}
+            )
           </Text>
         ) : null}
       </Popover.Dropdown>
       <Popover.Target>
-        <TextInput
+        <Textarea
           ref={textInputRef}
+          autosize
+          maxRows={4}
           onFocusCapture={() => {
             if (otherProps.value !== "") {
               setPopoverOpened(true)
@@ -85,7 +164,22 @@ export const PassphraseInputWithStrength: FunctionComponent<
           onBlurCapture={() => {
             setPopoverOpened(false)
           }}
+          onKeyDown={(event) => {
+            // A newline inside a passphrase would silently change the
+            // derived secret — Enter submits the enclosing form instead,
+            // behaving like a single-line input
+            if (event.key === "Enter") {
+              event.preventDefault()
+              event.currentTarget.form?.requestSubmit()
+            }
+          }}
           onChange={(event) => {
+            // Pasted newlines become spaces — wrapped text joins visibly
+            // instead of embedding invisible characters in the secret
+            event.currentTarget.value = event.currentTarget.value.replace(
+              /\r?\n+/g,
+              " "
+            )
             if (onChange) {
               onChange(event)
             }

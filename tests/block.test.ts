@@ -1,14 +1,21 @@
 import assert from "assert"
+import { createHmac } from "crypto"
 import { suite, test } from "node:test"
 
 import {
   blockSize,
+  computeBlockKdfKey,
   deriveBlockKey,
   deriveBlocksetKey,
   getBlockUsage,
+  passphraseKeyInfo,
   qrCodeEcc,
 } from "@/src/utilities/block"
 import { getDataLength } from "@/src/utilities/fixedSizeEncryption"
+import {
+  computeChallenge,
+  computeResponseBoundKey,
+} from "@/src/utilities/passphraseKey"
 
 // Overhead a blockset adds to each message — the per-share overhead added by
 // secret-share-split
@@ -41,6 +48,54 @@ suite("block", () => {
   test("derives distinct block and blockset keys", () => {
     const key = Buffer.alloc(32, 1)
     assert.notDeepStrictEqual(deriveBlockKey(key), deriveBlocksetKey(key))
+  })
+
+  // Reference vectors freeze both key derivation function key paths — the
+  // single-factor path decrypts every existing block and the two-factor
+  // path every YubiKey-protected block, so changing either breaks blocks
+  // in the wild. The two-factor path is pinned by composing the stretched
+  // key with a software-simulated YubiKey response, as driving
+  // computeBlockKdfKey through it requires hardware.
+  test("freezes passphrase key info", () => {
+    // Changing it changes the key of every YubiKey-protected block (see
+    // src/utilities/passphraseKey.ts)
+    assert.strictEqual(passphraseKeyInfo, "kdf-key-v1")
+  })
+
+  test("computes key derivation function key from passphrase", async () => {
+    // Pins the pre-existing Argon2d derivation — existing blocks must
+    // decrypt forever. The construction is shared with the archive
+    // passphrase path, so the vector matches computeArchiveKey (see
+    // tests/standaloneArchive.test.ts)
+    const key = await computeBlockKdfKey(
+      "lip gift name net sixth",
+      Buffer.alloc(16, 2)
+    )
+    assert.strictEqual(
+      key.toString("hex"),
+      "a6a3889592fe2207aa186c97bdd04d896aef299255bf3c19b3879885c136a4e4"
+    )
+  })
+
+  test("computes key derivation function key from simulated YubiKey response", () => {
+    // The full two-factor pipeline for this passphrase and salt, with the
+    // YubiKey simulated in software using a known slot secret — the
+    // stretched key is the frozen Argon2d vector above
+    const stretchedKey = Buffer.from(
+      "a6a3889592fe2207aa186c97bdd04d896aef299255bf3c19b3879885c136a4e4",
+      "hex"
+    )
+    const response = createHmac("sha1", Buffer.alloc(20, 3))
+      .update(computeChallenge(stretchedKey))
+      .digest()
+    assert.strictEqual(
+      computeResponseBoundKey(
+        stretchedKey,
+        response,
+        passphraseKeyInfo
+      ).toString("hex"),
+      "e9c4b22de64e1de751daa38655938f505d946e76161e0979568072cf4b676442"
+    )
   })
 
   test("gets block usage of no secrets", () => {

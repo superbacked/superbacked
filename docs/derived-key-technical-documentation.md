@@ -2,13 +2,13 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of derived keys — the primitive behind [derived passwords](derived-password-technical-documentation.md) and YubiKey-protected [standalone archive](standalone-archive-technical-documentation.md) and [block](block-technical-documentation.md) passphrases. A derived key is a deterministic 256-bit key derived from a memorized master passphrase, a label and a YubiKey HMAC-SHA1 challenge-response — two-factor key derivation with nothing stored anywhere. The source ([src/utilities/derivedKey.ts](../src/utilities/derivedKey.ts) and [src/utilities/yubikey.ts](../src/utilities/yubikey.ts)) is the ground truth for this document, and the reference vectors in [tests/derivedKey.test.ts](../tests/derivedKey.test.ts) pin the scheme.
+This document specifies the cryptographic design and implementation of derived keys — the primitive behind [derived passwords](derived-password-technical-documentation.md). A derived key is a deterministic 256-bit key derived from a memorized master passphrase, a label and a YubiKey HMAC-SHA1 challenge-response — two-factor key derivation with nothing stored anywhere. The source ([src/utilities/derivedKey.ts](../src/utilities/derivedKey.ts) and [src/utilities/yubikey.ts](../src/utilities/yubikey.ts)) is the ground truth for this document, and the reference vectors in [tests/derivedKey.test.ts](../tests/derivedKey.test.ts) pin the scheme.
 
 ## Introduction
 
 Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
 
-Derived keys extend the platform with stateless key derivation: instead of storing key material, consumers re-derive it on demand from two factors — a memorized master passphrase and the HMAC-SHA1 secret sealed inside a YubiKey slot. The same passphrase, label and YubiKey always produce the same key, on any machine, with no vault, sync or backup required. The label binds every derivation to its purpose: a memorized label per password for derived passwords, the fixed label `standalone-archive` for archive passphrases and the fixed label `block` for block passphrases.
+Derived keys extend the platform with stateless key derivation: instead of storing key material, consumers re-derive it on demand from two factors — a memorized master passphrase and the HMAC-SHA1 secret sealed inside a YubiKey slot. The same passphrase, label and YubiKey always produce the same key, on any machine, with no vault, sync or backup required. The label binds every derivation to its purpose — a memorized label per password — giving every label an independent key. Statelessness is what distinguishes this primitive from the [passphrase key](passphrase-key-technical-documentation.md) scheme protecting archives and blocks: those artifacts store a random salt, so their derivation binds it directly, while derived keys must derive their salts from the label.
 
 The YubiKey is treated as an untrusted black box: it never receives the passphrase (only a pseudorandom challenge derived from it) and a malicious or compromised device can only remove the hardware-binding property — it can never weaken the output below the security of the passphrase-only derivation.
 
@@ -31,7 +31,7 @@ When a consumer derives a key, the app:
 3. Computes a 160-bit response on the YubiKey using HMAC-SHA1
 4. Combines the master key and response into a 256-bit derived key using HKDF-SHA256
 
-Every stage is a pure function — no randomness and no stored state — so derivation is deterministic. The scheme is frozen: changing any constant, cost parameter or construction silently changes every derived key — and with it every derived password and every YubiKey-protected standalone archive and block passphrase.
+Every stage is a pure function — no randomness and no stored state — so derivation is deterministic. The scheme is frozen: changing any constant, cost parameter or construction silently changes every derived key — and with it every derived password.
 
 ## Master key derivation
 
@@ -168,7 +168,7 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
 
 ## Deriving without YubiKey
 
-When no slot is provided, a fixed public salt replaces the response:
+The single-factor variant (`computeSingleFactorDerivedKey`) substitutes a fixed public salt for the response — a deliberate, separately-named choice rather than a mode of the two-factor derivation:
 
 ```typescript
 export const noYubiKeySalt = createHash("sha256")
@@ -197,6 +197,6 @@ export const noYubiKeySalt = createHash("sha256")
 
 ## Consumers
 
-- **[Derived passwords](derived-password-technical-documentation.md)**: the derived key is the input keying material for a rendering stream domain-separated by the `superbacked-derived-password-v1` context — a rendered password reveals nothing about the key itself
-- **[Standalone archives](standalone-archive-technical-documentation.md)**: with `--yubikey`, a derived key (fixed label `standalone-archive`) replaces the passphrase in archive key derivation — bound to the archive salt through HKDF with info `encryption-key-v1`, skipping the password KDF a uniform key does not need. The archive format records nothing, so restoring requires passing `--yubikey` again and holding the hardware — a missing flag fails exactly like a wrong passphrase
-- **[Blocks](block-technical-documentation.md)**: with the YubiKey switch in the app, a derived key (fixed label `block`) replaces a secret’s passphrase in block key derivation — bound to the block salt through HKDF with info `kdf-key-v1`, the backup type’s domain key applied on top as usual. Standard blocks only, never blocksets and per secret — the block format records nothing, so restoring requires enabling the switch again and holding the hardware
+- **[Derived passwords](derived-password-technical-documentation.md)**: the derived key (`computeDerivedKey`, or `computeSingleFactorDerivedKey` without hardware) is the input keying material for a rendering stream domain-separated by the `superbacked-derived-password-v1` context — a rendered password reveals nothing about the key itself
+
+YubiKey-protected standalone archives and blocks do not consume this primitive — their artifacts store a salt, so they bind it from the first step through the [passphrase key](passphrase-key-technical-documentation.md) scheme instead. Both schemes share slot provisioning and the wire protocol above.

@@ -12,8 +12,36 @@ import {
   createTarStream,
   generateIv,
 } from "@/src/utilities/archiveCore"
+import { computePassphraseKey } from "@/src/utilities/passphraseKey"
+import { ChallengeResponseOptions } from "@/src/utilities/yubikey"
 
 export type { Manifest, RestoredFilePath }
+
+// HKDF info binding YubiKey-protected archive key derivation (see
+// src/utilities/passphraseKey.ts) — frozen, as changing it changes the key
+// of every archive created with --yubikey. Per-archive uniqueness comes
+// from the archive salt, not from this constant.
+export const passphraseKeyInfo = "encryption-key-v1"
+
+/**
+ * Compute the archive encryption key from the memorized passphrase and the
+ * archive salt — the stretched key alone, or, with YubiKey
+ * challenge-response, mixed with the response (see
+ * src/utilities/passphraseKey.ts). The archive format is unchanged and
+ * records nothing, so restoring a YubiKey-protected archive requires the
+ * same slot secret, and its absence fails exactly like a wrong passphrase
+ * @param passphrase memorized passphrase
+ * @param salt 16-byte archive salt
+ * @param yubikey optional YubiKey challenge-response request
+ * @returns 32-byte encryption key
+ */
+export const computeArchiveKey = async (
+  passphrase: string,
+  salt: Buffer,
+  yubikey?: ChallengeResponseOptions
+): Promise<Buffer> => {
+  return computePassphraseKey(passphrase, salt, passphraseKeyInfo, yubikey)
+}
 
 // Thrown when an archive fails authentication — a wrong passphrase and a
 // corrupted archive are cryptographically indistinguishable (AES-256-GCM).

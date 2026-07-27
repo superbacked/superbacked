@@ -11,9 +11,8 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey"
 // the master key, so every passphrase guess costs a round-trip through the
 // physical YubiKey — leaked material derived from the key cannot be
 // attacked offline without holding the hardware. The label binds every
-// derivation to its purpose (a memorized label for passwords, a fixed
-// label for archives and another for blocks), giving every label an
-// independent key.
+// derivation to its purpose (a memorized label per password), giving
+// every label an independent key.
 //
 // Deriving without a YubiKey substitutes a fixed public salt: single
 // factor, so leaked derived material becomes offline-attackable (Argon2d
@@ -25,8 +24,7 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey"
 //
 // The whole scheme is frozen: changing any constant, cost parameter or
 // construction below silently changes every derived key — and with it
-// every derived password (see src/utilities/derivedPassword.ts) and every
-// YubiKey-protected standalone archive and block passphrase.
+// every derived password (see src/utilities/derivedPassword.ts).
 
 // Salt standing in for the YubiKey response when deriving without hardware —
 // fixed and public, and never equal to a real response (responses are 20
@@ -92,29 +90,42 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
 }
 
 /**
- * Derive 256-bit key from master passphrase and label, computing the
- * response on YubiKey when a slot is provided (single factor otherwise)
+ * Derive 256-bit key from master passphrase, label and YubiKey
+ * challenge-response — the two-factor scheme
  * @param masterPassphrase memorized master passphrase
  * @param label label binding the derivation to its purpose
- * @param options derivation options
+ * @param slot HMAC-SHA1 challenge-response slot
+ * @param onTouchRequired invoked while the YubiKey awaits touch
  * @returns 32-byte derived key
  */
 export const computeDerivedKey = async (
   masterPassphrase: string,
   label: string,
-  options: {
-    onTouchRequired?: () => void
-    slot?: Slot
-  } = {}
+  slot: Slot,
+  onTouchRequired?: () => void
 ): Promise<Buffer> => {
   const masterKey = await computeMasterKey(masterPassphrase, label)
-  const salt =
-    options.slot === undefined
-      ? noYubiKeySalt
-      : await calculateHmacSha1(
-          options.slot,
-          computeChallenge(masterKey, label),
-          options.onTouchRequired
-        )
-  return deriveKey(masterKey, salt)
+  const response = await calculateHmacSha1(
+    slot,
+    computeChallenge(masterKey, label),
+    onTouchRequired
+  )
+  return deriveKey(masterKey, response)
+}
+
+/**
+ * Derive 256-bit key from master passphrase and label alone — single
+ * factor, substituting the fixed public salt for the YubiKey response
+ * @param masterPassphrase memorized master passphrase
+ * @param label label binding the derivation to its purpose
+ * @returns 32-byte derived key
+ */
+export const computeSingleFactorDerivedKey = async (
+  masterPassphrase: string,
+  label: string
+): Promise<Buffer> => {
+  return deriveKey(
+    await computeMasterKey(masterPassphrase, label),
+    noYubiKeySalt
+  )
 }

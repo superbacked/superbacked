@@ -108,14 +108,56 @@ const matchesOtpInterface = (device: Device): boolean => {
   return device.interface === 0
 }
 
+// User-actionable failures carry a code the app and the command-line
+// interface resolve into user-facing text through the en locale (see
+// src/shared/utilities/yubikeyErrorMessage.ts and src/cli/localeText.ts) —
+// low-level failures collapse into the communication code (see
+// asYubiKeyError below)
+export type YubiKeyErrorCode =
+  | "communication"
+  | "multipleDevices"
+  | "noDevice"
+  | "notProvisioned"
+  | "provisioningRejected"
+  | "touchTimeout"
+
+export class YubiKeyError extends Error {
+  code: YubiKeyErrorCode
+  constructor(code: YubiKeyErrorCode, message: string, cause?: unknown) {
+    super(message)
+    this.name = "YubiKeyError"
+    this.code = code
+    this.cause = cause
+  }
+}
+
+// Every error escaping the public functions below is a YubiKeyError, so
+// both surfaces resolve the same code into the same wording — the message
+// carried here serves logs, cause chains and codes without a locale key,
+// with low-level failures collapsed into one, preserving the underlying
+// error as cause
+const asYubiKeyError = (error: unknown): YubiKeyError => {
+  if (error instanceof YubiKeyError) {
+    return error
+  }
+  return new YubiKeyError(
+    "communication",
+    "Could not communicate with YubiKey",
+    error
+  )
+}
+
 const findDevicePath = async (): Promise<string> => {
   const devices = await devicesAsync()
   const matches = devices.filter(matchesOtpInterface)
   if (matches.length === 0) {
-    throw new Error("No YubiKey found")
+    throw new YubiKeyError("noDevice", "No YubiKey detected")
   }
   if (matches.length > 1) {
-    throw new Error("Multiple YubiKeys found, please keep only one connected")
+    throw new YubiKeyError(
+      "multipleDevices",
+      "Multiple YubiKeys detected — keep only one connected"
+    )
   }
   const path = matches[0]?.path
   if (path === undefined) {
@@ -221,10 +263,13 @@ const readFrame = async (
         throw new Error("Incomplete transfer")
       }
       if (touchRequired === true) {
-        throw new Error("Timed out waiting for touch")
+        throw new YubiKeyError("touchTimeout", "YubiKey touch timed out")
       }
-      throw new Error(
-        "Challenge rejected (is the slot provisioned for HMAC-SHA1 challenge-response?)"
+      // A rejected challenge (status 0, no response frames) means the slot
+      // has no HMAC-SHA1 challenge-response credential
+      throw new YubiKeyError(
+        "notProvisioned",
+        "YubiKey slot not provisioned for challenge-response"
       )
     } else {
       // Device is busy — either computing or waiting for touch (the device
@@ -263,6 +308,13 @@ const assertFirmwareVersion = (
 
 export type Slot = 1 | 2
 
+// A challenge-response request as higher layers carry it — the slot to
+// challenge and the notice invoked while the device awaits touch
+export interface ChallengeResponseOptions {
+  onTouchRequired?: () => void
+  slot: Slot
+}
+
 /**
  * Compute HMAC-SHA1 challenge-response on YubiKey
  * @param slot slot provisioned for HMAC-SHA1 challenge-response
@@ -278,39 +330,43 @@ export const calculateHmacSha1 = async (
   if (challenge.length < 1 || challenge.length > hmacChallengeSize) {
     throw new Error(`Challenge must be 1 to ${hmacChallengeSize} bytes`)
   }
-  // Seizing the keyboard interface requires elevated input permissions on
-  // macOS — feature reports work without exclusive access
-  const device = await HIDAsync.open(await findDevicePath(), {
-    nonExclusive: true,
-  })
   try {
-    // Idle reads return a status report
-    const status = await receive(device)
-    assertFirmwareVersion(status, 2, 2, "Challenge-response")
-    // In HMAC_LT64 mode (the standard challenge-response configuration) the
-    // device recovers the challenge length by stripping trailing copies of
-    // the final byte, so the pad byte must differ from the last challenge
-    // byte
-    const lastByte = challenge.readUInt8(challenge.length - 1)
-    const payload = Buffer.alloc(slotDataSize, lastByte === 0 ? 1 : 0)
-    challenge.copy(payload)
-    await sendFrame(
-      device,
-      slot === 1 ? challengeHmacSlot1 : challengeHmacSlot2,
-      payload
-    )
-    const response = await readFrame(device, onTouchRequired)
-    if (response.length < hmacResponseSize + 2) {
-      throw new Error("Response too short")
+    // Seizing the keyboard interface requires elevated input permissions
+    // on macOS — feature reports work without exclusive access
+    const device = await HIDAsync.open(await findDevicePath(), {
+      nonExclusive: true,
+    })
+    try {
+      // Idle reads return a status report
+      const status = await receive(device)
+      assertFirmwareVersion(status, 2, 2, "Challenge-response")
+      // In HMAC_LT64 mode (the standard challenge-response configuration)
+      // the device recovers the challenge length by stripping trailing
+      // copies of the final byte, so the pad byte must differ from the
+      // last challenge byte
+      const lastByte = challenge.readUInt8(challenge.length - 1)
+      const payload = Buffer.alloc(slotDataSize, lastByte === 0 ? 1 : 0)
+      challenge.copy(payload)
+      await sendFrame(
+        device,
+        slot === 1 ? challengeHmacSlot1 : challengeHmacSlot2,
+        payload
+      )
+      const response = await readFrame(device, onTouchRequired)
+      if (response.length < hmacResponseSize + 2) {
+        throw new Error("Response too short")
+      }
+      // The response is 20 bytes followed by its CRC
+      const checked = response.subarray(0, hmacResponseSize + 2)
+      if (calculateCrc(checked) !== crcOkResidual) {
+        throw new Error("Invalid response CRC")
+      }
+      return response.subarray(0, hmacResponseSize)
+    } finally {
+      await device.close()
     }
-    // The response is 20 bytes followed by its CRC
-    const checked = response.subarray(0, hmacResponseSize + 2)
-    if (calculateCrc(checked) !== crcOkResidual) {
-      throw new Error("Invalid response CRC")
-    }
-    return response.subarray(0, hmacResponseSize)
-  } finally {
-    await device.close()
+  } catch (error) {
+    throw asYubiKeyError(error)
   }
 }
 
@@ -325,22 +381,26 @@ export interface Status {
  * @returns firmware version and which slots are provisioned
  */
 export const getStatus = async (): Promise<Status> => {
-  const device = await HIDAsync.open(await findDevicePath(), {
-    nonExclusive: true,
-  })
   try {
-    const status = await receive(device)
-    assertFirmwareVersion(status, 2, 1, "Reading slot status")
-    const touchLevel = status.readUInt8(touchLevelOffset)
-    return {
-      firmwareVersion: [0, 1, 2]
-        .map((offset) => status.readUInt8(firmwareVersionOffset + offset))
-        .join("."),
-      slot1Provisioned: (touchLevel & slot1ValidFlag) !== 0,
-      slot2Provisioned: (touchLevel & slot2ValidFlag) !== 0,
+    const device = await HIDAsync.open(await findDevicePath(), {
+      nonExclusive: true,
+    })
+    try {
+      const status = await receive(device)
+      assertFirmwareVersion(status, 2, 1, "Reading slot status")
+      const touchLevel = status.readUInt8(touchLevelOffset)
+      return {
+        firmwareVersion: [0, 1, 2]
+          .map((offset) => status.readUInt8(firmwareVersionOffset + offset))
+          .join("."),
+        slot1Provisioned: (touchLevel & slot1ValidFlag) !== 0,
+        slot2Provisioned: (touchLevel & slot2ValidFlag) !== 0,
+      }
+    } finally {
+      await device.close()
     }
-  } finally {
-    await device.close()
+  } catch (error) {
+    throw asYubiKeyError(error)
   }
 }
 
@@ -408,7 +468,10 @@ const awaitConfigurationWrite = async (
       if (sequence === ((previousSequence + 1) & 0xff)) {
         return
       }
-      throw new Error(
+      // Coded so the message survives the communication collapse — the
+      // access-code hint is the actionable part
+      throw new YubiKeyError(
+        "provisioningRejected",
         "Provisioning rejected (is the slot protected by an access code?)"
       )
     }
@@ -444,32 +507,39 @@ export const provisionHmacSha1 = async (
   secret: Buffer,
   requireTouch = false
 ): Promise<void> => {
+  // Validation errors (secret size) stay specific — only device
+  // communication collapses
   const configuration = buildHmacSha1Configuration(secret, requireTouch)
-  const device = await HIDAsync.open(await findDevicePath(), {
-    nonExclusive: true,
-  })
   try {
-    let status = await receive(device)
-    assertFirmwareVersion(status, 2, 2, "Challenge-response")
-    if (status.readUInt8(firmwareVersionOffset) === 3) {
-      await refreshProgrammingSequence(device)
-      status = await receive(device)
+    const device = await HIDAsync.open(await findDevicePath(), {
+      nonExclusive: true,
+    })
+    try {
+      let status = await receive(device)
+      assertFirmwareVersion(status, 2, 2, "Challenge-response")
+      if (status.readUInt8(firmwareVersionOffset) === 3) {
+        await refreshProgrammingSequence(device)
+        status = await receive(device)
+      }
+      // The frame payload is the configuration followed by the current
+      // access code — left zero, as access-code-protected slots are not
+      // supported (the device rejects the write, leaving the slot
+      // untouched)
+      const payload = Buffer.alloc(slotDataSize)
+      configuration.copy(payload)
+      await sendFrame(
+        device,
+        slot === 1 ? configureSlot1 : configureSlot2,
+        payload
+      )
+      await awaitConfigurationWrite(
+        device,
+        status.readUInt8(programmingSequenceOffset)
+      )
+    } finally {
+      await device.close()
     }
-    // The frame payload is the configuration followed by the current access
-    // code — left zero, as access-code-protected slots are not supported
-    // (the device rejects the write, leaving the slot untouched)
-    const payload = Buffer.alloc(slotDataSize)
-    configuration.copy(payload)
-    await sendFrame(
-      device,
-      slot === 1 ? configureSlot1 : configureSlot2,
-      payload
-    )
-    await awaitConfigurationWrite(
-      device,
-      status.readUInt8(programmingSequenceOffset)
-    )
-  } finally {
-    await device.close()
+  } catch (error) {
+    throw asYubiKeyError(error)
   }
 }

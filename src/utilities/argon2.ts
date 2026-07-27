@@ -12,16 +12,14 @@ const binDir =
         "app.asar.unpacked"
       )
 
-// Blocks use Argon2d (frozen fixed-size encryption format); password
-// derivation uses Argon2id — cost parameters are shared
-export default async (
-  passphrase: string,
-  salt: string,
-  mode: "d" | "id" = "d"
-): Promise<Buffer> => {
+// Every key derivation uses Argon2d, maximizing offline brute-force
+// resistance — a side-channel adversary on a derivation host is assumed
+// capable of direct capture, which no variant survives (see
+// docs/derived-key-technical-documentation.md)
+export default async (passphrase: string, salt: string): Promise<Buffer> => {
   const { stdout } = await spawn(
     `${binDir}/argon2`,
-    [salt, `-${mode}`, "-p", "2", "-k", "65536", "-r", "-t", "10"],
+    [salt, "-d", "-p", "2", "-k", "65536", "-r", "-t", "10"],
     { input: passphrase }
   )
   return Buffer.from(stdout, "hex")

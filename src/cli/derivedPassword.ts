@@ -1,5 +1,6 @@
 import { InvalidArgumentError } from "commander"
 
+import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import readPassphrase, {
   promptVisible,
   waitForEnter,
@@ -94,10 +95,15 @@ export const derivePasswordAction = async (
       resolvedLabel,
       {
         length: options.length,
-        onTouchRequired: () => {
-          console.error("Touch YubiKey…")
-        },
-        slot: slot,
+        yubikey:
+          slot === undefined
+            ? undefined
+            : {
+                onTouchRequired: () => {
+                  console.error(touchYubiKeyText)
+                },
+                slot: slot,
+              },
       }
     )
     if (options.print === true) {
@@ -126,9 +132,7 @@ export const derivePasswordAction = async (
     }
     process.exit(0)
   } catch (error) {
-    console.error(
-      error instanceof Error ? error.message : "Could not derive password"
-    )
+    console.error(errorText(error, "Could not derive password"))
     process.exit(1)
   }
 }

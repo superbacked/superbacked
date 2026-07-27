@@ -2,11 +2,17 @@ import { isUtf8 } from "buffer"
 
 import { LegacyPayload, Payload } from "@/src/handlers/create"
 import argon2 from "@/src/utilities/argon2"
-import { deriveBlockKey, deriveBlocksetKey } from "@/src/utilities/block"
+import {
+  computeBlockKdfKey,
+  deriveBlockKey,
+  deriveBlocksetKey,
+} from "@/src/utilities/block"
 import { decrypt } from "@/src/utilities/fixedSizeEncryption"
 import { getSenderWebContents } from "@/src/utilities/handleContext"
 import { decrypt as decryptLegacy } from "@/src/utilities/legacyFixedSizeEncryption"
 import { combineShares } from "@/src/utilities/shamir"
+import { Slot, YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey"
+import { broadcastYubiKeyTouchRequired } from "@/src/utilities/yubikeyTouch"
 
 // Shamir shares accumulate per sender, so concurrent restore sessions in
 // separate windows cannot mix shares from different blocksets
@@ -86,11 +92,19 @@ const tryDecrypt = (key: Buffer, block: Buffer): null | Buffer => {
 }
 
 export type Result =
-  { error: string; success: false } | { message: string; success: true }
+  | {
+      error: string
+      success: false
+      // Present when the failure belongs to the YubiKey step — the code
+      // routes error display (see src/shared/utilities/yubikeyErrorMessage.ts)
+      yubikeyErrorCode?: YubiKeyErrorCode
+    }
+  | { message: string; success: true }
 
 export default async (
   passphrase: string,
-  payload: Payload | LegacyPayload
+  payload: Payload | LegacyPayload,
+  slot?: Slot
 ): Promise<Result> => {
   try {
     const salt = Buffer.from(payload.salt, "base64")
@@ -98,6 +112,11 @@ export default async (
     let message: Buffer
     let shamirShare: null | Buffer = null
     if ("iv" in payload && "headers" in payload) {
+      if (slot !== undefined) {
+        // Legacy blocks predate YubiKey protection — the switch cannot
+        // apply, so it fails exactly like a wrong passphrase
+        throw new Error("Secret not found")
+      }
       // Legacy payload (iv and headers fields) — headers locate secrets and
       // the key derivation function runs inside decryption
       const iv = Buffer.from(payload.iv, "base64")
@@ -115,7 +134,16 @@ export default async (
       )
       shamirShare = classifyPrefixedShare(message)
     } else {
-      const kdfKey = await argon2(passphrase, payload.salt)
+      // Hardware access lives in computeBlockKdfKey — with a slot, the key
+      // comes from the derived key binding the passphrase and the YubiKey
+      // response (see src/utilities/block.ts)
+      const kdfKey = await computeBlockKdfKey(
+        passphrase,
+        salt,
+        slot === undefined
+          ? undefined
+          : { onTouchRequired: broadcastYubiKeyTouchRequired, slot: slot }
+      )
       // The key that authenticates names the message type — block keys
       // encrypt plain secrets, blockset keys encrypt shares
       const blockMessage = tryDecrypt(deriveBlockKey(kdfKey), data)
@@ -151,6 +179,7 @@ export default async (
     return {
       error: error instanceof Error ? error.message : "Could not restore block",
       success: false,
+      yubikeyErrorCode: error instanceof YubiKeyError ? error.code : undefined,
     }
   }
 }

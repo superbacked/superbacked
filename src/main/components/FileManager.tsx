@@ -32,6 +32,10 @@ import RestoreStandaloneArchiveModal from "@/src/main/components/RestoreStandalo
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import { ValidateTranslationKeys } from "@/src/shared/types/i18n"
 import CustomError from "@/src/shared/utilities/CustomError"
+import {
+  YubiKeyErrorMessage,
+  yubikeyErrorMessage,
+} from "@/src/shared/utilities/yubikeyErrorMessage"
 
 const deduplicateFiles = (files: FileWithAbsolutePath[]) => {
   return files.filter(
@@ -42,12 +46,15 @@ const deduplicateFiles = (files: FileWithAbsolutePath[]) => {
   )
 }
 
-type FileManagerErrorMessage = ValidateTranslationKeys<
-  | "components.fileManager.couldNotHandleDroppedFiles"
-  | "components.fileManager.couldNotCreateStandaloneArchive"
-  | "components.fileManager.couldNotRestoreStandaloneArchive"
-  | "components.fileManager.wrongPassphraseOrCorruptedArchive"
->
+type FileManagerErrorMessage =
+  | ValidateTranslationKeys<
+      | "components.fileManager.couldNotHandleDroppedFiles"
+      | "components.fileManager.couldNotCreateStandaloneArchive"
+      | "components.fileManager.couldNotRestoreStandaloneArchive"
+      | "components.fileManager.wrongPassphraseOrCorruptedArchive"
+      | "components.fileManager.wrongPassphraseYubiKeyOrCorruptedArchive"
+    >
+  | YubiKeyErrorMessage
 
 class FileManagerError extends CustomError<FileManagerErrorMessage> {
   constructor(message: FileManagerErrorMessage) {
@@ -142,7 +149,8 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
     const createArchive = useCallback(
       async (
         filename: string,
-        passphrase: string
+        passphrase: string,
+        slot?: 1 | 2
       ): Promise<
         void | (CreateStandaloneArchiveResult & { archivePath: string })
       > => {
@@ -164,11 +172,14 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
           const result = await window.api.invoke.createStandaloneArchive(
             filePaths,
             archivePath,
-            passphrase
+            passphrase,
+            slot
           )
           if (result?.success === false && result.error) {
             throw new FileManagerError(
-              "components.fileManager.couldNotCreateStandaloneArchive"
+              result.yubikeyErrorCode !== undefined
+                ? yubikeyErrorMessage(result.yubikeyErrorCode)
+                : "components.fileManager.couldNotCreateStandaloneArchive"
             )
           }
           return {
@@ -184,7 +195,8 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
 
     const restoreArchive = useCallback(
       async (
-        passphrase: string
+        passphrase: string,
+        slot?: 1 | 2
       ): Promise<
         void | (RestoreStandaloneArchiveResult & { outputDir: string })
       > => {
@@ -212,13 +224,18 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
         const result = await window.api.invoke.restoreStandaloneArchive(
           filePath,
           outputDir,
-          passphrase
+          passphrase,
+          slot
         )
         if (result?.success === false && result.error) {
           throw new FileManagerError(
-            result.authenticationFailed
-              ? "components.fileManager.wrongPassphraseOrCorruptedArchive"
-              : "components.fileManager.couldNotRestoreStandaloneArchive"
+            result.yubikeyErrorCode !== undefined
+              ? yubikeyErrorMessage(result.yubikeyErrorCode)
+              : result.authenticationFailed
+                ? slot === undefined
+                  ? "components.fileManager.wrongPassphraseOrCorruptedArchive"
+                  : "components.fileManager.wrongPassphraseYubiKeyOrCorruptedArchive"
+                : "components.fileManager.couldNotRestoreStandaloneArchive"
           )
         }
         return {
@@ -374,7 +391,12 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
                 try {
                   const result = await createArchive(
                     values.filename,
-                    values.passphrase
+                    values.passphrase,
+                    values.yubikey === true
+                      ? values.slot === "1"
+                        ? 1
+                        : 2
+                      : undefined
                   )
                   if (result?.success) {
                     showNotificationWithButton({
@@ -412,11 +434,18 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
                 reset()
               }}
               onReset={() => setRestoreError(null)}
-              onSubmit={async (passphrase) => {
+              onSubmit={async (passphrase, options) => {
                 setRestoreError(null)
                 try {
                   setIsRestoringArchive(true)
-                  const result = await restoreArchive(passphrase)
+                  const result = await restoreArchive(
+                    passphrase,
+                    options.yubikey === true
+                      ? options.slot === "1"
+                        ? 1
+                        : 2
+                      : undefined
+                  )
                   if (result?.success && result.outputDir) {
                     showNotificationWithButton({
                       message: t(

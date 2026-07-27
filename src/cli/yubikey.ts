@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto"
 
+import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import { promptHidden, promptVisible } from "@/src/cli/readPassphrase"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
@@ -108,9 +109,9 @@ export const provisionYubikeyAction = async (options: {
     if (provisioned === true) {
       await confirmYes(
         red(
-          `Slot ${slot} is currently programmed and overwriting it is permanent — a factory Yubico OTP credential cannot be restored.`
+          `Slot ${slot} is already programmed — overwriting it permanently destroys the current secret.`
         ) + `\nDo you wish to overwrite slot ${slot} (yes or no)? `,
-        `Slot ${slot} is currently programmed (overwriting requires interactive confirmation)`
+        `Slot ${slot} is already programmed (overwriting requires interactive confirmation)`
       )
     }
     const secret =
@@ -131,7 +132,7 @@ export const provisionYubikeyAction = async (options: {
     // locally — proves the write end to end, not just the status update
     const challenge = randomBytes(32)
     const response = await calculateHmacSha1(slot, challenge, () => {
-      console.error("Touch YubiKey…")
+      console.error(touchYubiKeyText)
     })
     const expected = createHmac("sha1", secret).update(challenge).digest()
     if (timingSafeEqual(response, expected) === false) {
@@ -151,9 +152,7 @@ export const provisionYubikeyAction = async (options: {
     }
     process.exit(0)
   } catch (error) {
-    console.error(
-      error instanceof Error ? error.message : "Could not provision YubiKey"
-    )
+    console.error(errorText(error, "Could not provision YubiKey"))
     process.exit(1)
   }
 }

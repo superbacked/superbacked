@@ -3,9 +3,9 @@ import { BrowserWindow, ipcMain } from "electron"
 import { ErrorCorrection } from "qr"
 
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
-import argon2 from "@/src/utilities/argon2"
 import {
   blockSize,
+  computeBlockKdfKey,
   deriveBlockKey,
   deriveBlocksetKey,
   qrCodeEcc,
@@ -16,6 +16,8 @@ import {
   encrypt,
 } from "@/src/utilities/fixedSizeEncryption"
 import { generateShares } from "@/src/utilities/shamir"
+import { Slot, YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey"
+import { broadcastYubiKeyTouchRequired } from "@/src/utilities/yubikeyTouch"
 
 declare const BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const BLOCK_WINDOW_WEBPACK_ENTRY: string
@@ -23,6 +25,10 @@ declare const BLOCK_WINDOW_WEBPACK_ENTRY: string
 export interface Secret {
   message: string
   passphrase: string
+  // Optional YubiKey slot binding the passphrase and the YubiKey response
+  // into a derived key (see computeBlockKdfKey in src/utilities/block.ts) —
+  // standard blocks only, never blocksets
+  slot?: Slot
 }
 
 // Internal to the Shamir path — a share-carrying secret whose message is the
@@ -81,7 +87,14 @@ export interface Data {
 }
 
 export type Result =
-  { error: string; success: false } | { qrs: Qr[]; success: true }
+  | {
+      error: string
+      success: false
+      // Present when the failure belongs to the YubiKey step — the code
+      // routes error display (see src/shared/utilities/yubikeyErrorMessage.ts)
+      yubikeyErrorCode?: YubiKeyErrorCode
+    }
+  | { qrs: Qr[]; success: true }
 
 const readyIpcMessage = async (blockWindow: BrowserWindow): Promise<void> => {
   return new Promise((resolve) => {
@@ -200,9 +213,10 @@ export const renderCarrierPdf = async (
 }
 
 // Derives one key per secret from its passphrase and the block’s salt
-// (Argon2d, then the backup type’s HKDF domain key so restoration classifies
-// messages by which key authenticates), then encrypts all secrets into a
-// single fixed-size block
+// (computeBlockKdfKey — sequentially, so each YubiKey-protected secret
+// costs its own challenge-response round-trip and touch — then the backup
+// type’s HKDF domain key so restoration classifies messages by which key
+// authenticates), then encrypts all secrets into a single fixed-size block
 const encryptBlock = async (
   secrets: (Secret | ShareSecret)[],
   blockset: boolean,
@@ -212,7 +226,14 @@ const encryptBlock = async (
   const saltBase64 = salt.toString("base64")
   const blockSecrets: BlockSecret[] = []
   for (const secret of secrets) {
-    const kdfKey = await argon2(secret.passphrase, saltBase64)
+    const slot = "slot" in secret ? secret.slot : undefined
+    const kdfKey = await computeBlockKdfKey(
+      secret.passphrase,
+      salt,
+      slot === undefined
+        ? undefined
+        : { onTouchRequired: broadcastYubiKeyTouchRequired, slot: slot }
+    )
     blockSecrets.push({
       key: blockset ? deriveBlocksetKey(kdfKey) : deriveBlockKey(kdfKey),
       message: secret.message,
@@ -255,6 +276,14 @@ export default async function create(
     ) {
       throw new Error("Invalid number of shares or threshold")
     }
+    // YubiKey protection is offered for standard blocks only — the app
+    // never sends a slot for blocksets
+    if (
+      shamir === true &&
+      secrets.some((secret) => secret.slot !== undefined)
+    ) {
+      throw new Error("YubiKey protection is not supported for blocksets")
+    }
     const qrs = []
     if (shamir === true) {
       const shamirBlockSecrets: ShamirBlockSecret = {}
@@ -294,6 +323,7 @@ export default async function create(
     return {
       error: error instanceof Error ? error.message : "Could not create block",
       success: false,
+      yubikeyErrorCode: error instanceof YubiKeyError ? error.code : undefined,
     }
   }
 }

@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of the standalone archive feature in Superbacked. Standalone archives allow users to encrypt files and folders using passphrases without having to create blocks or blocksets — restoring standalone archives requires only passphrases, providing single-factor authentication. The source ([src/utilities/standaloneArchive.ts](../src/utilities/standaloneArchive.ts) and [src/utilities/archiveCore.ts](../src/utilities/archiveCore.ts)) is the ground truth for this document.
+This document specifies the cryptographic design and implementation of the standalone archive feature in Superbacked. Standalone archives allow users to encrypt files and folders using passphrases without having to create blocks or blocksets — restoring standalone archives requires only the passphrase, or, for archives created with the optional [YubiKey second factor](#yubikey-second-factor), the passphrase and a YubiKey provisioned with the same challenge-response secret. The source ([src/utilities/standaloneArchive.ts](../src/utilities/standaloneArchive.ts) and [src/utilities/archiveCore.ts](../src/utilities/archiveCore.ts)) is the ground truth for this document.
 
 ## Introduction
 
@@ -65,21 +65,17 @@ const key = await argon2(passphrase, salt.toString("base64"))
 ### Implementation
 
 ```typescript
-export default async (
-  passphrase: string,
-  salt: string,
-  mode: "d" | "id" = "d"
-): Promise<Buffer> => {
+export default async (passphrase: string, salt: string): Promise<Buffer> => {
   const { stdout } = await spawn(
     `${binDir}/argon2`,
-    [salt, `-${mode}`, "-p", "2", "-k", "65536", "-r", "-t", "10"],
+    [salt, "-d", "-p", "2", "-k", "65536", "-r", "-t", "10"],
     { input: passphrase }
   )
   return Buffer.from(stdout, "hex")
 }
 ```
 
-The `mode` parameter defaults to Argon2d, which standalone archives use; derived passwords use Argon2id (see the [derived password technical documentation](derived-password-technical-documentation.md)).
+Every key derivation in Superbacked — blocks, archives and [derived keys](derived-key-technical-documentation.md) — uses Argon2d with these cost parameters.
 
 ### Argon2d parameters
 
@@ -181,3 +177,23 @@ With the app in create mode — standalone archives are created and restored fro
 3. Click the restore button.
 4. Choose where to save the standalone archive content.
 5. The app decrypts and saves the standalone archive content.
+
+## YubiKey second factor
+
+With `--yubikey` on the command-line interface (or the YubiKey switch in the app’s create and restore modals), the stretched key becomes the input keying material of a [passphrase key](passphrase-key-technical-documentation.md) derivation instead of the encryption key itself: the YubiKey answers a challenge derived from the stretched key and the response is mixed back in through HKDF-SHA256 under the frozen info `encryption-key-v1`:
+
+```typescript
+export const computeArchiveKey = async (
+  passphrase: string,
+  salt: Buffer,
+  yubikey?: ChallengeResponseOptions
+): Promise<Buffer> => {
+  return computePassphraseKey(passphrase, salt, passphraseKeyInfo, yubikey)
+}
+```
+
+The scheme — stretching, challenge computation, response mixing and its security model — is specified in the [passphrase key technical documentation](passphrase-key-technical-documentation.md) and shared with [blocks](block-technical-documentation.md). Archive specifics:
+
+- **Format unchanged**: Only the key derivation differs — YubiKey-protected archives are byte-compatible with the format above and record nothing about how their key was derived
+- **Restoration**: Requires enabling YubiKey mode again (`--yubikey` or the app switch) while holding a YubiKey provisioned with the same slot secret — a missing flag, wrong slot or wrong hardware fails exactly like a wrong passphrase — the archive itself cannot announce the mode
+- **Strength gate**: The passphrase strength requirement applies to the memorized passphrase — the second factor strengthens it rather than replacing it

@@ -37,23 +37,21 @@ On Superbacked OS, the `superbacked` command is preinstalled.
 
 ### Step 2 (optional): provision YubiKey
 
-> Heads-up: on most YubiKeys, slot 1 ships programmed with the factory Yubico OTP credential and overwriting it is permanent. Use `--slot 2` to preserve the factory credential (and derive passwords using `--slot 2`).
+> Heads-up: on most YubiKeys, slot 1 ships programmed with the factory Yubico OTP credential and overwriting it is permanent — which is why Superbacked defaults to slot 2, leaving the factory credential intact. Use `--slot 1` only if overwriting it is deliberate.
 
 > Heads-up: on macOS, opening the YubiKey may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring). On Linux, reading `/dev/hidraw*` requires Yubico udev rules or root.
 
-Deriving passwords with a YubiKey uses HMAC-SHA1 challenge-response, so the YubiKey needs to be provisioned once with a challenge-response secret. The following command generates a secret, provisions slot 1 and displays the secret so it can be backed up.
+Deriving passwords with a YubiKey uses HMAC-SHA1 challenge-response, so the YubiKey needs to be provisioned once with a challenge-response credential — the same operation Yubico Authenticator calls “Program a challenge-response credential”. The following command generates a secret, provisions slot 2 and displays the secret so it can be backed up (a replacement YubiKey provisioned with the same secret is equivalent).
 
 ```console
 $ superbacked provision-yubikey --generate
 Do you wish to continue (yes or no)? yes
 YubiKey detected (firmware 5.4.3)
-Slot 1 is currently programmed and overwriting it is permanent — a factory Yubico OTP credential cannot be restored.
-Do you wish to overwrite slot 1 (yes or no)? yes
 The generated secret will be displayed only once and cannot be recovered from the YubiKey.
 Please be ready to back it up using a Superbacked block or blockset secured with a passphrase that does not depend on this YubiKey.
 Do you wish to continue (yes or no)? yes
 Touch YubiKey…
-Slot 1 provisioned for HMAC-SHA1 challenge-response
+Slot 2 provisioned for HMAC-SHA1 challenge-response
 Secret: 8d66618b105e51cbf0412f8a29368e71d4bb27b5
 ```
 
@@ -64,6 +62,8 @@ By default, computing a response requires touching the YubiKey — every passwor
 > Heads-up: no fingerprint or checksum of the master passphrase is ever displayed or stored, so a mistyped passphrase silently derives a different password. Use `--confirm` when creating a password — the master passphrase is prompted twice and must match, catching typos before they become the password.
 
 > Heads-up: on Linux, copying to the clipboard under Wayland requires wl-clipboard (`sudo apt install wl-clipboard`) — preinstalled on Superbacked OS. On GNOME, a dock icon may blink when the password is copied or cleared — wl-copy briefly opens an invisible window to acquire the clipboard, as GNOME offers windowless processes no other way to set it.
+
+Derive a password from the master passphrase and a memorized label (the command refuses weak master passphrases, like everywhere else in Superbacked).
 
 ```console
 $ superbacked derive-password

@@ -4,8 +4,8 @@ import { suite, test } from "node:test"
 
 import {
   computeChallenge,
-  computeDerivedKey,
   computeMasterKey,
+  computeSingleFactorDerivedKey,
   deriveKey,
   noYubiKeySalt,
 } from "@/src/utilities/derivedKey"
@@ -125,10 +125,11 @@ suite("derivedKey", () => {
     )
   })
 
-  test("computes derived key equal to composed derivation", async () => {
-    // Without a slot, the fixed public salt stands in for the response
+  test("computes single-factor derived key equal to composed derivation", async () => {
+    // The single-factor variant substitutes the fixed public salt for the
+    // response
     assert.deepStrictEqual(
-      await computeDerivedKey("lip gift name net sixth", "github"),
+      await computeSingleFactorDerivedKey("lip gift name net sixth", "github"),
       deriveKey(
         await computeMasterKey("lip gift name net sixth", "github"),
         noYubiKeySalt

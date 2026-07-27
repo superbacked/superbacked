@@ -44,6 +44,8 @@ import {
 import { handle } from "@/src/utilities/handle"
 import { handleSync } from "@/src/utilities/handleSync"
 import { generateToken } from "@/src/utilities/totp"
+import { Slot } from "@/src/utilities/yubikey"
+import { broadcastYubiKeyTouchRequired } from "@/src/utilities/yubikeyTouch"
 
 type InsertType = "mnemonic" | "passphrase" | "scanQrCode"
 
@@ -63,6 +65,7 @@ export interface IpcEvents {
   windowEnteredFullScreen: EventListener<() => void>
   windowLeftFullScreen: EventListener<() => void>
   appLoading: EventListener<(visible: boolean, dialog?: TranslationKey) => void>
+  yubikeyTouchRequired: EventListener<() => void>
 }
 
 // Async handler map
@@ -88,8 +91,35 @@ const asyncHandlers = {
   chooseDirectory,
   createDetachedArchive,
   restoreDetachedArchive,
-  createStandaloneArchive,
-  restoreStandaloneArchive,
+  // Wrapped so the renderer-facing surface stays serializable — the touch
+  // notice is injected here (windows), while the command-line interface
+  // calls the handlers directly with its own (stderr)
+  createStandaloneArchive: (
+    filePaths: string[],
+    archivePath: string,
+    passphrase: string,
+    slot?: Slot
+  ) =>
+    createStandaloneArchive(
+      filePaths,
+      archivePath,
+      passphrase,
+      slot,
+      broadcastYubiKeyTouchRequired
+    ),
+  restoreStandaloneArchive: (
+    filePath: string,
+    outputDir: string,
+    passphrase: string,
+    slot?: Slot
+  ) =>
+    restoreStandaloneArchive(
+      filePath,
+      outputDir,
+      passphrase,
+      slot,
+      broadcastYubiKeyTouchRequired
+    ),
 } as const
 
 // Derive interface from handler map

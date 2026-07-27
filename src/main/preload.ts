@@ -32,6 +32,7 @@ const api: Api = {
     windowEnteredFullScreen: createEventListener("windowEnteredFullScreen"),
     windowLeftFullScreen: createEventListener("windowLeftFullScreen"),
     appLoading: createEventListener("appLoading"),
+    yubikeyTouchRequired: createEventListener("yubikeyTouchRequired"),
   } satisfies IpcEvents,
   invoke: {
     getDesktopCapturerSources: invoke("getDesktopCapturerSources"),

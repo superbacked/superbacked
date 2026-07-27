@@ -52,7 +52,8 @@
       "createStandaloneArchive": "Créer une archive autonome",
       "filename": "Nom de fichier",
       "typeFilename": "Taper le nom de fichier…",
-      "createArchive": "Créer"
+      "createArchive": "Créer",
+      "restoringRequiresYubiKey": "La restauration de l’archive nécessite une YubiKey provisionnée avec le même secret défi-réponse"
     },
     "createDisclaimerModal": {
       "standardDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
@@ -92,8 +93,8 @@
     },
     "featureDescriptionModal": {
       "learnMore": "En savoir plus",
-      "detachedArchiveDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les blocs et sont restaurées à l’aide de blocs et de phrases de passe fournissant une authentification multi-facteurs.",
-      "standaloneArchiveDescription": "Les archives autonomes chiffrent les fichiers et dossiers à l’aide de phrases de passe uniquement et sont restaurées sans blocs fournissant une authentification à facteur unique."
+      "detachedArchiveDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les blocs et sont restaurées à l’aide de blocs et de phrases de passe.",
+      "standaloneArchiveDescription": "Les archives autonomes chiffrent les fichiers et dossiers à l’aide de phrases de passe et optionnellement d’une YubiKey et sont restaurées sans blocs."
     },
     "fileManager": {
       "addToBlock": "Ajouter au bloc",
@@ -108,6 +109,7 @@
       "couldNotCreateStandaloneArchive": "Impossible de créer l’archive autonome",
       "couldNotRestoreStandaloneArchive": "Impossible de restaurer l’archive autonome",
       "wrongPassphraseOrCorruptedArchive": "Phrase de passe erronée ou archive corrompue",
+      "wrongPassphraseYubiKeyOrCorruptedArchive": "Phrase de passe erronée, mauvaise YubiKey ou mauvais slot, ou archive corrompue",
       "standaloneArchiveCreated": "Archive autonome créée",
       "standaloneArchiveRestored": "Archive autonome restaurée"
     },
@@ -147,7 +149,8 @@
     },
     "restoreStandaloneArchiveModal": {
       "restoreStandaloneArchive": "Restaurer une archive autonome",
-      "restore": "Restaurer"
+      "restore": "Restaurer",
+      "yubiKeyProtected": "Protégée avec une YubiKey"
     },
     "scanner": {
       "loading": "Chargement",
@@ -208,7 +211,17 @@
     "passphrase": "Phrase de passe",
     "passphraseRequired": "Phrase de passe requise",
     "passphraseTooWeak": "Phrase de passe trop faible",
-    "typePassphrase": "Taper la phrase de passe…"
+    "typePassphrase": "Taper la phrase de passe…",
+    "slot1": "Slot 1",
+    "slot2": "Slot 2",
+    "touchYubiKey": "Toucher la YubiKey…",
+    "protectWithYubiKey": "Protéger avec une YubiKey",
+    "protectedWithYubiKey": "Protégé avec une YubiKey",
+    "couldNotCommunicateWithYubiKey": "Impossible de communiquer avec la YubiKey",
+    "noYubiKeyDetected": "Aucune YubiKey détectée",
+    "multipleYubiKeysDetected": "Plusieurs YubiKey détectées — n’en garder qu’une seule connectée",
+    "yubiKeySlotNotProvisioned": "Slot YubiKey non provisionné pour le défi-réponse",
+    "yubiKeyTouchTimedOut": "YubiKey non touchée à temps"
   },
   "routes": {
     "create": {
@@ -220,6 +233,7 @@
       "dragAndDropFileToProvisionDetachedArchive": "Glisser-déposer un fichier pour provisionner une archive détachée",
       "passphraseUsed": "Phrase de passe utilisée",
       "passphraseTooSimilar": "Phrase de passe trop similaire",
+      "restoringRequiresYubiKey": "La restauration du secret nécessite une YubiKey provisionnée avec le même secret défi-réponse",
       "label": "Étiquette (facultatif)",
       "typeLabel": "Taper l’étiquette…",
       "labelTooLong": "Étiquette trop longue",
@@ -279,6 +293,7 @@
       "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
       "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
       "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
+      "couldNotUnlockBlockYubiKey": "Impossible de déverrouiller le bloc — phrase de passe, YubiKey ou slot erroné",
       "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
       "restoringDetachedArchive": "Restauration de l’archive détachée",
       "couldNotRestoreDetachedArchive": "Impossible de restaurer l’archive détachée",

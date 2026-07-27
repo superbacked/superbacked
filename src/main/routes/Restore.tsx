@@ -38,6 +38,8 @@ import {
   extract,
 } from "@/src/main/utilities/regexp"
 import { TranslationKey } from "@/src/shared/types/i18n"
+import { yubikeyErrorMessage } from "@/src/shared/utilities/yubikeyErrorMessage"
+import type { Slot } from "@/src/utilities/yubikey"
 
 const Container = styled.div`
   position: absolute;
@@ -179,6 +181,9 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const { t } = useTranslation()
   const scannerRef = useRef<ScannerRef>(null)
   const passphraseRef = useRef<string>("")
+  // Slot for YubiKey-protected blocks — persists alongside the passphrase
+  // so scanning further blocks reuses it without re-prompting
+  const yubikeySlotRef = useRef<Slot | undefined>(undefined)
   const codeRef = useRef<string>(null)
   const scannedCodesRef = useRef<Set<string>>(new Set())
   const [showPassphraseModal, setShowPassphraseModal] = useState(false)
@@ -246,11 +251,19 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     }
     const result = await window.api.invoke.restore(
       passphraseRef.current,
-      payload
+      payload,
+      yubikeySlotRef.current
     )
     setIsUnlocking(false)
     if (result.success === false) {
-      if (result.error.match(/shares did not combine to a valid secret/i)) {
+      if (result.yubikeyErrorCode !== undefined) {
+        scannerRef.current?.stop()
+        setShowScanNextBlockBadge(false)
+        setPassphraseError(yubikeyErrorMessage(result.yubikeyErrorCode))
+        setShowPassphraseModal(true)
+      } else if (
+        result.error.match(/shares did not combine to a valid secret/i)
+      ) {
         notifications.show({
           id: "scanOrDragAndDropNextBlock",
           message: t("routes.restore.scanOrDragAndDropNextBlock"),
@@ -266,7 +279,11 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       } else {
         scannerRef.current?.stop()
         setShowScanNextBlockBadge(false)
-        setPassphraseError("routes.restore.couldNotUnlockBlock")
+        setPassphraseError(
+          yubikeySlotRef.current === undefined
+            ? "routes.restore.couldNotUnlockBlock"
+            : "routes.restore.couldNotUnlockBlockYubiKey"
+        )
         setShowPassphraseModal(true)
       }
     } else if (result.success === true) {
@@ -545,6 +562,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           opened={showPassphraseModal}
           onClose={() => {
             passphraseRef.current = ""
+            yubikeySlotRef.current = undefined
             scannerRef.current?.clear()
             if (scannerRef.current?.isUsingCamera()) {
               scannerRef.current?.start()
@@ -555,8 +573,14 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           onReset={() => {
             setPassphraseError(null)
           }}
-          onSubmit={async (passphrase) => {
+          onSubmit={async (passphrase, options) => {
             passphraseRef.current = passphrase
+            yubikeySlotRef.current =
+              options.yubikey === true
+                ? options.slot === "1"
+                  ? 1
+                  : 2
+                : undefined
             setPassphraseError(null)
             setIsUnlocking(true)
             await compute()

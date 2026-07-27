@@ -52,7 +52,8 @@
       "createStandaloneArchive": "Create standalone archive",
       "filename": "Filename",
       "typeFilename": "Type filename…",
-      "createArchive": "Create"
+      "createArchive": "Create",
+      "restoringRequiresYubiKey": "Restoring archive requires YubiKey provisioned with the same challenge-response secret"
     },
     "createDisclaimerModal": {
       "standardDescription_one": "Block and passphrase required to restore secret",
@@ -92,8 +93,8 @@
     },
     "featureDescriptionModal": {
       "learnMore": "Learn more",
-      "detachedArchiveDescription": "Detached archives encrypt files and folders using master keys embedded in blocks and are restored using blocks and passphrases providing multi-factor authentication.",
-      "standaloneArchiveDescription": "Standalone archives encrypt files and folders using passphrases only and are restored without blocks providing single-factor authentication."
+      "detachedArchiveDescription": "Detached archives encrypt files and folders using master keys embedded in blocks and are restored using blocks and passphrases.",
+      "standaloneArchiveDescription": "Standalone archives encrypt files and folders using passphrases and optional YubiKeys and are restored without blocks."
     },
     "fileManager": {
       "addToBlock": "Add to block",
@@ -108,6 +109,7 @@
       "couldNotCreateStandaloneArchive": "Could not create standalone archive",
       "couldNotRestoreStandaloneArchive": "Could not restore standalone archive",
       "wrongPassphraseOrCorruptedArchive": "Wrong passphrase or corrupted archive",
+      "wrongPassphraseYubiKeyOrCorruptedArchive": "Wrong passphrase, wrong YubiKey or slot or corrupted archive",
       "standaloneArchiveCreated": "Standalone archive created",
       "standaloneArchiveRestored": "Standalone archive restored"
     },
@@ -147,7 +149,8 @@
     },
     "restoreStandaloneArchiveModal": {
       "restoreStandaloneArchive": "Restore standalone archive",
-      "restore": "Restore"
+      "restore": "Restore",
+      "yubiKeyProtected": "Protected with YubiKey"
     },
     "scanner": {
       "loading": "Loading",
@@ -208,7 +211,17 @@
     "passphrase": "Passphrase",
     "passphraseRequired": "Passphrase required",
     "passphraseTooWeak": "Passphrase too weak",
-    "typePassphrase": "Type passphrase…"
+    "typePassphrase": "Type passphrase…",
+    "slot1": "Slot 1",
+    "slot2": "Slot 2",
+    "touchYubiKey": "Touch YubiKey…",
+    "protectWithYubiKey": "Protect with YubiKey",
+    "protectedWithYubiKey": "Protected with YubiKey",
+    "couldNotCommunicateWithYubiKey": "Could not communicate with YubiKey",
+    "noYubiKeyDetected": "No YubiKey detected",
+    "multipleYubiKeysDetected": "Multiple YubiKeys detected — keep only one connected",
+    "yubiKeySlotNotProvisioned": "YubiKey slot not provisioned for challenge-response",
+    "yubiKeyTouchTimedOut": "YubiKey touch timed out"
   },
   "routes": {
     "create": {
@@ -220,6 +233,7 @@
       "dragAndDropFileToProvisionDetachedArchive": "Drag and drop file to provision detached archive",
       "passphraseUsed": "Passphrase used",
       "passphraseTooSimilar": "Passphrase too similar",
+      "restoringRequiresYubiKey": "Restoring secret requires YubiKey provisioned with the same challenge-response secret",
       "label": "Label (optional)",
       "typeLabel": "Type label…",
       "labelTooLong": "Label too long",
@@ -277,6 +291,7 @@
       "scanOrDragAndDropBlock": "Scan or drag and drop block",
       "scanOrDragAndDropNextBlock": "Scan or drag and drop next block",
       "couldNotUnlockBlock": "Could not unlock block",
+      "couldNotUnlockBlockYubiKey": "Could not unlock block — wrong passphrase, YubiKey or slot",
       "dragAndDropArchiveToRestore": "Drag and drop {{filename}} to restore archive",
       "restoringDetachedArchive": "Restoring detached archive",
       "couldNotRestoreDetachedArchive": "Could not restore detached archive",

@@ -11,6 +11,13 @@ export interface WindowGeometry {
   y: number
 }
 
+export interface YubiKeySettings {
+  // Last used HMAC-SHA1 challenge-response slot (never its secret),
+  // preselected wherever the app offers YubiKey protection — the
+  // command-line interface reads flags only
+  challengeResponseSlot?: "1" | "2"
+}
+
 export interface Store {
   scannerDevice?: string
   scannerSource?: string
@@ -21,6 +28,7 @@ export interface Store {
   paperSizes?: Record<string, PaperSize>
   // Print settings nested by printer, then by paper size
   printSettings?: Record<string, Record<string, PrintSetting>>
+  yubikey?: YubiKeySettings
 }
 
 const schema: Schema<Store> = {
@@ -59,6 +67,15 @@ const schema: Schema<Store> = {
           customScale: { type: "boolean" },
           scale: { type: "number" },
         },
+      },
+    },
+  },
+  yubikey: {
+    type: "object",
+    properties: {
+      challengeResponseSlot: {
+        type: "string",
+        enum: ["1", "2"],
       },
     },
   },

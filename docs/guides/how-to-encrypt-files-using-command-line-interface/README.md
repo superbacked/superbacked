@@ -48,6 +48,8 @@ Confirm passphrase:
 
 The archive path is printed on success. Use `--force` to overwrite an existing archive.
 
+Use `--yubikey` to require a provisioned YubiKey as a second factor (see [how to derive passwords](https://superbacked.com/guides/how-to-derive-passwords-using-command-line-interface) for provisioning) — the archive can then only be restored by enabling YubiKey mode again (`--yubikey`, or the app’s “Protected with YubiKey” switch) while holding a YubiKey provisioned with the same secret.
+
 ### Step 3: restore standalone archive
 
 Restore the standalone archive to an existing directory.
@@ -60,4 +62,4 @@ Passphrase:
 /Users/sun/restored
 ```
 
-The destination path is printed on success. Standalone archives can also be restored by dragging and dropping them in the app.
+The destination path is printed on success. Standalone archives can also be restored by dragging and dropping them in the app — for archives created with `--yubikey`, enable the “Protected with YubiKey” switch and hold the YubiKey.

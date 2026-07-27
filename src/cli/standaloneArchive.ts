@@ -1,25 +1,53 @@
 import { existsSync, statSync } from "fs"
 import { dirname, resolve } from "path"
 
+import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import readPassphrase from "@/src/cli/readPassphrase"
 import {
   createStandaloneArchive,
   restoreStandaloneArchive,
 } from "@/src/handlers/standaloneArchive"
-import zxcvbn from "@/src/shared/utilities/zxcvbn"
+import zxcvbn, {
+  minimumPassphraseStrength,
+} from "@/src/shared/utilities/zxcvbn"
+import { Slot, YubiKeyError } from "@/src/utilities/yubikey"
 
 // Command actions (the CLI surface is declared in index.ts). Both call the
 // same handlers — and bundled argon2 binary — as the app, so archives are
-// byte-identical to app-created ones and restore by drag and drop.
+// byte-identical to app-created ones and restore by drag and drop. The
+// touch notice prints to stderr here, where the app broadcasts to windows.
 
-// Matches the app’s standalone archive modal (CreateStandaloneArchiveModal):
-// passphrases must score a zxcvbn strength of at least 50 (≈ 50 years to
-// crack offline).
-const minimumPassphraseStrength = 50
+const parseSlot = (options: {
+  slot: "1" | "2"
+  yubikey?: boolean
+}): Slot | undefined => {
+  return options.yubikey === true ? (options.slot === "1" ? 1 : 2) : undefined
+}
+
+const printTouchNotice = (): void => {
+  console.error(touchYubiKeyText)
+}
+
+// YubiKey failures travel through handler results as codes — rethrown as
+// YubiKeyError so errorText resolves them like directly-thrown ones
+const resultError = (result: {
+  error: string
+  yubikeyErrorCode?: YubiKeyError["code"]
+}): Error => {
+  if (result.yubikeyErrorCode === undefined) {
+    return new Error(result.error)
+  }
+  return new YubiKeyError(result.yubikeyErrorCode, result.error)
+}
 
 export const createStandaloneArchiveAction = async (
   paths: string[],
-  options: { output: string; force?: boolean }
+  options: {
+    force?: boolean
+    output: string
+    slot: "1" | "2"
+    yubikey?: boolean
+  }
 ): Promise<void> => {
   try {
     const filePaths = paths.map((path) => resolve(path))
@@ -46,32 +74,34 @@ export const createStandaloneArchiveAction = async (
     if (passphrase === "") {
       throw new Error("Passphrase required")
     }
+    // The memorized passphrase stays the knowledge factor even with
+    // --yubikey (a leaked slot secret leaves its strength as the only
+    // remaining wall — see the derived key security model), so the
+    // strength gate applies regardless
     if (zxcvbn(passphrase).strength < minimumPassphraseStrength) {
       throw new Error("Passphrase too weak")
     }
     const result = await createStandaloneArchive(
       filePaths,
       archivePath,
-      passphrase
+      passphrase,
+      parseSlot(options),
+      printTouchNotice
     )
     if (result.success === false) {
-      throw new Error(result.error)
+      throw resultError(result)
     }
     process.stdout.write(`${archivePath}\n`)
     process.exit(0)
   } catch (error) {
-    console.error(
-      error instanceof Error
-        ? error.message
-        : "Could not create standalone archive"
-    )
+    console.error(errorText(error, "Could not create standalone archive"))
     process.exit(1)
   }
 }
 
 export const restoreStandaloneArchiveAction = async (
   archive: string,
-  options: { output: string }
+  options: { output: string; slot: "1" | "2"; yubikey?: boolean }
 ): Promise<void> => {
   try {
     const archivePath = resolve(archive)
@@ -95,19 +125,17 @@ export const restoreStandaloneArchiveAction = async (
     const result = await restoreStandaloneArchive(
       archivePath,
       destination,
-      passphrase
+      passphrase,
+      parseSlot(options),
+      printTouchNotice
     )
     if (result.success === false) {
-      throw new Error(result.error)
+      throw resultError(result)
     }
     process.stdout.write(`${destination}\n`)
     process.exit(0)
   } catch (error) {
-    console.error(
-      error instanceof Error
-        ? error.message
-        : "Could not restore standalone archive"
-    )
+    console.error(errorText(error, "Could not restore standalone archive"))
     process.exit(1)
   }
 }
