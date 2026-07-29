@@ -4,6 +4,11 @@ import { URL } from "url"
 import { Option as CommanderOption, program as cli } from "commander"
 
 import {
+  deriveBitcoinWalletAction,
+  parseAddresses,
+  parseDerivationPath,
+} from "@/src/cli/derivedBitcoinWallet"
+import {
   derivePasswordAction,
   parseClear,
   parseLength,
@@ -104,6 +109,69 @@ cli
   )
   .option("--no-touch", "compute responses without touch (weaker)")
   .action(provisionYubikeyAction)
+
+cli
+  .command("derive-bitcoin-wallet")
+  .description(
+    "derive Bitcoin wallet from master passphrase and YubiKey, printing its extended public key"
+  )
+  .argument(
+    "[label]",
+    "memorized label (for example savings), prompted when omitted"
+  )
+  .option(
+    "--addresses <count>",
+    "print first receive addresses (m/84' paths only)",
+    parseAddresses
+  )
+  .option(
+    "--clear <seconds>",
+    "seconds before revealed secret is cleared from clipboard",
+    parseClear,
+    10
+  )
+  .option(
+    "--confirm",
+    "confirm master passphrase (recommended when creating wallets)"
+  )
+  .addOption(
+    new CommanderOption("--derivation-path <path>", "BIP32 derivation path")
+      .argParser(parseDerivationPath)
+      .default("m/84'/0'/0'")
+  )
+  .addOption(
+    new CommanderOption(
+      "--derivation-version <version>",
+      "derivation scheme version"
+    )
+      .choices(["1"])
+      .default("1")
+  )
+  .option("--no-yubikey", "derive without YubiKey (single factor, weaker)")
+  .option(
+    "-p, --print",
+    "print revealed secret instead of copying it to clipboard"
+  )
+  .addOption(
+    new CommanderOption(
+      "--reveal <secret>",
+      "copy mnemonic or extended private key to clipboard"
+    ).choices(["mnemonic", "zprv"])
+  )
+  .addOption(
+    new CommanderOption(
+      "-s, --slot <slot>",
+      "HMAC-SHA1 challenge-response slot"
+    )
+      .choices(["1", "2"])
+      .default("2")
+  )
+  .addOption(
+    new CommanderOption("--words <words>", "mnemonic length in words")
+      .choices(["12", "24"])
+      .default("24")
+  )
+  .action(deriveBitcoinWalletAction)
 
 cli
   .command("derive-password")

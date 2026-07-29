@@ -1,7 +1,8 @@
 import { createHmac, randomBytes, timingSafeEqual } from "crypto"
 
+import confirmYes from "@/src/cli/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
-import { promptHidden, promptVisible } from "@/src/cli/readPassphrase"
+import { promptHidden } from "@/src/cli/readPassphrase"
 import { bold, red } from "@/src/cli/style"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
@@ -47,24 +48,6 @@ const readSecret = async (): Promise<Buffer> => {
     throw new Error("Secrets do not match")
   }
   return parseSecret(secret)
-}
-
-// Consent is a typed confirmation read from the controlling terminal — never
-// assumed when there is none. The full word is required (the SSH host key
-// convention), as a reflexive y must not overwrite a slot
-const confirmYes = async (
-  query: string,
-  nonInteractiveError: string
-): Promise<void> => {
-  let answer: string
-  try {
-    answer = await promptVisible(query)
-  } catch {
-    throw new Error(nonInteractiveError)
-  }
-  if (answer.trim() !== "yes") {
-    throw new Error("Cancelled")
-  }
 }
 
 export const provisionYubikeyAction = async (options: {
