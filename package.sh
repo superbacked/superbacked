@@ -74,6 +74,8 @@ if [ "${build_app}" = true ]; then
 
   npm run lint
 
+  npm test
+
   npm run build
 
   for file in dist/*.AppImage; do

@@ -26,6 +26,7 @@ const api: Api = {
   events: {
     systemLocaleChange: createEventListener("systemLocaleChange"),
     menuAbout: createEventListener("menuAbout"),
+    menuSettings: createEventListener("menuSettings"),
     menuTriggeredRoute: createEventListener("menuTriggeredRoute"),
     menuInsert: createEventListener("menuInsert"),
     menuShowSelectionAsQrCode: createEventListener("menuShowSelectionAsQrCode"),

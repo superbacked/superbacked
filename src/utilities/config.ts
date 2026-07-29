@@ -29,6 +29,11 @@ export interface Store {
   // Print settings nested by printer, then by paper size
   printSettings?: Record<string, Record<string, PrintSetting>>
   yubikey?: YubiKeySettings
+  // Role name resolved to the newest matching profile row (see
+  // src/shared/utilities/kdfProfiles.ts) — gates creation cost and
+  // whether restoration trials the paranoid row; the command-line
+  // interface reads the --paranoid flag only
+  kdfProfile?: "paranoid" | "standard"
 }
 
 const schema: Schema<Store> = {
@@ -78,6 +83,10 @@ const schema: Schema<Store> = {
         enum: ["1", "2"],
       },
     },
+  },
+  kdfProfile: {
+    type: "string",
+    enum: ["paranoid", "standard"],
   },
 }
 

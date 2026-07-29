@@ -86,26 +86,45 @@ suite("derivedPassword", () => {
   })
 
   test("computes derived password without YubiKey", async () => {
+    // Rendered from the v2 standard profile master key — the permanent
+    // cost of scheme v1 (see tests/derivedKey.test.ts)
     const password = await computeDerivedPassword(
       "lip gift name net sixth",
       "github",
-      { length: 16 }
+      { length: 16, paranoid: false }
     )
-    assert.strictEqual(password, "#xJsP\\!6nGZ<t9f.")
+    assert.strictEqual(password, "X,B#H5.h\\p8w9Vf;")
   })
 
   test("computes derived password equal to composed derivation", async () => {
     assert.strictEqual(
       await computeDerivedPassword("lip gift name net sixth", "github", {
         length: 16,
+        paranoid: false,
       }),
       derivePassword(
         await computeSingleFactorDerivedKey(
           "lip gift name net sixth",
-          "github"
+          "github",
+          false
         ),
         16
       )
+    )
+  })
+
+  test("computes distinct passwords under Paranoid mode", async () => {
+    // The mode is a domain input — forgetting it derives a different
+    // password, which is why the command-line interface echoes it
+    assert.notStrictEqual(
+      await computeDerivedPassword("lip gift name net sixth", "github", {
+        length: 16,
+        paranoid: true,
+      }),
+      await computeDerivedPassword("lip gift name net sixth", "github", {
+        length: 16,
+        paranoid: false,
+      })
     )
   })
 
@@ -113,7 +132,7 @@ suite("derivedPassword", () => {
     // An archive passphrase is the hex of the derived key itself — the
     // rendered password must not be a substring or trivial projection of it
     const key = deriveKey(
-      await computeMasterKey("lip gift name net sixth", "github"),
+      await computeMasterKey("lip gift name net sixth", "github", false),
       noYubiKeySalt
     )
     const password = derivePassword(key, 16)

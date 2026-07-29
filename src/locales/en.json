@@ -2,6 +2,7 @@
   "menu": {
     "superbacked": {
       "about": "About",
+      "settings": "Settings…",
       "hide": "Hide",
       "quit": "Quit"
     },
@@ -44,6 +45,11 @@
       "version": "Version",
       "copyright": "Copyright",
       "allRightsReserved": "All rights reserved"
+    },
+    "settings": {
+      "settings": "Settings",
+      "paranoidMode": "Enable paranoid mode",
+      "paranoidModeDescription": "Blocks and standalone archives are created with hardened key derivation (10× standard cost). Restoring them requires paranoid mode and at least 1 GiB of free memory, and takes several seconds per attempt."
     },
     "addSecretDisclaimerModal": {
       "description": "Additional secrets use separate passphrases and are concealed in unused block space."
@@ -119,6 +125,7 @@
       "couldNotHandleDroppedFiles": "Could not handle dropped files",
       "couldNotCreateStandaloneArchive": "Could not create standalone archive",
       "couldNotRestoreStandaloneArchive": "Could not restore standalone archive",
+      "archiveRequiresNewerVersion": "Archive requires a newer version of Superbacked",
       "wrongPassphraseOrCorruptedArchive": "Wrong passphrase or corrupted archive",
       "wrongPassphraseYubiKeyOrCorruptedArchive": "Wrong passphrase, wrong YubiKey or slot or corrupted archive",
       "standaloneArchiveCreated": "Standalone archive created",
@@ -301,10 +308,12 @@
       "scanOrDragAndDropBlock": "Scan or drag and drop block",
       "scanOrDragAndDropNextBlock": "Scan or drag and drop next block",
       "couldNotUnlockBlock": "Could not unlock block",
+      "blockRequiresNewerVersion": "Block requires a newer version of Superbacked",
       "couldNotUnlockBlockYubiKey": "Could not unlock block — wrong passphrase, YubiKey or slot",
       "dragAndDropArchiveToRestore": "Drag and drop {{filename}} to restore archive",
       "restoringDetachedArchive": "Restoring detached archive",
       "couldNotRestoreDetachedArchive": "Could not restore detached archive",
+      "detachedArchiveRequiresNewerVersion": "Detached archive requires a newer version of Superbacked",
       "detachedArchiveRestored": "Detached archive restored",
       "showSecret": "Show secret"
     }

@@ -1,13 +1,17 @@
 import assert from "assert"
-import { createHmac } from "crypto"
+import { createHmac, hkdfSync } from "crypto"
 import { suite, test } from "node:test"
 
+import { legacyKdfProfile } from "@/src/shared/utilities/kdfProfiles"
 import {
-  computeArchiveKey,
+  computeArchiveKeys,
   passphraseKeyInfo,
+  probeKeyInfo,
+  standaloneArchiveVersion,
 } from "@/src/utilities/core/standaloneArchive"
 import {
   computeChallenge,
+  computeProbeKey,
   computeResponseBoundKey,
 } from "@/src/utilities/crypto/passphraseKey"
 
@@ -34,8 +38,40 @@ suite("standaloneArchive", () => {
   test("computes archive key from passphrase", async () => {
     // Pins the pre-existing Argon2d derivation — existing archives must
     // decrypt forever
-    const key = await computeArchiveKey("lip gift name net sixth", salt)
-    assert.deepStrictEqual(key, stretchedKey)
+    const keys = await computeArchiveKeys(
+      "lip gift name net sixth",
+      salt,
+      legacyKdfProfile
+    )
+    assert.deepStrictEqual(keys.key, stretchedKey)
+  })
+
+  test("freezes archive version", () => {
+    assert.strictEqual(standaloneArchiveVersion, 2)
+  })
+
+  test("freezes probe key info and construction", async () => {
+    assert.strictEqual(probeKeyInfo, "version-probe-v1")
+    // Raw crypto recomputation pins the single-factor probe key — the
+    // HKDF sibling of the raw stretched key, never the key itself
+    const keys = await computeArchiveKeys(
+      "lip gift name net sixth",
+      salt,
+      legacyKdfProfile
+    )
+    assert.deepStrictEqual(
+      keys.probeKey,
+      Buffer.from(
+        hkdfSync(
+          "sha256",
+          stretchedKey,
+          Buffer.alloc(0),
+          Buffer.from(probeKeyInfo, "utf8"),
+          32
+        )
+      )
+    )
+    assert.notDeepStrictEqual(keys.probeKey, keys.key)
   })
 
   test("computes archive key from simulated YubiKey response", () => {
@@ -55,6 +91,18 @@ suite("standaloneArchive", () => {
         passphraseKeyInfo
       ).toString("hex"),
       "d5491bd883d6db88f81bb9c6bcd4d14993f74ad1b062c50bd95803bbf13c6a48"
+    )
+    // The two-factor probe key sits at the same factor depth — deriving
+    // it requires the response, and it never collides with the
+    // encryption key
+    const probeKey = computeProbeKey(stretchedKey, probeKeyInfo, response)
+    assert.notDeepStrictEqual(
+      probeKey,
+      computeProbeKey(stretchedKey, probeKeyInfo)
+    )
+    assert.notDeepStrictEqual(
+      probeKey,
+      computeResponseBoundKey(stretchedKey, response, passphraseKeyInfo)
     )
   })
 })

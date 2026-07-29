@@ -1,4 +1,4 @@
-import { InvalidArgumentError } from "commander"
+import { InvalidArgumentError, program as cli } from "commander"
 
 import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import readPassphrase, {
@@ -6,6 +6,10 @@ import readPassphrase, {
   waitForEnter,
 } from "@/src/cli/readPassphrase"
 import { red } from "@/src/cli/style"
+import {
+  v2ParanoidKdfProfile,
+  v2StandardKdfProfile,
+} from "@/src/shared/utilities/kdfProfiles"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
@@ -15,6 +19,7 @@ import {
   readText,
   spawnClearGuard,
 } from "@/src/utilities/clipboard"
+import { derivedSchemeVersion } from "@/src/utilities/crypto/derivedKey"
 import {
   computeDerivedPassword,
   maximumPasswordLength,
@@ -55,6 +60,11 @@ export const derivePasswordAction = async (
   options: {
     clear: number
     confirm?: boolean
+    // Selects the derivation scheme — derivation is stateless, so the
+    // version is part of what the user knows and is echoed at every
+    // derivation. Only scheme v1 exists; the option gates and documents
+    // rather than branches (see src/utilities/crypto/derivedKey.ts)
+    derivationVersion: string
     length: number
     print?: boolean
     slot: "1" | "2"
@@ -84,11 +94,21 @@ export const derivePasswordAction = async (
     if (masterPassphrase === "") {
       throw new Error("Passphrase required")
     }
-    // Matches the app’s passphrase gates, enforced since scheme v1 so
-    // every passphrase that ever derived a password passed it — derivation
-    // is deterministic and stateless, so the threshold can never rise
-    // without stranding established passphrases
-    if (zxcvbn(masterPassphrase).strength < minimumPassphraseStrength) {
+    // Derivation is stateless, so the mode is part of what the user must
+    // know — deriving without it silently produces different passwords,
+    // which is why every derivation echoes it below
+    const paranoid = cli.opts().paranoid === true
+    // Matches the app’s passphrase gates, priced at the profile the
+    // derivation stretches under and enforced since scheme v1 so every
+    // passphrase that ever derived a password passed it — derivation is
+    // deterministic and stateless, so the threshold can never effectively
+    // rise without stranding established passphrases
+    if (
+      zxcvbn(
+        masterPassphrase,
+        paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile
+      ).strength < minimumPassphraseStrength
+    ) {
       throw new Error("Master passphrase too weak")
     }
     const password = await computeDerivedPassword(
@@ -96,6 +116,7 @@ export const derivePasswordAction = async (
       resolvedLabel,
       {
         length: options.length,
+        paranoid: paranoid,
         yubikey:
           slot === undefined
             ? undefined
@@ -106,6 +127,13 @@ export const derivePasswordAction = async (
                 slot: slot,
               },
       }
+    )
+    // A wrong version or mode at a future derivation would silently
+    // produce a different password, so every derivation states both
+    console.error(
+      `Derived with scheme v${derivedSchemeVersion}${
+        paranoid === true ? " (paranoid)" : ""
+      }`
     )
     if (options.print === true) {
       process.stdout.write(`${password}\n`)

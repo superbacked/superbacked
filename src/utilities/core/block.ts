@@ -2,8 +2,17 @@ import { hkdfSync } from "crypto"
 
 import type { ErrorCorrection } from "qr"
 
-import { getDataLength } from "@/src/utilities/crypto/fixedSizeEncryption"
+import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import {
+  Message,
+  getDataLength,
+} from "@/src/utilities/crypto/fixedSizeEncryption"
 import { computePassphraseKey } from "@/src/utilities/crypto/passphraseKey"
+import {
+  decodeSchemeHeader,
+  encodeSchemeHeader,
+  schemeHeaderLength,
+} from "@/src/utilities/crypto/schemeHeader"
 import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 
 // Block density constants — QR code capacity bounds blockSize at the error
@@ -29,6 +38,41 @@ export const deriveBlocksetKey = (key: Buffer): Buffer => {
 // block salt, not from this constant.
 export const passphraseKeyInfo = "kdf-key-v1"
 
+// Version written into new blocks (see
+// src/utilities/crypto/schemeHeader.ts) — carried inside each secret’s
+// encrypted message, so a successful decryption also names the version.
+// Legacy v1 blocks are the iv-and-headers payload shape (see
+// src/handlers/create.ts) and carry no header
+export const blockVersion = 2
+
+/**
+ * Prepend the scheme header to a secret’s message before encryption
+ * @param message plain secret (string) or blockset share (Buffer)
+ * @returns versioned message plaintext
+ */
+export const encodeBlockMessage = (message: Message): Buffer => {
+  return Buffer.concat([encodeSchemeHeader(blockVersion), Buffer.from(message)])
+}
+
+/**
+ * Split a decrypted message into its scheme header and secret
+ * @param plaintext decrypted message plaintext
+ * @returns declared version and message, or `null` when the plaintext
+ * carries no header
+ */
+export const decodeBlockMessage = (
+  plaintext: Buffer
+): null | { message: Buffer; version: number } => {
+  const version = decodeSchemeHeader(plaintext.subarray(0, schemeHeaderLength))
+  if (version === null) {
+    return null
+  }
+  return {
+    message: plaintext.subarray(schemeHeaderLength),
+    version: version,
+  }
+}
+
 /**
  * Compute the key derivation function key from the memorized passphrase
  * and the block salt — the stretched key alone, or, with YubiKey
@@ -40,15 +84,24 @@ export const passphraseKeyInfo = "kdf-key-v1"
  * a wrong passphrase
  * @param passphrase memorized passphrase
  * @param salt 16-byte block salt
+ * @param profile frozen Argon2d cost profile — the block’s at restore,
+ * discovered by probing (see src/shared/utilities/kdfProfiles.ts)
  * @param yubikey optional YubiKey challenge-response request
  * @returns 32-byte key derivation function key
  */
 export const computeBlockKdfKey = async (
   passphrase: string,
   salt: Buffer,
+  profile: KdfProfile,
   yubikey?: ChallengeResponseOptions
 ): Promise<Buffer> => {
-  return computePassphraseKey(passphrase, salt, passphraseKeyInfo, yubikey)
+  return computePassphraseKey(
+    passphrase,
+    salt,
+    profile,
+    passphraseKeyInfo,
+    yubikey
+  )
 }
 
 // Extra space a message occupies when secret is split into blockset shares —
@@ -76,7 +129,8 @@ export const getBlockUsage = (
   let usedSpace = 0
   for (const message of messages) {
     if (message !== "") {
-      usedSpace += getDataLength(message) + overhead
+      // Every message carries the scheme header (see encodeBlockMessage)
+      usedSpace += getDataLength(message) + schemeHeaderLength + overhead
     }
   }
   return {

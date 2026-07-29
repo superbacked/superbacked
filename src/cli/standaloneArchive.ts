@@ -1,6 +1,8 @@
 import { existsSync, statSync } from "fs"
 import { dirname, resolve } from "path"
 
+import { program as cli } from "commander"
+
 import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import readPassphrase from "@/src/cli/readPassphrase"
 import { red } from "@/src/cli/style"
@@ -8,6 +10,10 @@ import {
   createStandaloneArchive,
   restoreStandaloneArchive,
 } from "@/src/handlers/standaloneArchive"
+import {
+  v2ParanoidKdfProfile,
+  v2StandardKdfProfile,
+} from "@/src/shared/utilities/kdfProfiles"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
@@ -78,14 +84,22 @@ export const createStandaloneArchiveAction = async (
     // The memorized passphrase stays the knowledge factor even with
     // --yubikey (a leaked slot secret leaves its strength as the only
     // remaining wall — see the derived key security model), so the
-    // strength gate applies regardless
-    if (zxcvbn(passphrase).strength < minimumPassphraseStrength) {
+    // strength gate applies regardless — priced at the profile the
+    // archive will stretch under
+    const paranoid = cli.opts().paranoid === true
+    if (
+      zxcvbn(
+        passphrase,
+        paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile
+      ).strength < minimumPassphraseStrength
+    ) {
       throw new Error("Passphrase too weak")
     }
     const result = await createStandaloneArchive(
       filePaths,
       archivePath,
       passphrase,
+      paranoid,
       parseSlot(options),
       printTouchNotice
     )
@@ -127,6 +141,7 @@ export const restoreStandaloneArchiveAction = async (
       archivePath,
       destination,
       passphrase,
+      cli.opts().paranoid === true,
       parseSlot(options),
       printTouchNotice
     )

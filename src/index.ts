@@ -41,6 +41,14 @@ cli.version(app.getVersion(), "--version", "output version")
 
 cli.helpOption("-h, --help", "display help")
 
+// Root so the mode reads as app-wide, like the Settings toggle — creation
+// and derivation stretch at the paranoid profile and restoration trials
+// it (see src/shared/utilities/kdfProfiles.ts)
+cli.option(
+  "--paranoid",
+  "harden key derivation (requires at least 1 GiB of memory and --paranoid to restore or derive again)"
+)
+
 cli
   .command("create-standalone-archive")
   .description("create standalone archive")
@@ -113,6 +121,14 @@ cli
   .option(
     "--confirm",
     "confirm master passphrase (recommended when creating passwords)"
+  )
+  .addOption(
+    new CommanderOption(
+      "--derivation-version <version>",
+      "derivation scheme version"
+    )
+      .choices(["1"])
+      .default("1")
   )
   .option("-l, --length <length>", "password length", parseLength, 16)
   .option("--no-yubikey", "derive without YubiKey (single factor, weaker)")

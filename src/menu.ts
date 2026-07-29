@@ -63,6 +63,18 @@ export const setMenu = () => {
             }
           },
         },
+        { type: "separator" },
+        // About, separator, Settings — the macOS app menu convention
+        {
+          label: t("menu.superbacked.settings"),
+          accelerator: "CommandOrControl+,",
+          async click() {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              sendEvent(focusedWindow, "menuSettings")
+            }
+          },
+        },
         { type: "separator", visible: runningMacOS },
         {
           visible: runningMacOS,

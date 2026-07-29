@@ -206,10 +206,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     useState<null | string>(null)
   const [isRestoringDetachedArchive, setIsRestoringDetachedArchive] =
     useState(false)
-  const [error, setError] =
-    useState<null | ErrorState<"routes.restore.couldNotRestoreDetachedArchive">>(
-      null
-    )
+  const [error, setError] = useState<null | ErrorState<
+    | "routes.restore.couldNotRestoreDetachedArchive"
+    | "routes.restore.detachedArchiveRequiresNewerVersion"
+  >>(null)
   useEffect(() => {
     return () => {
       window.api.invoke.restoreReset()
@@ -280,9 +280,11 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
         scannerRef.current?.stop()
         setShowScanNextBlockBadge(false)
         setPassphraseError(
-          yubikeySlotRef.current === undefined
-            ? "routes.restore.couldNotUnlockBlock"
-            : "routes.restore.couldNotUnlockBlockYubiKey"
+          result.unsupportedVersion === true
+            ? "routes.restore.blockRequiresNewerVersion"
+            : yubikeySlotRef.current === undefined
+              ? "routes.restore.couldNotUnlockBlock"
+              : "routes.restore.couldNotUnlockBlockYubiKey"
         )
         setShowPassphraseModal(true)
       }
@@ -459,7 +461,9 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                         if (result.success === false && result.error) {
                           setError({
                             message:
-                              "routes.restore.couldNotRestoreDetachedArchive",
+                              result.unsupportedVersion === true
+                                ? "routes.restore.detachedArchiveRequiresNewerVersion"
+                                : "routes.restore.couldNotRestoreDetachedArchive",
                           })
                         } else if (result.success) {
                           showNotificationWithButton({

@@ -4,6 +4,7 @@ import { suite, test } from "node:test"
 
 import {
   computeChallenge,
+  computeProbeKey,
   computeResponseBoundKey,
 } from "@/src/utilities/crypto/passphraseKey"
 
@@ -78,6 +79,51 @@ suite("passphraseKey", () => {
     assert.notDeepStrictEqual(
       computeResponseBoundKey(stretchedKey, response, "info"),
       computeResponseBoundKey(stretchedKey, response, "other-info")
+    )
+  })
+
+  test("verifies single-factor probe key construction independently", () => {
+    // Raw crypto recomputation pins the frozen construction — HKDF with an
+    // empty salt, never the raw stretched key, so the probe stays
+    // domain-separated from the single-factor consumer key
+    assert.deepStrictEqual(
+      computeProbeKey(stretchedKey, "probe-info"),
+      Buffer.from(
+        hkdfSync(
+          "sha256",
+          stretchedKey,
+          Buffer.alloc(0),
+          Buffer.from("probe-info", "utf8"),
+          32
+        )
+      )
+    )
+  })
+
+  test("computes two-factor probe key at response depth", () => {
+    // With a response, the probe matches the response-bound construction
+    // under the probe info — a correctness check that requires the
+    // hardware, like the payload key it probes for
+    const response = Buffer.alloc(20, 4)
+    assert.deepStrictEqual(
+      computeProbeKey(stretchedKey, "probe-info", response),
+      computeResponseBoundKey(stretchedKey, response, "probe-info")
+    )
+    assert.notDeepStrictEqual(
+      computeProbeKey(stretchedKey, "probe-info", response),
+      computeProbeKey(stretchedKey, "probe-info")
+    )
+  })
+
+  test("computes probe key distinct from consumer keys", () => {
+    const response = Buffer.alloc(20, 4)
+    assert.notDeepStrictEqual(
+      computeProbeKey(stretchedKey, "probe-info"),
+      stretchedKey
+    )
+    assert.notDeepStrictEqual(
+      computeProbeKey(stretchedKey, "probe-info", response),
+      computeResponseBoundKey(stretchedKey, response, "info")
     )
   })
 })

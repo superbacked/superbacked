@@ -2,12 +2,17 @@ import { BrowserWindow, ipcMain } from "electron"
 
 import { ErrorCorrection } from "qr"
 
+import {
+  v2ParanoidKdfProfile,
+  v2StandardKdfProfile,
+} from "@/src/shared/utilities/kdfProfiles"
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 import {
   blockSize,
   computeBlockKdfKey,
   deriveBlockKey,
   deriveBlocksetKey,
+  encodeBlockMessage,
   qrCodeEcc,
 } from "@/src/utilities/core/block"
 import {
@@ -224,10 +229,13 @@ export const renderCarrierPdf = async (
 // (computeBlockKdfKey — sequentially, so each YubiKey-protected secret
 // costs its own challenge-response round-trip and touch — then the backup
 // type’s HKDF domain key so restoration classifies messages by which key
-// authenticates), then encrypts all secrets into a single fixed-size block
-const encryptBlock = async (
+// authenticates), then encrypts all secrets into a single fixed-size
+// block. Exported for the pipeline tests — the create handler wraps it
+// with QR rendering, which requires a live window
+export const encryptBlock = async (
   secrets: (Secret | ShareSecret)[],
   blockset: boolean,
+  paranoid: boolean,
   label?: string
 ): Promise<Payload> => {
   const salt = generateSalt()
@@ -238,13 +246,14 @@ const encryptBlock = async (
     const kdfKey = await computeBlockKdfKey(
       secret.passphrase,
       salt,
+      paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile,
       slot === undefined
         ? undefined
         : { onTouchRequired: broadcastYubiKeyTouchRequired, slot: slot }
     )
     blockSecrets.push({
       key: blockset ? deriveBlocksetKey(kdfKey) : deriveBlockKey(kdfKey),
-      message: secret.message,
+      message: encodeBlockMessage(secret.message),
     })
   }
   return {
@@ -256,9 +265,34 @@ const encryptBlock = async (
   }
 }
 
+// Validation shared by the handler and the pipeline tests — the handler
+// itself renders blocks in a live window, so the guards live where tests
+// can reach them
+export const validateCreate = (
+  secrets: Secret[],
+  shamir?: boolean,
+  numberOfShares?: number,
+  threshold?: number
+): void => {
+  if (
+    shamir === true &&
+    (typeof numberOfShares !== "number" ||
+      typeof threshold !== "number" ||
+      threshold > numberOfShares)
+  ) {
+    throw new Error("Invalid number of shares or threshold")
+  }
+  // YubiKey protection is offered for standard blocks only — the app
+  // never sends a slot for blocksets
+  if (shamir === true && secrets.some((secret) => secret.slot !== undefined)) {
+    throw new Error("YubiKey protection is not supported for blocksets")
+  }
+}
+
 export default async function create(
   secrets: Secret[],
   label: string | undefined,
+  paranoid: boolean,
   shamir: true,
   numberOfShares: number,
   threshold: number
@@ -266,32 +300,19 @@ export default async function create(
 export default async function create(
   secrets: Secret[],
   label?: string,
+  paranoid?: boolean,
   shamir?: false
 ): Promise<Result>
 export default async function create(
   secrets: Secret[],
   label?: string,
+  paranoid = false,
   shamir?: boolean,
   numberOfShares?: number,
   threshold?: number
 ): Promise<Result> {
   try {
-    if (
-      shamir === true &&
-      (typeof numberOfShares !== "number" ||
-        typeof threshold !== "number" ||
-        threshold > numberOfShares)
-    ) {
-      throw new Error("Invalid number of shares or threshold")
-    }
-    // YubiKey protection is offered for standard blocks only — the app
-    // never sends a slot for blocksets
-    if (
-      shamir === true &&
-      secrets.some((secret) => secret.slot !== undefined)
-    ) {
-      throw new Error("YubiKey protection is not supported for blocksets")
-    }
+    validateCreate(secrets, shamir, numberOfShares, threshold)
     const qrs = []
     if (shamir === true) {
       const shamirBlockSecrets: ShamirBlockSecret = {}
@@ -314,12 +335,17 @@ export default async function create(
         }
       }
       for (const shamirBlockSecret of Object.values(shamirBlockSecrets)) {
-        const payload = await encryptBlock(shamirBlockSecret, true, label)
+        const payload = await encryptBlock(
+          shamirBlockSecret,
+          true,
+          paranoid,
+          label
+        )
         const qr = await compute(payload, label)
         qrs.push(qr)
       }
     } else {
-      const payload = await encryptBlock(secrets, false, label)
+      const payload = await encryptBlock(secrets, false, paranoid, label)
       const qr = await compute(payload, label)
       qrs.push(qr)
     }

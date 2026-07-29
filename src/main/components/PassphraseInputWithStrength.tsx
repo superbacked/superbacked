@@ -8,9 +8,16 @@ import {
   TextareaProps,
 } from "@mantine/core"
 import { IconArrowsRandom } from "@tabler/icons-react"
-import { FunctionComponent, useLayoutEffect, useRef, useState } from "react"
+import {
+  FunctionComponent,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react"
 import { Trans, useTranslation } from "react-i18next"
 
+import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
 import zxcvbn, {
   ZxcvbnTranslationKey,
   minimumPassphraseStrength,
@@ -64,6 +71,10 @@ const attackTimeScenariosKey = (
 
 interface PassphraseInputWithStrengthProps extends TextareaProps {
   generatePassphrase: () => Promise<string>
+  // Profile the passphrase will stretch under — scales the displayed
+  // attack times and the gate together (see
+  // src/shared/utilities/zxcvbn.ts). Omitted, the creation default applies
+  kdfProfile?: KdfProfile
   onPopoverChange?: (opened: boolean) => void
 }
 
@@ -78,19 +89,31 @@ export const PassphraseInputWithStrength: FunctionComponent<
   const [time, setTime] = useState<null | Time>(null)
   const color =
     strength && strength >= minimumPassphraseStrength ? "pink" : "red"
-  const { generatePassphrase, onChange, onPopoverChange, ...otherProps } = props
-  const updatePopover = (passphrase: string) => {
-    const result = zxcvbn(passphrase)
-    setStrength(result.strength)
-    setTime({
-      slowKey: result.slowKey,
-      slowBase: result.slowBase,
-      entropy: result.entropy,
-      entropyDeterministic: result.entropyDeterministic,
-      fastKey: result.fastKey,
-      fastBase: result.fastBase,
-    })
-  }
+  const {
+    generatePassphrase,
+    kdfProfile,
+    onChange,
+    onPopoverChange,
+    ...otherProps
+  } = props
+  // Keyed on the profile so toggling Paranoid mode reprices a passphrase
+  // that has not changed — the effect below re-runs when the identity
+  // changes
+  const updatePopover = useCallback(
+    (passphrase: string) => {
+      const result = zxcvbn(passphrase, kdfProfile)
+      setStrength(result.strength)
+      setTime({
+        slowKey: result.slowKey,
+        slowBase: result.slowBase,
+        entropy: result.entropy,
+        entropyDeterministic: result.entropyDeterministic,
+        fastKey: result.fastKey,
+        fastBase: result.fastBase,
+      })
+    },
+    [kdfProfile]
+  )
   useLayoutEffect(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
@@ -98,7 +121,7 @@ export const PassphraseInputWithStrength: FunctionComponent<
     timeoutRef.current = setTimeout(() => {
       updatePopover(otherProps.value as string)
     }, 0)
-  }, [otherProps.value])
+  }, [otherProps.value, updatePopover])
   return (
     <Popover
       onOpen={() => onPopoverChange?.(true)}

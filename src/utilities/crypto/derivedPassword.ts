@@ -126,7 +126,9 @@ export const derivePassword = (derivedKey: Buffer, length: number): string => {
  * on YubiKey when challenge-response is requested (single factor otherwise)
  * @param masterPassphrase memorized master passphrase
  * @param label memorized label (for example github or proton)
- * @param options derivation options
+ * @param options derivation options — paranoid stretches at the paranoid
+ * profile, and being stateless is part of what the user must know (see
+ * src/utilities/crypto/derivedKey.ts)
  * @returns derived password
  */
 export const computeDerivedPassword = async (
@@ -134,15 +136,21 @@ export const computeDerivedPassword = async (
   label: string,
   options: {
     length: number
+    paranoid: boolean
     yubikey?: ChallengeResponseOptions
   }
 ): Promise<string> => {
   const derivedKey =
     options.yubikey === undefined
-      ? await computeSingleFactorDerivedKey(masterPassphrase, label)
+      ? await computeSingleFactorDerivedKey(
+          masterPassphrase,
+          label,
+          options.paranoid
+        )
       : await computeDerivedKey(
           masterPassphrase,
           label,
+          options.paranoid,
           options.yubikey.slot,
           options.yubikey.onTouchRequired
         )

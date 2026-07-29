@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next"
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
 import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
 import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
+import { useActiveKdfProfile } from "@/src/main/utilities/useActiveKdfProfile"
 import { useDefaultYubiKeySlot } from "@/src/main/utilities/useDefaultYubiKeySlot"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import zxcvbn, {
@@ -47,6 +48,9 @@ const CreateStandaloneArchiveModal: FunctionComponent<
 > = (props) => {
   const { i18n, t } = useTranslation()
   const { defaultSlot, setDefaultSlot } = useDefaultYubiKeySlot()
+  // Scales the estimator display and the passphrase gate to the profile
+  // new archives will stretch under (see src/shared/utilities/zxcvbn.ts)
+  const activeKdfProfile = useActiveKdfProfile()
   const form = useForm({
     initialValues: initialValues(defaultSlot),
     validate: {
@@ -57,7 +61,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
         return null
       },
       passphrase: (value) => {
-        const result = zxcvbn(value)
+        const result = zxcvbn(value, activeKdfProfile)
         if (!value || value === "") {
           return t("common.passphraseRequired")
         } else if (result.strength < minimumPassphraseStrength) {
@@ -112,8 +116,10 @@ const CreateStandaloneArchiveModal: FunctionComponent<
     if (Object.keys(form.errors).length > 0) {
       form.validate()
     }
+    // The profile is a dependency too — toggling Paranoid mode can clear
+    // (or restore) a passphrase-too-weak error without an edit
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [i18n.language])
+  }, [i18n.language, activeKdfProfile])
   return (
     <Modal
       centered
@@ -148,6 +154,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
           <Space h="lg" />
           <PassphraseInputWithStrength
             key="standaloneArchivePassphrase"
+            kdfProfile={activeKdfProfile}
             label={t("common.passphrase")}
             placeholder={t("common.typePassphrase")}
             required

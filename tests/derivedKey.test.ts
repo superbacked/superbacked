@@ -111,17 +111,39 @@ suite("derivedKey", () => {
   })
 
   test("computes master key", async () => {
-    const key = await computeMasterKey("lip gift name net sixth", "github")
+    // Argon2d at the v2 standard profile (64 MiB, 80 passes, 4 lanes) —
+    // the permanent cost of scheme v1, frozen before any derived password
+    // shipped
+    const key = await computeMasterKey(
+      "lip gift name net sixth",
+      "github",
+      false
+    )
     assert.strictEqual(
       key.toString("hex"),
-      "9fc8b8eee59073e46d2eb2e802e931708f7c21516ad0faaeebbfad69204cbec8"
+      "8183259ed6aff4aae03536e7de042a9bc16ff24f67c1c4d9447f175246463241"
+    )
+  })
+
+  test("computes paranoid master key", async () => {
+    // Argon2d at the v2 paranoid profile (1 GiB, 50 passes, 4 lanes) —
+    // statelessness makes the mode part of what the user must know, so
+    // both costs are frozen vectors
+    const key = await computeMasterKey(
+      "lip gift name net sixth",
+      "github",
+      true
+    )
+    assert.strictEqual(
+      key.toString("hex"),
+      "c90eeab569a2d9faacdc71484de1b4e677d5dd9ad7476b2b5c99a6fb627f27f9"
     )
   })
 
   test("computes distinct master keys for distinct labels", async () => {
     assert.notDeepStrictEqual(
-      await computeMasterKey("lip gift name net sixth", "github"),
-      await computeMasterKey("lip gift name net sixth", "proton")
+      await computeMasterKey("lip gift name net sixth", "github", false),
+      await computeMasterKey("lip gift name net sixth", "proton", false)
     )
   })
 
@@ -129,9 +151,13 @@ suite("derivedKey", () => {
     // The single-factor variant substitutes the fixed public salt for the
     // response
     assert.deepStrictEqual(
-      await computeSingleFactorDerivedKey("lip gift name net sixth", "github"),
+      await computeSingleFactorDerivedKey(
+        "lip gift name net sixth",
+        "github",
+        false
+      ),
       deriveKey(
-        await computeMasterKey("lip gift name net sixth", "github"),
+        await computeMasterKey("lip gift name net sixth", "github", false),
         noYubiKeySalt
       )
     )

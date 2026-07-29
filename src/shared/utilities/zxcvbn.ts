@@ -5,6 +5,11 @@ import {
 } from "@zxcvbn-ts/language-common"
 import { dictionary as languageEnDictionary } from "@zxcvbn-ts/language-en"
 
+import {
+  KdfProfile,
+  legacyKdfProfile,
+  v2StandardKdfProfile,
+} from "@/src/shared/utilities/kdfProfiles"
 import effLargeWordlist from "@/wordlists/eff_large_wordlist.json"
 import effShortWordlist1 from "@/wordlists/eff_short_wordlist_1.json"
 import effShortWordlist20 from "@/wordlists/eff_short_wordlist_2_0.json"
@@ -17,13 +22,17 @@ const month = day * 31
 const year = month * 12
 
 // New passphrases must score a strength of at least 50 — fifty years
-// against a million-dollar standing attack budget — wherever Superbacked
-// accepts one, app modals and command-line interface alike, with no
-// override, while restoration is never gated (see
-// docs/passphrase-strength-technical-documentation.md). The threshold and
-// the calibration defining it can never effectively rise: derived
-// passwords re-derive deterministically, so a raised bar would strand
-// established master passphrases.
+// against a million-dollar standing attack budget, priced at the KDF
+// profile the passphrase will actually stretch under — wherever
+// Superbacked accepts one, app modals and command-line interface alike,
+// with no override, while restoration is never gated (see
+// docs/passphrase-strength-technical-documentation.md). The requirement
+// is the attack time, not an entropy quota: a stronger profile buys real
+// years, so it admits proportionally weaker passphrases — a deliberate,
+// user-owned trade under Paranoid mode. The threshold and the anchor
+// calibration can never effectively rise (profiles only lower the
+// entropy bar): derived passwords re-derive deterministically, so a
+// raised bar would strand established master passphrases.
 export const minimumPassphraseStrength = 50
 
 export type ZxcvbnTranslationKey =
@@ -161,17 +170,33 @@ const wordlistEntropy = (
   return null
 }
 
-// Budget calibration — attack times and strength price the actual KDF at
-// standing attack budgets. Argon2d at 64 MiB and 10 passes is
-// memory-bandwidth-bound at roughly 2–3 × 10³ guesses per second per
-// ~$30k accelerator (about a gigabyte of memory traffic per guess against
-// ~3 TB/s), so a billion dollars of current-generation hardware sustains
-// about 10⁸ guesses per second (calibrated July 2026) — and rate scales
-// linearly with capital, so a million dollars sustains 10⁵. The gate is
-// defined through this calibration, so the constants are frozen:
-// recalibrating would move the gate and strand established passphrases
+// Budget calibration — attack times price the KDF at standing attack
+// budgets. The anchor is the legacy profile: Argon2d at 64 MiB and 10
+// passes is memory-bandwidth-bound at roughly 2–3 × 10³ guesses per
+// second per ~$30k accelerator (about a gigabyte of memory traffic per
+// guess against ~3 TB/s), so a billion dollars of current-generation
+// hardware sustains about 10⁸ guesses per second (calibrated July 2026)
+// — and rate scales linearly with capital, so a million dollars sustains
+// 10⁵. The gate is defined through this calibration, so the anchor
+// constants are frozen: recalibrating would move the gate and strand
+// established passphrases. Both displayed times and strength scale off
+// the anchor by the active profile (see profileRate), so the meter, the
+// displayed years and the gate always speak the same number
 const billionDollarGuessesPerSecond = 1e8
 const millionDollarGuessesPerSecond = 1e5
+
+// Attack rate for a profile — memory traffic per guess is memory × passes
+// in the bandwidth-bound model, so the rate is the anchor scaled by the
+// traffic ratio. Times and strength alike follow the profile the
+// passphrase will actually stretch under — the gate holds the attack
+// time constant across profiles, not the entropy
+const profileRate = (guessesPerSecond: number, profile: KdfProfile): number => {
+  return (
+    (guessesPerSecond *
+      (legacyKdfProfile.memoryKiB * legacyKdfProfile.passes)) /
+    (profile.memoryKiB * profile.passes)
+  )
+}
 // Compute per dollar doubles roughly every three years…
 const annualComputeGrowth = 2 ** (1 / 3)
 // …but not forever: total improvement is capped at 1000× (about thirty
@@ -205,19 +230,24 @@ const budgetSeconds = (guesses: number, guessesPerSecond: number): number => {
 }
 
 // One point of strength is one estimated year of attack at a
-// million-dollar standing budget, clamped to 1–100 — the meter, the left
-// displayed figure and the gate speak the same units, and the years are
-// rounded to the same integer the display prints so the two can never
-// disagree at the gate boundary. The gate is fed the cheapest known
+// million-dollar standing budget priced at the active profile, clamped
+// to 1–100 — the meter, the displayed slow figure and the gate speak the
+// same units and round to the same integer, so they can never disagree.
+// The gate is fed the cheapest known
 // attack — the smaller of zxcvbn’s estimate and the wordlist guess count
 // (exact or within one edit): an attacker knows the shipped wordlists
 // (five short-wordlist words cost at most 1296⁵ however rare the words
 // are in English), while zxcvbn catches adversarial structure (repeated
 // words) the wordlist bound assumes away
-export const computeStrength = (guesses: number) => {
+export const computeStrength = (guesses: number, profile: KdfProfile) => {
   return Math.min(
     Math.max(
-      Math.round(budgetSeconds(guesses, millionDollarGuessesPerSecond) / year),
+      Math.round(
+        budgetSeconds(
+          guesses,
+          profileRate(millionDollarGuessesPerSecond, profile)
+        ) / year
+      ),
       1
     ),
     100
@@ -272,7 +302,15 @@ const computeBudgetDisplay = (
 // as user inputs so passphrases built on it price accordingly
 const userInputs = ["superbacked"]
 
-export default (passphrase: string): Result => {
+// The profile defaults to the creation default (see
+// src/shared/utilities/kdfProfiles.ts) — every surface that accepts a new
+// passphrase stretches at it. Callers creating under another profile
+// (Paranoid mode) pass their row, scaling the displayed times and the
+// gate together — the requirement is fifty years, however they are bought
+export default (
+  passphrase: string,
+  profile: KdfProfile = v2StandardKdfProfile
+): Result => {
   const options = {
     graphs: languageCommonAdjacencyGraphs,
     dictionary: {
@@ -289,8 +327,14 @@ export default (passphrase: string): Result => {
   // of the two attacks (see computeStrength)
   const guesses =
     wordlistMatch === null ? result.guesses : 2 ** wordlistMatch.bits
-  const slow = computeBudgetDisplay(guesses, millionDollarGuessesPerSecond)
-  const fast = computeBudgetDisplay(guesses, billionDollarGuessesPerSecond)
+  const slow = computeBudgetDisplay(
+    guesses,
+    profileRate(millionDollarGuessesPerSecond, profile)
+  )
+  const fast = computeBudgetDisplay(
+    guesses,
+    profileRate(billionDollarGuessesPerSecond, profile)
+  )
   return {
     ...result,
     entropy: Math.round(entropy),
@@ -299,6 +343,6 @@ export default (passphrase: string): Result => {
     fastKey: fast.key,
     slowBase: slow.base,
     slowKey: slow.key,
-    strength: computeStrength(Math.min(result.guesses, guesses)),
+    strength: computeStrength(Math.min(result.guesses, guesses), profile),
   }
 }

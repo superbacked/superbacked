@@ -51,6 +51,7 @@ type FileManagerErrorMessage =
       | "components.fileManager.couldNotHandleDroppedFiles"
       | "components.fileManager.couldNotCreateStandaloneArchive"
       | "components.fileManager.couldNotRestoreStandaloneArchive"
+      | "components.fileManager.archiveRequiresNewerVersion"
       | "components.fileManager.wrongPassphraseOrCorruptedArchive"
       | "components.fileManager.wrongPassphraseYubiKeyOrCorruptedArchive"
     >
@@ -231,11 +232,13 @@ const FileManager = forwardRef<FileManagerRef, FileManagerProps>(
           throw new FileManagerError(
             result.yubikeyErrorCode !== undefined
               ? yubikeyErrorMessage(result.yubikeyErrorCode)
-              : result.authenticationFailed
-                ? slot === undefined
-                  ? "components.fileManager.wrongPassphraseOrCorruptedArchive"
-                  : "components.fileManager.wrongPassphraseYubiKeyOrCorruptedArchive"
-                : "components.fileManager.couldNotRestoreStandaloneArchive"
+              : result.unsupportedVersion === true
+                ? "components.fileManager.archiveRequiresNewerVersion"
+                : result.authenticationFailed
+                  ? slot === undefined
+                    ? "components.fileManager.wrongPassphraseOrCorruptedArchive"
+                    : "components.fileManager.wrongPassphraseYubiKeyOrCorruptedArchive"
+                  : "components.fileManager.couldNotRestoreStandaloneArchive"
           )
         }
         return {

@@ -22,6 +22,7 @@ import MenuEvents, {
   MenuEventsContextConsumer,
 } from "@/src/main/components/MenuEvents"
 import SelectionAsQrCode from "@/src/main/components/SelectionAsQrCode"
+import Settings from "@/src/main/components/Settings"
 import TitleBar from "@/src/main/components/TitleBar"
 import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
@@ -491,6 +492,7 @@ const App = () => {
                     </Routes>
                     <SelectionAsQrCode />
                     <About />
+                    <Settings />
                   </Fragment>
                 )
               }}

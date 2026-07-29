@@ -2,11 +2,15 @@ import assert from "assert"
 import { createHmac } from "crypto"
 import { suite, test } from "node:test"
 
+import { legacyKdfProfile } from "@/src/shared/utilities/kdfProfiles"
 import {
   blockSize,
+  blockVersion,
   computeBlockKdfKey,
+  decodeBlockMessage,
   deriveBlockKey,
   deriveBlocksetKey,
+  encodeBlockMessage,
   getBlockUsage,
   passphraseKeyInfo,
   qrCodeEcc,
@@ -16,6 +20,7 @@ import {
   computeChallenge,
   computeResponseBoundKey,
 } from "@/src/utilities/crypto/passphraseKey"
+import { schemeHeaderLength } from "@/src/utilities/crypto/schemeHeader"
 
 // Overhead a blockset adds to each message — the per-share overhead added by
 // secret-share-split
@@ -69,7 +74,8 @@ suite("block", () => {
     // tests/standaloneArchive.test.ts)
     const key = await computeBlockKdfKey(
       "lip gift name net sixth",
-      Buffer.alloc(16, 2)
+      Buffer.alloc(16, 2),
+      legacyKdfProfile
     )
     assert.strictEqual(
       key.toString("hex"),
@@ -108,7 +114,7 @@ suite("block", () => {
     assert.strictEqual(blockUsage.blockSize, blockSize)
     assert.strictEqual(
       blockUsage.remainingSpace,
-      blockSize - getDataLength("yo")
+      blockSize - getDataLength("yo") - schemeHeaderLength
     )
   })
 
@@ -116,7 +122,10 @@ suite("block", () => {
     const blockUsage = getBlockUsage(["yo", "", "yoo"], false)
     assert.strictEqual(
       blockUsage.remainingSpace,
-      blockSize - getDataLength("yo") - getDataLength("yoo")
+      blockSize -
+        getDataLength("yo") -
+        getDataLength("yoo") -
+        schemeHeaderLength * 2
     )
   })
 
@@ -127,7 +136,7 @@ suite("block", () => {
       blockSize -
         getDataLength("yo") -
         getDataLength("yoo") -
-        shamirOverhead * 2
+        (shamirOverhead + schemeHeaderLength) * 2
     )
   })
 
@@ -135,12 +144,40 @@ suite("block", () => {
     const blockUsage = getBlockUsage(["yo", ""], true)
     assert.strictEqual(
       blockUsage.remainingSpace,
-      blockSize - getDataLength("yo") - shamirOverhead
+      blockSize - getDataLength("yo") - shamirOverhead - schemeHeaderLength
     )
   })
 
   test("goes negative when secrets no longer fit", () => {
     const blockUsage = getBlockUsage(["a".repeat(blockSize)], false)
-    assert.strictEqual(blockUsage.remainingSpace, -30)
+    assert.strictEqual(blockUsage.remainingSpace, -30 - schemeHeaderLength)
+  })
+
+  test("round-trips block message", () => {
+    const plaintext = encodeBlockMessage("secret message")
+    const decoded = decodeBlockMessage(plaintext)
+    assert.notStrictEqual(decoded, null)
+    assert.strictEqual(decoded?.version, blockVersion)
+    assert.strictEqual(decoded?.message.toString(), "secret message")
+  })
+
+  test("round-trips binary block message", () => {
+    // Blockset shares are binary messages
+    const share = Buffer.from([0, 1, 2, 255, 254, 253])
+    const decoded = decodeBlockMessage(encodeBlockMessage(share))
+    assert.deepStrictEqual(decoded?.message, share)
+  })
+
+  test("returns null on headerless plaintext", () => {
+    // Pre-release payload-shape blocks carry no header and must fail like
+    // a wrong passphrase, never decrypt to garbage
+    assert.strictEqual(decodeBlockMessage(Buffer.from("secret message")), null)
+    assert.strictEqual(decodeBlockMessage(Buffer.alloc(0)), null)
+  })
+
+  test("preserves future versions for the unsupported-version path", () => {
+    const plaintext = encodeBlockMessage("secret message")
+    plaintext.writeUInt8(3, 4)
+    assert.strictEqual(decodeBlockMessage(plaintext)?.version, 3)
   })
 })

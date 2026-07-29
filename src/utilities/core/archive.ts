@@ -66,11 +66,10 @@ export const createDecryptionStream = (
 /**
  * Create tar stream from file paths
  * @param filePaths array of file paths to archive
- * @param gzip whether to gzip compress
  * @returns tar stream
  */
-export const createTarStream = (filePaths: string[], gzip: boolean) => {
-  return create({ gzip, portable: true }, filePaths)
+export const createTarStream = (filePaths: string[]) => {
+  return create({ portable: true }, filePaths)
 }
 
 /**

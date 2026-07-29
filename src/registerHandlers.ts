@@ -2,7 +2,7 @@ import { app } from "electron"
 
 import { deriveKey, generateMasterKey } from "@/src/handlers/archive"
 import chooseDirectory from "@/src/handlers/chooseDirectory"
-import create, { renderCarrierPdf } from "@/src/handlers/create"
+import create, { Secret, renderCarrierPdf } from "@/src/handlers/create"
 import {
   createDetachedArchive,
   restoreDetachedArchive,
@@ -59,6 +59,7 @@ type EventListener<TCallback extends (...args: any[]) => void> = (
 export interface IpcEvents {
   systemLocaleChange: EventListener<(locale: Locale) => void>
   menuAbout: EventListener<() => void>
+  menuSettings: EventListener<() => void>
   menuTriggeredRoute: EventListener<(to: string) => void>
   menuInsert: EventListener<(type: InsertType) => void>
   menuShowSelectionAsQrCode: EventListener<() => void>
@@ -77,7 +78,6 @@ const asyncHandlers = {
   disableModes,
   toggleMaximize,
   generatePassphrase,
-  create,
   renderCarrierPdf,
   duplicate,
   getDefaultPrinter,
@@ -86,14 +86,38 @@ const asyncHandlers = {
   getSupportedPaperSizes,
   print,
   save,
-  restore,
   restoreReset,
   chooseDirectory,
   createDetachedArchive,
   restoreDetachedArchive,
   // Wrapped so the renderer-facing surface stays serializable — the touch
   // notice is injected here (windows), while the command-line interface
-  // calls the handlers directly with its own (stderr)
+  // calls the handlers directly with its own (stderr). Paranoid mode is
+  // injected here too, read from config at call time so the Settings
+  // toggle applies immediately — the renderer never chooses a KDF cost
+  create: (
+    secrets: Secret[],
+    label?: string,
+    shamir?: boolean,
+    numberOfShares?: number,
+    threshold?: number
+  ) =>
+    shamir === true && numberOfShares !== undefined && threshold !== undefined
+      ? create(
+          secrets,
+          label,
+          getConfig("kdfProfile") === "paranoid",
+          true,
+          numberOfShares,
+          threshold
+        )
+      : create(secrets, label, getConfig("kdfProfile") === "paranoid", false),
+  restore: (
+    passphrase: string,
+    payload: Parameters<typeof restore>[1],
+    slot?: Slot
+  ) =>
+    restore(passphrase, payload, getConfig("kdfProfile") === "paranoid", slot),
   createStandaloneArchive: (
     filePaths: string[],
     archivePath: string,
@@ -104,6 +128,7 @@ const asyncHandlers = {
       filePaths,
       archivePath,
       passphrase,
+      getConfig("kdfProfile") === "paranoid",
       slot,
       broadcastYubiKeyTouchRequired
     ),
@@ -117,6 +142,7 @@ const asyncHandlers = {
       filePath,
       outputDir,
       passphrase,
+      getConfig("kdfProfile") === "paranoid",
       slot,
       broadcastYubiKeyTouchRequired
     ),

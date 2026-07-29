@@ -3,6 +3,7 @@ import { unlink } from "fs/promises"
 import {
   Manifest,
   RestoredFilePath,
+  UnsupportedVersionError,
   createDetachedArchive as createDetachedArchiveUtility,
   restoreDetachedArchive as restoreDetachedArchiveUtility,
 } from "@/src/utilities/core/detachedArchive"
@@ -56,7 +57,14 @@ export async function createDetachedArchive(
 }
 
 export type RestoreDetachedArchiveResult =
-  | { error: string; success: false }
+  | {
+      error: string
+      success: false
+      // Present when the probe revealed a version this build does not
+      // implement — the keys are correct, so the error must never read
+      // as corruption
+      unsupportedVersion?: boolean
+    }
   | { files: RestoredFilePath[]; success: true }
 
 /**
@@ -95,6 +103,8 @@ export async function restoreDetachedArchive(
       error:
         error instanceof Error ? error.message : "Could not restore archive",
       success: false,
+      unsupportedVersion:
+        error instanceof UnsupportedVersionError ? true : undefined,
     }
   }
 }

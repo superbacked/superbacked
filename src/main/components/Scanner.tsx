@@ -730,7 +730,11 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         imageDataUrl !== null ? (
           <Image src={imageDataUrl} />
         ) : null}
-        {props.badge && error === null ? (
+        {/* The badge retires once a code is captured, like the other
+          discovery hints — a capture always sets imageDataUrl (camera and
+          dropzone alike) and clear() resets it, so the next-block badge
+          reappears when a blockset restart clears the scanner */}
+        {props.badge && error === null && imageDataUrl === null ? (
           <ActionBadge color="dark">{props.badge}</ActionBadge>
         ) : null}
         <TopRightContainer>

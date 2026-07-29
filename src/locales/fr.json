@@ -2,6 +2,7 @@
   "menu": {
     "superbacked": {
       "about": "À propos de",
+      "settings": "Réglages…",
       "hide": "Masquer",
       "quit": "Quitter"
     },
@@ -44,6 +45,11 @@
       "version": "Version",
       "copyright": "Copyright",
       "allRightsReserved": "Tous droits réservés"
+    },
+    "settings": {
+      "settings": "Réglages",
+      "paranoidMode": "Activer le mode paranoïaque",
+      "paranoidModeDescription": "Les blocs et archives autonomes sont créés avec une dérivation de clé renforcée (coût 10× supérieur au standard). Leur restauration nécessite le mode paranoïaque et au moins 1 Go de mémoire libre, et prend plusieurs secondes par tentative."
     },
     "addSecretDisclaimerModal": {
       "description": "Les secrets additionnels utilisent des phrases de passe distinctes et sont dissimulés dans l’espace de bloc inutilisé."
@@ -119,6 +125,7 @@
       "couldNotHandleDroppedFiles": "Impossible de traiter les fichiers déposés",
       "couldNotCreateStandaloneArchive": "Impossible de créer l’archive autonome",
       "couldNotRestoreStandaloneArchive": "Impossible de restaurer l’archive autonome",
+      "archiveRequiresNewerVersion": "L’archive nécessite une version plus récente de Superbacked",
       "wrongPassphraseOrCorruptedArchive": "Phrase de passe erronée ou archive corrompue",
       "wrongPassphraseYubiKeyOrCorruptedArchive": "Phrase de passe erronée, mauvaise YubiKey ou mauvais slot, ou archive corrompue",
       "standaloneArchiveCreated": "Archive autonome créée",
@@ -303,10 +310,12 @@
       "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
       "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
       "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
+      "blockRequiresNewerVersion": "Le bloc nécessite une version plus récente de Superbacked",
       "couldNotUnlockBlockYubiKey": "Impossible de déverrouiller le bloc — phrase de passe, YubiKey ou slot erroné",
       "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
       "restoringDetachedArchive": "Restauration de l’archive détachée",
       "couldNotRestoreDetachedArchive": "Impossible de restaurer l’archive détachée",
+      "detachedArchiveRequiresNewerVersion": "L’archive détachée nécessite une version plus récente de Superbacked",
       "detachedArchiveRestored": "Archive détachée restaurée",
       "showSecret": "Afficher le secret"
     }

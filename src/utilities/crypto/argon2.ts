@@ -1,6 +1,7 @@
 import { app } from "electron"
 import { join, resolve } from "path"
 
+import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
 import spawn from "@/src/utilities/spawn"
 
 const env = process.env.ENV ?? "development"
@@ -19,11 +20,27 @@ const binDir =
 // Every key derivation uses Argon2d, maximizing offline brute-force
 // resistance — a side-channel adversary on a derivation host is assumed
 // capable of direct capture, which no variant survives (see
-// docs/derived-key-technical-documentation.md)
-export default async (passphrase: string, salt: string): Promise<Buffer> => {
+// docs/derived-key-technical-documentation.md). Cost has no default —
+// every caller names a frozen profile, making its compatibility contract
+// visible at the call site (see src/shared/utilities/kdfProfiles.ts)
+export default async (
+  passphrase: string,
+  salt: string,
+  profile: KdfProfile
+): Promise<Buffer> => {
   const { stdout } = await spawn(
     `${binDir}/argon2`,
-    [salt, "-d", "-p", "2", "-k", "65536", "-r", "-t", "10"],
+    [
+      salt,
+      "-d",
+      "-p",
+      String(profile.parallelism),
+      "-k",
+      String(profile.memoryKiB),
+      "-r",
+      "-t",
+      String(profile.passes),
+    ],
     { input: passphrase }
   )
   return Buffer.from(stdout, "hex")

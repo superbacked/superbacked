@@ -1,5 +1,6 @@
 import { createHmac } from "crypto"
 
+import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
 import argon2 from "@/src/utilities/crypto/argon2"
 import { hkdf } from "@/src/utilities/crypto/primitives"
 import {
@@ -32,13 +33,16 @@ const challengeContext = "superbacked-passphrase-key-v1-challenge"
  * single-factor arm, and the input keying material of the two-factor arm
  * @param passphrase memorized passphrase
  * @param salt salt stored in the block or standalone archive
+ * @param profile frozen Argon2d cost profile — the artifact’s at restore,
+ * discovered by probing (see src/shared/utilities/kdfProfiles.ts)
  * @returns 32-byte stretched key
  */
 export const computeStretchedKey = async (
   passphrase: string,
-  salt: Buffer
+  salt: Buffer,
+  profile: KdfProfile
 ): Promise<Buffer> => {
-  return argon2(passphrase, salt.toString("base64"))
+  return argon2(passphrase, salt.toString("base64"), profile)
 }
 
 /**
@@ -78,11 +82,39 @@ export const computeResponseBoundKey = (
 }
 
 /**
+ * Derive the version-probe key — the sibling of the consumer key that
+ * encrypts a scheme header (see src/utilities/crypto/schemeHeader.ts).
+ * The single-factor consumer key is the raw stretched key, so the probe
+ * always passes through HKDF to stay domain-separated from it — and the
+ * two-factor probe mixes the response, keeping the probe at the same
+ * factor depth as the payload: a correctness check reachable without the
+ * hardware would collapse the second factor into a passphrase oracle
+ * @param stretchedKey 32-byte stretched key
+ * @param info frozen consumer probe HKDF info
+ * @param response optional 20-byte YubiKey HMAC-SHA1 response
+ * @returns 32-byte probe key
+ */
+export const computeProbeKey = (
+  stretchedKey: Buffer,
+  info: string,
+  response?: Buffer
+): Buffer => {
+  return hkdf(
+    stretchedKey,
+    response ?? Buffer.alloc(0),
+    Buffer.from(info, "utf8"),
+    32
+  )
+}
+
+/**
  * Compute a consumer key from a memorized passphrase and stored salt —
  * the stretched key alone, or, when YubiKey challenge-response is
  * requested, the stretched key mixed with the response
  * @param passphrase memorized passphrase
  * @param salt salt stored in the block or standalone archive
+ * @param profile frozen Argon2d cost profile — the artifact’s at restore,
+ * discovered by probing (see src/shared/utilities/kdfProfiles.ts)
  * @param info frozen consumer HKDF info
  * @param yubikey optional YubiKey challenge-response request
  * @returns 32-byte key
@@ -90,10 +122,11 @@ export const computeResponseBoundKey = (
 export const computePassphraseKey = async (
   passphrase: string,
   salt: Buffer,
+  profile: KdfProfile,
   info: string,
   yubikey?: ChallengeResponseOptions
 ): Promise<Buffer> => {
-  const stretchedKey = await computeStretchedKey(passphrase, salt)
+  const stretchedKey = await computeStretchedKey(passphrase, salt, profile)
   if (yubikey === undefined) {
     return stretchedKey
   }

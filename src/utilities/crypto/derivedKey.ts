@@ -1,5 +1,9 @@
 import { createHash, createHmac } from "crypto"
 
+import {
+  v2ParanoidKdfProfile,
+  v2StandardKdfProfile,
+} from "@/src/shared/utilities/kdfProfiles"
 import argon2 from "@/src/utilities/crypto/argon2"
 import { hkdf } from "@/src/utilities/crypto/primitives"
 import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
@@ -25,6 +29,14 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
 // The whole scheme is frozen: changing any constant, cost parameter or
 // construction below silently changes every derived key — and with it
 // every derived password (see src/utilities/crypto/derivedPassword.ts).
+// Derivation is stateless, so unlike stored artifacts no probe can ever
+// discover a version or cost — the scheme version and Paranoid mode are
+// part of what the user knows (surfaced at every derivation), and a
+// future version would be an explicit choice, never a failover.
+
+// The version of the derivation scheme below — the v1 context strings
+// bound to the v2 profile rows, permanently
+export const derivedSchemeVersion = 1
 
 // Salt standing in for the YubiKey response when deriving without hardware —
 // fixed and public, and never equal to a real response (responses are 20
@@ -37,22 +49,31 @@ export const noYubiKeySalt = createHash("sha256")
  * Stretch master passphrase into master key using Argon2d
  * @param masterPassphrase memorized master passphrase
  * @param label label binding the derivation to its purpose
+ * @param paranoid stretch at the paranoid profile — statelessness makes
+ * the mode part of what the user must know: deriving without it silently
+ * produces different keys
  * @returns 32-byte master key
  */
 export const computeMasterKey = async (
   masterPassphrase: string,
-  label: string
+  label: string,
+  paranoid: boolean
 ): Promise<Buffer> => {
   // Memory-hard stretching only matters if the YubiKey slot secret leaks
   // (the only scenario with an offline attack) — it turns a GPU dictionary
-  // attack into 64 MiB of work per guess. The scheme is stateless so the
-  // salt is derived, not stored — binding it to the label keeps a
-  // precomputed dictionary from transferring across labels.
+  // attack into 64 MiB of memory traffic across 80 passes per guess (a
+  // full gigabyte across 50 passes under Paranoid mode). The scheme is
+  // stateless so the salt is derived, not stored — binding it to the
+  // label keeps a precomputed dictionary from transferring across labels.
   const salt = createHash("sha256")
     .update(`superbacked-derived-key-v1-salt-${label}`, "utf8")
     .digest("hex")
     .substring(0, 32)
-  return argon2(masterPassphrase, salt)
+  return argon2(
+    masterPassphrase,
+    salt,
+    paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile
+  )
 }
 
 /**
@@ -94,6 +115,7 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
  * challenge-response — the two-factor scheme
  * @param masterPassphrase memorized master passphrase
  * @param label label binding the derivation to its purpose
+ * @param paranoid stretch at the paranoid profile (see computeMasterKey)
  * @param slot HMAC-SHA1 challenge-response slot
  * @param onTouchRequired invoked while the YubiKey awaits touch
  * @returns 32-byte derived key
@@ -101,10 +123,11 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
 export const computeDerivedKey = async (
   masterPassphrase: string,
   label: string,
+  paranoid: boolean,
   slot: Slot,
   onTouchRequired?: () => void
 ): Promise<Buffer> => {
-  const masterKey = await computeMasterKey(masterPassphrase, label)
+  const masterKey = await computeMasterKey(masterPassphrase, label, paranoid)
   const response = await calculateHmacSha1(
     slot,
     computeChallenge(masterKey, label),
@@ -118,14 +141,16 @@ export const computeDerivedKey = async (
  * factor, substituting the fixed public salt for the YubiKey response
  * @param masterPassphrase memorized master passphrase
  * @param label label binding the derivation to its purpose
+ * @param paranoid stretch at the paranoid profile (see computeMasterKey)
  * @returns 32-byte derived key
  */
 export const computeSingleFactorDerivedKey = async (
   masterPassphrase: string,
-  label: string
+  label: string,
+  paranoid: boolean
 ): Promise<Buffer> => {
   return deriveKey(
-    await computeMasterKey(masterPassphrase, label),
+    await computeMasterKey(masterPassphrase, label, paranoid),
     noYubiKeySalt
   )
 }
