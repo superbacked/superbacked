@@ -50,6 +50,8 @@ The archive path is printed on success. Use `--force` to overwrite an existing a
 
 Use `--yubikey` to require a provisioned YubiKey as a second factor (see [how to derive passwords](https://superbacked.com/guides/how-to-derive-passwords-using-command-line-interface) for provisioning) — the archive can then only be restored by enabling YubiKey mode again (`--yubikey`, or the app’s “Protected with YubiKey” switch) while holding a YubiKey provisioned with the same secret.
 
+The root `--paranoid` flag hardens key derivation (requiring at least 1 GiB of memory) — a paranoid archive can only be restored with `--paranoid` (or the app’s “Enable paranoid mode” setting), and without it reports a wrong passphrase.
+
 ### Step 3: restore standalone archive
 
 Restore the standalone archive to an existing directory.

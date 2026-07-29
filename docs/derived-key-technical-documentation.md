@@ -26,7 +26,7 @@ The YubiKey is treated as an untrusted black box: it never receives the passphra
 
 When a consumer derives a key, the app:
 
-1. Stretches the master passphrase into a 256-bit master key using Argon2d
+1. Stretches the master passphrase into a 256-bit master key using Argon2d at the active [KDF profile](scheme-registry-technical-documentation.md)
 2. Computes a 256-bit challenge from the master key and label using HMAC-SHA256
 3. Computes a 160-bit response on the YubiKey using HMAC-SHA1
 4. Combines the master key and response into a 256-bit derived key using HKDF-SHA256
@@ -38,7 +38,7 @@ Every stage is a pure function — no randomness and no stored state — so deri
 The master passphrase is stretched into the master key using Argon2d and a deterministic label-bound salt:
 
 ```typescript
-const masterKey = await computeMasterKey(masterPassphrase, label)
+const masterKey = await computeMasterKey(masterPassphrase, label, paranoid)
 ```
 
 ### Implementation
@@ -46,38 +46,45 @@ const masterKey = await computeMasterKey(masterPassphrase, label)
 ```typescript
 export const computeMasterKey = async (
   masterPassphrase: string,
-  label: string
+  label: string,
+  paranoid: boolean
 ): Promise<Buffer> => {
   const salt = createHash("sha256")
     .update(`superbacked-derived-key-v1-salt-${label}`, "utf8")
     .digest("hex")
     .substring(0, 32)
-  return argon2(masterPassphrase, salt)
+  return argon2(
+    masterPassphrase,
+    salt,
+    paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile
+  )
 }
 ```
 
 ### Argon2d parameters
 
-**Algorithm**: Argon2d
+**Algorithm**: Argon2d, at the v2 standard [KDF profile](scheme-registry-technical-documentation.md) — or the v2 paranoid profile under Paranoid mode
 
 **Parameters:**
 
 - **Salt**: First 16 bytes (hex-encoded) of SHA-256 of `superbacked-derived-key-v1-salt-` followed by label
 - **Variant**: Argon2d (`-d`)
-- **Parallelism**: 2 threads (`-p 2`)
-- **Memory**: 65,536 KiB or 64 MiB (`-k 65536`)
+- **Parallelism**: 4 lanes (`-p 4`)
+- **Memory**: 64 MiB (`-k 65536`) — 1 GiB (`-k 1048576`) under Paranoid mode
 - **Output format**: Raw (`-r`)
-- **Iterations**: 10 (`-t 10`)
+- **Passes**: 80 (`-t 80`) — 50 (`-t 50`) under Paranoid mode
 
 **Output:**
 
 - 256-bit master key
 
+The v1 scheme is permanently bound to these v2 profile rows — derivation is stateless, so unlike stored artifacts no probe can ever discover a cost and the scheme version (surfaced at every derivation, selectable with `--derivation-version`) is part of what the user knows. Paranoid mode is likewise a determinism input: deriving without it silently produces different keys, which is why every derivation echoes it.
+
 ### Security characteristics
 
-- **Memory hardness**: Each passphrase guess costs 64 MiB of memory-bound work, defending against GPU and ASIC-based attacks in the one scenario where an offline attack exists (YubiKey slot secret compromise)
+- **Memory hardness**: Each passphrase guess costs 64 MiB of memory traffic across 80 passes (a full gigabyte across 50 under Paranoid mode), defending against GPU and ASIC-based attacks in the one scenario where an offline attack exists (YubiKey slot secret compromise)
 - **Deterministic salt**: The scheme is stateless, so the salt is derived rather than randomly generated and stored — binding it to the label prevents a precomputed dictionary from transferring across labels
-- **Variant**: Argon2d is used everywhere in Superbacked — blocks, archives and derived keys share variant and cost parameters — maximizing offline brute-force resistance through fully data-dependent memory access. RFC 9106 recommends Argon2id as a general-purpose default to hedge cache side channels during legitimate derivation; Superbacked instead assumes a side-channel adversary on a derivation host is capable of direct capture, which no variant survives and optimizes for the attack that defines its threat model — offline brute force of leaked material
+- **Variant**: Argon2d is used everywhere in Superbacked — blocks, archives and derived keys share the variant and the [profile registry](scheme-registry-technical-documentation.md) — maximizing offline brute-force resistance through fully data-dependent memory access. RFC 9106 recommends Argon2id as a general-purpose default to hedge cache side channels during legitimate derivation; Superbacked instead assumes a side-channel adversary on a derivation host is capable of direct capture, which no variant survives and optimizes for the attack that defines its threat model — offline brute force of leaked material
 
 ## Challenge computation
 
@@ -198,5 +205,6 @@ export const noYubiKeySalt = createHash("sha256")
 ## Consumers
 
 - **[Derived passwords](derived-password-technical-documentation.md)**: the derived key (`computeDerivedKey`, or `computeSingleFactorDerivedKey` without hardware) is the input keying material for a rendering stream domain-separated by the `superbacked-derived-password-v1` context — a rendered password reveals nothing about the key itself
+- **[Derived Bitcoin wallets](derived-bitcoin-wallet-technical-documentation.md)**: the same derived key expanded into BIP39 entropy under the `superbacked-derived-mnemonic-v1-` context — a wallet and a password derived from the same label never share bytes
 
 YubiKey-protected standalone archives and blocks do not consume this primitive — they store a salt, so they bind it from the first step through the [passphrase key](passphrase-key-technical-documentation.md) scheme instead. Both schemes share slot provisioning and the wire protocol above.

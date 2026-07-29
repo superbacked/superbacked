@@ -39,7 +39,12 @@ Every stage is a pure function — no randomness and no stored state — so deri
 The derived key is expanded into BIP39 entropy using HKDF-SHA256:
 
 ```typescript
-entropy = hkdf(derivedKey, Buffer.alloc(0), `superbacked-derived-mnemonic-v1-${words}`, words === 24 ? 32 : 16)
+entropy = hkdf(
+  derivedKey,
+  Buffer.alloc(0),
+  `superbacked-derived-mnemonic-v1-${words}`,
+  words === 24 ? 32 : 16
+)
 ```
 
 **Parameters:**
@@ -78,7 +83,7 @@ The BIP39 seed roots a BIP32 hierarchy from which three projections derive at th
 
 The two-factor security model — what each combination of leaked material allows — lives with the primitive in the [derived key technical documentation](derived-key-technical-documentation.md). Wallet-specific limitations:
 
-- **Funds at stake**: The master passphrase effectively becomes the seed phrase — derived wallets should only hold amounts you are willing to lose; for larger amounts, a hardware wallet such as a COLDCARD or Trezor is necessary (the command requires typed confirmation of this warning at every derivation)
+- **Funds at stake**: Deriving exposes the wallet to the computer running the derivation — unlike a signing device, which never releases its seed — and a forgotten passphrase, label or flag is unrecoverable, so derived Bitcoin wallets should only be used for amounts you are willing to lose; for larger amounts, use a signing device such as a COLDCARD or Trezor (the command requires typed confirmation of this warning at every derivation)
 - **No rotation**: Derivation is deterministic, so a leaked mnemonic re-derives identically forever — recovering from a leak means moving the funds to a new label’s wallet
 - **Determinism inputs**: The word count, derivation path and Paranoid mode each derive a different wallet from the same passphrase and label — every derivation echoes all of them, and re-deriving with a forgotten flag silently produces an empty wallet, not an error
 - **Loss of YubiKey**: Without a second YubiKey programmed with the same slot secret, a two-factor wallet — and the funds it guards — is unrecoverable
@@ -90,7 +95,7 @@ The two-factor security model — what each combination of leaked material allow
 superbacked derive-bitcoin-wallet [label] [options]
 ```
 
-Every derivation opens with the funds-at-stake warning and requires the full word `yes` to continue — never assumed, and refused without a controlling terminal. Label prompting, stdin passphrase behavior and the strength gate match [derive-password](derived-password-technical-documentation.md); under [Paranoid mode](../src/shared/utilities/kdfProfiles.ts) the gate is priced at the paranoid profile, and the mode is a determinism input echoed at every derivation.
+Every derivation opens with the funds-at-stake warning and requires the full word `yes` to continue — never assumed, and refused without a controlling terminal. Label prompting, stdin passphrase behavior and the strength gate match [derive-password](derived-password-technical-documentation.md); under [Paranoid mode](../src/shared/utilities/kdfProfiles.ts) the gate is priced at the paranoid profile and the mode is a determinism input echoed at every derivation.
 
 The command is public by default, secret by request: the extended public key (and addresses, when asked) print to stdout, while the mnemonic or extended private key materialize only under `--reveal`.
 

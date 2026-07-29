@@ -61,6 +61,11 @@ for (const secret of secrets) {
 
 Encrypting twice is what gives a blockset its guarantees. The block and blockset backup types yield indistinguishable blocks: the outer layer always uses the same fixed-size encryption, so a blockset’s block looks like any other. And recovery is gated twice: a valid passphrase opens a block, and when the block belongs to a blockset, the secret stays sealed until enough blocks meet the threshold and rebuild the Shamir key — a requirement enforced by the encryption itself, not by policy. There is no separate linking metadata to protect — what binds the blocks of a blockset together is the shares themselves.
 
+## Key derivation modes
+
+- **Paranoid mode applies**: A blockset created under [Paranoid mode](scheme-registry-technical-documentation.md) derives every share’s key at the paranoid profile, exactly like a standard block — and restoring its blocks requires the mode enabled
+- **YubiKey protection does not**: The [YubiKey second factor](block-technical-documentation.md#yubikey-second-factor) is offered for standard blocks only, never blocksets — a blockset’s shares are meant to restore on any machine holding enough blocks, a property a hardware binding would defeat and the app rejects the combination outright (see `validateCreate` in [src/handlers/create.ts](../src/handlers/create.ts))
+
 ## Restoration
 
 Restoration peels the two layers in reverse order. Each block is decrypted exactly as a single block (see [Restoration workflow](block-technical-documentation.md#restoration-workflow) in the block technical documentation): the passphrase opens the block and yields the encrypted secret and one share rather than the secret itself. The app collects shares block by block; once the threshold is met, they are used to rebuild the Shamir key and the app decrypts the secret.

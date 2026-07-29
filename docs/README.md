@@ -12,8 +12,16 @@
 - [Legacy fixed-size encryption](legacy-fixed-size-encryption-technical-documentation.md)
 - [Passphrase key](passphrase-key-technical-documentation.md)
 - [Passphrase strength](passphrase-strength-technical-documentation.md)
+- [Scheme registry](scheme-registry-technical-documentation.md)
 - [Standalone archive](standalone-archive-technical-documentation.md)
 - [Superbacked OS security model](superbacked-os-security-technical-documentation.md)
+
+## Reference artifacts
+
+Published artifacts anyone can restore to verify Superbacked — and the ground truth the test suite restores on every run, so the published artifacts can never drift from what the app produces. Reference passphrases and expected contents are recorded in the corresponding suites.
+
+- [Reference blocks](reference-blocks) — version 1 and version 2 blocks and blocksets, including paranoid and YubiKey variants, pinned by [tests/referenceBlocks.test.ts](../tests/referenceBlocks.test.ts)
+- [Reference standalone archives](reference-standalone-archives) — version 1 and version 2 archives, including paranoid and YubiKey variants, pinned by [tests/referenceStandaloneArchives.test.ts](../tests/referenceStandaloneArchives.test.ts)
 
 ## Guides (source of [superbacked.com/guides](https://superbacked.com/guides))
 

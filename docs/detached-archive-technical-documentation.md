@@ -151,20 +151,30 @@ Detached archives use a binary format with embedded cryptographic metadata.
 
 ### File format
 
-Detached archive files use the following binary structure:
+Version 2 detached archive files use the following binary structure:
 
 ```text
-[iv (12 bytes)][encrypted data][tag (16 bytes)][hmac (32 bytes)]
+[probe block (36 bytes)][iv (12 bytes)][encrypted data][tag (16 bytes)][hmac (32 bytes)]
 ```
 
 **Components:**
 
+- **Probe block**: encrypted [scheme header](scheme-registry-technical-documentation.md) — a 12-byte initialization vector, the 8-byte header encrypted with AES-256-GCM under the probe key and a 16-byte authentication tag
 - **Initialization vector**: 12-byte random initialization vector for AES-256-GCM detached archive encryption
 - **Encrypted data**: AES-256-GCM-encrypted portable tar archive
 - **Authentication tag**: 16-byte GCM authentication tag
 - **HMAC**: 32-byte HMAC-SHA256 message authentication code
 
-This structure embeds all the cryptographic metadata needed for decryption directly in the detached archive file, eliminating the need for separate manifest files.
+Version 1 archives are identical without the probe block. Both structures embed all the cryptographic metadata needed for decryption directly in the detached archive file, every byte indistinguishable from random data.
+
+### Version declaration
+
+The probe key is derived from the encryption key using HKDF-SHA256 under the frozen info `version-probe-v1` — derived inside the archive core, so the handler wire format stays the stored key pair and block content. Because every key is already in hand at restoration (embedded in the block), the version trial is free:
+
+1. A probe revealing the header restores at the declared version — an unsupported version reports that the detached archive requires a newer release of Superbacked
+2. No probe match means the headerless version 1 format
+
+Master keys are random, so no KDF profile applies — detached archives are unaffected by Paranoid mode (their gate is the block that embeds their master key).
 
 ### Message authentication
 
@@ -173,10 +183,11 @@ Detached archives use HMAC-SHA256 to bind block content to the detached archive:
 **HMAC inputs:**
 
 ```text
-HMAC-SHA256(hmacKey, message || iv || encrypted data || tag)
+version 2: HMAC-SHA256(hmacKey, message || probe block || iv || encrypted data || tag)
+version 1: HMAC-SHA256(hmacKey, message || iv || encrypted data || tag)
 ```
 
-Where `message` contains the JSON-encoded block content.
+Where `message` contains the JSON-encoded block content. The probe block is authenticated by its own GCM tag, but binding it into the HMAC keeps the whole file under one integrity root.
 
 **Purpose:**
 

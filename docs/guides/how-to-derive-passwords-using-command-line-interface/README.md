@@ -70,11 +70,12 @@ $ superbacked derive-password
 Label: github
 Passphrase:
 Touch YubiKey…
+Derived with scheme v1
 Password copied to clipboard, clearing in 10 seconds…
 ```
 
-The password is copied to the clipboard by default, keeping it out of terminal scrollback — pressing enter clears the clipboard immediately.
+The password is copied to the clipboard by default, keeping it out of terminal scrollback — pressing enter clears the clipboard immediately. Every derivation states the scheme version (and Paranoid mode, when enabled) — derivation is stateless, so these are part of what must be remembered to re-derive the same password.
 
-Use `--print` to print the password to stdout instead, `--length` to set the password length (default `16`) and `--no-yubikey` to derive without a YubiKey (single factor, weaker).
+Use `--print` to print the password to stdout instead, `--length` to set the password length (default `16`) and `--no-yubikey` to derive without a YubiKey (single factor, weaker). The root `--paranoid` flag hardens key derivation (requiring at least 1 GiB of memory) — a password derived with it can only be re-derived with it.
 
 To replace a password (for example following a leak), change the label (for example `github2`) — the same label always derives the same password.

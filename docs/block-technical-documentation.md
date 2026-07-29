@@ -25,7 +25,7 @@ Blocks can hold multiple secrets, each protected by its own passphrase — the f
 When you create a block, the app:
 
 1. Takes one or more secrets — as many as fit the block — each with its own passphrase (optionally [YubiKey-protected](#yubikey-second-factor)) and an optional label.
-2. Derives a key from each passphrase using Argon2d and the block-key-v1 HKDF domain key, then encrypts the secrets using fixed-size encryption.
+2. Derives a key from each passphrase using Argon2d at the active [KDF profile](scheme-registry-technical-documentation.md) and the block-key-v1 HKDF domain key, prepends the 8-byte [scheme header](scheme-registry-technical-documentation.md) to each secret’s message, then encrypts the secrets using fixed-size encryption.
 3. Serializes the fixed-size encryption output as a JSON payload.
 4. Encodes the payload as a QR code and renders the block — a 4×6-inch card carrying the QR code alongside a label and a short hash — printed or saved as a JPG or PDF file.
 
@@ -52,6 +52,14 @@ return {
   },
 }
 ```
+
+### Version declaration
+
+Every version 2 secret carries the 8-byte [scheme header](scheme-registry-technical-documentation.md) at the start of its message plaintext, inside the encryption — the payload is visible JSON, but the version is declared only to a passphrase holder and plausible deniability is unaffected. A successful decryption therefore also names the version:
+
+- A supported version restores; an unsupported one reports that the block requires a newer release of Superbacked, never a wrong passphrase
+- The header costs 8 bytes of block capacity per secret (see `getBlockUsage` in [src/utilities/core/block.ts](../src/utilities/core/block.ts))
+- Restoration trials the v2 standard profile — and the paranoid profile while Paranoid mode is enabled, so a paranoid block restored without the mode reports a wrong passphrase until it is switched on — with the payload’s own authentication tags serving as the probe (see the [scheme registry technical documentation](scheme-registry-technical-documentation.md))
 
 Superbacked hashes the payload using SHA-256 for integrity and identification; the first eight characters (a **short hash**) are included on the block so you can identify and match blocks at a glance. The block itself is a 4×6-inch card designed to explain itself decades later: the QR code sits at its center, the label and short hash identify it, a recovery pointer (superbacked.com/recover) says how to restore it, an “Important document, do not discard” notice guards it against accidental disposal and trim marks frame the printed card for cutting to size. A block’s security rests entirely on its encrypted payload — the hash is for integrity and identification, not confidentiality.
 
@@ -82,9 +90,16 @@ With the YubiKey switch in the app’s create and restore flows, a secret’s st
 export const computeBlockKdfKey = async (
   passphrase: string,
   salt: Buffer,
+  profile: KdfProfile,
   yubikey?: ChallengeResponseOptions
 ): Promise<Buffer> => {
-  return computePassphraseKey(passphrase, salt, passphraseKeyInfo, yubikey)
+  return computePassphraseKey(
+    passphrase,
+    salt,
+    profile,
+    passphraseKeyInfo,
+    yubikey
+  )
 }
 ```
 
