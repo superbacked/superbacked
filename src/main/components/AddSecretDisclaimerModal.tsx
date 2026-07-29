@@ -29,7 +29,7 @@ const AddSecretDisclaimerModal: FunctionComponent<
       <Text size="sm">
         {t("components.addSecretDisclaimerModal.description")}
       </Text>
-      <Space h="lg" />
+      <Space h="xl" />
       <Group justify="flex-end">
         <Button onClick={props.onConfirm} variant="signatureGradient">
           {t("common.gotIt")}

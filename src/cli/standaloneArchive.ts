@@ -136,9 +136,7 @@ export const restoreStandaloneArchiveAction = async (
     process.stdout.write(`${destination}\n`)
     process.exit(0)
   } catch (error) {
-    console.error(
-      red(errorText(error, "Could not restore standalone archive"))
-    )
+    console.error(red(errorText(error, "Could not restore standalone archive")))
     process.exit(1)
   }
 }

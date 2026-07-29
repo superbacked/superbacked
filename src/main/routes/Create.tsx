@@ -1,15 +1,15 @@
 import styled from "@emotion/styled"
 import {
+  ActionIcon,
   Box,
   Button,
-  Center,
   ComboboxItem,
   Group,
+  Menu,
   Modal,
   NumberInput,
   Popover,
   ScrollArea,
-  SegmentedControl,
   Select,
   Space,
   Switch,
@@ -48,7 +48,9 @@ import FileManager, {
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import SecretTextareaWithUsage from "@/src/main/components/SecretTextareaWithUsage"
-import StyledYubiKeyIcon from "@/src/main/components/StyledYubiKeyIcon"
+import StyledLockPlusIcon from "@/src/main/components/StyledLockPlusIcon"
+import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
+import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   SelectionWithElement,
@@ -56,8 +58,12 @@ import {
   insertAtCursor,
   restoreSelection,
 } from "@/src/main/utilities/selection"
+import { useDefaultYubiKeySlot } from "@/src/main/utilities/useDefaultYubiKeySlot"
 import { PaperSize, PrintSetting } from "@/src/shared/types/print"
-import { yubikeyErrorMessage } from "@/src/shared/utilities/yubikeyErrorMessage"
+import {
+  YubiKeyErrorMessage,
+  yubikeyErrorMessage,
+} from "@/src/shared/utilities/yubikeyErrorMessage"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
@@ -127,10 +133,12 @@ const Block = styled.img`
   -webkit-user-drag: none;
 `
 
+// null is the unselected state — the same sentinel Select reports on
+// deselect, so form state never needs coercion at the input boundary
 type BackupType =
-  "" | "standard" | (typeof blocksetBackupTypes)[number]["value"]
+  null | "standard" | (typeof blocksetBackupTypes)[number]["value"]
 
-type ValidBackupType = Exclude<BackupType, "">
+type ValidBackupType = Exclude<BackupType, null>
 
 type SecretFormValues = {
   secret: string
@@ -139,8 +147,8 @@ type SecretFormValues = {
   yubikey: boolean
 }
 
-// Each secret starts on the remembered YubiKey slot — the same default
-// the archive modals read
+// Each secret starts on the default YubiKey slot — the same default the
+// archive modals read
 const initialSecretEntry = (): SecretFormValues => {
   return {
     secret: "",
@@ -253,12 +261,13 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     | "routes.create.couldNotCreateBlockset"
     | "routes.create.pleaseConnectPrinter"
     | "routes.create.printerDoesNotSupportPaperSize"
-    | "common.couldNotCommunicateWithYubiKey"
-    | "common.noYubiKeyDetected"
-    | "common.multipleYubiKeysDetected"
-    | "common.yubiKeySlotNotProvisioned"
-    | "common.yubiKeyTouchTimedOut"
   >>(null)
+  // Recoverable hardware states surface inline beside the YubiKey controls
+  // (matching the archive modals) — the heads-up modal is reserved for
+  // unexpected failures
+  const [yubikeyError, setYubikeyError] = useState<null | YubiKeyErrorMessage>(
+    null
+  )
   const [qrs, setQrs] = useState<Qr[]>(initialQrs)
   // The following refs are a temporary patch to help users avoid unintended button clicks (should be fixed using proper UI)
   const openedPopoversRef = useRef(0)
@@ -367,12 +376,16 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     },
     []
   )
+  const { setDefaultSlot } = useDefaultYubiKeySlot()
+  // Lazy so the config read happens once at mount — an inline object here
+  // would issue a blocking IPC call on every render
+  const [formInitialValues] = useState<FormValues>(() => ({
+    secrets: [initialSecretEntry()],
+    backupType: null,
+    label: "",
+  }))
   const form = useForm<FormValues>({
-    initialValues: {
-      secrets: [initialSecretEntry()],
-      backupType: "",
-      label: "",
-    },
+    initialValues: formInitialValues,
     onValuesChange: (values, previous) => {
       if (
         values.secrets.length !== previous.secrets.length ||
@@ -444,6 +457,13 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     },
   })
   const resetForm = useCallback(() => {
+    // Rebase on fresh initial values so the YubiKey slot persisted during
+    // creation carries into the next block, like the archive modals
+    form.setInitialValues({
+      secrets: [initialSecretEntry()],
+      backupType: null,
+      label: "",
+    })
     form.reset()
     setSecrets([{ secret: "", detachedArchive: null }])
     setSecretIndex(0)
@@ -452,6 +472,18 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     form.insertListItem("secrets", initialSecretEntry())
     setSecretIndex((index) => index + 1)
   }, [form])
+  const handleYubikeyChange = useCallback(
+    (checked: boolean) => {
+      form.setFieldValue(`secrets.${secretIndex}.yubikey`, checked)
+    },
+    [form, secretIndex]
+  )
+  const handleSlotChange = useCallback(
+    (slot: "1" | "2") => {
+      form.setFieldValue(`secrets.${secretIndex}.slot`, slot)
+    },
+    [form, secretIndex]
+  )
   const handleCreate = useCallback(
     async (skipDisclaimerCheck = false) => {
       const validation = form.validate()
@@ -464,6 +496,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         // Reset here rather than syncing state in an effect — a stale value
         // cannot render, as the step also requires isCreating
         setTouchAwaited(false)
+        setYubikeyError(null)
         // Define defaults
         let isBlockset = false,
           number = 3,
@@ -495,17 +528,14 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             })
           }
         }
-        // Remember the slot as the next default, like the selected
-        // printer — only when actually used, so the hidden control never
-        // overwrites a real choice
+        // Make the slot the next default, like the selected printer — only
+        // when actually used, so the hidden control never overwrites a real
+        // choice
         const yubikeyEntry = secretsList.find(
           (entry) => entry.slot !== undefined
         )
         if (yubikeyEntry?.slot !== undefined) {
-          window.api.invokeSync.setConfig("yubikey", {
-            ...window.api.invokeSync.getConfig("yubikey"),
-            challengeResponseSlot: yubikeyEntry.slot === 1 ? "1" : "2",
-          })
+          setDefaultSlot(yubikeyEntry.slot === 1 ? "1" : "2")
         }
         // Create detached archives if applicable
         const detachedArchives = secrets.flatMap((secretState) =>
@@ -575,17 +605,18 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           result = await window.api.invoke.create(secretsList, label)
         }
         if (result.success === false) {
-          setError({
-            message:
-              result.yubikeyErrorCode !== undefined
-                ? yubikeyErrorMessage(result.yubikeyErrorCode)
-                : isBlockset
-                  ? "routes.create.couldNotCreateBlockset"
-                  : "routes.create.couldNotCreateBlock",
-          })
+          if (result.yubikeyErrorCode !== undefined) {
+            setYubikeyError(yubikeyErrorMessage(result.yubikeyErrorCode))
+          } else {
+            setError({
+              message: isBlockset
+                ? "routes.create.couldNotCreateBlockset"
+                : "routes.create.couldNotCreateBlock",
+            })
+            setStep("secrets")
+            setSecretIndex(0)
+          }
           setIsCreating(false)
-          setStep("secrets")
-          setSecretIndex(0)
           return
         }
         resetForm()
@@ -594,7 +625,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         setStep("preview")
       }
     },
-    [form, secrets, t, resetForm]
+    [form, secrets, t, resetForm, setDefaultSlot]
   )
   // Apply persisted print settings, falling back to platform defaults and the
   // built-in per-printer default scale for statement size.
@@ -850,16 +881,21 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           >
             {t("common.next")}
           </Button>
-          <ActionBadge>
-            {t(
-              "routes.create.dragAndDropFileToCreateOrRestoreStandaloneArchive"
-            )}{" "}
-            <InfoButton tabIndex={-1}>
+          {/* Discovery hint — shown until the form is interacted with, as
+            it advertises a different flow (the drag and drop affordance
+            itself keeps working) */}
+          {form.values.backupType === null && form.values.label === "" ? (
+            <ActionBadge>
               {t(
-                "components.featureDescriptionModal.standaloneArchiveDescription"
-              )}
-            </InfoButton>
-          </ActionBadge>
+                "routes.create.dragAndDropFileToCreateOrRestoreStandaloneArchive"
+              )}{" "}
+              <InfoButton tabIndex={-1}>
+                {t(
+                  "components.featureDescriptionModal.standaloneArchiveDescription"
+                )}
+              </InfoButton>
+            </ActionBadge>
+          ) : null}
         </Box>
       </Container>
     )
@@ -978,116 +1014,88 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         />
         {isBlockset === false ? (
           <Fragment>
-            <Space h="lg" />
-            <Group justify="space-between">
-              <Switch
-                checked={currentEntry?.yubikey === true}
-                disabled={isCreating}
-                label={t("common.protectWithYubiKey")}
-                onChange={(event) =>
-                  form.setFieldValue(
-                    `secrets.${secretIndex}.yubikey`,
-                    event.currentTarget.checked
-                  )
-                }
-                // The track transition exists for the on/off toggle, but
-                // the disabled state swaps the track color through the same
-                // property — without this, disabling fades over 150ms while
-                // every other form element snaps
-                styles={{
-                  track: isCreating === true ? { transition: "none" } : {},
-                }}
-                withThumbIndicator={false}
-              />
-              {/* Always rendered so the row keeps the height of its tallest
-                child — mounting on toggle would grow the form */}
-              <SegmentedControl
-                data={[
-                  { label: t("common.slot1"), value: "1" },
-                  { label: t("common.slot2"), value: "2" },
-                ]}
-                disabled={isCreating}
-                onChange={(value) =>
-                  form.setFieldValue(
-                    `secrets.${secretIndex}.slot`,
-                    value as "1" | "2"
-                  )
-                }
-                size="xs"
-                style={{
-                  visibility:
-                    currentEntry?.yubikey === true ? "visible" : "hidden",
-                }}
-                value={currentEntry?.slot ?? "2"}
-              />
-            </Group>
-            {currentEntry?.yubikey === true ? (
-              <Fragment>
-                <Space h="sm" />
-                <Text c="dimmed" size="xs">
-                  {t("routes.create.restoringRequiresYubiKey")}
-                </Text>
-              </Fragment>
-            ) : null}
+            <Space h="md" />
+            <YubiKeyProtection
+              checked={currentEntry?.yubikey === true}
+              disabled={isCreating}
+              label={t("common.protectWithYubiKey")}
+              onChange={handleYubikeyChange}
+              onSlotChange={handleSlotChange}
+              slot={currentEntry?.slot ?? "2"}
+            />
           </Fragment>
         ) : null}
-        <ActionBadge>
-          {currentSecret?.detachedArchive
-            ? t("routes.create.dragAndDropFilesToAddToDetachedArchive")
-            : t("routes.create.dragAndDropFileToProvisionDetachedArchive")}{" "}
-          <InfoButton tabIndex={-1}>
-            {t("components.featureDescriptionModal.detachedArchiveDescription")}
-          </InfoButton>
-        </ActionBadge>
+        {/* Discovery hint — shown while the secret is pristine and fades
+          once it is interacted with or a detached archive is provisioned
+          (the drag and drop affordance itself keeps working) */}
+        {currentEntry?.secret === "" &&
+        currentEntry?.passphrase === "" &&
+        currentEntry?.yubikey === false &&
+        !currentSecret?.detachedArchive ? (
+          <ActionBadge>
+            {t("routes.create.dragAndDropFileToProvisionDetachedArchive")}{" "}
+            <InfoButton tabIndex={-1}>
+              {t(
+                "components.featureDescriptionModal.detachedArchiveDescription"
+              )}
+            </InfoButton>
+          </ActionBadge>
+        ) : null}
       </Fragment>
     )
-    const addSecret = (
-      <Fragment>
-        <Space h="lg" />
-        <Button
-          disabled={
-            !currentEntry?.secret ||
-            !currentEntry?.passphrase ||
-            !form.values.backupType ||
-            blockUsage.remainingSpace <= 40 ||
-            isCreating
-          }
-          fullWidth
-          size="sm"
-          variant="signatureTextGradient"
-          onClick={() => {
-            if (shouldIgnoreClick()) return
-            const validation = form.validate()
-            if (validation.hasErrors === false) {
-              if (isPrimarySecret) {
-                setShowAddSecretDisclaimer(true)
-              } else {
-                addSecretEntry()
-              }
+    // Add and remove secret are low-frequency actions — they live behind
+    // an overflow menu beside the primary call to action instead of
+    // spending rows of their own
+    const secretActionsMenu = (
+      // Offset matches the gap="xs" between the create button and the
+      // kebab, so the dropdown floats as far from the kebab as the button
+      // does
+      <Menu offset={10} position="top-end">
+        <Menu.Target>
+          <ActionIcon
+            aria-label={t("routes.create.secretActions")}
+            disabled={isCreating}
+            size={42}
+            variant="default"
+          >
+            <StyledLockPlusIcon />
+          </ActionIcon>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item
+            disabled={
+              !currentEntry?.secret ||
+              !currentEntry?.passphrase ||
+              !form.values.backupType ||
+              blockUsage.remainingSpace <= 40
             }
-          }}
-        >
-          {t("routes.create.addSecret")}
-        </Button>
-      </Fragment>
-    )
-    const removeSecret = isPrimarySecret ? null : (
-      <Fragment>
-        <Space h="lg" />
-        <Button
-          disabled={isCreating}
-          fullWidth
-          size="sm"
-          variant="signatureTextGradient"
-          onClick={() => {
-            if (shouldIgnoreClick()) return
-            form.removeListItem("secrets", secretIndex)
-            setSecretIndex(secretIndex - 1)
-          }}
-        >
-          {t("routes.create.removeSecret")}
-        </Button>
-      </Fragment>
+            onClick={() => {
+              if (shouldIgnoreClick()) return
+              const validation = form.validate()
+              if (validation.hasErrors === false) {
+                if (isPrimarySecret) {
+                  setShowAddSecretDisclaimer(true)
+                } else {
+                  addSecretEntry()
+                }
+              }
+            }}
+          >
+            {t("routes.create.addSecret")}
+          </Menu.Item>
+          {isPrimarySecret ? null : (
+            <Menu.Item
+              onClick={() => {
+                if (shouldIgnoreClick()) return
+                form.removeListItem("secrets", secretIndex)
+                setSecretIndex(secretIndex - 1)
+              }}
+            >
+              {t("routes.create.removeSecret")}
+            </Menu.Item>
+          )}
+        </Menu.Dropdown>
+      </Menu>
     )
     const detachedArchiveCount = secrets.filter(
       (secretState) => secretState.detachedArchive !== null
@@ -1107,7 +1115,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           })
     }
 
-    const backupType: ValidBackupType = form.values.backupType || "standard"
+    const backupType: ValidBackupType = form.values.backupType ?? "standard"
 
     return (
       <Fragment>
@@ -1125,22 +1133,31 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           />
           <form onSubmit={form.onSubmit(() => handleCreate())}>
             {stepFields}
-            <Space h="lg" />
-            <Button
-              disabled={isCreating}
-              fullWidth
-              loading={isCreating}
-              onClick={() => {
-                if (shouldIgnoreClick()) return
-                void handleCreate()
-              }}
-              size="md"
-              variant="signatureGradient"
-            >
-              {createButtonLabel}
-            </Button>
-            {removeSecret}
-            {addSecret}
+            <Space h="xl" />
+            {yubikeyError !== null ? (
+              <Fragment>
+                <Text c="red" role="alert" size="sm">
+                  {t(yubikeyError)}
+                </Text>
+                <Space h="md" />
+              </Fragment>
+            ) : null}
+            <Group gap="xs" wrap="nowrap">
+              <Button
+                disabled={isCreating}
+                loading={isCreating}
+                onClick={() => {
+                  if (shouldIgnoreClick()) return
+                  void handleCreate()
+                }}
+                size="md"
+                style={{ flex: 1 }}
+                variant="signatureGradient"
+              >
+                {createButtonLabel}
+              </Button>
+              {secretActionsMenu}
+            </Group>
           </form>
           <Modal
             centered
@@ -1172,6 +1189,17 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           secretCount={
             secrets.filter((secretState) => secretState.secret !== "").length
           }
+          yubikeyProtectedPositions={
+            isBlockset
+              ? []
+              : form.values.secrets
+                  .filter(
+                    (entry) => entry.secret !== "" && entry.passphrase !== ""
+                  )
+                  .flatMap((entry, index) =>
+                    entry.yubikey === true ? [index + 1] : []
+                  )
+          }
           opened={showDisclaimer}
           onClose={() => setShowDisclaimer(false)}
           onConfirm={() => {
@@ -1198,15 +1226,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           opened={touchAwaited === true && isCreating === true}
           withCloseButton={false}
         >
-          <Space h="xl" />
-          <Center>
-            <StyledYubiKeyIcon />
-          </Center>
-          <Space h="xl" />
-          <Text fw="bold" size="sm" ta="center">
-            {t("common.touchYubiKey")}
-          </Text>
-          <Space h="xl" />
+          <YubiKeyTouchPrompt />
         </Modal>
         <ErrorModal error={error} onClose={() => setError(null)} />
       </Fragment>

@@ -1,14 +1,4 @@
-import {
-  Button,
-  Center,
-  Group,
-  Modal,
-  SegmentedControl,
-  Space,
-  Switch,
-  Text,
-  TextInput,
-} from "@mantine/core"
+import { Button, Group, Modal, Space, Text, TextInput } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import {
   Fragment,
@@ -20,7 +10,9 @@ import {
 import { useTranslation } from "react-i18next"
 
 import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
-import StyledYubiKeyIcon from "@/src/main/components/StyledYubiKeyIcon"
+import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
+import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
+import { useDefaultYubiKeySlot } from "@/src/main/utilities/useDefaultYubiKeySlot"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import zxcvbn, {
   minimumPassphraseStrength,
@@ -54,10 +46,9 @@ const CreateStandaloneArchiveModal: FunctionComponent<
   CreateStandaloneArchiveModalProps
 > = (props) => {
   const { i18n, t } = useTranslation()
+  const { defaultSlot, setDefaultSlot } = useDefaultYubiKeySlot()
   const form = useForm({
-    initialValues: initialValues(
-      window.api.invokeSync.getConfig("yubikey")?.challengeResponseSlot ?? "2"
-    ),
+    initialValues: initialValues(defaultSlot),
     validate: {
       filename: (value) => {
         if (!value || value === "") {
@@ -93,25 +84,30 @@ const CreateStandaloneArchiveModal: FunctionComponent<
       // cannot render, as the step also requires isLoading
       setTouchAwaited(false)
       if (form.values.yubikey === true) {
-        // Remember the slot as the next default, like the selected
-        // printer — only when actually used, so the hidden control never
-        // overwrites a real choice. Updating the baseline keeps resets
-        // restoring the remembered slot (the restore modal catches up
-        // from config on restart or its own first use)
-        window.api.invokeSync.setConfig("yubikey", {
-          ...window.api.invokeSync.getConfig("yubikey"),
-          challengeResponseSlot: form.values.slot,
-        })
+        setDefaultSlot(form.values.slot)
+        // Updating the baseline keeps resets restoring the new default slot
         form.setInitialValues(initialValues(form.values.slot))
       }
       props.onSubmit(form.values)
     }
-  }, [form, props])
+  }, [form, props, setDefaultSlot])
   const handleClose = useCallback(() => {
     form.reset()
     props.onReset?.()
     props.onClose()
   }, [form, props])
+  const handleYubikeyChange = useCallback(
+    (checked: boolean) => {
+      form.setFieldValue("yubikey", checked)
+    },
+    [form]
+  )
+  const handleSlotChange = useCallback(
+    (slot: "1" | "2") => {
+      form.setFieldValue("slot", slot)
+    },
+    [form]
+  )
   useEffect(() => {
     if (Object.keys(form.errors).length > 0) {
       form.validate()
@@ -134,17 +130,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
       }}
     >
       {touchAwaited === true && props.isLoading === true ? (
-        <Fragment>
-          <Space h="xl" />
-          <Center>
-            <StyledYubiKeyIcon />
-          </Center>
-          <Space h="xl" />
-          <Text fw="bold" size="sm" ta="center">
-            {t("common.touchYubiKey")}
-          </Text>
-          <Space h="xl" />
-        </Fragment>
+        <YubiKeyTouchPrompt />
       ) : (
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <TextInput
@@ -173,32 +159,14 @@ const CreateStandaloneArchiveModal: FunctionComponent<
             {...form.getInputProps("passphrase", { withFocus: false })}
           />
           <Space h="lg" />
-          <Group justify="space-between">
-            <Switch
-              checked={form.values.yubikey}
-              label={t("common.protectWithYubiKey")}
-              onChange={(event) =>
-                form.setFieldValue("yubikey", event.currentTarget.checked)
-              }
-              withThumbIndicator={false}
-            />
-            {/* Always rendered so the row keeps the height of its tallest
-              child — mounting on toggle would grow the modal */}
-            <SegmentedControl
-              data={[
-                { label: t("common.slot1"), value: "1" },
-                { label: t("common.slot2"), value: "2" },
-              ]}
-              onChange={(value) =>
-                form.setFieldValue("slot", value as "1" | "2")
-              }
-              size="xs"
-              style={{
-                visibility: form.values.yubikey === true ? "visible" : "hidden",
-              }}
-              value={form.values.slot}
-            />
-          </Group>
+          <YubiKeyProtection
+            checked={form.values.yubikey}
+            disabled={props.isLoading}
+            label={t("common.protectWithYubiKey")}
+            onChange={handleYubikeyChange}
+            onSlotChange={handleSlotChange}
+            slot={form.values.slot}
+          />
           {form.values.yubikey === true ? (
             <Fragment>
               <Space h="sm" />
@@ -209,15 +177,15 @@ const CreateStandaloneArchiveModal: FunctionComponent<
               </Text>
             </Fragment>
           ) : null}
+          <Space h="xl" />
           {props.error ? (
             <Fragment>
-              <Space h="md" />
-              <Text c="red" size="sm">
+              <Text c="red" role="alert" size="sm">
                 {t(props.error)}
               </Text>
+              <Space h="md" />
             </Fragment>
           ) : null}
-          <Space h="xl" />
           <Group justify="flex-end">
             <Button
               disabled={props.isLoading}

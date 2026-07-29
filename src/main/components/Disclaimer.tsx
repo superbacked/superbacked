@@ -68,7 +68,7 @@ const Disclaimer: FunctionComponent = () => {
               withThumbIndicator={false}
               {...form.getInputProps("accept", { withFocus: false })}
             />
-            <Space h="lg" />
+            <Space h="xl" />
             <Button
               disabled={!form.values.accept}
               fullWidth

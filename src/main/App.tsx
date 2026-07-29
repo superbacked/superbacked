@@ -144,6 +144,16 @@ const App = () => {
               // prop routes through --ai-color which is variant-dependent
               // and not consistently picked up by the SVG.
               styles: {
+                root: {
+                  // Mirrors the Button default variant, so icon buttons and
+                  // buttons read as one family
+                  "&[data-variant='default']": {
+                    backgroundColor: "var(--mantine-color-dark-7)",
+                    borderColor: "var(--sb-border)",
+                    borderWidth: 2,
+                    color: "var(--mantine-color-text)",
+                  },
+                },
                 icon: {
                   color: "var(--mantine-color-text)",
                 },
@@ -269,6 +279,24 @@ const App = () => {
                 },
               },
             },
+            Menu: {
+              // Same surface as Popover and Combobox dropdowns — and the
+              // same hover as Combobox options, whose dark-mode hover
+              // (dark-7) disappears against the dark-7 dropdown
+              styles: {
+                dropdown: {
+                  backgroundColor: "var(--mantine-color-dark-7)",
+                  borderColor: "var(--sb-border)",
+                  borderWidth: 2,
+                  boxShadow: "var(--sb-overlay-shadow)",
+                },
+                item: {
+                  color: "var(--mantine-color-text)",
+                  borderRadius: "var(--mantine-radius-sm)",
+                  "--menu-item-hover": "var(--mantine-color-dark-7)",
+                },
+              },
+            },
             Modal: {
               defaultProps: {
                 padding: "lg",
@@ -322,6 +350,20 @@ const App = () => {
                   backgroundColor: "var(--mantine-color-dark-7)",
                   borderColor: "var(--sb-border)",
                   borderWidth: 2,
+                },
+              },
+            },
+            SegmentedControl: {
+              // Labels stay body-text colored in every state — the app
+              // never dims resting labels nor brightens hovered ones, and
+              // selection is carried by the indicator
+              styles: {
+                label: {
+                  color: "var(--mantine-color-text)",
+                  "--sc-label-color": "var(--mantine-color-text)",
+                  "&:hover": {
+                    color: "var(--mantine-color-text)",
+                  },
                 },
               },
             },

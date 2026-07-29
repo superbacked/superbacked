@@ -79,7 +79,19 @@
       "4of7WithOneDetachedArchiveDescription_one": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
       "4of7WithOneDetachedArchiveDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
       "4of7WithMultipleDetachedArchivesDescription_one": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
-      "4of7WithMultipleDetachedArchivesDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées"
+      "4of7WithMultipleDetachedArchivesDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées",
+      "standardWithYubiKeyDescription_one": "Le bloc, la phrase de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer le secret",
+      "standardWithYubiKeyDescription_other": "Le bloc, les phrases de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer les secrets",
+      "standardWithOneDetachedArchiveAndYubiKeyDescription_one": "Le bloc, la phrase de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer le secret et l’archive détachée",
+      "standardWithOneDetachedArchiveAndYubiKeyDescription_other": "Le bloc, les phrases de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer les secrets et l’archive détachée",
+      "standardWithMultipleDetachedArchivesAndYubiKeyDescription_one": "Le bloc, la phrase de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer le secret et les archives détachées",
+      "standardWithMultipleDetachedArchivesAndYubiKeyDescription_other": "Le bloc, les phrases de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer les secrets et les archives détachées",
+      "standardWithSomeYubiKeyDescription_one": "Le bloc et les phrases de passe sont requis pour restaurer les secrets — la restauration du secret {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "standardWithSomeYubiKeyDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets — la restauration des secrets {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "standardWithOneDetachedArchiveAndSomeYubiKeyDescription_one": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée — la restauration du secret {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "standardWithOneDetachedArchiveAndSomeYubiKeyDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée — la restauration des secrets {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "standardWithMultipleDetachedArchivesAndSomeYubiKeyDescription_one": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et les archives détachées — la restauration du secret {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "standardWithMultipleDetachedArchivesAndSomeYubiKeyDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et les archives détachées — la restauration des secrets {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse"
     },
     "disclaimer": {
       "superbackedOsRecommendation": "Pour les secrets à enjeux élevés, utiliser <anchor><bold>Superbacked OS</bold></anchor> — un système d’exploitation durci qui fonctionne hors ligne et ne persiste rien sur le disque.",
@@ -143,7 +155,7 @@
       }
     },
     "passphraseModal": {
-      "enterPassphrase": "Entrer la phrase de passe",
+      "unlockBlock": "Déverrouiller le bloc",
       "unlock": "Déverrouiller"
     },
     "restoreStandaloneArchiveModal": {
@@ -232,7 +244,6 @@
       "dragAndDropFileToProvisionDetachedArchive": "Glisser-déposer un fichier pour provisionner une archive détachée",
       "passphraseUsed": "Phrase de passe utilisée",
       "passphraseTooSimilar": "Phrase de passe trop similaire",
-      "restoringRequiresYubiKey": "La restauration du secret nécessite une YubiKey provisionnée avec le même secret défi-réponse",
       "label": "Étiquette (facultatif)",
       "typeLabel": "Taper l’étiquette…",
       "labelTooLong": "Étiquette trop longue",
@@ -240,7 +251,6 @@
       "selectBackupType": "Sélectionner le type de sauvegarde…",
       "backupTypeRequired": "Type de sauvegarde requis",
       "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Glisser-déposer un fichier pour créer ou restaurer une archive autonome",
-      "dragAndDropFilesToAddToDetachedArchive": "Glisser-déposer des fichiers pour ajouter à l’archive détachée",
       "standard": "Bloc unique",
       "standardDescription": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
       "2of3": "Ensemble de blocs (seuil 2 sur 3)",
@@ -251,6 +261,7 @@
       "4of7Description": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
       "addSecret": "Ajouter un secret",
       "removeSecret": "Supprimer le secret",
+      "secretActions": "Actions sur les secrets",
       "createBlock": "Créer le bloc",
       "createBlockAndDetachedArchive_one": "Créer le bloc et l’archive détachée",
       "createBlockAndDetachedArchive_other": "Créer le bloc et les archives détachées",

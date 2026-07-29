@@ -79,7 +79,19 @@
       "4of7WithOneDetachedArchiveDescription_one": "4 of 7 blocks of blockset and passphrase required to restore secret and detached archive",
       "4of7WithOneDetachedArchiveDescription_other": "4 of 7 blocks of blockset and passphrases required to restore secrets and detached archive",
       "4of7WithMultipleDetachedArchivesDescription_one": "4 of 7 blocks of blockset and passphrase required to restore secret and detached archives",
-      "4of7WithMultipleDetachedArchivesDescription_other": "4 of 7 blocks of blockset and passphrases required to restore secrets and detached archives"
+      "4of7WithMultipleDetachedArchivesDescription_other": "4 of 7 blocks of blockset and passphrases required to restore secrets and detached archives",
+      "standardWithYubiKeyDescription_one": "Block, passphrase and YubiKey provisioned with the same challenge-response secret required to restore secret",
+      "standardWithYubiKeyDescription_other": "Block, passphrases and YubiKey provisioned with the same challenge-response secret required to restore secrets",
+      "standardWithOneDetachedArchiveAndYubiKeyDescription_one": "Block, passphrase and YubiKey provisioned with the same challenge-response secret required to restore secret and detached archive",
+      "standardWithOneDetachedArchiveAndYubiKeyDescription_other": "Block, passphrases and YubiKey provisioned with the same challenge-response secret required to restore secrets and detached archive",
+      "standardWithMultipleDetachedArchivesAndYubiKeyDescription_one": "Block, passphrase and YubiKey provisioned with the same challenge-response secret required to restore secret and detached archives",
+      "standardWithMultipleDetachedArchivesAndYubiKeyDescription_other": "Block, passphrases and YubiKey provisioned with the same challenge-response secret required to restore secrets and detached archives",
+      "standardWithSomeYubiKeyDescription_one": "Block and passphrases required to restore secrets — restoring secret {{positions}} of {{totalCount}} also requires YubiKey provisioned with the same challenge-response secret",
+      "standardWithSomeYubiKeyDescription_other": "Block and passphrases required to restore secrets — restoring secrets {{positions}} of {{totalCount}} also requires YubiKey provisioned with the same challenge-response secret",
+      "standardWithOneDetachedArchiveAndSomeYubiKeyDescription_one": "Block and passphrases required to restore secrets and detached archive — restoring secret {{positions}} of {{totalCount}} also requires YubiKey provisioned with the same challenge-response secret",
+      "standardWithOneDetachedArchiveAndSomeYubiKeyDescription_other": "Block and passphrases required to restore secrets and detached archive — restoring secrets {{positions}} of {{totalCount}} also requires YubiKey provisioned with the same challenge-response secret",
+      "standardWithMultipleDetachedArchivesAndSomeYubiKeyDescription_one": "Block and passphrases required to restore secrets and detached archives — restoring secret {{positions}} of {{totalCount}} also requires YubiKey provisioned with the same challenge-response secret",
+      "standardWithMultipleDetachedArchivesAndSomeYubiKeyDescription_other": "Block and passphrases required to restore secrets and detached archives — restoring secrets {{positions}} of {{totalCount}} also requires YubiKey provisioned with the same challenge-response secret"
     },
     "disclaimer": {
       "superbackedOsRecommendation": "For high-stakes secrets, use <anchor><bold>Superbacked OS</bold></anchor> — a hardened operating system that runs offline and persists nothing to disk.",
@@ -143,7 +155,7 @@
       }
     },
     "passphraseModal": {
-      "enterPassphrase": "Enter passphrase",
+      "unlockBlock": "Unlock block",
       "unlock": "Unlock"
     },
     "restoreStandaloneArchiveModal": {
@@ -232,7 +244,6 @@
       "dragAndDropFileToProvisionDetachedArchive": "Drag and drop file to provision detached archive",
       "passphraseUsed": "Passphrase used",
       "passphraseTooSimilar": "Passphrase too similar",
-      "restoringRequiresYubiKey": "Restoring secret requires YubiKey provisioned with the same challenge-response secret",
       "label": "Label (optional)",
       "typeLabel": "Type label…",
       "labelTooLong": "Label too long",
@@ -240,7 +251,6 @@
       "selectBackupType": "Select backup type…",
       "backupTypeRequired": "Backup type required",
       "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Drag and drop file to create or restore standalone archive",
-      "dragAndDropFilesToAddToDetachedArchive": "Drag and drop files to add to detached archive",
       "standard": "Single block",
       "standardDescription": "Block and passphrase required to restore secret",
       "2of3": "Blockset (2-of-3 threshold)",
@@ -251,6 +261,7 @@
       "4of7Description": "4 of 7 blocks of blockset and passphrase required to restore secret",
       "addSecret": "Add secret",
       "removeSecret": "Remove secret",
+      "secretActions": "Secret actions",
       "createBlock": "Create block",
       "createBlockAndDetachedArchive_one": "Create block and detached archive",
       "createBlockAndDetachedArchive_other": "Create block and detached archives",
