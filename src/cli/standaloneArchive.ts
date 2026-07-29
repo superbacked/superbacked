@@ -3,6 +3,7 @@ import { dirname, resolve } from "path"
 
 import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import readPassphrase from "@/src/cli/readPassphrase"
+import { red } from "@/src/cli/style"
 import {
   createStandaloneArchive,
   restoreStandaloneArchive,
@@ -94,7 +95,7 @@ export const createStandaloneArchiveAction = async (
     process.stdout.write(`${archivePath}\n`)
     process.exit(0)
   } catch (error) {
-    console.error(errorText(error, "Could not create standalone archive"))
+    console.error(red(errorText(error, "Could not create standalone archive")))
     process.exit(1)
   }
 }
@@ -135,7 +136,9 @@ export const restoreStandaloneArchiveAction = async (
     process.stdout.write(`${destination}\n`)
     process.exit(0)
   } catch (error) {
-    console.error(errorText(error, "Could not restore standalone archive"))
+    console.error(
+      red(errorText(error, "Could not restore standalone archive"))
+    )
     process.exit(1)
   }
 }

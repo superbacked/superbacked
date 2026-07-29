@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto"
 
 import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
 import { promptHidden, promptVisible } from "@/src/cli/readPassphrase"
+import { bold, red } from "@/src/cli/style"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 import {
@@ -46,24 +47,6 @@ const readSecret = async (): Promise<Buffer> => {
     throw new Error("Secrets do not match")
   }
   return parseSecret(secret)
-}
-
-// Bold advisories when stderr is a terminal — piped output and NO_COLOR
-// environments stay clean
-const bold = (text: string): string => {
-  if (process.stderr.isTTY === true && process.env.NO_COLOR === undefined) {
-    return `\x1b[1m${text}\x1b[0m`
-  }
-  return text
-}
-
-// Bold red foreground for warnings when stderr is a terminal — piped output
-// and NO_COLOR environments stay clean
-const red = (text: string): string => {
-  if (process.stderr.isTTY === true && process.env.NO_COLOR === undefined) {
-    return `\x1b[1;31m${text}\x1b[0m`
-  }
-  return text
 }
 
 // Consent is a typed confirmation read from the controlling terminal — never
@@ -152,7 +135,7 @@ export const provisionYubikeyAction = async (options: {
     }
     process.exit(0)
   } catch (error) {
-    console.error(errorText(error, "Could not provision YubiKey"))
+    console.error(red(errorText(error, "Could not provision YubiKey")))
     process.exit(1)
   }
 }

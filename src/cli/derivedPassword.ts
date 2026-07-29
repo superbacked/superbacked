@@ -5,6 +5,7 @@ import readPassphrase, {
   promptVisible,
   waitForEnter,
 } from "@/src/cli/readPassphrase"
+import { red } from "@/src/cli/style"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
@@ -132,7 +133,7 @@ export const derivePasswordAction = async (
     }
     process.exit(0)
   } catch (error) {
-    console.error(errorText(error, "Could not derive password"))
+    console.error(red(errorText(error, "Could not derive password")))
     process.exit(1)
   }
 }
