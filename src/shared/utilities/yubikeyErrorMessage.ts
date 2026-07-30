@@ -11,7 +11,7 @@ export type YubiKeyErrorMessage = ValidateTranslationKeys<
 
 // Codes with a user-facing message in the app — the en locale is the
 // single source for these strings, rendered translated by the app and
-// verbatim by the command-line interface (see src/cli/localeText.ts).
+// verbatim by the command-line interface (see src/cli/utilities/localeText.ts).
 // provisioningRejected is absent, as the app never provisions — the
 // command-line interface falls back to the message carried by the error.
 export const yubikeyErrorMessageKeys: Partial<

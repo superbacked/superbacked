@@ -33,27 +33,26 @@ import {
 export type { Manifest, RestoredFilePath }
 export { UnsupportedVersionError, decodeProbeBlock, probeBlockLength }
 
+// Version written into new archives (see
+// src/utilities/crypto/schemeHeader.ts)
+export const schemeVersion = 2
+
 // HKDF info binding YubiKey-protected archive key derivation (see
 // src/utilities/passphraseKey.ts) — frozen, as changing it changes the key
 // of every archive created with --yubikey. Per-archive uniqueness comes
 // from the archive salt, not from this constant.
-export const passphraseKeyInfo = "encryption-key-v1"
+export const passphraseKeyInfo = "archive-key"
 
 // HKDF info of the version-probe key — frozen. The probe block it
 // encrypts is how restoration discovers the archive’s version and KDF
 // profile without plaintext markers (see decodeProbeBlock)
-export const probeKeyInfo = "version-probe-v1"
-
-// Version written into new archives (see
-// src/utilities/crypto/schemeHeader.ts) — v1 is the headerless legacy
-// format, recognized by matching no probe
-export const standaloneArchiveVersion = 2
+export const probeKeyInfo = "version-probe"
 
 const saltLength = 16
 const ivLength = 12
 const tagLength = 16
 const probeBlockOffset = saltLength
-const v2PayloadOffset = saltLength + probeBlockLength
+const payloadOffset = saltLength + probeBlockLength
 
 export interface ArchiveKeys {
   key: Buffer
@@ -132,7 +131,7 @@ export const createStandaloneArchive = async (
 
   // Write salt, probe block and initialization vector at beginning of file
   output.write(salt)
-  output.write(encodeProbeBlock(keys.probeKey, standaloneArchiveVersion))
+  output.write(encodeProbeBlock(keys.probeKey, schemeVersion))
   output.write(iv)
 
   // Stream: tar → encrypt → write to file
@@ -182,26 +181,23 @@ export const extractProbeBlock = async (filePath: string): Promise<Buffer> => {
  * Restore standalone archive
  *
  * Decrypts encrypted tar archive using passphrase-derived key.
- * Version 2 format: [salt (16 bytes)][probe block (36 bytes)]
- * [iv (12 bytes)][encrypted data][tag (16 bytes)] — version 1 has no
- * probe block. The version comes from the probe trial (see
- * decodeProbeBlock), never from the caller guessing
+ * Format: [salt (16 bytes)][probe block (36 bytes)][iv (12 bytes)]
+ * [encrypted data][tag (16 bytes)]. The version comes from the probe
+ * trial (see decodeProbeBlock), never from the caller guessing
  *
  * @param filePath path to encrypted archive
  * @param outputDir directory where files will be extracted
  * @param key 32-byte AES-256 decryption key
- * @param version archive version (1 or 2)
  * @returns array of restored file paths
  */
 export const restoreStandaloneArchive = async (
   filePath: string,
   outputDir: string,
-  key: Buffer,
-  version: 1 | 2
+  key: Buffer
 ): Promise<RestoredFilePath[]> => {
   const stats = await stat(filePath)
   const fileSize = stats.size
-  const ivOffset = version === 1 ? saltLength : v2PayloadOffset
+  const ivOffset = payloadOffset
 
   const fd = await open(filePath, "r")
 

@@ -3,78 +3,29 @@ import { BrowserWindow, ipcMain } from "electron"
 import { ErrorCorrection } from "qr"
 
 import {
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 import {
-  blockSize,
-  computeBlockKdfKey,
-  deriveBlockKey,
-  deriveBlocksetKey,
-  encodeBlockMessage,
+  Metadata,
+  Payload,
+  Secret,
+  encryptBlock,
   qrCodeEcc,
 } from "@/src/utilities/core/block"
-import {
-  Secret as BlockSecret,
-  encrypt,
-} from "@/src/utilities/crypto/fixedSizeEncryption"
-import {
-  generateSalt,
-  hash,
-  shortHash,
-} from "@/src/utilities/crypto/primitives"
-import { generateShares } from "@/src/utilities/crypto/shamir"
+import { encryptBlockset } from "@/src/utilities/core/blockset"
+import { LegacyPayload } from "@/src/utilities/core/legacy/block"
+import { hash, shortHash } from "@/src/utilities/crypto/primitives"
 import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
-import {
-  Slot,
-  YubiKeyError,
-  YubiKeyErrorCode,
-} from "@/src/utilities/yubikey/otp"
+import { YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey/otp"
+
+// LegacyPayload is re-exported so renderer and consumer imports stay off
+// the legacy modules — and dies with them when legacy support is removed
+export type { LegacyPayload, Metadata, Payload, Secret }
 
 declare const BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const BLOCK_WINDOW_WEBPACK_ENTRY: string
-
-export interface Secret {
-  message: string
-  passphrase: string
-  // Optional YubiKey slot binding the passphrase and the YubiKey response
-  // into a derived key (see computeBlockKdfKey in src/utilities/core/block.ts) —
-  // standard blocks only, never blocksets
-  slot?: Slot
-}
-
-// Internal to the Shamir path — a share-carrying secret whose message is the
-// raw share bytes, unlike the string messages of the renderer-facing Secret
-interface ShareSecret {
-  message: Buffer
-  passphrase: string
-}
-
-interface ShamirBlockSecret {
-  [index: number]: ShareSecret[]
-}
-
-export interface Metadata {
-  label?: string
-}
-
-export interface Payload {
-  salt: string
-  data: string
-  metadata: Metadata
-}
-
-// Legacy payloads (legacy fixed-size encryption) carry iv and headers as
-// well — their presence is how restoration tells the formats apart. Kept
-// separate from Payload so legacy support can be removed cleanly.
-export interface LegacyPayload {
-  salt: string
-  iv: string
-  headers: string
-  data: string
-  metadata: Metadata
-}
 
 export interface Qr {
   // Scanned payloads flow back through duplication, so a Qr may carry either
@@ -225,70 +176,6 @@ export const renderCarrierPdf = async (
   return pdfBuffer.toString("base64")
 }
 
-// Derives one key per secret from its passphrase and the block’s salt
-// (computeBlockKdfKey — sequentially, so each YubiKey-protected secret
-// costs its own challenge-response round-trip and touch — then the backup
-// type’s HKDF domain key so restoration classifies messages by which key
-// authenticates), then encrypts all secrets into a single fixed-size
-// block. Exported for the pipeline tests — the create handler wraps it
-// with QR rendering, which requires a live window
-export const encryptBlock = async (
-  secrets: (Secret | ShareSecret)[],
-  blockset: boolean,
-  paranoid: boolean,
-  label?: string
-): Promise<Payload> => {
-  const salt = generateSalt()
-  const saltBase64 = salt.toString("base64")
-  const blockSecrets: BlockSecret[] = []
-  for (const secret of secrets) {
-    const slot = "slot" in secret ? secret.slot : undefined
-    const kdfKey = await computeBlockKdfKey(
-      secret.passphrase,
-      salt,
-      paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile,
-      slot === undefined
-        ? undefined
-        : { onTouchRequired: broadcastYubiKeyTouchRequired, slot: slot }
-    )
-    blockSecrets.push({
-      key: blockset ? deriveBlocksetKey(kdfKey) : deriveBlockKey(kdfKey),
-      message: encodeBlockMessage(secret.message),
-    })
-  }
-  return {
-    salt: saltBase64,
-    data: encrypt(blockSecrets, blockSize).toString("base64"),
-    metadata: {
-      label: label,
-    },
-  }
-}
-
-// Validation shared by the handler and the pipeline tests — the handler
-// itself renders blocks in a live window, so the guards live where tests
-// can reach them
-export const validateCreate = (
-  secrets: Secret[],
-  shamir?: boolean,
-  numberOfShares?: number,
-  threshold?: number
-): void => {
-  if (
-    shamir === true &&
-    (typeof numberOfShares !== "number" ||
-      typeof threshold !== "number" ||
-      threshold > numberOfShares)
-  ) {
-    throw new Error("Invalid number of shares or threshold")
-  }
-  // YubiKey protection is offered for standard blocks only — the app
-  // never sends a slot for blocksets
-  if (shamir === true && secrets.some((secret) => secret.slot !== undefined)) {
-    throw new Error("YubiKey protection is not supported for blocksets")
-  }
-}
-
 export default async function create(
   secrets: Secret[],
   label: string | undefined,
@@ -312,42 +199,29 @@ export default async function create(
   threshold?: number
 ): Promise<Result> {
   try {
-    validateCreate(secrets, shamir, numberOfShares, threshold)
+    const profile = paranoid === true ? paranoidKdfProfile : standardKdfProfile
+    const payloads =
+      shamir === true
+        ? await encryptBlockset(
+            secrets,
+            numberOfShares as number,
+            threshold as number,
+            profile,
+            label,
+            broadcastYubiKeyTouchRequired
+          )
+        : [
+            await encryptBlock(
+              secrets,
+              false,
+              profile,
+              label,
+              broadcastYubiKeyTouchRequired
+            ),
+          ]
     const qrs = []
-    if (shamir === true) {
-      const shamirBlockSecrets: ShamirBlockSecret = {}
-      for (const secret of secrets) {
-        const shares = await generateShares(
-          secret.message,
-          numberOfShares,
-          threshold
-        )
-        for (const [index, share] of shares.entries()) {
-          const shareSecret: ShareSecret = {
-            message: share,
-            passphrase: secret.passphrase,
-          }
-          if (shamirBlockSecrets[index]) {
-            shamirBlockSecrets[index].push(shareSecret)
-          } else {
-            shamirBlockSecrets[index] = [shareSecret]
-          }
-        }
-      }
-      for (const shamirBlockSecret of Object.values(shamirBlockSecrets)) {
-        const payload = await encryptBlock(
-          shamirBlockSecret,
-          true,
-          paranoid,
-          label
-        )
-        const qr = await compute(payload, label)
-        qrs.push(qr)
-      }
-    } else {
-      const payload = await encryptBlock(secrets, false, paranoid, label)
-      const qr = await compute(payload, label)
-      qrs.push(qr)
+    for (const payload of payloads) {
+      qrs.push(await compute(payload, label))
     }
     return {
       qrs: qrs,

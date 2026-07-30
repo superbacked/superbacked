@@ -8,7 +8,7 @@ import { wordlist } from "@scure/bip39/wordlists/english.js"
 import { validateMnemonic } from "@/src/utilities/crypto/bip39"
 import {
   computeDerivedBitcoinWallet,
-  defaultDerivationPath,
+  derivationPath,
   deriveAddresses,
   deriveExtendedPrivateKey,
   deriveExtendedPublicKey,
@@ -28,13 +28,13 @@ import {
 const derivedKey = Buffer.alloc(32, 1)
 
 const mnemonic24 =
-  "muscle crawl tiny snack note chunk cheese acquire ahead please reject sniff hair cactus loan torch uphold curious cousin spread become cotton abandon pig"
+  "clay knife lonely captain palace usual tissue laugh ring sponsor resemble dismiss fish acid bless juice cool frost surge chair rely fun armed toddler"
 const mnemonic12 =
-  "prefer special script soap option brisk this mass swap odor vote require"
+  "fiber buffalo require crunch garage stage grief begin hover amount rose thank"
 
 suite("derivedBitcoinWallet", () => {
-  test("freezes default derivation path", () => {
-    assert.strictEqual(defaultDerivationPath, "m/84'/0'/0'")
+  test("freezes derivation path", () => {
+    assert.strictEqual(derivationPath, "m/84'/0'/0'")
   })
 
   test("derives 24-word mnemonic", () => {
@@ -60,13 +60,13 @@ suite("derivedBitcoinWallet", () => {
       .digest()
     assert.strictEqual(
       deriveMnemonic(deriveKey(masterKey, response), 24),
-      "fossil old ethics math swamp invest wagon hurry soccer inflict acid era tissue load account flight alpha dinosaur join cute cake acid hand logic"
+      "clinic local loan drive sphere feel knife pulse comic olive clinic illegal pistol foot bronze help meat layer yellow stone lady language nest speed"
     )
     // The single-factor wallet of the same master key is a different one
     // — the hardware is a factor of the wallet itself
     assert.strictEqual(
       deriveMnemonic(deriveKey(masterKey, noYubiKeySalt), 24),
-      "combine stuff price popular proof sustain harsh deal stem cloth advance cup resist kind lake science stand detect airport stool october tourist obtain fly"
+      "wash shoot humble session conduct slide conduct citizen agent token success program income pottery short away trophy unique clap cheese raccoon rival island usual"
     )
   })
 
@@ -97,7 +97,7 @@ suite("derivedBitcoinWallet", () => {
               "sha256",
               derivedKey,
               Buffer.alloc(0),
-              Buffer.from(`superbacked-derived-mnemonic-v1-${words}`, "utf8"),
+              Buffer.from(`superbacked-derived-mnemonic-${words}`, "utf8"),
               length
             )
           ),
@@ -114,65 +114,36 @@ suite("derivedBitcoinWallet", () => {
     })
   })
 
-  test("derives extended public keys labeled by purpose", () => {
-    // SLIP-132 — the emitted key is labeled by what the path derives
+  test("derives extended public key", () => {
+    // SLIP-132 native segwit labeling — the zpub of the fixed path
     assert.strictEqual(
-      deriveExtendedPublicKey(mnemonic24, defaultDerivationPath),
-      "zpub6qd8dzcv4EQxkzDVY9DiTSTQue7vCSL5U4kZbQiJ3H5j3wP8pg1AFUEfug3yNCvM5BqWTUK1p1bWHYhhWXpVypTToT9AqLnv9tENnFAGanv"
+      deriveExtendedPublicKey(mnemonic24),
+      "zpub6s2TkKXmvFkJxU4LnPNWJa1UDELaaCpcRR7rubjrswtxsb14iBscNDvPdHi7rKsqLPLYYyGjQpLcd1XUhPFv5m1U9ExYVGyZ6iXqDMnHAKZ"
     )
-    assert.strictEqual(
-      deriveExtendedPublicKey(mnemonic24, "m/44'/0'/0'"),
-      "xpub6CrFGVNzQKjushsv5sbXDNewLcmqCyPw466pmTjpte7oDUsuZvXdkfSDhEmW5NBqURoQ3dANX1zXjHYRjdb3DN8sYxtnpVyPzVdo9qVJQek"
-    )
-    assert.strictEqual(
-      deriveExtendedPublicKey(mnemonic24, "m/49'/0'/0'"),
-      "ypub6XTovTau868KAzSaTav3LikSECC3QnMKTbTs98rTgozNksYBgUMmNkoJD36WYTdLo8m9jdzP3o3ifPFLbnzK9kSxob4GKdNzdhdga5rhbDA"
-    )
-  })
-
-  test("fails to derive extended public key using invalid path", () => {
-    // The path shape is validated at the command line (see
-    // parseDerivationPath in src/cli/derivedBitcoinWallet.ts) — the library
-    // rejection is the module-level backstop
-    assert.throws(() => deriveExtendedPublicKey(mnemonic24, "nonsense"))
   })
 
   test("derives extended private key", () => {
     // Pasting the zprv into a wallet imports the entire account — the
     // Electrum path
     assert.strictEqual(
-      deriveExtendedPrivateKey(mnemonic24, defaultDerivationPath),
-      "zprvAcdnEV62DrrfYW92S7gi6JWgMcHRnycE6qpxo2JgUwYkB93zH8guhfvC4NwepJTLoSAUYd6YxGbrj3xnggPMiva4i5xYfjizZ42D4FL1oh5"
+      deriveExtendedPrivateKey(mnemonic24),
+      "zprvAe37Lozt5tC1jyysgMqVwS4jfCW6Ak6m4CCG7DLFKcMyznfvAeZMpRbun12zU2k2nA17q2BKcUt1i5uHfgXVDaLk9zrZquX6MHyMgrNyo78"
     )
   })
 
   test("derives receive addresses", () => {
-    assert.deepStrictEqual(
-      deriveAddresses(mnemonic24, defaultDerivationPath, 3),
-      [
-        "bc1q0r0yn4ypkwau66kezl7gvxu5wwkmnt2crwjfhd",
-        "bc1qvhyy8udjpfrhc7hh3cdpn465kcdf94asc3wlam",
-        "bc1qaxy2929ehkvjykgygfssypk703e265lz6wfjqg",
-      ]
-    )
-  })
-
-  test("fails to derive addresses outside native segwit paths", () => {
-    // Other purposes use other address encodings — an m/44' address is
-    // not a bech32 one
-    assert.throws(() => deriveAddresses(mnemonic24, "m/44'/0'/0'", 1), {
-      message: "Addresses are supported for m/84' derivation paths only",
-    })
+    assert.deepStrictEqual(deriveAddresses(mnemonic24, 3), [
+      "bc1q76v00ytsk3j6ztfyxy0nzhmmffle745794yeql",
+      "bc1q6suyhrrr6x0c4vn64p7m9rvz3fd9pakwavns26",
+      "bc1qndwuu2sheyc8fdljsznlave5ydngus6jvtjg6y",
+    ])
   })
 
   test("fails to derive addresses using invalid count", () => {
     for (const count of [0, -1, 1.5]) {
-      assert.throws(
-        () => deriveAddresses(mnemonic24, defaultDerivationPath, count),
-        {
-          message: "Count must be a positive integer",
-        }
-      )
+      assert.throws(() => deriveAddresses(mnemonic24, count), {
+        message: "Count must be a positive integer",
+      })
     }
   })
 
@@ -182,25 +153,24 @@ suite("derivedBitcoinWallet", () => {
     const { extendedPublicKey, mnemonic } = await computeDerivedBitcoinWallet(
       "lip gift name net sixth",
       "github",
-      { derivationPath: defaultDerivationPath, paranoid: false, words: 24 }
+      { paranoid: false, words: 24 }
     )
     assert.strictEqual(
       mnemonic,
-      "identify wrong reward climb violin color crater hunt cabin alter garage blue name unaware estate prison category reunion risk era cotton shoulder quit build"
+      "morning tip first lend amount fortune chimney human chunk rookie decrease clutch mystery amazing screen snack profit gather december crystal hand visual village mule"
     )
     assert.strictEqual(
       extendedPublicKey,
-      "zpub6rEwfvDvu5GwPFPQSU7dnVYApL89sRCmsW4vbrTcEkgT52Nxug8cuLUm7CinwXxd7YszxhtLYHfdyixYSgppEg6ivBb6VMHhqPFr1vwcnk2"
+      "zpub6rskz9PppDLZKurVF9qhu7bs1TvadsejsGWmsFfQ2aVkKHi3eGiDCQXMEtgHBb1ucSHPMWnbRPoUsGwnAMS81q2ie77dD5sGzSXXpwKbFSo"
     )
     // The wallet the reference master passphrase derives — first receive
     // address and account private key, importable into any wallet
-    assert.deepStrictEqual(
-      deriveAddresses(mnemonic, defaultDerivationPath, 1),
-      ["bc1ql3yeg5y2zgqrq7pe00r047el72n8xkcq6ed3zp"]
-    )
+    assert.deepStrictEqual(deriveAddresses(mnemonic, 1), [
+      "bc1qmmvmyjcpcqkkw7ssewyd8vw6ud6ctv6rh9m7xq",
+    ])
     assert.strictEqual(
-      deriveExtendedPrivateKey(mnemonic, defaultDerivationPath),
-      "zprvAdFbGQh34hieAmJwLSadRMbSGJHfTxUvWH9KoU3zgR9UCE3pN8pNMYAHFwojtSzuGY72xjFXhNggr2VHxVnYWcgwSJqN6WisX1enghbkXAG"
+      deriveExtendedPrivateKey(mnemonic),
+      "zprvAdtQadrvyqnG7Rn298JhXyf8TS66EQvtW3bB4sFnUExmSVNu6jPxecCsPcLW3Cp7PGnYqGBr3sx5pQD8RmcCeTgqidMsvZuLS4zcpJE8wbi"
     )
   })
 
@@ -211,11 +181,11 @@ suite("derivedBitcoinWallet", () => {
     const { mnemonic } = await computeDerivedBitcoinWallet(
       "lip gift name net sixth",
       "github",
-      { derivationPath: defaultDerivationPath, paranoid: true, words: 24 }
+      { paranoid: true, words: 24 }
     )
     assert.strictEqual(
       mnemonic,
-      "spike dinner board novel arena orphan whale surge unknown copper police immune labor blind scissors fatal parade lady music crawl pulp define misery thing"
+      "diesel blame drive two section flame fetch this liberty series crater crisp that word heavy half dilemma arrange number doll broken position silly lens"
     )
   })
 })

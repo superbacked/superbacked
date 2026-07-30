@@ -8,7 +8,7 @@ import { dictionary as languageEnDictionary } from "@zxcvbn-ts/language-en"
 import {
   KdfProfile,
   legacyKdfProfile,
-  v2StandardKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 import effLargeWordlist from "@/wordlists/eff_large_wordlist.json"
 import effShortWordlist1 from "@/wordlists/eff_short_wordlist_1.json"
@@ -26,7 +26,8 @@ const year = month * 12
 // profile the passphrase will actually stretch under — wherever
 // Superbacked accepts one, app modals and command-line interface alike,
 // with no override, while restoration is never gated (see
-// docs/passphrase-strength-technical-documentation.md). The requirement
+// docs/technical-documentation/passphrase-strength.md).
+// The requirement
 // is the attack time, not an entropy quota: a stronger profile buys real
 // years, so it admits proportionally weaker passphrases — a deliberate,
 // user-owned trade under Paranoid mode. The threshold and the anchor
@@ -309,7 +310,7 @@ const userInputs = ["superbacked"]
 // gate together — the requirement is fifty years, however they are bought
 export default (
   passphrase: string,
-  profile: KdfProfile = v2StandardKdfProfile
+  profile: KdfProfile = standardKdfProfile
 ): Result => {
   const options = {
     graphs: languageCommonAdjacencyGraphs,

@@ -1,4 +1,5 @@
-import { generateEncryptionKey, hkdf } from "@/src/utilities/crypto/primitives"
+import { deriveDetachedArchiveKeys } from "@/src/utilities/core/detachedArchive"
+import { generateEncryptionKey } from "@/src/utilities/crypto/primitives"
 
 /**
  * Generate master key
@@ -10,21 +11,13 @@ export const generateMasterKey = (): string => {
 }
 
 /**
- * Derive key using HKDF
- * @param key base64-encoded 256-bit key
- * @param info context string for key derivation
- * @param length output length in bytes (defaults to 32 for 256-bit)
- * @param encoding output encoding (defaults to base64)
- * @returns derived key in specified encoding
+ * Derive the detached archive filename from a master key — the one piece
+ * of the key chain the renderer needs, to name the archive at creation:
+ * the keys themselves never leave the handlers (see
+ * src/handlers/detachedArchive.ts)
+ * @param masterKey base64-encoded 256-bit master key
+ * @returns hex archive filename
  */
-export const deriveKey = (
-  key: string,
-  info: string,
-  length: number = 32,
-  encoding: "base64" | "hex" = "base64"
-): string => {
-  const keyBuffer = Buffer.from(key, "base64")
-  const infoBuffer = Buffer.from(info)
-  const derivedKey = hkdf(keyBuffer, Buffer.alloc(0), infoBuffer, length)
-  return derivedKey.toString(encoding)
+export const deriveDetachedArchiveFilename = (masterKey: string): string => {
+  return deriveDetachedArchiveKeys(Buffer.from(masterKey, "base64")).filename
 }

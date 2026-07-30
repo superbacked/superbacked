@@ -1,23 +1,17 @@
 import assert from "assert"
-import { createHmac, hkdfSync, randomBytes } from "crypto"
-import { createWriteStream } from "fs"
-import { appendFile, mkdtemp, readFile, writeFile } from "fs/promises"
+import { hkdfSync, randomBytes } from "crypto"
+import { mkdtemp, readFile, writeFile } from "fs/promises"
 import { suite, test } from "node:test"
 import { tmpdir } from "os"
 import { join } from "path"
-import { pipeline } from "stream/promises"
 
-import {
-  createEncryptionStream,
-  createTarStream,
-  generateIv,
-} from "@/src/utilities/core/archive"
 import {
   UnsupportedVersionError,
   createDetachedArchive,
+  deriveDetachedArchiveKeys,
   deriveProbeKey,
-  detachedArchiveVersion,
   restoreDetachedArchive,
+  schemeVersion,
 } from "@/src/utilities/core/detachedArchive"
 import {
   encodeProbeBlock,
@@ -48,35 +42,9 @@ const createFixture = async (): Promise<{
   }
 }
 
-// The v1 writer — replicates the released headerless format
-// [iv][encrypted data][tag][hmac] so the fallback path is pinned against
-// what actually shipped
-const createLegacyDetachedArchive = async (
-  filePaths: string[],
-  outputPath: string,
-  key: Buffer,
-  hmacKey: Buffer,
-  content: Buffer
-): Promise<void> => {
-  const iv = generateIv()
-  const cipher = createEncryptionStream(key, iv)
-  const output = createWriteStream(outputPath)
-  output.write(iv)
-  await pipeline(createTarStream(filePaths), cipher, output)
-  const tag = cipher.getAuthTag()
-  await appendFile(outputPath, tag)
-  const file = await readFile(outputPath)
-  const hmac = createHmac("sha256", hmacKey)
-    .update(content)
-    .update(file.subarray(0, 12))
-    .update(file.subarray(12))
-    .digest()
-  await appendFile(outputPath, hmac)
-}
-
 suite("detachedArchive", () => {
   test("freezes version and probe key derivation", () => {
-    assert.strictEqual(detachedArchiveVersion, 2)
+    assert.strictEqual(schemeVersion, 2)
     const key = randomBytes(32)
     const probeKey = deriveProbeKey(key)
     // Raw crypto recomputation pins the frozen construction — a child of
@@ -88,12 +56,53 @@ suite("detachedArchive", () => {
           "sha256",
           key,
           Buffer.alloc(0),
-          Buffer.from("version-probe-v1", "utf8"),
+          Buffer.from("version-probe", "utf8"),
           32
         )
       )
     )
     assert.notDeepStrictEqual(probeKey, key)
+  })
+
+  test("freezes key chain", () => {
+    // The chain is a frozen identity — it seals every new archive (the
+    // shipped legacy chain is pinned in
+    // tests/legacy/detachedArchive.test.ts)
+    const masterKey = Buffer.alloc(32, 1)
+    const current = deriveDetachedArchiveKeys(masterKey)
+    assert.strictEqual(
+      current.encryptionKey.toString("hex"),
+      "eb2ec11f67941c49a831de21b72f36c37ab02a2b84ffa47e2a0fc52913330a82"
+    )
+    assert.strictEqual(
+      current.hmacKey.toString("hex"),
+      "63daeeeb9ca79ba128c0310b46e24862634fae05d65f042ad982b99a37ed7bf8"
+    )
+    assert.strictEqual(current.filename, "68e1435f46f036f3068d06333a148f1b")
+    // Raw crypto recomputation pins the frozen info strings
+    for (const [info, expected] of [
+      ["detached-archive-key", current.encryptionKey],
+      ["detached-archive-hmac", current.hmacKey],
+    ] as const) {
+      assert.deepStrictEqual(
+        expected,
+        Buffer.from(
+          hkdfSync("sha256", masterKey, Buffer.alloc(0), Buffer.from(info), 32)
+        )
+      )
+    }
+    assert.deepStrictEqual(
+      Buffer.from(current.filename, "hex"),
+      Buffer.from(
+        hkdfSync(
+          "sha256",
+          masterKey,
+          Buffer.alloc(0),
+          Buffer.from("detached-archive-filename"),
+          16
+        )
+      )
+    )
   })
 
   test("round-trips v2 detached archive", async () => {
@@ -125,29 +134,27 @@ suite("detachedArchive", () => {
     )
   })
 
-  test("restores legacy v1 detached archive", async () => {
+  test("fails to restore when no probe matches", async () => {
+    // The module restores its own scheme only — a probe miss is a hard
+    // rejection, and falling back is the consumer’s decision (see
+    // src/handlers/detachedArchive.ts)
     const fixture = await createFixture()
-    await createLegacyDetachedArchive(
+    await createDetachedArchive(
       [fixture.filePath],
       fixture.archivePath,
       fixture.key,
       fixture.hmacKey,
       blockContent
     )
-    const files = await restoreDetachedArchive(
-      fixture.archivePath,
-      fixture.outputDir,
-      fixture.key,
-      fixture.hmacKey,
-      blockContent
-    )
-    assert.strictEqual(files.length, 1)
-    const restoredPath = files[0]
-    assert.ok(restoredPath !== undefined)
-    assert.ok(restoredPath.endsWith("secret.txt"))
-    assert.strictEqual(
-      await readFile(join(fixture.outputDir, restoredPath), "utf-8"),
-      fixture.content
+    await assert.rejects(
+      restoreDetachedArchive(
+        fixture.archivePath,
+        fixture.outputDir,
+        randomBytes(32),
+        fixture.hmacKey,
+        blockContent
+      ),
+      { message: "Probe block not found" }
     )
   })
 

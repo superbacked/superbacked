@@ -6,18 +6,17 @@ import { Option as CommanderOption, program as cli } from "commander"
 import {
   deriveBitcoinWalletAction,
   parseAddresses,
-  parseDerivationPath,
-} from "@/src/cli/derivedBitcoinWallet"
+} from "@/src/cli/deriveBitcoinWallet"
 import {
   derivePasswordAction,
   parseClear,
   parseLength,
-} from "@/src/cli/derivedPassword"
+} from "@/src/cli/derivePassword"
+import { provisionYubikeyAction } from "@/src/cli/provisionYubikey"
 import {
   createStandaloneArchiveAction,
   restoreStandaloneArchiveAction,
 } from "@/src/cli/standaloneArchive"
-import { provisionYubikeyAction } from "@/src/cli/yubikey"
 import {
   Locale,
   defaultLocale,
@@ -121,7 +120,7 @@ cli
   )
   .option(
     "--addresses <count>",
-    "print first receive addresses (m/84' paths only)",
+    "print first receive addresses",
     parseAddresses
   )
   .option(
@@ -133,11 +132,6 @@ cli
   .option(
     "--confirm",
     "confirm master passphrase (recommended when creating wallets)"
-  )
-  .addOption(
-    new CommanderOption("--derivation-path <path>", "BIP32 derivation path")
-      .argParser(parseDerivationPath)
-      .default("m/84'/0'/0'")
   )
   .addOption(
     new CommanderOption(
@@ -382,6 +376,22 @@ cli.hook("preSubcommand", () => {
   app.disableHardwareAcceleration()
   app.commandLine.appendSwitch("disable-gpu")
   app.commandLine.appendSwitch("log-level", "3")
+  // Chromium catches SIGINT and SIGTERM and shuts down cleanly with exit
+  // code 0, so an interrupted prompt reads as success to the shell —
+  // pipefail sees nothing and bash continues the script, treating the
+  // interrupt as handled. Exit with the shell convention for
+  // death-by-signal (128 + signal number) instead; terminal echo is
+  // restored by the prompt guard on any exit path (see
+  // src/cli/utilities/readPassphrase.ts). Registration must wait for
+  // ready: the last sigaction installed wins, Chromium's shutdown
+  // detector installs its own during browser main loop startup, and
+  // libuv installs the process-level handler only when the first
+  // listener for a signal is added — registering here at parse time
+  // would be silently overwritten moments later
+  void app.whenReady().then(() => {
+    process.on("SIGINT", () => process.exit(130))
+    process.on("SIGTERM", () => process.exit(143))
+  })
 })
 
 cli.parse()

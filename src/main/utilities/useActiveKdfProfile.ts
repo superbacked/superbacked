@@ -2,8 +2,8 @@ import { useEffect, useState } from "react"
 
 import {
   KdfProfile,
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 
 // Same-window signal fired by the Settings toggle — cross-window
@@ -14,8 +14,8 @@ export const kdfProfileChangedEvent = "superbacked:kdf-profile-changed"
 
 const readProfile = (): KdfProfile => {
   return window.api.invokeSync.getConfig("kdfProfile") === "paranoid"
-    ? v2ParanoidKdfProfile
-    : v2StandardKdfProfile
+    ? paranoidKdfProfile
+    : standardKdfProfile
 }
 
 // The KDF profile new artifacts will stretch under — drives the estimator

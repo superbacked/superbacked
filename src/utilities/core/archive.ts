@@ -1,6 +1,12 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto"
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHmac,
+  randomBytes,
+} from "crypto"
 import { mkdir, stat } from "fs/promises"
 import { basename } from "path"
+import { Transform } from "stream"
 
 import { ReadEntry, create, extract } from "tar"
 
@@ -61,6 +67,39 @@ export const createDecryptionStream = (
   const decipher = createDecipheriv("aes-256-gcm", key, iv)
   decipher.setAuthTag(authTag)
   return decipher
+}
+
+/**
+ * Create HMAC transform stream with initial data
+ * @param hmacKey 32-byte HMAC key
+ * @param initialData array of buffers to provide to HMAC before handling stream
+ * @returns transform stream and finalize function
+ */
+export const createHmacStream = (hmacKey: Buffer, initialData: Buffer[]) => {
+  const hmac = createHmac("sha256", hmacKey)
+
+  // Update HMAC with initial data
+  for (const chunk of initialData) {
+    hmac.update(chunk)
+  }
+
+  // Create transform stream that updates HMAC with pipeline chunk
+  const transform = new Transform({
+    transform(chunk, _encoding, callback) {
+      hmac.update(chunk)
+      callback(null, chunk)
+    },
+  })
+
+  return {
+    transform,
+    finalize: (finalChunks: Buffer[] = []) => {
+      for (const chunk of finalChunks) {
+        hmac.update(chunk)
+      }
+      return hmac.digest()
+    },
+  }
 }
 
 /**

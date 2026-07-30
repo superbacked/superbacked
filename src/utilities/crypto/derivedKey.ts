@@ -1,8 +1,8 @@
 import { createHash, createHmac } from "crypto"
 
 import {
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 import argon2 from "@/src/utilities/crypto/argon2"
 import { hkdf } from "@/src/utilities/crypto/primitives"
@@ -22,7 +22,7 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
 // factor, so leaked derived material becomes offline-attackable (Argon2d
 // is the only remaining wall) — the trade-off for working without hardware.
 //
-// Context strings share the superbacked-derived-key-v1- prefix followed by
+// Context strings share the superbacked-derived-key- prefix followed by
 // a role segment (salt-, challenge-, no-yubikey) — roles diverge at a fixed
 // position, so no label can make two contexts collide.
 //
@@ -34,15 +34,17 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
 // part of what the user knows (surfaced at every derivation), and a
 // future version would be an explicit choice, never a failover.
 
-// The version of the derivation scheme below — the v1 context strings
-// bound to the v2 profile rows, permanently
-export const derivedSchemeVersion = 1
+// The version of the derivation scheme below — surfaced at every
+// derivation and selectable via --derivation-version. The context strings
+// below belong to version 1 permanently; a future version introduces new
+// strings, it never edits these
+export const schemeVersion = 1
 
 // Salt standing in for the YubiKey response when deriving without hardware —
 // fixed and public, and never equal to a real response (responses are 20
 // bytes), so the two modes derive independent keys
 export const noYubiKeySalt = createHash("sha256")
-  .update("superbacked-derived-key-v1-no-yubikey", "utf8")
+  .update("superbacked-derived-key-no-yubikey", "utf8")
   .digest()
 
 /**
@@ -66,13 +68,13 @@ export const computeMasterKey = async (
   // stateless so the salt is derived, not stored — binding it to the
   // label keeps a precomputed dictionary from transferring across labels.
   const salt = createHash("sha256")
-    .update(`superbacked-derived-key-v1-salt-${label}`, "utf8")
+    .update(`superbacked-derived-key-salt-${label}`, "utf8")
     .digest("hex")
     .substring(0, 32)
   return argon2(
     masterPassphrase,
     salt,
-    paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile
+    paranoid === true ? paranoidKdfProfile : standardKdfProfile
   )
 }
 
@@ -88,7 +90,7 @@ export const computeChallenge = (masterKey: Buffer, label: string): Buffer => {
   // limit regardless of label length. The context prefix domain-separates
   // this keyed use of the master key from the HKDF below.
   return createHmac("sha256", masterKey)
-    .update(`superbacked-derived-key-v1-challenge-${label}`, "utf8")
+    .update(`superbacked-derived-key-challenge-${label}`, "utf8")
     .digest()
 }
 
@@ -105,7 +107,7 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
   return hkdf(
     masterKey,
     salt,
-    Buffer.from("superbacked-derived-key-v1", "utf8"),
+    Buffer.from("superbacked-derived-key", "utf8"),
     32
   )
 }

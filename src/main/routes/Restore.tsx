@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 
 import { LegacyPayload, Payload } from "@/src/handlers/create"
+import { DetachedArchive } from "@/src/handlers/detachedArchive"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import Dropzone from "@/src/main/components/Dropzone"
 import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
@@ -194,16 +195,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const [showScanNextBlockBadge, setShowScanNextBlockBadge] = useState(false)
   const [secret, setSecret] = useState<null | string>(null)
   const [showSecret, setShowSecret] = useState(false)
-  const [detachedArchiveEncryptionKey, setDetachedArchiveEncryptionKey] =
-    useState<null | string>(null)
-  const [detachedArchiveHmacKey, setDetachedArchiveHmacKey] = useState<
-    null | string
-  >(null)
-  const [detachedArchiveFilename, setDetachedArchiveFilename] = useState<
-    null | string
-  >(null)
-  const [detachedArchiveBlockContent, setDetachedArchiveBlockContent] =
-    useState<null | string>(null)
+  // Present when the restored block pairs with a detached archive — held
+  // opaquely and handed back verbatim (see src/handlers/detachedArchive.ts)
+  const [detachedArchive, setDetachedArchive] =
+    useState<null | DetachedArchive>(null)
   const [isRestoringDetachedArchive, setIsRestoringDetachedArchive] =
     useState(false)
   const [error, setError] = useState<null | ErrorState<
@@ -294,44 +289,10 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       scannerRef.current?.stop()
       scannedCodesRef.current.clear()
 
-      // Parse secret
-      const message = result.message
-      let extractedSecret = message
-      let extractedMasterKey: null | string = null
-      try {
-        const parsed = JSON.parse(extractedSecret)
-        if (parsed && typeof parsed.secret === "string") {
-          extractedSecret = parsed.secret
-          if (typeof parsed.masterKey === "string") {
-            extractedMasterKey = parsed.masterKey
-          }
-        }
-      } catch {
-        // Not JSON, use as-is
-      }
+      setSecret(result.message)
 
-      setSecret(extractedSecret)
-
-      // If masterKey exists, derive archive encryption key, HMAC key and filename
-      if (extractedMasterKey) {
-        const encryptionKey = window.api.invokeSync.deriveKey(
-          extractedMasterKey,
-          "encryption-key-v1"
-        )
-        setDetachedArchiveEncryptionKey(encryptionKey)
-        const derivedHmacKey = window.api.invokeSync.deriveKey(
-          extractedMasterKey,
-          "hmac-v1"
-        )
-        setDetachedArchiveHmacKey(derivedHmacKey)
-        const derivedFilename = window.api.invokeSync.deriveKey(
-          extractedMasterKey,
-          "filename-v1",
-          16,
-          "hex"
-        )
-        setDetachedArchiveFilename(derivedFilename)
-        setDetachedArchiveBlockContent(message)
+      if (result.detachedArchive) {
+        setDetachedArchive(result.detachedArchive)
       }
     }
   }
@@ -421,19 +382,14 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     } else {
       return (
         <Fragment>
-          {detachedArchiveFilename ? (
+          {detachedArchive ? (
             <Fragment>
               <Dropzone
                 onDrop={async (files: FileWithPath[]) => {
                   const file = files[0]
-                  if (
-                    file &&
-                    detachedArchiveEncryptionKey &&
-                    detachedArchiveHmacKey &&
-                    detachedArchiveBlockContent
-                  ) {
+                  if (file) {
                     const filename = file.name.replace(/\.superbacked$/, "")
-                    if (filename === detachedArchiveFilename) {
+                    if (filename === detachedArchive.filename) {
                       const filePath = window.api.getPathForFile(file)
                       const saveDialogReturnValue =
                         await window.api.invoke.chooseDirectory(
@@ -454,9 +410,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                           await window.api.invoke.restoreDetachedArchive(
                             filePath,
                             outputDir,
-                            detachedArchiveEncryptionKey,
-                            detachedArchiveHmacKey,
-                            detachedArchiveBlockContent
+                            detachedArchive.blockContent
                           )
                         if (result.success === false && result.error) {
                           setError({
@@ -490,7 +444,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               />
               <ActionBadge color="dark">
                 {t("routes.restore.dragAndDropArchiveToRestore", {
-                  filename: `${detachedArchiveFilename}.superbacked`,
+                  filename: `${detachedArchive.filename}.superbacked`,
                 })}
               </ActionBadge>
             </Fragment>

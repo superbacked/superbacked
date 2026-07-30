@@ -5,15 +5,17 @@ import { suite, test } from "node:test"
 import { legacyKdfProfile } from "@/src/shared/utilities/kdfProfiles"
 import {
   blockSize,
-  blockVersion,
   computeBlockKdfKey,
+  decodeBlockContent,
   decodeBlockMessage,
   deriveBlockKey,
   deriveBlocksetKey,
+  encodeBlockContent,
   encodeBlockMessage,
   getBlockUsage,
   passphraseKeyInfo,
   qrCodeEcc,
+  schemeVersion,
 } from "@/src/utilities/core/block"
 import { getDataLength } from "@/src/utilities/crypto/fixedSizeEncryption"
 import {
@@ -22,9 +24,10 @@ import {
 } from "@/src/utilities/crypto/passphraseKey"
 import { schemeHeaderLength } from "@/src/utilities/crypto/schemeHeader"
 
-// Overhead a blockset adds to each message — the per-share overhead added by
-// secret-share-split
-const shamirOverhead = 49
+// Overhead a blockset adds to each message — the per-share overhead added
+// by secret-share-split plus the blockset scheme version byte (see
+// src/utilities/core/blockset.ts)
+const shamirOverhead = 49 + 1
 
 suite("block", () => {
   // Block density constants are frozen as literals — QR code capacity bounds
@@ -34,19 +37,26 @@ suite("block", () => {
     assert.strictEqual(qrCodeEcc, "low")
   })
 
+  test("freezes scheme version", () => {
+    // Absolute pin — the round trips below only check the constant
+    // against itself, and the reference artifacts pin it only while they
+    // exist
+    assert.strictEqual(schemeVersion, 2)
+  })
+
   // Reference vectors freeze the derivations — computed with an independent
   // HKDF-SHA256 implementation validated against RFC 5869 test case 1
   test("derives block key", () => {
     assert.strictEqual(
       deriveBlockKey(Buffer.alloc(32, 1)).toString("hex"),
-      "1c4e33aedcf4268b9b5002c4c443d6734a0c781e4a9ed653ed5ec351c5f7f07d"
+      "3c3f9de3dc78b147b1c2f3aec678a17f72c22fb8911f4e31966c2af58a31b77d"
     )
   })
 
   test("derives blockset key", () => {
     assert.strictEqual(
       deriveBlocksetKey(Buffer.alloc(32, 1)).toString("hex"),
-      "45be5bd7f1979c75c2f27f8f5f99de9f8baa5c6c85b32b9fef6377bdde78855f"
+      "1838790791ecce2ffc09cebf4782aa4e331f5d504ae853acc2d63be134bd0b9e"
     )
   })
 
@@ -64,7 +74,7 @@ suite("block", () => {
   test("freezes passphrase key info", () => {
     // Changing it changes the key of every YubiKey-protected block (see
     // src/utilities/crypto/passphraseKey.ts)
-    assert.strictEqual(passphraseKeyInfo, "kdf-key-v1")
+    assert.strictEqual(passphraseKeyInfo, "kdf-key")
   })
 
   test("computes key derivation function key from passphrase", async () => {
@@ -100,7 +110,7 @@ suite("block", () => {
         response,
         passphraseKeyInfo
       ).toString("hex"),
-      "e9c4b22de64e1de751daa38655938f505d946e76161e0979568072cf4b676442"
+      "e3ea18ffc8b9d6cc06b590978379f9dbd15ca155fc6699f9aedfb43aa35df7c7"
     )
   })
 
@@ -157,7 +167,7 @@ suite("block", () => {
     const plaintext = encodeBlockMessage("secret message")
     const decoded = decodeBlockMessage(plaintext)
     assert.notStrictEqual(decoded, null)
-    assert.strictEqual(decoded?.version, blockVersion)
+    assert.strictEqual(decoded?.version, schemeVersion)
     assert.strictEqual(decoded?.message.toString(), "secret message")
   })
 
@@ -179,5 +189,36 @@ suite("block", () => {
     const plaintext = encodeBlockMessage("secret message")
     plaintext.writeUInt8(3, 4)
     assert.strictEqual(decodeBlockMessage(plaintext)?.version, 3)
+  })
+
+  // Block content codec — the plaintext a block secret carries, binding
+  // the secret to a detached archive master key when one is paired. The
+  // encoding is frozen: legacy blocks in the wild carry the same JSON
+  // shape, decoded by the same codec
+  test("round-trips block content with and without master key", () => {
+    const masterKey = Buffer.alloc(32, 5).toString("base64")
+    const bound = encodeBlockContent("bound secret", masterKey)
+    assert.deepStrictEqual(decodeBlockContent(bound), {
+      masterKey: masterKey,
+      secret: "bound secret",
+    })
+    // Without a master key the secret passes through untouched — no JSON
+    // wrapping, so plain secrets stay plain
+    const plain = encodeBlockContent("plain secret")
+    assert.strictEqual(plain, "plain secret")
+    assert.deepStrictEqual(decodeBlockContent(plain), {
+      masterKey: null,
+      secret: "plain secret",
+    })
+  })
+
+  test("decodes JSON-shaped secrets as themselves", () => {
+    // A secret that happens to be JSON without the content shape is the
+    // secret itself — never partially unwrapped
+    const jsonSecret = '{"note":"not block content"}'
+    assert.deepStrictEqual(decodeBlockContent(jsonSecret), {
+      masterKey: null,
+      secret: jsonSecret,
+    })
   })
 })

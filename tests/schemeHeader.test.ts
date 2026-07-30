@@ -12,6 +12,13 @@ import {
   schemeHeaderMagic,
 } from "@/src/utilities/crypto/schemeHeader"
 
+// The header and probe codecs pin the scheme registry (see
+// docs/technical-documentation/scheme-registry.md) — the magic and
+// layout are frozen forever, and the decoder’s null contract is the
+// false-positive gate every version trial leans on: wrong keys, wrong
+// profiles and headerless legacy artifacts must all land in the same
+// place.
+
 suite("schemeHeader", () => {
   test("freezes magic and length", () => {
     // The magic is version-free and frozen forever — it is how an old app

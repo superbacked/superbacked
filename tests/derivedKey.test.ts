@@ -8,6 +8,7 @@ import {
   computeSingleFactorDerivedKey,
   deriveKey,
   noYubiKeySalt,
+  schemeVersion,
 } from "@/src/utilities/crypto/derivedKey"
 
 // Reference vectors freeze the derivation scheme — changing any constant,
@@ -17,16 +18,23 @@ const masterKey = Buffer.alloc(32, 1)
 const otherMasterKey = Buffer.alloc(32, 2)
 
 suite("derivedKey", () => {
+  test("freezes scheme version", () => {
+    // Surfaced at every derivation and selectable with
+    // --derivation-version — a silent bump would strand every derived
+    // password and wallet behind a version nobody chose
+    assert.strictEqual(schemeVersion, 1)
+  })
+
   test("freezes no-YubiKey salt", () => {
     assert.strictEqual(
       noYubiKeySalt.toString("hex"),
-      "0b3aba156bf3ad0019e38a551b5a59b260c112e31492ee023981c5f330ad534c"
+      "7df9f6209325de42d129e9cc4900ca2f0c34fefad9c8ee76874010e0e89917a3"
     )
     // Raw crypto recomputation pins the frozen context string
     assert.deepStrictEqual(
       noYubiKeySalt,
       createHash("sha256")
-        .update("superbacked-derived-key-v1-no-yubikey", "utf8")
+        .update("superbacked-derived-key-no-yubikey", "utf8")
         .digest()
     )
     // A real YubiKey response is 20 bytes, so the two modes can never share
@@ -37,7 +45,7 @@ suite("derivedKey", () => {
   test("computes challenge", () => {
     assert.strictEqual(
       computeChallenge(masterKey, "github").toString("hex"),
-      "8286ad9b27953a4d5b555eed86bce3caa0c9af20ed9a9fc7bdb2a3f3b2fb7751"
+      "2fec4474a54a452630699ab31c4bc703030cdb01d45722204804a8c87c2280ff"
     )
   })
 
@@ -47,7 +55,7 @@ suite("derivedKey", () => {
     assert.deepStrictEqual(
       computeChallenge(masterKey, "github"),
       createHmac("sha256", masterKey)
-        .update("superbacked-derived-key-v1-challenge-github", "utf8")
+        .update("superbacked-derived-key-challenge-github", "utf8")
         .digest()
     )
   })
@@ -62,7 +70,7 @@ suite("derivedKey", () => {
   test("derives key", () => {
     assert.strictEqual(
       deriveKey(masterKey, noYubiKeySalt).toString("hex"),
-      "477af217affde3f5a7d176d89fd2cfb5a496603c4b20339176d3d7f88864481c"
+      "e623b3ec80f5042f2e4e5453b2bd4bcb25cf78c3d4a1bdd0dfeee030535ce20a"
     )
   })
 
@@ -75,7 +83,7 @@ suite("derivedKey", () => {
           "sha256",
           masterKey,
           noYubiKeySalt,
-          Buffer.from("superbacked-derived-key-v1", "utf8"),
+          Buffer.from("superbacked-derived-key", "utf8"),
           32
         )
       )
@@ -92,7 +100,7 @@ suite("derivedKey", () => {
     assert.strictEqual(response.length, 20)
     assert.strictEqual(
       deriveKey(masterKey, response).toString("hex"),
-      "79bb33d2db5a6a613167e467805e7b8605935c614cc4a691d3df391d9e8729c3"
+      "9bb88b23ebd9e3efb92424bbb96a53ffe2110bc7e3a33f28ce873dbc06d039b0"
     )
   })
 
@@ -111,7 +119,7 @@ suite("derivedKey", () => {
   })
 
   test("computes master key", async () => {
-    // Argon2d at the v2 standard profile (64 MiB, 80 passes, 4 lanes) —
+    // Argon2d at the standard profile (64 MiB, 80 passes, 4 lanes) —
     // the permanent cost of scheme v1, frozen before any derived password
     // shipped
     const key = await computeMasterKey(
@@ -121,12 +129,12 @@ suite("derivedKey", () => {
     )
     assert.strictEqual(
       key.toString("hex"),
-      "8183259ed6aff4aae03536e7de042a9bc16ff24f67c1c4d9447f175246463241"
+      "794091dfc706c2e8e916389801ca58c83cf155d34c7248ec870eefb9b83d072c"
     )
   })
 
   test("computes paranoid master key", async () => {
-    // Argon2d at the v2 paranoid profile (1 GiB, 50 passes, 4 lanes) —
+    // Argon2d at the paranoid profile (1 GiB, 50 passes, 4 lanes) —
     // statelessness makes the mode part of what the user must know, so
     // both costs are frozen vectors
     const key = await computeMasterKey(
@@ -136,7 +144,7 @@ suite("derivedKey", () => {
     )
     assert.strictEqual(
       key.toString("hex"),
-      "c90eeab569a2d9faacdc71484de1b4e677d5dd9ad7476b2b5c99a6fb627f27f9"
+      "951c1fc722e2b39e62a21d89b948f6d75453c662c614f219fcdc3c63d58984c7"
     )
   })
 

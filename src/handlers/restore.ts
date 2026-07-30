@@ -1,26 +1,20 @@
-import { isUtf8 } from "buffer"
-
 import { LegacyPayload, Payload } from "@/src/handlers/create"
 import {
-  legacyKdfProfile,
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  DetachedArchive,
+  describeDetachedArchive,
+} from "@/src/handlers/detachedArchive"
+import {
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
+import { decodeBlockContent, decryptBlock } from "@/src/utilities/core/block"
 import {
-  blockVersion,
-  computeBlockKdfKey,
-  decodeBlockMessage,
-  deriveBlockKey,
-  deriveBlocksetKey,
-} from "@/src/utilities/core/block"
-import argon2 from "@/src/utilities/crypto/argon2"
-import { decrypt } from "@/src/utilities/crypto/fixedSizeEncryption"
-import {
-  Kdf,
-  decrypt as decryptLegacy,
-} from "@/src/utilities/crypto/legacyFixedSizeEncryption"
+  combineBlocksetShares,
+  decodeBlocksetShare,
+} from "@/src/utilities/core/blockset"
+import { decryptLegacyBlock } from "@/src/utilities/core/legacy/block"
+import { classifyPrefixedShare } from "@/src/utilities/core/legacy/blockset"
 import { UnsupportedVersionError } from "@/src/utilities/crypto/schemeHeader"
-import { combineShares } from "@/src/utilities/crypto/shamir"
 import { getSenderWebContents } from "@/src/utilities/ipc/handleContext"
 import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
 import {
@@ -28,11 +22,6 @@ import {
   YubiKeyError,
   YubiKeyErrorCode,
 } from "@/src/utilities/yubikey/otp"
-
-// Legacy payloads were all created at legacy cost — the pin is their
-// compatibility contract, not a default
-const legacyArgon2: Kdf = (passphrase, salt) =>
-  argon2(passphrase, salt, legacyKdfProfile)
 
 // Shamir shares accumulate per sender, so concurrent restore sessions in
 // separate windows cannot mix shares from different blocksets
@@ -77,57 +66,6 @@ export const restoreReset = () => {
   }
 }
 
-// A share is a keyshare (33 bytes), ciphertext (at least 1 byte) and
-// authentication tag (16 bytes) — anything shorter cannot be one
-const minimumShareLength = 50
-
-const shamirPrefix = Buffer.from("shamir:")
-
-// Classify a message decrypted from a legacy block, where shares carry a
-// “shamir:” prefix. The prefix alone cannot classify — a plain secret may
-// start with it. Plain messages are UTF-8-encoded strings by contract while
-// shares are effectively random bytes, so a share must also be share-shaped:
-// long enough and not valid UTF-8. Returns the share, or null for a plain
-// secret.
-const classifyPrefixedShare = (message: Buffer): null | Buffer => {
-  if (
-    Buffer.compare(message.subarray(0, shamirPrefix.length), shamirPrefix) !== 0
-  ) {
-    return null
-  }
-  const candidate = message.subarray(shamirPrefix.length)
-  if (candidate.length < minimumShareLength || isUtf8(candidate) === true) {
-    return null
-  }
-  return candidate
-}
-
-const tryDecrypt = (key: Buffer, block: Buffer): null | Buffer => {
-  try {
-    return decrypt(key, block)
-  } catch {
-    // Not this key’s block — the caller tries the next candidate key
-    return null
-  }
-}
-
-// Strip and validate the scheme header a successful decryption reveals
-// (see encodeBlockMessage in src/utilities/core/block.ts). Headerless
-// plaintexts fail like a wrong passphrase — the only blocks that decrypt
-// without a header are pre-release ones
-const decodeVersionedMessage = (plaintext: Buffer): Buffer => {
-  const decoded = decodeBlockMessage(plaintext)
-  if (decoded === null) {
-    throw new Error("Secret not found")
-  }
-  if (decoded.version !== blockVersion) {
-    throw new UnsupportedVersionError(
-      "Block requires a newer version of Superbacked"
-    )
-  }
-  return decoded.message
-}
-
 export type Result =
   | {
       error: string
@@ -140,7 +78,33 @@ export type Result =
       // routes error display (see src/shared/utilities/yubikeyErrorMessage.ts)
       yubikeyErrorCode?: YubiKeyErrorCode
     }
-  | { message: string; success: true }
+  | {
+      // Present when the block content carries a master key — what the
+      // renderer needs to prompt for the paired detached archive (see
+      // src/handlers/detachedArchive.ts)
+      detachedArchive?: DetachedArchive
+      message: string
+      success: true
+    }
+
+// Unwrap the block content into the secret and, when a master key is
+// present, the detached archive description — plain (non-JSON) messages
+// are the secret itself
+const assembleSuccess = (
+  blockContent: string,
+  legacy: boolean
+): Extract<Result, { success: true }> => {
+  const { secret } = decodeBlockContent(blockContent)
+  const detachedArchive = describeDetachedArchive(blockContent, legacy)
+  if (detachedArchive === null) {
+    return { message: secret, success: true }
+  }
+  return {
+    detachedArchive: detachedArchive,
+    message: secret,
+    success: true,
+  }
+}
 
 export default async (
   passphrase: string,
@@ -155,6 +119,7 @@ export default async (
   try {
     const salt = Buffer.from(payload.salt, "base64")
     const data = Buffer.from(payload.data, "base64")
+    const legacyPayload = "iv" in payload && "headers" in payload
     let message: Buffer
     let shamirShare: null | Buffer = null
     if ("iv" in payload && "headers" in payload) {
@@ -163,64 +128,39 @@ export default async (
         // apply, so it fails exactly like a wrong passphrase
         throw new Error("Secret not found")
       }
-      // Legacy payload (iv and headers fields) — headers locate secrets and
-      // the key derivation function runs inside decryption
-      const iv = Buffer.from(payload.iv, "base64")
-      const headers = Buffer.from(payload.headers, "base64")
-      message = await decryptLegacy(
+      message = await decryptLegacyBlock(
         passphrase,
         salt,
-        iv,
-        headers,
-        data,
-        legacyArgon2
-      ).catch(() =>
-        // Try legacy mode (blocks created before HKDF subkeys)
-        decryptLegacy(passphrase, salt, iv, headers, data, legacyArgon2, true)
+        Buffer.from(payload.iv, "base64"),
+        Buffer.from(payload.headers, "base64"),
+        data
       )
       shamirShare = classifyPrefixedShare(message)
     } else {
-      // Hardware access lives in computeBlockKdfKey — with a slot, the key
-      // comes from the derived key binding the passphrase and the YubiKey
-      // response (see src/utilities/core/block.ts). Headered payloads
-      // ship at v2 cost — or paranoid cost, trialed only when the mode is
-      // on (wrong passphrases stay fast for everyone else, and paranoid
-      // blocks report a wrong passphrase until the mode is enabled). The
-      // released v1 population is the legacy payload shape above
-      const profiles = [v2StandardKdfProfile]
+      // Headered payloads ship at standard cost — or paranoid cost,
+      // trialed only when the mode is on (wrong passphrases stay fast for
+      // everyone else, and paranoid blocks report a wrong passphrase
+      // until the mode is enabled). The released v1 population is the
+      // legacy payload shape above
+      const profiles = [standardKdfProfile]
       if (paranoid === true) {
-        profiles.push(v2ParanoidKdfProfile)
+        profiles.push(paranoidKdfProfile)
       }
-      let decrypted: null | Buffer = null
-      for (const profile of profiles) {
-        const kdfKey = await computeBlockKdfKey(
-          passphrase,
-          salt,
-          profile,
-          slot === undefined
-            ? undefined
-            : { onTouchRequired: broadcastYubiKeyTouchRequired, slot: slot }
-        )
-        // The key that authenticates names the message type — block keys
-        // encrypt plain secrets, blockset keys encrypt shares
-        const blockMessage = tryDecrypt(deriveBlockKey(kdfKey), data)
-        if (blockMessage !== null) {
-          decrypted = blockMessage
-          break
-        }
-        const blocksetMessage = tryDecrypt(deriveBlocksetKey(kdfKey), data)
-        if (blocksetMessage !== null) {
-          decrypted = blocksetMessage
-          shamirShare = blocksetMessage
-          break
-        }
-      }
-      if (decrypted === null) {
-        throw new Error("Secret not found")
-      }
-      message = decodeVersionedMessage(decrypted)
-      if (shamirShare !== null) {
-        shamirShare = message
+      const decrypted = await decryptBlock(
+        passphrase,
+        salt,
+        data,
+        profiles,
+        slot === undefined
+          ? undefined
+          : { onTouchRequired: broadcastYubiKeyTouchRequired, slot: slot }
+      )
+      message = decrypted.message
+      if (decrypted.share === true) {
+        // The share carries the blockset scheme version at its head —
+        // read only now that the domain key has named the type (see
+        // src/utilities/core/blockset.ts)
+        shamirShare = decodeBlocksetShare(message)
       }
     }
     if (shamirShare !== null) {
@@ -228,17 +168,11 @@ export default async (
       if (!duplicateShamirShare(accumulatedShares, shamirShare)) {
         accumulatedShares.push(shamirShare)
       }
-      const secret = await combineShares(accumulatedShares)
+      const secret = await combineBlocksetShares(accumulatedShares)
       restoreReset()
-      return {
-        message: secret.toString(),
-        success: true,
-      }
+      return assembleSuccess(secret, legacyPayload)
     } else {
-      return {
-        message: message.toString(),
-        success: true,
-      }
+      return assembleSuccess(message.toString(), legacyPayload)
     }
   } catch (error) {
     return {

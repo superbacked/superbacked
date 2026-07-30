@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier '**/*.{json,md,ts,tsx}' --ignore-path .gitignore --write",
     "lint": "eslint",
-    "test": "tsx --test --test-reporter spec tests/*.test.ts",
+    "test": "tsx --test --test-reporter spec tests/*.test.ts tests/legacy/*.test.ts",
     "bundle": "npx tsx node_modules/webpack-cli/bin/cli.js --config webpack.main.production.config.ts --config webpack.preload.production.config.ts --config webpack.renderer.production.config.ts",
     "build:darwin:arm64": "electron-builder --config ./builder.config.ts --mac --arm64",
     "build:darwin:x64": "electron-builder --config ./builder.config.ts --mac --x64",

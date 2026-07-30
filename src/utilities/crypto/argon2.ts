@@ -20,7 +20,8 @@ const binDir =
 // Every key derivation uses Argon2d, maximizing offline brute-force
 // resistance — a side-channel adversary on a derivation host is assumed
 // capable of direct capture, which no variant survives (see
-// docs/derived-key-technical-documentation.md). Cost has no default —
+// docs/technical-documentation/derived-key.md).
+// Cost has no default —
 // every caller names a frozen profile, making its compatibility contract
 // visible at the call site (see src/shared/utilities/kdfProfiles.ts)
 export default async (

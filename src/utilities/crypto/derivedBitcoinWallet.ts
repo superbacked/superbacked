@@ -15,30 +15,32 @@ import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 // under the mnemonic context into BIP39 entropy, so a mnemonic and a
 // password derived from the same label never share bytes. The mnemonic
 // is the root artifact; the extended keys and addresses are projections
-// of it. The frozen context string predates the command’s name — scheme
-// identities never move with product naming.
+// of it. The context names the mnemonic, not the command: product
+// naming is free to move, scheme identities are not.
 //
-// The rendering is frozen: changing any constant or construction below
-// silently changes every derived mnemonic — and a mnemonic can guard
-// funds, so unlike a password it can never be rotated away from a
-// mistake. The word count and derivation path are determinism inputs on
-// par with the label and Paranoid mode: part of what the user must know,
-// surfaced at every derivation.
+// Scheme version 1 (see schemeVersion in
+// src/utilities/crypto/derivedKey.ts) — the rendering is frozen: changing
+// any constant or construction below silently changes every derived
+// mnemonic, and a mnemonic can guard funds, so unlike a password it can
+// never be rotated away from a mistake. The word count is a determinism
+// input on par with the label and Paranoid mode: part of what the user
+// must know, surfaced at every derivation.
+//
+// The derivation path is fixed at the BIP84 first account — a stateless
+// wallet punishes every forgettable input with silently empty wallets,
+// and the mnemonic is Superbacked-independent, so other paths and script
+// types stay reachable by importing it into wallet software.
 
-const mnemonicContext = "superbacked-derived-mnemonic-v1"
+const mnemonicContext = "superbacked-derived-mnemonic"
 
-export const defaultDerivationPath = "m/84'/0'/0'"
+export const derivationPath = "m/84'/0'/0'"
 
 export type MnemonicWords = 12 | 24
 
-// SLIP-132 mainnet version bytes by BIP purpose — the emitted extended
-// key is labeled by what the path derives (zpub for native segwit 84',
-// ypub for wrapped segwit 49', xpub otherwise)
-const versionsByPurpose: Record<string, { private: number; public: number }> = {
-  "49'": { private: 0x049d7878, public: 0x049d7cb2 },
-  "84'": { private: 0x04b2430c, public: 0x04b24746 },
-}
-const defaultVersions = { private: 0x0488ade4, public: 0x0488b21e }
+// SLIP-132 mainnet version bytes for native segwit (zpub and zprv) —
+// what the fixed path derives. Version bytes in the BIP32 serialization
+// sense, unrelated to scheme versioning
+const slip132Versions = { private: 0x04b2430c, public: 0x04b24746 }
 
 /**
  * Render a BIP39 mnemonic from a derived key
@@ -66,66 +68,44 @@ export const deriveMnemonic = (
   return entropyToMnemonic(entropy, wordlist)
 }
 
-const rootForPath = (mnemonic: string, derivationPath: string): HDKey => {
-  const purpose = derivationPath.split("/")[1]
-  const versions = versionsByPurpose[purpose ?? ""] ?? defaultVersions
-  return HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic), versions)
+const rootForMnemonic = (mnemonic: string): HDKey => {
+  return HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic), slip132Versions)
 }
 
 /**
- * Derive the extended public key of a mnemonic at a derivation path —
- * the verification handle: re-deriving on any device must yield the same
- * key, without exposing what it guards
+ * Derive the extended public key of a mnemonic — the verification
+ * handle: re-deriving on any device must yield the same key, without
+ * exposing what it guards
  * @param mnemonic BIP39 mnemonic
- * @param derivationPath BIP32 derivation path (for example m/84'/0'/0')
- * @returns extended public key, SLIP-132-labeled by purpose
+ * @returns extended public key (zpub)
  */
-export const deriveExtendedPublicKey = (
-  mnemonic: string,
-  derivationPath: string
-): string => {
-  return rootForPath(mnemonic, derivationPath).derive(derivationPath)
-    .publicExtendedKey
+export const deriveExtendedPublicKey = (mnemonic: string): string => {
+  return rootForMnemonic(mnemonic).derive(derivationPath).publicExtendedKey
 }
 
 /**
- * Derive the extended private key of a mnemonic at a derivation path —
- * pasting it into a wallet (for example Electrum) imports the entire
- * account, unlike sweeping loose keys
+ * Derive the extended private key of a mnemonic — pasting it into a
+ * wallet (for example Electrum) imports the entire account, unlike
+ * sweeping loose keys
  * @param mnemonic BIP39 mnemonic
- * @param derivationPath BIP32 derivation path (for example m/84'/0'/0')
- * @returns extended private key, SLIP-132-labeled by purpose
+ * @returns extended private key (zprv)
  */
-export const deriveExtendedPrivateKey = (
-  mnemonic: string,
-  derivationPath: string
-): string => {
-  return rootForPath(mnemonic, derivationPath).derive(derivationPath)
-    .privateExtendedKey
+export const deriveExtendedPrivateKey = (mnemonic: string): string => {
+  return rootForMnemonic(mnemonic).derive(derivationPath).privateExtendedKey
 }
 
 /**
- * Derive the first receive addresses of a mnemonic at a derivation path
- * — the eyeball check: a wallet importing the same mnemonic must show
- * the same addresses
+ * Derive the first receive addresses of a mnemonic — the eyeball check:
+ * a wallet importing the same mnemonic must show the same addresses
  * @param mnemonic BIP39 mnemonic
- * @param derivationPath BIP32 derivation path — native segwit (m/84')
- * only, as other purposes use other address encodings
  * @param count number of addresses
  * @returns bech32 addresses at derivationPath/0/0 through /0/count-1
  */
-export const deriveAddresses = (
-  mnemonic: string,
-  derivationPath: string,
-  count: number
-): string[] => {
-  if (derivationPath.split("/")[1] !== "84'") {
-    throw new Error("Addresses are supported for m/84' derivation paths only")
-  }
+export const deriveAddresses = (mnemonic: string, count: number): string[] => {
   if (Number.isInteger(count) === false || count < 1) {
     throw new Error("Count must be a positive integer")
   }
-  const root = rootForPath(mnemonic, derivationPath)
+  const root = rootForMnemonic(mnemonic)
   const addresses: string[] = []
   for (let index = 0; index < count; index++) {
     const node = root.derive(`${derivationPath}/0/${index}`)
@@ -147,16 +127,14 @@ export const deriveAddresses = (
  * when challenge-response is requested (single factor otherwise)
  * @param masterPassphrase memorized master passphrase
  * @param label memorized label (for example savings)
- * @param options derivation options — words, derivationPath and paranoid
- * are determinism inputs the user must know (see
- * src/utilities/crypto/derivedKey.ts)
+ * @param options derivation options — words and paranoid are determinism
+ * inputs the user must know (see src/utilities/crypto/derivedKey.ts)
  * @returns mnemonic and extended public key
  */
 export const computeDerivedBitcoinWallet = async (
   masterPassphrase: string,
   label: string,
   options: {
-    derivationPath: string
     paranoid: boolean
     words: MnemonicWords
     yubikey?: ChallengeResponseOptions
@@ -178,10 +156,7 @@ export const computeDerivedBitcoinWallet = async (
         )
   const mnemonic = deriveMnemonic(derivedKey, options.words)
   return {
-    extendedPublicKey: deriveExtendedPublicKey(
-      mnemonic,
-      options.derivationPath
-    ),
+    extendedPublicKey: deriveExtendedPublicKey(mnemonic),
     mnemonic: mnemonic,
   }
 }

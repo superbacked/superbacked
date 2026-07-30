@@ -162,11 +162,12 @@ const initialSecretEntry = (): SecretFormValues => {
 
 type SecretState = {
   secret: string
+  // The keys never reach the renderer — creation and restoration derive
+  // them from the master key inside the handlers (see
+  // src/handlers/detachedArchive.ts)
   detachedArchive: {
     files: FileWithAbsolutePath[]
     masterKey: string
-    encryptionKey: string
-    hmacKey: string
     filename: string
     blockContent: string
   } | null
@@ -332,37 +333,19 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               currentSecret?.detachedArchive?.masterKey ??
               window.api.invokeSync.generateMasterKey()
 
-            // Derive encryption key, HMAC key and filename from master key
-            const encryptionKey = window.api.invokeSync.deriveKey(
-              masterKey,
-              "encryption-key-v1"
-            )
-            const hmacKey = window.api.invokeSync.deriveKey(
-              masterKey,
-              "hmac-v1"
-            )
-            const filename = window.api.invokeSync.deriveKey(
-              masterKey,
-              "filename-v1",
-              16,
-              "hex"
-            )
+            // Derive archive filename from master key
+            const filename =
+              window.api.invokeSync.deriveDetachedArchiveFilename(masterKey)
 
-            // Build block content with secret and master key
-            const blockContent = JSON.stringify(
-              {
-                secret: formSecret.secret,
-                masterKey: masterKey,
-              },
-              null,
-              2
+            // Build block content binding secret and master key
+            const blockContent = window.api.invokeSync.encodeBlockContent(
+              formSecret.secret,
+              masterKey
             )
 
             detachedArchive = {
               files,
               masterKey,
-              encryptionKey,
-              hmacKey,
               filename,
               blockContent,
             }
@@ -571,8 +554,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               const result = await window.api.invoke.createDetachedArchive(
                 filePaths,
                 archivePath,
-                detachedArchive.encryptionKey,
-                detachedArchive.hmacKey,
                 detachedArchive.blockContent
               )
               if (result.success === false) {

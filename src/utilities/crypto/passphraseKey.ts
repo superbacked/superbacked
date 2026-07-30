@@ -22,11 +22,16 @@ import {
 // block and standalone archive in the wild already uses, and changing any
 // constant or construction below silently changes the key of every
 // YubiKey-protected block and standalone archive (see
-// docs/passphrase-key-technical-documentation.md).
+// docs/technical-documentation/passphrase-key.md).
+
+// Scheme version 1 — versioned by the artifacts that consume it: the
+// version discovered in a block or standalone archive names the whole
+// construction, this module included (see
+// src/utilities/crypto/schemeHeader.ts)
 
 // Context keying the challenge — a fixed string, as challenge uniqueness
 // comes from the salt already stretched into the key
-const challengeContext = "superbacked-passphrase-key-v1-challenge"
+const challengeContext = "superbacked-passphrase-key-challenge"
 
 /**
  * Stretch a memorized passphrase into a 32-byte key using Argon2d — the

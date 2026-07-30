@@ -3,8 +3,8 @@ import { suite, test } from "node:test"
 
 import {
   legacyKdfProfile,
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 
 // Profiles are append-only and frozen forever — artifacts never store
@@ -18,15 +18,15 @@ suite("kdfProfiles", () => {
       parallelism: 2,
     })
   })
-  test("freezes v2 profile", () => {
-    assert.deepStrictEqual(v2StandardKdfProfile, {
+  test("freezes standard profile", () => {
+    assert.deepStrictEqual(standardKdfProfile, {
       memoryKiB: 65536,
       passes: 80,
       parallelism: 4,
     })
   })
-  test("freezes v2 paranoid profile", () => {
-    assert.deepStrictEqual(v2ParanoidKdfProfile, {
+  test("freezes paranoid profile", () => {
+    assert.deepStrictEqual(paranoidKdfProfile, {
       memoryKiB: 1048576,
       passes: 50,
       parallelism: 4,

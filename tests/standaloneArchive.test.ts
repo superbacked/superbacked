@@ -7,7 +7,7 @@ import {
   computeArchiveKeys,
   passphraseKeyInfo,
   probeKeyInfo,
-  standaloneArchiveVersion,
+  schemeVersion,
 } from "@/src/utilities/core/standaloneArchive"
 import {
   computeChallenge,
@@ -32,7 +32,7 @@ suite("standaloneArchive", () => {
   test("freezes passphrase key info", () => {
     // Changing it changes the key of every archive created with --yubikey
     // (see src/utilities/crypto/passphraseKey.ts)
-    assert.strictEqual(passphraseKeyInfo, "encryption-key-v1")
+    assert.strictEqual(passphraseKeyInfo, "archive-key")
   })
 
   test("computes archive key from passphrase", async () => {
@@ -47,11 +47,11 @@ suite("standaloneArchive", () => {
   })
 
   test("freezes archive version", () => {
-    assert.strictEqual(standaloneArchiveVersion, 2)
+    assert.strictEqual(schemeVersion, 2)
   })
 
   test("freezes probe key info and construction", async () => {
-    assert.strictEqual(probeKeyInfo, "version-probe-v1")
+    assert.strictEqual(probeKeyInfo, "version-probe")
     // Raw crypto recomputation pins the single-factor probe key — the
     // HKDF sibling of the raw stretched key, never the key itself
     const keys = await computeArchiveKeys(
@@ -81,7 +81,7 @@ suite("standaloneArchive", () => {
     const challenge = computeChallenge(stretchedKey)
     assert.strictEqual(
       challenge.toString("hex"),
-      "e8fc8c8f9ee9a35a8e5b9f3a19cabcae5ee66d188e25e9befbaad4b1570d2d38"
+      "328dda64b33bf7a7964b0591c5b2fcd2b037fa2773caa9f8b7684a021a87030b"
     )
     const response = createHmac("sha1", slotSecret).update(challenge).digest()
     assert.strictEqual(
@@ -90,7 +90,7 @@ suite("standaloneArchive", () => {
         response,
         passphraseKeyInfo
       ).toString("hex"),
-      "d5491bd883d6db88f81bb9c6bcd4d14993f74ad1b062c50bd95803bbf13c6a48"
+      "8de097620113257180532c70fdb5b66d022cee36b1c14d5c0880ae1e42663dbb"
     )
     // The two-factor probe key sits at the same factor depth — deriving
     // it requires the response, and it never collides with the

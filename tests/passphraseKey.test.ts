@@ -21,7 +21,7 @@ suite("passphraseKey", () => {
   test("computes challenge", () => {
     assert.strictEqual(
       computeChallenge(stretchedKey).toString("hex"),
-      "a23d7e8ee203cb1fd1e2ef18be450dd6c7f8da571e31ac80adfd94bdea6e18b2"
+      "88dcafb4ccea7641da77a33ba11eaceb88cb2fa4308149d4174d9ef5250a440f"
     )
   })
 
@@ -30,7 +30,7 @@ suite("passphraseKey", () => {
     assert.deepStrictEqual(
       computeChallenge(stretchedKey),
       createHmac("sha256", stretchedKey)
-        .update("superbacked-passphrase-key-v1-challenge", "utf8")
+        .update("superbacked-passphrase-key-challenge", "utf8")
         .digest()
     )
   })
@@ -54,7 +54,7 @@ suite("passphraseKey", () => {
     assert.strictEqual(response.length, 20)
     assert.strictEqual(
       computeResponseBoundKey(stretchedKey, response, "info").toString("hex"),
-      "1966f620f8b3fbdcafdf46d669c7d0fdba0214996401ec4d2d0eb05959365790"
+      "a91abc823fa7695fb7e21d4ec60df456e0b984177a6fa590be1787629a7f5767"
     )
   })
 

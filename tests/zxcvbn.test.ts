@@ -3,7 +3,7 @@ import { suite, test } from "node:test"
 
 import {
   legacyKdfProfile,
-  v2ParanoidKdfProfile,
+  paranoidKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 import zxcvbn, {
   minimumPassphraseStrength,
@@ -12,9 +12,10 @@ import zxcvbn, {
 // Reference vectors freeze the estimation scheme — entropy, both displayed
 // attack times and the gate verdict for three representative inputs (see
 // the reference vectors section of
-// docs/passphrase-strength-technical-documentation.md). Times and
+// docs/technical-documentation/passphrase-strength.md).
+// Times and
 // strength alike price the profile the passphrase will stretch under
-// (the v2 standard profile by default) — the gate holds the attack time
+// (the standard profile by default) — the gate holds the attack time
 // constant across profiles, not the entropy. Estimator-driven values can
 // shift when zxcvbn dependencies update — a break here is the
 // scoring-regression review the freeze demands, not a test to update
@@ -81,7 +82,7 @@ suite("zxcvbn", () => {
     assert.strictEqual(anchored.fastKey, "year")
     assert.strictEqual(anchored.fastBase, 1)
     assert.strictEqual(anchored.strength, 24)
-    const paranoid = zxcvbn("blast dance visor jog broil", v2ParanoidKdfProfile)
+    const paranoid = zxcvbn("blast dance visor jog broil", paranoidKdfProfile)
     assert.strictEqual(paranoid.slowKey, "years")
     assert.strictEqual(paranoid.slowBase, 117)
     assert.strictEqual(paranoid.fastKey, "years")

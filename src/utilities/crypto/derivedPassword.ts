@@ -11,14 +11,15 @@ import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 // material for an unbounded byte stream that is rejection-sampled into the
 // password character set.
 //
-// The stream info carries the superbacked-derived-password-v1 context, so a
+// The stream info carries the superbacked-derived-password context, so a
 // rendered password is domain-separated from every other use of a derived
 // key (for example YubiKey-protected archive key derivation, which consumes
 // the key through its own HKDF context).
 //
-// The rendering is frozen: changing any constant or construction below
-// silently changes every derived password — as does any change to the
-// derived key scheme beneath it.
+// Scheme version 1 (see schemeVersion in
+// src/utilities/crypto/derivedKey.ts) — the rendering is frozen: changing
+// any constant or construction below silently changes every derived
+// password, as does any change to the derived key scheme beneath it.
 
 // Ambiguous characters are excluded (KeePassXC-style look-alike exclusion,
 // extended with the quote family): 0/O and 1/l/I transcribe unreliably when
@@ -52,7 +53,7 @@ const fullClassMask = (1 << characterClasses.length) - 1
 export const minimumPasswordLength = 8
 export const maximumPasswordLength = 128
 
-const streamContext = Buffer.from("superbacked-derived-password-v1", "utf8")
+const streamContext = Buffer.from("superbacked-derived-password", "utf8")
 
 /**
  * Derive password from derived key

@@ -1,7 +1,6 @@
-import { createHmac, timingSafeEqual } from "crypto"
+import { timingSafeEqual } from "crypto"
 import { createReadStream, createWriteStream } from "fs"
 import { open, stat } from "fs/promises"
-import { Transform } from "stream"
 import { pipeline } from "stream/promises"
 
 import {
@@ -9,6 +8,7 @@ import {
   RestoredFilePath,
   createDecryptionStream,
   createEncryptionStream,
+  createHmacStream,
   createManifest,
   createTarExtractStream,
   createTarStream,
@@ -26,9 +26,45 @@ export type { Manifest, RestoredFilePath }
 export { UnsupportedVersionError }
 
 // Version written into new detached archives (see
-// src/utilities/crypto/schemeHeader.ts) — v1 is the headerless legacy
-// format, recognized by matching no probe
-export const detachedArchiveVersion = 2
+// src/utilities/crypto/schemeHeader.ts)
+export const schemeVersion = 2
+
+// The current key chain — every key a child of the master key stored in
+// the block content, domain-separated by frozen infos
+const encryptionKeyInfo = "detached-archive-key"
+const hmacKeyInfo = "detached-archive-hmac"
+const filenameInfo = "detached-archive-filename"
+
+export interface DetachedArchiveKeys {
+  encryptionKey: Buffer
+  filename: string
+  hmacKey: Buffer
+}
+
+/**
+ * Derive the detached archive key chain from a master key
+ * @param masterKey 32-byte master key stored in the block content
+ * @returns encryption key, HMAC key and archive filename
+ */
+export const deriveDetachedArchiveKeys = (
+  masterKey: Buffer
+): DetachedArchiveKeys => {
+  return {
+    encryptionKey: hkdf(
+      masterKey,
+      Buffer.alloc(0),
+      Buffer.from(encryptionKeyInfo),
+      32
+    ),
+    filename: hkdf(
+      masterKey,
+      Buffer.alloc(0),
+      Buffer.from(filenameInfo),
+      16
+    ).toString("hex"),
+    hmacKey: hkdf(masterKey, Buffer.alloc(0), Buffer.from(hmacKeyInfo), 32),
+  }
+}
 
 // The probe key is derived in here rather than passed in, so the handler
 // wire format stays the stored key pair and block content — a child of
@@ -39,42 +75,9 @@ export const deriveProbeKey = (encryptionKey: Buffer): Buffer => {
   return hkdf(
     encryptionKey,
     Buffer.alloc(0),
-    Buffer.from("version-probe-v1", "utf8"),
+    Buffer.from("version-probe", "utf8"),
     32
   )
-}
-
-/**
- * Create HMAC transform stream with initial data
- * @param hmacKey 32-byte HMAC key
- * @param initialData array of buffers to provide to HMAC before handling stream
- * @returns transform stream and finalize function
- */
-const createHmacStream = (hmacKey: Buffer, initialData: Buffer[]) => {
-  const hmac = createHmac("sha256", hmacKey)
-
-  // Update HMAC with initial data
-  for (const chunk of initialData) {
-    hmac.update(chunk)
-  }
-
-  // Create transform stream that updates HMAC with pipeline chunk
-  const transform = new Transform({
-    transform(chunk, _encoding, callback) {
-      hmac.update(chunk)
-      callback(null, chunk)
-    },
-  })
-
-  return {
-    transform,
-    finalize: (finalChunks: Buffer[] = []) => {
-      for (const chunk of finalChunks) {
-        hmac.update(chunk)
-      }
-      return hmac.digest()
-    },
-  }
 }
 
 /**
@@ -100,10 +103,7 @@ export const createDetachedArchive = async (
   blockContent: Buffer
 ): Promise<Manifest> => {
   const iv = generateIv()
-  const probeBlock = encodeProbeBlock(
-    deriveProbeKey(key),
-    detachedArchiveVersion
-  )
+  const probeBlock = encodeProbeBlock(deriveProbeKey(key), schemeVersion)
   const cipher = createEncryptionStream(key, iv)
   const output = createWriteStream(outputPath)
 
@@ -140,18 +140,31 @@ export const createDetachedArchive = async (
 }
 
 /**
+ * Extract probe block from detached archive
+ * @param filePath path to archive
+ * @returns probe block candidate
+ */
+export const extractProbeBlock = async (filePath: string): Promise<Buffer> => {
+  const fd = await open(filePath, "r")
+  const probeBlockBuffer = Buffer.alloc(probeBlockLength)
+  await fd.read(probeBlockBuffer, 0, probeBlockLength, 0)
+  await fd.close()
+  return probeBlockBuffer
+}
+
+/**
  * Restore detached archive
  *
  * Decrypts encrypted tar archive with HMAC binding to block content.
- * Version 2 format: [probe block (36 bytes)][iv (12 bytes)]
- * [encrypted data][tag (16 bytes)][hmac (32 bytes)] — version 1 has no
- * probe block. The keys are already in hand, so the probe trial is free:
- * a match names the version and a miss means the headerless v1 format
+ * Format: [probe block (36 bytes)][iv (12 bytes)][encrypted data]
+ * [tag (16 bytes)][hmac (32 bytes)]. The keys are already in hand, so
+ * the probe trial is free: a match names the version and a miss means
+ * corruption, never a wrong key
  *
  * @param filePath path to encrypted archive
  * @param outputDir directory where files will be extracted
  * @param key 32-byte AES-256 decryption key
- * @param hmacKey 32-byte HMAC key (should be derived separately from decryption key)
+ * @param hmacKey 32-byte HMAC key (should be derived separately from encryption key)
  * @param blockContent block content bytes for HMAC verification
  * @returns array of restored file paths
  */
@@ -167,18 +180,21 @@ export const restoreDetachedArchive = async (
 
   const fd = await open(filePath, "r")
 
-  // Read probe block candidate from beginning — for a v1 archive these
-  // are just iv and payload bytes, which the probe key cannot match
+  // Read probe block from beginning
   const probeBlockBuffer = Buffer.alloc(probeBlockLength)
   await fd.read(probeBlockBuffer, 0, probeBlockLength, 0)
   const version = decodeProbeBlock(deriveProbeKey(key), probeBlockBuffer)
-  if (version !== null && version !== detachedArchiveVersion) {
+  if (version === null) {
+    await fd.close()
+    throw new Error("Probe block not found")
+  }
+  if (version !== schemeVersion) {
     await fd.close()
     throw new UnsupportedVersionError(
       "Detached archive requires a newer version of Superbacked"
     )
   }
-  const ivOffset = version === null ? 0 : probeBlockLength
+  const ivOffset = probeBlockLength
 
   // Read initialization vector
   const ivBuffer = Buffer.alloc(12)
@@ -193,12 +209,10 @@ export const restoreDetachedArchive = async (
   await fd.read(hmacBuffer, 0, 32, fileSize - 32)
   await fd.close()
 
-  // Initialize HMAC exactly as creation did for the detected version
+  // Initialize HMAC exactly as creation did
   const { transform: hmacTransform, finalize: finalizeHmac } = createHmacStream(
     hmacKey,
-    version === null
-      ? [blockContent, ivBuffer]
-      : [blockContent, probeBlockBuffer, ivBuffer]
+    [blockContent, probeBlockBuffer, ivBuffer]
   )
 
   // Initialize decipher with initialization vector and tag

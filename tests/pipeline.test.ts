@@ -1,45 +1,53 @@
 import assert from "assert"
+import { randomBytes } from "crypto"
 import { mkdtemp, readFile, writeFile } from "fs/promises"
 import { suite, test } from "node:test"
 import { tmpdir } from "os"
 import { join } from "path"
 
+import { LegacyPayload } from "@/src/handlers/create"
 import {
-  LegacyPayload,
-  Payload,
-  encryptBlock,
-  validateCreate,
-} from "@/src/handlers/create"
+  createDetachedArchive,
+  describeDetachedArchive,
+  restoreDetachedArchive,
+} from "@/src/handlers/detachedArchive"
 import restore from "@/src/handlers/restore"
 import {
   createStandaloneArchive,
   restoreStandaloneArchive,
 } from "@/src/handlers/standaloneArchive"
 import {
-  legacyKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 import {
+  Payload,
   blockSize,
   computeBlockKdfKey,
   deriveBlockKey,
+  encodeBlockContent,
+  encryptBlock,
 } from "@/src/utilities/core/block"
+import { encryptBlockset } from "@/src/utilities/core/blockset"
+import {
+  deriveDetachedArchiveKeys,
+  deriveProbeKey,
+} from "@/src/utilities/core/detachedArchive"
+import { deriveLegacyDetachedArchiveKeys } from "@/src/utilities/core/legacy/detachedArchive"
 import { computeArchiveKeys } from "@/src/utilities/core/standaloneArchive"
-import argon2 from "@/src/utilities/crypto/argon2"
 import { encrypt } from "@/src/utilities/crypto/fixedSizeEncryption"
-import { encrypt as legacyEncrypt } from "@/src/utilities/crypto/legacyFixedSizeEncryption"
 import { generateSalt } from "@/src/utilities/crypto/primitives"
 import {
   encodeProbeBlock,
   encodeSchemeHeader,
 } from "@/src/utilities/crypto/schemeHeader"
-import { generateShares } from "@/src/utilities/crypto/shamir"
 
 // The create → payload → restore pipeline through the real handlers —
 // the orchestration the unit and reference suites sit beneath: profile
 // trial gating, error classification and blockset share accumulation.
 // The create handler itself renders QR images in a live window, so
-// creation enters at encryptBlock, the crypto it wraps. Argon2 runs make
+// creation enters at encryptBlock (src/utilities/core/block.ts), the
+// scheme operation the handler wraps with rendering. Argon2 runs make
 // this a slow suite (four stretches at the paranoid profile).
 
 const passphrase = "pipeline reference passphrase one"
@@ -50,7 +58,7 @@ suite("blockPipeline", () => {
     const payload = await encryptBlock(
       [{ message: "pipeline secret", passphrase }],
       false,
-      false,
+      standardKdfProfile,
       "pipeline"
     )
     assert.strictEqual(payload.metadata.label, "pipeline")
@@ -70,7 +78,7 @@ suite("blockPipeline", () => {
         { message: "second secret", passphrase: secondPassphrase },
       ],
       false,
-      false
+      standardKdfProfile
     )
     const first = await restore(passphrase, payload)
     assert.ok(first.success === true)
@@ -84,7 +92,7 @@ suite("blockPipeline", () => {
     const payload = await encryptBlock(
       [{ message: "paranoid secret", passphrase }],
       false,
-      true
+      paranoidKdfProfile
     )
     // Off, the paranoid row is never trialed — the deliberate contract:
     // a paranoid block reports a wrong passphrase until the mode is on
@@ -97,16 +105,13 @@ suite("blockPipeline", () => {
   })
 
   test("accumulates blockset shares across restores, ignoring duplicates", async () => {
-    // Replicates the create handler’s Shamir orchestration (one share of
-    // each secret per block — see the shamir branch in
-    // src/handlers/create.ts)
-    const shares = await generateShares("blockset secret", 3, 2)
-    const payloads: Payload[] = []
-    for (const share of shares) {
-      payloads.push(
-        await encryptBlock([{ message: share, passphrase }], true, false)
-      )
-    }
+    const payloads = await encryptBlockset(
+      [{ message: "blockset secret", passphrase }],
+      3,
+      2,
+      standardKdfProfile
+    )
+    assert.strictEqual(payloads.length, 3)
     assert.ok(payloads[0] !== undefined && payloads[1] !== undefined)
     const accumulated: Buffer[] = []
     // One share cannot combine — the restore fails and keeps the share
@@ -142,48 +147,17 @@ suite("blockPipeline", () => {
     assert.strictEqual(second.message, "blockset secret")
   })
 
-  test("fails to create blocksets with YubiKey slots or invalid thresholds", () => {
-    // The guards live in validateCreate — the handler wrapping it renders
-    // in a live window (see src/handlers/create.ts)
-    assert.throws(
-      () =>
-        validateCreate(
-          [{ message: "secret", passphrase, slot: 2 }],
-          true,
-          3,
-          2
-        ),
-      { message: "YubiKey protection is not supported for blocksets" }
-    )
-    assert.throws(
-      () => validateCreate([{ message: "secret", passphrase }], true, 2, 3),
-      {
-        message: "Invalid number of shares or threshold",
-      }
-    )
-    assert.throws(
-      () => validateCreate([{ message: "secret", passphrase }], true),
-      {
-        message: "Invalid number of shares or threshold",
-      }
-    )
-    // Standard blocks accept slots and need no share arithmetic
-    validateCreate([{ message: "secret", passphrase, slot: 2 }], false)
-    validateCreate([{ message: "secret", passphrase }], true, 3, 2)
-  })
-
   test("restores legacy payloads, failing slots and wrong passphrases on them", async () => {
-    const legacyKdf = (kdfPassphrase: string, salt: string) =>
-      argon2(kdfPassphrase, salt, legacyKdfProfile)
-    const block = await legacyEncrypt(
-      [{ message: "legacy secret", passphrase }],
-      legacyKdf
-    )
+    // Frozen legacy payload holding "legacy secret" under the suite
+    // passphrase, stretched at the legacy profile — generated once with
+    // the removed legacy encrypt, as nothing creates legacy blocks
+    // anymore
     const payload: LegacyPayload = {
-      salt: block.salt.toString("base64"),
-      iv: block.iv.toString("base64"),
-      headers: block.headers.toString("base64"),
-      data: block.data.toString("base64"),
+      salt: "Wgu0rfS/tL/SbI+/3dDYRA==",
+      iv: "xWHoo87GdtrXBBIX8hPiOw==",
+      headers:
+        "b8Vt/WBLnae5Wt0UHLKNdT9hY1oV+v66YwCGDH7m7Ow8inXIiRabVAdEmIf758hp5vLb6nwrV1mcWL9tlJPY6w==",
+      data: "1JLBOqH0iStwJfJDvOuvVgJmAv8ZfnD+k0DjEeKx6oguz7Nfpp7TKLrFHx9pb0JdcHFwWgSBgYce37gVu/UXK3ceVhBDGHy6FO883hgwmdb5dBGWrL/zBGCawKbkDKNFMVa1wiGIx/ZVl4fWD0CHTtYlKXrcwpBqagurOqwoQew=",
       metadata: {},
     }
     const result = await restore(passphrase, payload)
@@ -201,25 +175,17 @@ suite("blockPipeline", () => {
   })
 
   test("classifies legacy blockset shares by prefix and shape", async () => {
-    const legacyKdf = (kdfPassphrase: string, salt: string) =>
-      argon2(kdfPassphrase, salt, legacyKdfProfile)
     // Share-shaped: shamir: prefix, long enough and never valid UTF-8
-    // (see classifyPrefixedShare in src/handlers/restore.ts)
+    // (see classifyPrefixedShare in src/utilities/core/legacy/blockset.ts)
     const share = Buffer.alloc(60, 0xff)
-    const block = await legacyEncrypt(
-      [
-        {
-          message: Buffer.concat([Buffer.from("shamir:"), share]),
-          passphrase,
-        },
-      ],
-      legacyKdf
-    )
+    // Frozen legacy payload holding that share under the suite
+    // passphrase — generated once with the removed legacy encrypt
     const payload: LegacyPayload = {
-      salt: block.salt.toString("base64"),
-      iv: block.iv.toString("base64"),
-      headers: block.headers.toString("base64"),
-      data: block.data.toString("base64"),
+      salt: "s0q6TEE21X1ZedMPxemztQ==",
+      iv: "OOw5To/1RIikUgrdY1K26g==",
+      headers:
+        "kPcjDYYkJhjU+kl2Zcm450mGNLEOgcm7LqWoMUAgUHVXnC6r1AGdJGyg+3M0bPpQcvpOpQodnz/QkQKkwP6HLg==",
+      data: "m1UO6Ew2B/rhyAEnNBpcjMcIiOW+8IInPpbKHeivMmMeXgqfd/Pj675tsHLnJz65w8NQ/M5aMnCndN3wtP+Cd97Dju75BWbR6aqDnFQiZKTMrjP2tkAK/YGJn6slBUt3pinsA7jqmo0pOx8j2V+P1wDe7lW7OEVddvKD4jf4lXJh4NBG+i8HhWzuBWEkoHhvyfb43Sv11ntZYspRcFm1HJYL35qjqI4JdPsNNXrlCMC/6h26OoU8KomhHWz2BQaO",
       metadata: {},
     }
     const accumulated: Buffer[] = []
@@ -242,7 +208,7 @@ suite("blockPipeline", () => {
     const kdfKey = await computeBlockKdfKey(
       passphrase,
       salt,
-      v2StandardKdfProfile
+      standardKdfProfile
     )
     const craft = (message: Buffer): Payload => {
       return {
@@ -368,7 +334,7 @@ suite("standaloneArchivePipeline", () => {
     const keys = await computeArchiveKeys(
       passphrase,
       file.subarray(0, 16),
-      v2StandardKdfProfile
+      standardKdfProfile
     )
     encodeProbeBlock(keys.probeKey, 3).copy(file, 16)
     await writeFile(fixture.archivePath, file)
@@ -381,5 +347,99 @@ suite("standaloneArchivePipeline", () => {
     assert.ok(result.success === false)
     assert.strictEqual(result.unsupportedVersion, true)
     assert.strictEqual(result.authenticationFailed, false)
+  })
+})
+
+suite("detachedArchivePipeline", () => {
+  test("creates and restores a detached archive through the handlers", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "superbacked-test-"))
+    const filePath = join(directory, "secret.txt")
+    await writeFile(filePath, "pipeline archive content")
+    const masterKey = randomBytes(32).toString("base64")
+    const blockContent = encodeBlockContent(
+      "pipeline archive secret",
+      masterKey
+    )
+    // The block’s era selects the chain the renderer names the file by —
+    // and restoration re-detects the scheme by probe, never by the flag
+    const described = describeDetachedArchive(blockContent, false)
+    assert.ok(described !== null)
+    assert.strictEqual(
+      described.filename,
+      deriveDetachedArchiveKeys(Buffer.from(masterKey, "base64")).filename
+    )
+    assert.strictEqual(
+      describeDetachedArchive(blockContent, true)?.filename,
+      deriveLegacyDetachedArchiveKeys(Buffer.from(masterKey, "base64")).filename
+    )
+    const archivePath = join(directory, `${described.filename}.superbacked`)
+    const created = await createDetachedArchive(
+      [filePath],
+      archivePath,
+      blockContent
+    )
+    assert.ok(created.success === true)
+    const outputDir = await mkdtemp(
+      join(tmpdir(), "superbacked-test-restored-")
+    )
+    const restored = await restoreDetachedArchive(
+      archivePath,
+      outputDir,
+      blockContent
+    )
+    assert.ok(restored.success === true)
+    const restoredPath = restored.files[0]
+    assert.ok(restoredPath !== undefined)
+    assert.strictEqual(
+      await readFile(join(outputDir, restoredPath), "utf-8"),
+      "pipeline archive content"
+    )
+    // The HMAC binds the archive to its block content — any other content
+    // fails even though the master key would decrypt
+    const altered = await restoreDetachedArchive(
+      archivePath,
+      outputDir,
+      encodeBlockContent("altered secret", masterKey)
+    )
+    assert.ok(altered.success === false)
+    assert.strictEqual(altered.unsupportedVersion, undefined)
+  })
+
+  // The probe → legacy fallback is pinned against the real legacy
+  // reference pair (see tests/referenceBlocks.test.ts)
+
+  test("classifies future versions without falling back", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "superbacked-test-"))
+    const filePath = join(directory, "secret.txt")
+    await writeFile(filePath, "pipeline archive content")
+    const masterKey = randomBytes(32)
+    const blockContent = encodeBlockContent(
+      "pipeline archive secret",
+      masterKey.toString("base64")
+    )
+    const archivePath = join(directory, "archive.superbacked")
+    const created = await createDetachedArchive(
+      [filePath],
+      archivePath,
+      blockContent
+    )
+    assert.ok(created.success === true)
+    // Splice in a probe declaring version 3 under the archive’s own probe
+    // key — the consumer must report the version, never fall back to the
+    // legacy scheme
+    const file = await readFile(archivePath)
+    const keys = deriveDetachedArchiveKeys(masterKey)
+    encodeProbeBlock(deriveProbeKey(keys.encryptionKey), 3).copy(file, 0)
+    await writeFile(archivePath, file)
+    const outputDir = await mkdtemp(
+      join(tmpdir(), "superbacked-test-restored-")
+    )
+    const result = await restoreDetachedArchive(
+      archivePath,
+      outputDir,
+      blockContent
+    )
+    assert.ok(result.success === false)
+    assert.strictEqual(result.unsupportedVersion, true)
   })
 })

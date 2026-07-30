@@ -56,19 +56,19 @@ Label: savings
 Passphrase:
 Touch YubiKey…
 Derived with scheme v1, path m/84'/0'/0', 24 words
-zpub6rEwfvDvu5GwPFPQSU7dnVYApL89sRCmsW4vbrTcEkgT52Nxug8cuLUm7CinwXxd7YszxhtLYHfdyixYSgppEg6ivBb6VMHhqPFr1vwcnk2
+zpub6rskz9PppDLZKurVF9qhu7bs1TvadsejsGWmsFfQ2aVkKHi3eGiDCQXMEtgHBb1ucSHPMWnbRPoUsGwnAMS81q2ie77dD5sGzSXXpwKbFSo
 ```
 
-Every derivation states the scheme version, the derivation path and the word count (and Paranoid mode, when enabled) — derivation is stateless, so a different path (`--derivation-path`), word count (`--words 12`) or mode derives a different wallet and these are part of what must be remembered to re-derive the same one.
+Every derivation states the scheme version, the derivation path and the word count (and Paranoid mode, when enabled) — derivation is stateless, so a different word count (`--words 12`) or mode derives a different wallet and these are part of what must be remembered to re-derive the same one (the derivation path is fixed, stated for cross-verification in wallet software).
 
 Use `--addresses` to also print the first receive addresses — importing the same wallet elsewhere must show the same ones.
 
 ```console
 $ superbacked derive-bitcoin-wallet savings --addresses 3
 …
-m/84'/0'/0'/0/0 bc1ql3yeg5y2zgqrq7pe00r047el72n8xkcq6ed3zp
-m/84'/0'/0'/0/1 bc1qcttqk44aqpzn9cucv0udk948nm9z56dpvmuyag
-m/84'/0'/0'/0/2 bc1qf2w6wnckwyyc2q96kw9gynqw0q8g5me5tplsqn
+m/84'/0'/0'/0/0 bc1qmmvmyjcpcqkkw7ssewyd8vw6ud6ctv6rh9m7xq
+m/84'/0'/0'/0/1 bc1qcjk90ecfvf6pvm6nfspvzhk20p3v9vawxnfwjw
+m/84'/0'/0'/0/2 bc1qv2wjjvr4j6ldkehaph8099dezy033qcshs9k7y
 ```
 
 ### Step 4: reveal mnemonic or import into wallet software

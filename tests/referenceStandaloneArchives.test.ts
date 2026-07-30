@@ -1,5 +1,6 @@
 import assert from "assert"
 import { createHmac } from "crypto"
+import { readFileSync } from "fs"
 import { mkdtemp, readFile } from "fs/promises"
 import { suite, test } from "node:test"
 import { tmpdir } from "os"
@@ -7,9 +8,10 @@ import { join } from "path"
 
 import {
   legacyKdfProfile,
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
+import { restoreLegacyStandaloneArchive } from "@/src/utilities/core/legacy/standaloneArchive"
 import {
   AuthenticationError,
   computeArchiveKeys,
@@ -19,7 +21,7 @@ import {
   passphraseKeyInfo,
   probeKeyInfo,
   restoreStandaloneArchive,
-  standaloneArchiveVersion,
+  schemeVersion,
 } from "@/src/utilities/core/standaloneArchive"
 import {
   computeChallenge,
@@ -29,19 +31,31 @@ import {
 } from "@/src/utilities/crypto/passphraseKey"
 
 // The published reference standalone archives (see
-// docs/reference-standalone-archives) restored with the real scheme
-// modules — every archive contains the tests/fixtures tree, so restored
-// bytes are compared against the same files the archives were created
-// from. Argon2 runs make this a slow suite (one stretch at the paranoid
-// profile).
+// tests/fixtures/README.md) restored with the real scheme modules —
+// every archive contains the fixture content files, so restored bytes
+// are compared against the same files the archives were created from,
+// and passphrases are read from the recorded fixture files so
+// regenerating artifacts requires no test edits. Argon2 runs make this
+// a slow suite (one stretch at the paranoid profile).
 
-const v1Passphrase = "wired tutor bok glad mute"
-const v2Passphrase = "reset enlighten timid spending disobey dioxide crushed"
+// The archives share the first block passphrase (see
+// tests/fixtures/README.md)
+const legacyPassphrase = readFileSync(
+  "tests/fixtures/legacy/passphrases/1.txt",
+  "utf-8"
+).trim()
+const currentPassphrase = readFileSync(
+  "tests/fixtures/passphrases/1.txt",
+  "utf-8"
+).trim()
 
 // Published verification secret (never a real one) — see
 // tests/referenceBlocks.test.ts
 const referenceSlotSecret = Buffer.from(
-  "1ecb57826ae09610b3b249e1869400e731334229",
+  readFileSync(
+    "tests/fixtures/yubikey-challenge-response-secret.txt",
+    "utf-8"
+  ).trim(),
   "hex"
 )
 
@@ -63,10 +77,14 @@ const verifyRestoredFixtures = async (
 }
 
 suite("referenceStandaloneArchives", () => {
-  test("restores the v1 reference archive through the headerless fallback", async () => {
-    const path = "docs/reference-standalone-archives/v1/backup.superbacked"
+  test("restores the legacy reference archive through the legacy scheme", async () => {
+    const path = "tests/fixtures/legacy/standalone-archives/backup.superbacked"
     const salt = await extractSalt(path)
-    const keys = await computeArchiveKeys(v1Passphrase, salt, legacyKdfProfile)
+    const keys = await computeArchiveKeys(
+      legacyPassphrase,
+      salt,
+      legacyKdfProfile
+    )
     // A v1 archive puts payload ciphertext where v2 puts the probe block
     // — no key reveals a header, which is how the cascade recognizes it
     assert.strictEqual(
@@ -74,12 +92,16 @@ suite("referenceStandaloneArchives", () => {
       null
     )
     const outputDir = await mkdtemp(join(tmpdir(), "superbacked-reference-"))
-    const files = await restoreStandaloneArchive(path, outputDir, keys.key, 1)
+    const files = await restoreLegacyStandaloneArchive(
+      path,
+      outputDir,
+      keys.key
+    )
     await verifyRestoredFixtures(outputDir, files)
   })
 
-  test("fails to restore the v1 reference archive using a wrong passphrase", async () => {
-    const path = "docs/reference-standalone-archives/v1/backup.superbacked"
+  test("fails to restore the legacy reference archive using a wrong passphrase", async () => {
+    const path = "tests/fixtures/legacy/standalone-archives/backup.superbacked"
     const salt = await extractSalt(path)
     const keys = await computeArchiveKeys(
       "wrong passphrase entirely",
@@ -90,41 +112,41 @@ suite("referenceStandaloneArchives", () => {
       decodeProbeBlock(keys.probeKey, await extractProbeBlock(path)),
       null
     )
-    // The headerless fallback authenticates at the payload — a wrong
+    // The legacy scheme authenticates at the payload — a wrong
     // passphrase surfaces only there
     const outputDir = await mkdtemp(join(tmpdir(), "superbacked-reference-"))
     await assert.rejects(
-      restoreStandaloneArchive(path, outputDir, keys.key, 1),
+      restoreLegacyStandaloneArchive(path, outputDir, keys.key),
       AuthenticationError
     )
   })
 
-  test("restores the v2 standard reference archive through the probe", async () => {
+  test("restores the standard reference archive through the probe", async () => {
     const path =
-      "docs/reference-standalone-archives/v2/standard/backup.superbacked"
+      "tests/fixtures/standalone-archives/standard/backup.superbacked"
     const salt = await extractSalt(path)
     const keys = await computeArchiveKeys(
-      v2Passphrase,
+      currentPassphrase,
       salt,
-      v2StandardKdfProfile
+      standardKdfProfile
     )
     assert.strictEqual(
       decodeProbeBlock(keys.probeKey, await extractProbeBlock(path)),
-      standaloneArchiveVersion
+      schemeVersion
     )
     const outputDir = await mkdtemp(join(tmpdir(), "superbacked-reference-"))
-    const files = await restoreStandaloneArchive(path, outputDir, keys.key, 2)
+    const files = await restoreStandaloneArchive(path, outputDir, keys.key)
     await verifyRestoredFixtures(outputDir, files)
   })
 
-  test("fails to match the v2 standard reference archive probe using a wrong passphrase", async () => {
+  test("fails to match the standard reference archive probe using a wrong passphrase", async () => {
     const path =
-      "docs/reference-standalone-archives/v2/standard/backup.superbacked"
+      "tests/fixtures/standalone-archives/standard/backup.superbacked"
     const salt = await extractSalt(path)
     const keys = await computeArchiveKeys(
       "wrong passphrase entirely",
       salt,
-      v2StandardKdfProfile
+      standardKdfProfile
     )
     // A wrong passphrase and a headerless v1 archive land in the same
     // place — no probe match, and the cascade falls through
@@ -134,46 +156,46 @@ suite("referenceStandaloneArchives", () => {
     )
   })
 
-  test("restores the v2 paranoid reference archive at the paranoid profile only", async () => {
+  test("restores the paranoid reference archive at the paranoid profile only", async () => {
     const path =
-      "docs/reference-standalone-archives/v2/paranoid/backup.superbacked"
+      "tests/fixtures/standalone-archives/paranoid/backup.superbacked"
     const salt = await extractSalt(path)
     const probeBlock = await extractProbeBlock(path)
     // The standard profile derives a different probe key — a paranoid
     // archive restored without the mode matches no probe and falls
     // through to report a wrong passphrase
     const standardKeys = await computeArchiveKeys(
-      v2Passphrase,
+      currentPassphrase,
       salt,
-      v2StandardKdfProfile
+      standardKdfProfile
     )
     assert.strictEqual(
       decodeProbeBlock(standardKeys.probeKey, probeBlock),
       null
     )
     const keys = await computeArchiveKeys(
-      v2Passphrase,
+      currentPassphrase,
       salt,
-      v2ParanoidKdfProfile
+      paranoidKdfProfile
     )
     assert.strictEqual(
       decodeProbeBlock(keys.probeKey, probeBlock),
-      standaloneArchiveVersion
+      schemeVersion
     )
     const outputDir = await mkdtemp(join(tmpdir(), "superbacked-reference-"))
-    const files = await restoreStandaloneArchive(path, outputDir, keys.key, 2)
+    const files = await restoreStandaloneArchive(path, outputDir, keys.key)
     await verifyRestoredFixtures(outputDir, files)
   })
 
   test("restores the YubiKey-protected reference archive with a simulated response, never without", async () => {
     const path =
-      "docs/reference-standalone-archives/v2/standard/yubikey/backup.superbacked"
+      "tests/fixtures/standalone-archives/standard/yubikey/backup.superbacked"
     const salt = await extractSalt(path)
     const probeBlock = await extractProbeBlock(path)
     const stretchedKey = await computeStretchedKey(
-      v2Passphrase,
+      currentPassphrase,
       salt,
-      v2StandardKdfProfile
+      standardKdfProfile
     )
     // Without the response the probe reveals nothing — the probe sits at
     // the same factor depth as the encryption key, so no correctness
@@ -192,7 +214,7 @@ suite("referenceStandaloneArchives", () => {
         computeProbeKey(stretchedKey, probeKeyInfo, response),
         probeBlock
       ),
-      standaloneArchiveVersion
+      schemeVersion
     )
     const key = computeResponseBoundKey(
       stretchedKey,
@@ -200,7 +222,7 @@ suite("referenceStandaloneArchives", () => {
       passphraseKeyInfo
     )
     const outputDir = await mkdtemp(join(tmpdir(), "superbacked-reference-"))
-    const files = await restoreStandaloneArchive(path, outputDir, key, 2)
+    const files = await restoreStandaloneArchive(path, outputDir, key)
     await verifyRestoredFixtures(outputDir, files)
   })
 })

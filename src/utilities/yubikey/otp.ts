@@ -110,7 +110,8 @@ const matchesOtpInterface = (device: Device): boolean => {
 
 // User-actionable failures carry a code the app and the command-line
 // interface resolve into user-facing text through the en locale (see
-// src/shared/utilities/yubikeyErrorMessage.ts and src/cli/localeText.ts) —
+// src/shared/utilities/yubikeyErrorMessage.ts and
+// src/cli/utilities/localeText.ts) —
 // low-level failures collapse into the communication code (see
 // asYubiKeyError below)
 export type YubiKeyErrorCode =

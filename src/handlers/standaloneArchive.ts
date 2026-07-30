@@ -2,9 +2,10 @@ import { rename, unlink } from "fs/promises"
 
 import {
   legacyKdfProfile,
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
+import { restoreLegacyStandaloneArchive } from "@/src/utilities/core/legacy/standaloneArchive"
 import {
   AuthenticationError,
   Manifest,
@@ -16,7 +17,7 @@ import {
   extractProbeBlock,
   extractSalt,
   restoreStandaloneArchive as restoreStandaloneArchiveUtility,
-  standaloneArchiveVersion,
+  schemeVersion,
 } from "@/src/utilities/core/standaloneArchive"
 import { generateSalt } from "@/src/utilities/crypto/primitives"
 import {
@@ -73,7 +74,7 @@ export async function createStandaloneArchive(
     const keys = await computeArchiveKeys(
       passphrase,
       salt,
-      paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile,
+      paranoid === true ? paranoidKdfProfile : standardKdfProfile,
       slot === undefined ? undefined : { onTouchRequired, slot }
     )
     const manifest = await createStandaloneArchiveUtility(
@@ -144,9 +145,9 @@ export async function restoreStandaloneArchive(
     // trialed only when the mode is on — a deliberate contract keeping
     // wrong passphrases fast for everyone else, at the cost of paranoid
     // artifacts reporting a wrong passphrase until the mode is enabled
-    const profiles = [v2StandardKdfProfile, legacyKdfProfile]
+    const profiles = [standardKdfProfile, legacyKdfProfile]
     if (paranoid === true) {
-      profiles.push(v2ParanoidKdfProfile)
+      profiles.push(paranoidKdfProfile)
     }
     let files: null | RestoredFilePath[] = null
     let legacyKey: null | Buffer = null
@@ -159,7 +160,7 @@ export async function restoreStandaloneArchive(
       if (version === null) {
         continue
       }
-      if (version !== standaloneArchiveVersion) {
+      if (version !== schemeVersion) {
         throw new UnsupportedVersionError(
           "Archive requires a newer version of Superbacked"
         )
@@ -167,17 +168,15 @@ export async function restoreStandaloneArchive(
       files = await restoreStandaloneArchiveUtility(
         filePath,
         outputDir,
-        keys.key,
-        2
+        keys.key
       )
       break
     }
     if (files === null && legacyKey !== null) {
-      files = await restoreStandaloneArchiveUtility(
+      files = await restoreLegacyStandaloneArchive(
         filePath,
         outputDir,
-        legacyKey,
-        1
+        legacyKey
       )
     }
     if (files === null) {

@@ -3,16 +3,16 @@ import { dirname, resolve } from "path"
 
 import { program as cli } from "commander"
 
-import { errorText, touchYubiKeyText } from "@/src/cli/localeText"
-import readPassphrase from "@/src/cli/readPassphrase"
-import { red } from "@/src/cli/style"
+import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
+import readPassphrase from "@/src/cli/utilities/readPassphrase"
+import { red } from "@/src/cli/utilities/style"
 import {
   createStandaloneArchive,
   restoreStandaloneArchive,
 } from "@/src/handlers/standaloneArchive"
 import {
-  v2ParanoidKdfProfile,
-  v2StandardKdfProfile,
+  paranoidKdfProfile,
+  standardKdfProfile,
 } from "@/src/shared/utilities/kdfProfiles"
 import zxcvbn, {
   minimumPassphraseStrength,
@@ -90,7 +90,7 @@ export const createStandaloneArchiveAction = async (
     if (
       zxcvbn(
         passphrase,
-        paranoid === true ? v2ParanoidKdfProfile : v2StandardKdfProfile
+        paranoid === true ? paranoidKdfProfile : standardKdfProfile
       ).strength < minimumPassphraseStrength
     ) {
       throw new Error("Passphrase too weak")

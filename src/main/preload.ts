@@ -70,8 +70,9 @@ const api: Api = {
     validateMnemonic: invokeSync("validateMnemonic"),
     getWordlist: invokeSync("getWordlist"),
     getBlockUsage: invokeSync("getBlockUsage"),
+    encodeBlockContent: invokeSync("encodeBlockContent"),
     generateMasterKey: invokeSync("generateMasterKey"),
-    deriveKey: invokeSync("deriveKey"),
+    deriveDetachedArchiveFilename: invokeSync("deriveDetachedArchiveFilename"),
     generateToken: invokeSync("generateToken"),
   } satisfies IpcSyncHandlers,
   getPathForFile: (file: File) => {

@@ -22,8 +22,7 @@ import {
 // bounds-checks it and attempts authenticated decryption — the tag rejects
 // false candidates, costing O(block size) cheap attempts worst case.
 //
-// The format is frozen — blocks in the wild must decrypt forever. Blocks
-// created before this scheme use legacyFixedSizeEncryption.ts.
+// The format is frozen — blocks in the wild must decrypt forever.
 
 export type Message = Buffer | string
 

@@ -1,6 +1,9 @@
 import { app } from "electron"
 
-import { deriveKey, generateMasterKey } from "@/src/handlers/archive"
+import {
+  deriveDetachedArchiveFilename,
+  generateMasterKey,
+} from "@/src/handlers/archive"
 import chooseDirectory from "@/src/handlers/chooseDirectory"
 import create, { Secret, renderCarrierPdf } from "@/src/handlers/create"
 import {
@@ -35,7 +38,7 @@ import {
   set as setConfig,
   unset as unsetConfig,
 } from "@/src/utilities/config"
-import { getBlockUsage } from "@/src/utilities/core/block"
+import { encodeBlockContent, getBlockUsage } from "@/src/utilities/core/block"
 import {
   generateMnemonic,
   validateMnemonic,
@@ -177,8 +180,9 @@ const syncHandlers = {
   validateMnemonic,
   getWordlist: () => wordlist,
   getBlockUsage,
+  encodeBlockContent,
   generateMasterKey,
-  deriveKey,
+  deriveDetachedArchiveFilename,
   generateToken,
 } as const
 

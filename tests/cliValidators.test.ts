@@ -1,14 +1,11 @@
 import assert from "assert"
 import { suite, test } from "node:test"
 
-import {
-  parseAddresses,
-  parseDerivationPath,
-} from "@/src/cli/derivedBitcoinWallet"
-import { parseClear, parseLength } from "@/src/cli/derivedPassword"
+import { parseAddresses } from "@/src/cli/deriveBitcoinWallet"
+import { parseClear, parseLength } from "@/src/cli/derivePassword"
 
 // Parse-time option validation — invalid values must fail before any
-// prompting or YubiKey interaction (see src/cli/derivedPassword.ts)
+// prompting or YubiKey interaction (see src/cli/derivePassword.ts)
 
 suite("cliValidators", () => {
   test("accepts valid password lengths", () => {
@@ -34,28 +31,6 @@ suite("cliValidators", () => {
     for (const value of ["0", "-1", "1.5", "soon", ""]) {
       assert.throws(() => parseClear(value), {
         message: "Clear seconds must be a positive integer.",
-      })
-    }
-  })
-
-  test("accepts valid derivation paths", () => {
-    for (const value of ["m/84'/0'/0'", "m/44'/0'/0'", "m/0", "m/49'/1/2'"]) {
-      assert.strictEqual(parseDerivationPath(value), value)
-    }
-  })
-
-  test("fails to parse invalid derivation paths", () => {
-    for (const value of [
-      "",
-      "m",
-      "m/",
-      "84'/0'/0'",
-      "m/84''",
-      "m/x",
-      "m/84'/",
-    ]) {
-      assert.throws(() => parseDerivationPath(value), {
-        message: "Derivation path must look like m/84'/0'/0'.",
       })
     }
   })

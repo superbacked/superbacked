@@ -22,7 +22,7 @@ const otherDerivedKey = Buffer.alloc(32, 2)
 
 suite("derivedPassword", () => {
   test("derives password", () => {
-    assert.strictEqual(derivePassword(derivedKey, 16), "aQGk5AnY$Z/D~TJ2")
+    assert.strictEqual(derivePassword(derivedKey, 16), "w?sni2qF.QE@j]:#")
   })
 
   test("derives same password for same inputs", () => {
@@ -35,14 +35,14 @@ suite("derivedPassword", () => {
   test("derives password at minimum length", () => {
     assert.strictEqual(
       derivePassword(derivedKey, minimumPasswordLength),
-      "u&Vm2aa$"
+      "w?sni2qF"
     )
   })
 
   test("derives password at maximum length", () => {
     assert.strictEqual(
       derivePassword(derivedKey, maximumPasswordLength),
-      "aQGk5AnY$Z/D~TJ2uUvAm~jvri_/aUmH:JkP(r%Mu&Vm2aa$@Hb~~-eB&5{R=CjaTEn5A:a4F2)+qGSB:jrtcd>.R~icU&UF8vGTLEgVNR~?npCSZVNho)TKj!e5QCU*"
+      "w?sni2qF.QE@j]:#-T>3-=PRT6/k3}RFc{Jhn%(8=gdR~WhmHDZv~~W+.#>}U+~x4Ko,+r-[d_(B7v(gPEWAW$.+EqnJ)]KEg}[ms~xiQgnGYV3/Jne24Gw9pBN@%g}R"
     )
   })
 
@@ -86,14 +86,14 @@ suite("derivedPassword", () => {
   })
 
   test("computes derived password without YubiKey", async () => {
-    // Rendered from the v2 standard profile master key — the permanent
+    // Rendered from the standard profile master key — the permanent
     // cost of scheme v1 (see tests/derivedKey.test.ts)
     const password = await computeDerivedPassword(
       "lip gift name net sixth",
       "github",
       { length: 16, paranoid: false }
     )
-    assert.strictEqual(password, "X,B#H5.h\\p8w9Vf;")
+    assert.strictEqual(password, "R2hy}w9U@ct3<%K]")
   })
 
   test("computes derived password equal to composed derivation", async () => {
