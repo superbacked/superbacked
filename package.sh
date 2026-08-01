@@ -103,10 +103,12 @@ if [ "${build_os}" = true ]; then
   # upgrade, Firefox, KeePassXC) on top of mksquashfs’ zstd-19 working
   # set — 4 GB OOMs.
   colima start \
-    --profile superbacked \
     --cpu 4 \
     --disk 20 \
-    --memory 8
+    --memory 8 \
+    --profile superbacked \
+    --vm-type vz \
+    --vz-rosetta
 
   printf "%s\n" "Creating live Superbacked OS image…"
 
