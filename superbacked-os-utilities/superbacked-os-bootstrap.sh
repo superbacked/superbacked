@@ -244,6 +244,21 @@ install_pinned_tool() {
 install_pinned_tool trezor "${trezor_version}" "${trezor_sha256}"
 install_pinned_tool yubikey-manager "${yubikey_manager_version}" "${yubikey_manager_sha256}"
 
+# One-command Trezor initialization with the recommended flags:
+# 256-bit strength (24-word mnemonic), PIN and passphrase protection,
+# BIP39 backup. Only the label varies, so it is prompted for with an
+# editable pre-filled default. Goes in .bashrc because GNOME Terminal
+# runs interactive non-login shells, which skip .profile. (Ownership
+# is handed back to superbacked at the end of provisioning.)
+tee --append /home/superbacked/.bashrc > /dev/null << 'EOF'
+
+trezor-setup() {
+  local label
+  read -e -i "My Trezor Safe 7" -p "Label: " label \
+    && trezorctl device setup --backup-type bip39 --label "${label}" --passphrase-protection --pin-protection --strength 256
+}
+EOF
+
 printf "%s\n" "Installing Firefox…"
 
 # Firefox comes from Mozilla’s own apt repository — Ubuntu’s firefox
