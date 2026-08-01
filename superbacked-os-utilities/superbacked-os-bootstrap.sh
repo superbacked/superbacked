@@ -800,6 +800,15 @@ sed --in-place \
   's|^Exec=|Exec=env QT_QPA_PLATFORM=wayland |' \
   /usr/local/share/applications/org.keepassxc.KeePassXC.desktop
 
+# Same-name overrides shadow the stock entries including their MIME
+# claims, which GIO only reads from a directory’s mimeinfo.cache. dpkg
+# triggers maintain the cache for /usr/share/applications but nothing
+# does for /usr/local — without one, double-clicking a .kdbx file
+# reports that no application is installed. Regenerate it so the
+# overrides keep their associations (KeePassXC claims
+# application/x-keepass2, Firefox its web types).
+update-desktop-database /usr/local/share/applications
+
 printf "%s\n" "Configuring shared Downloads folder…"
 
 # Firefox saves downloads here — the one place the confined browser can
