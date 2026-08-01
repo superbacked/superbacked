@@ -78,19 +78,13 @@ export const setMenu = () => {
         { type: "separator", visible: runningMacOS },
         {
           visible: runningMacOS,
+          role: "hide",
           label: `${t("menu.superbacked.hide")} ${app.getName()}`,
-          accelerator: "Command+H",
-          click() {
-            app.hide()
-          },
         },
         { type: "separator" },
         {
+          role: "quit",
           label: `${t("menu.superbacked.quit")} ${app.getName()}`,
-          accelerator: runningMacOS ? "Command+Q" : "Ctrl+Q",
-          click() {
-            app.quit()
-          },
         },
       ],
     },
@@ -150,49 +144,37 @@ export const setMenu = () => {
     },
     {
       label: t("menu.edit.edit"),
+      // Roles route through the native responder chain (macOS
+      // performSelector), so the shortcuts work wherever focus sits —
+      // text fields, static selections, dialogs — where a custom click
+      // through webContents.getFocusedWebContents() silently missed
+      // during accelerator dispatch. Roles supply the platform-correct
+      // accelerators; translated labels override the built-in ones.
       submenu: [
         {
+          role: "undo",
           label: t("menu.edit.undo"),
-          accelerator: runningMacOS ? "Command+Z" : "Ctrl+Z",
-          click() {
-            webContents.getFocusedWebContents()?.undo()
-          },
         },
         {
+          role: "redo",
           label: t("menu.edit.redo"),
-          accelerator: runningMacOS ? "Shift+Command+Z" : "Shift+Ctrl+Z",
-          click() {
-            webContents.getFocusedWebContents()?.redo()
-          },
         },
         { type: "separator" },
         {
+          role: "cut",
           label: t("menu.edit.cut"),
-          accelerator: runningMacOS ? "Command+X" : "Ctrl+X",
-          click() {
-            webContents.getFocusedWebContents()?.cut()
-          },
         },
         {
+          role: "copy",
           label: t("menu.edit.copy"),
-          accelerator: runningMacOS ? "Command+C" : "Ctrl+C",
-          click() {
-            webContents.getFocusedWebContents()?.copy()
-          },
         },
         {
+          role: "paste",
           label: t("menu.edit.paste"),
-          accelerator: runningMacOS ? "Command+V" : "Ctrl+V",
-          click() {
-            webContents.getFocusedWebContents()?.paste()
-          },
         },
         {
+          role: "selectAll",
           label: t("menu.edit.selectAll"),
-          accelerator: runningMacOS ? "Command+A" : "Ctrl+A",
-          click() {
-            webContents.getFocusedWebContents()?.selectAll()
-          },
         },
       ],
     },
