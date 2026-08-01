@@ -77,7 +77,7 @@ export const deriveBitcoinWalletAction = async (
     await confirmYes(
       red(
         "Derived Bitcoin wallets should only be used for amounts you are willing to lose.\n" +
-          "For larger amounts, use a signing device such as a COLDCARD or Trezor."
+          "For larger amounts, use a signing device such as a Trezor."
       ) + "\nDo you wish to continue (yes or no)? ",
       "Deriving a Bitcoin wallet requires interactive confirmation"
     )

@@ -85,7 +85,7 @@ The path is fixed by design. A stateless wallet punishes every forgettable input
 
 The two-factor security model — what each combination of leaked material allows — lives with the derived key scheme in the [derived key technical documentation](derived-key.md). Wallet-specific limitations:
 
-- **Funds at stake**: Deriving exposes the wallet to the computer running the derivation — unlike a signing device, which never releases its seed — and a forgotten passphrase, label or flag is unrecoverable, so derived Bitcoin wallets should only be used for amounts you are willing to lose; for larger amounts, use a signing device such as a COLDCARD or Trezor (the command requires typed confirmation of this warning at every derivation)
+- **Funds at stake**: Deriving exposes the wallet to the computer running the derivation — unlike a signing device, which never releases its seed — and a forgotten passphrase, label or flag is unrecoverable, so derived Bitcoin wallets should only be used for amounts you are willing to lose; for larger amounts, use a signing device such as a Trezor (the command requires typed confirmation of this warning at every derivation)
 - **No rotation**: Derivation is deterministic, so a leaked mnemonic re-derives identically forever — recovering from a leak means moving the funds to a new label’s wallet
 - **Determinism inputs**: The word count and Paranoid mode each derive a different wallet from the same passphrase and label — every derivation echoes both, and re-deriving with a forgotten flag silently produces an empty wallet, not an error
 - **Loss of YubiKey**: Without a second YubiKey programmed with the same slot secret, a two-factor wallet — and the funds it guards — is unrecoverable

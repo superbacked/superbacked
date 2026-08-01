@@ -46,8 +46,6 @@ printf "%s\n" "Starting bootstrap…"
 # install time. (The raw GitHub downloads below still float; their
 # signature checks pin integrity, not versions.)
 readonly apt_snapshot="20260710T000000Z"
-readonly ckcc_protocol_sha256="7ca2e7660d2d321195856bf9b7402ac7ff7bf088e8f79c007b9ec6244fbf73c4"
-readonly ckcc_protocol_version="1.5.0"
 readonly firefox_version="152.0.5"
 readonly keepassxc_version="2.7.12"
 readonly trezor_sha256="6de50703102f90dc5399d40dd7c8134d13b6c54a617d41178b081baf2aeb2b91"
@@ -243,7 +241,6 @@ install_pinned_tool() {
     pipx install "${spec} @ file://${wheel}"
 }
 
-install_pinned_tool 'ckcc-protocol[cli]' "${ckcc_protocol_version}" "${ckcc_protocol_sha256}"
 install_pinned_tool trezor "${trezor_version}" "${trezor_sha256}"
 install_pinned_tool yubikey-manager "${yubikey_manager_version}" "${yubikey_manager_sha256}"
 
@@ -474,9 +471,7 @@ EOF
 
 printf "%s\n" "Configuring udev rules…"
 
-# Let regular users talk to COLDCARD, Trezor and YubiKey hardware over USB.
-curl --fail --location https://raw.githubusercontent.com/Coldcard/ckcc-protocol/master/51-coinkite.rules \
-  --output /etc/udev/rules.d/51-coinkite.rules
+# Let regular users talk to Trezor and YubiKey hardware over USB.
 curl --fail --location https://data.trezor.io/udev/51-trezor.rules \
   --output /etc/udev/rules.d/51-trezor.rules
 curl --fail --location https://raw.githubusercontent.com/Yubico/libfido2/main/udev/70-u2f.rules \
