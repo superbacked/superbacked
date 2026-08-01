@@ -322,7 +322,9 @@
       "scanOrDragAndDropBlock": "Scan or drag and drop block",
       "scanOrDragAndDropNextBlock": "Scan or drag and drop next block",
       "showAsQrCode": "Show as QR code",
-      "showSecret": "Show secret"
+      "showSecret": "Show secret",
+      "token": "Token",
+      "totp": "TOTP"
     }
   }
 }

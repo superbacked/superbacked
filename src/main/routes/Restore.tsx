@@ -5,7 +5,6 @@ import {
   Group,
   Mark,
   Popover,
-  PopoverProps,
   RingProgress,
   Space,
   Text,
@@ -71,10 +70,6 @@ interface SmartPopoverProps {
   // long enough to cross the gap between target and dropdown
   interactive?: boolean
   target: ReactNode
-  // Omitted, the dropdown fits its content — every applet bounds its own
-  // width (the word grid wraps into fixed columns, fingerprint lines are
-  // short)
-  width?: PopoverProps["width"]
 }
 
 const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
@@ -97,7 +92,10 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
     }
   }
   return (
-    <Popover opened={opened} position="bottom" width={props.width} withArrow>
+    // No width — the dropdown fits its content; every applet bounds its
+    // own width (the word grid wraps into fixed columns, fingerprint and
+    // token lines are short)
+    <Popover opened={opened} position="bottom" withArrow>
       <Popover.Target>
         <Mark
           onMouseEnter={openAndStay}
@@ -177,10 +175,12 @@ const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
   }
   return (
     <Fragment>
-      <Text fw={700} ta="center">
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
         {t("routes.restore.bip39Mnemonic")}
       </Text>
-      <Space h="xs" />
+      <Space h="lg" />
       {/* Six columns per row, so 12- and 24-word mnemonics form clean 2-
           and 4-row grids. Numbers align down each column, and max-content
           columns hug their own widest cell — equal-width columns would
@@ -252,12 +252,15 @@ const Bip39PassphraseApplet: FunctionComponent<Bip39PassphraseAppletProps> = (
   }
   return (
     <Fragment>
-      <Text fw={700} ta="center">
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
         {t("routes.restore.bip39Passphrase")}
       </Text>
+      <Space h="lg" />
       {props.mnemonics.map((mnemonic, index) => (
         <Fragment key={mnemonic}>
-          <Space h="xs" />
+          {index > 0 ? <Space h="xs" /> : null}
           {/* Text labels align left (numbers align right, text does
               not); the grid column gives values a shared left edge —
               same max-content column treatment as the word grid */}
@@ -296,10 +299,12 @@ const Bip39PassphraseApplet: FunctionComponent<Bip39PassphraseAppletProps> = (
 }
 
 interface TotpAppletProps {
+  onShowAsQrCode: () => void
   secret: TotpUriResult["properties"]["secret"]
 }
 
 const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
+  const { t } = useTranslation()
   const getTimeRemaining = () => {
     const now = new Date()
     const seconds = now.getSeconds()
@@ -326,20 +331,49 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
   }, [props.secret])
   return (
     <Fragment>
-      {token}{" "}
-      <RingProgress
-        sections={[
-          { value: timeRemaining, color: "dark.4" },
-          { value: 100 - timeRemaining, color: "pink" },
-        ]}
-        size={18}
-        thickness={2}
-        roundCaps
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
+        {t("routes.restore.totp")}
+      </Text>
+      <Space h="lg" />
+      <Box
         sx={{
-          display: "inline-block",
-          verticalAlign: "text-top",
+          ...appletGridGap,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, max-content)",
         }}
-      />
+      >
+        <Text c="dark.4" ta="left">
+          {t("routes.restore.token")}:
+        </Text>
+        <Text ta="left">
+          {token}{" "}
+          <RingProgress
+            sections={[
+              { value: timeRemaining, color: "dark.4" },
+              { value: 100 - timeRemaining, color: "pink" },
+            ]}
+            size={18}
+            thickness={2}
+            roundCaps
+            sx={{
+              display: "inline-block",
+              verticalAlign: "text-top",
+            }}
+          />
+        </Text>
+      </Box>
+      <Space h="xl" />
+      <Group justify="center">
+        <Button
+          onClick={props.onShowAsQrCode}
+          rightSection={<IconQrcode size={16} />}
+          variant="default"
+        >
+          {t("routes.restore.showAsQrCode")}
+        </Button>
+      </Group>
     </Fragment>
   )
 }
@@ -371,7 +405,11 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const [showScanNextBlockBadge, setShowScanNextBlockBadge] = useState(false)
   const [secret, setSecret] = useState<null | string>(null)
   const [showSecret, setShowSecret] = useState(false)
+  // Closing only flips showQrCodeModal — the value survives so the QR
+  // stays stable while the modal fades out (same pattern as
+  // SelectionAsQrCode)
   const [qrCodeValue, setQrCodeValue] = useState<null | string>(null)
+  const [showQrCodeModal, setShowQrCodeModal] = useState(false)
   // Present when the restored block pairs with a detached archive — held
   // opaquely and handed back verbatim (see src/handlers/detachedArchive.ts)
   const [detachedArchive, setDetachedArchive] =
@@ -510,6 +548,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                         onShowAsQrCode={() => {
                           controls.close()
                           setQrCodeValue(result.string)
+                          setShowQrCodeModal(true)
                         }}
                         words={result.properties.words}
                       />
@@ -528,6 +567,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                         onShowAsQrCode={() => {
                           controls.close()
                           setQrCodeValue(result.properties.passphrase)
+                          setShowQrCodeModal(true)
                         }}
                         passphrase={result.properties.passphrase}
                       />
@@ -540,9 +580,18 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                 lineNodes.push(
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}
-                    dropdown={<TotpApplet secret={result.properties.secret} />}
+                    dropdown={(controls) => (
+                      <TotpApplet
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.string)
+                          setShowQrCodeModal(true)
+                        }}
+                        secret={result.properties.secret}
+                      />
+                    )}
+                    interactive
                     target={line.substring(result.start, result.end)}
-                    width="120px"
                   />
                 )
               }
@@ -591,8 +640,8 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
             </Button.Group>
           </Container>
           <QrCodeModal
-            onClose={() => setQrCodeValue(null)}
-            opened={qrCodeValue !== null}
+            onClose={() => setShowQrCodeModal(false)}
+            opened={showQrCodeModal === true && qrCodeValue !== null}
             value={qrCodeValue ?? ""}
           />
         </Fragment>
