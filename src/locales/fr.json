@@ -24,8 +24,9 @@
       "selectAll": "Sélectionner tout"
     },
     "insert": {
+      "bip39Mnemonic": "Mnémonique BIP39",
+      "bip39Passphrase": "Phrase de passe BIP39",
       "insert": "Insertion",
-      "mnemonic": "Mnémonique BIP39",
       "passphrase": "Phrase de passe EFF",
       "scanQrCode": "Scanner le code QR"
     },
@@ -190,6 +191,8 @@
       "spaceRemaining": "Espace restant",
       "bip39Mnemonic_one": "mnémonique",
       "bip39Mnemonic_other": "mnémoniques",
+      "bip39Passphrase_one": "phrase de passe",
+      "bip39Passphrase_other": "phrases de passe",
       "totpUri_one": "URI",
       "totpUri_other": "URIs",
       "found_one": "trouvé",
@@ -307,16 +310,20 @@
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
     "restore": {
-      "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
-      "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
-      "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
+      "bip32RootFingerprint": "Empreinte racine BIP32",
+      "bip39Mnemonic": "Mnémonique BIP39",
+      "bip39Passphrase": "Phrase de passe BIP39",
       "blockRequiresNewerVersion": "Le bloc nécessite une version plus récente de Superbacked",
-      "couldNotUnlockBlockYubiKey": "Impossible de déverrouiller le bloc — phrase de passe, YubiKey ou slot erroné",
-      "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
-      "restoringDetachedArchive": "Restauration de l’archive détachée",
       "couldNotRestoreDetachedArchive": "Impossible de restaurer l’archive détachée",
+      "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
+      "couldNotUnlockBlockYubiKey": "Impossible de déverrouiller le bloc — phrase de passe, YubiKey ou slot erroné",
       "detachedArchiveRequiresNewerVersion": "L’archive détachée nécessite une version plus récente de Superbacked",
       "detachedArchiveRestored": "Archive détachée restaurée",
+      "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
+      "restoringDetachedArchive": "Restauration de l’archive détachée",
+      "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
+      "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
+      "showAsQrCode": "Afficher en code QR",
       "showSecret": "Afficher le secret"
     }
   }

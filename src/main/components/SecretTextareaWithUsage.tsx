@@ -86,7 +86,15 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
   }, [blockUsage])
   const memoizedExtractions = useMemo(() => {
     const { start, end } = currentSelection
-    const results = extract(otherProps.value as string)
+    // Two passes, as in the restore view: mnemonics gate passphrase
+    // extraction, so a recognized passphrase is highlighted before
+    // printing exactly when restoration will highlight it
+    const preliminary = extract(otherProps.value as string)
+    const results = preliminary.some(
+      (result) => result.type === "bip39Mnemonic"
+    )
+      ? extract(otherProps.value as string, true)
+      : preliminary
     const extractions: Extraction[] = []
     for (const result of results) {
       let selected = false
@@ -97,7 +105,12 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
       ) {
         selected = true
       }
-      if (result.type === "bip39Mnemonic") {
+      if (
+        result.type === "bip39Mnemonic" ||
+        result.type === "bip39Passphrase"
+      ) {
+        // One family tag for both — the counts line distinguishes the
+        // nouns
         extractions.push({
           string: result.string,
           type: result.type,

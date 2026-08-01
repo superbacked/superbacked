@@ -1,6 +1,8 @@
 import styled from "@emotion/styled"
 import {
+  Box,
   Button,
+  Group,
   Mark,
   Popover,
   PopoverProps,
@@ -11,8 +13,9 @@ import {
   useMantineTheme,
 } from "@mantine/core"
 import { FileWithPath } from "@mantine/dropzone"
-import { useDisclosure } from "@mantine/hooks"
+import { useDisclosure, useTimeout } from "@mantine/hooks"
 import { notifications } from "@mantine/notifications"
+import { IconQrcode } from "@tabler/icons-react"
 import {
   Fragment,
   FunctionComponent,
@@ -31,10 +34,12 @@ import Dropzone from "@/src/main/components/Dropzone"
 import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
 import Loading from "@/src/main/components/Loading"
 import PassphraseModal from "@/src/main/components/PassphraseModal"
+import QrCodeModal from "@/src/main/components/QrCodeModal"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   Bip39MnemonicResult,
+  Bip39PassphraseResult,
   TotpUriResult,
   extract,
 } from "@/src/main/utilities/regexp"
@@ -58,20 +63,45 @@ const Container = styled.div`
 `
 
 interface SmartPopoverProps {
-  dropdown: ReactNode
+  // A function receives close, letting dropdown buttons dismiss the
+  // popover before acting (for example before opening a modal)
+  dropdown: ReactNode | ((controls: { close: () => void }) => ReactNode)
+  // Interactive dropdowns accept the pointer and stay open while
+  // hovered, so buttons inside are clickable — closing is delayed just
+  // long enough to cross the gap between target and dropdown
+  interactive?: boolean
   target: ReactNode
-  width: PopoverProps["width"]
+  // Omitted, the dropdown fits its content — every applet bounds its own
+  // width (the word grid wraps into fixed columns, fingerprint lines are
+  // short)
+  width?: PopoverProps["width"]
 }
 
 const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
   const theme = useMantineTheme()
   const [opened, { close, open }] = useDisclosure(false)
+  const { clear: cancelClose, start: scheduleClose } = useTimeout(close, 120)
+  const openAndStay = () => {
+    cancelClose()
+    open()
+  }
+  const closeNow = () => {
+    cancelClose()
+    close()
+  }
+  const leave = () => {
+    if (props.interactive === true) {
+      scheduleClose()
+    } else {
+      close()
+    }
+  }
   return (
     <Popover opened={opened} position="bottom" width={props.width} withArrow>
       <Popover.Target>
         <Mark
-          onMouseEnter={open}
-          onMouseLeave={close}
+          onMouseEnter={openAndStay}
+          onMouseLeave={leave}
           sx={{
             backgroundColor: rgba(theme.colors.pink[8], 0.35),
             color: "var(--mantine-color-gradient-0)",
@@ -87,36 +117,182 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
           {props.target}
         </Mark>
       </Popover.Target>
-      <Popover.Dropdown sx={{ pointerEvents: "none" }}>
+      <Popover.Dropdown
+        onMouseEnter={props.interactive === true ? openAndStay : undefined}
+        onMouseLeave={props.interactive === true ? leave : undefined}
+        sx={{
+          pointerEvents: props.interactive === true ? "auto" : "none",
+        }}
+      >
         <Text size="sm" span ta="center">
-          {props.dropdown}
+          {typeof props.dropdown === "function"
+            ? props.dropdown({ close: closeNow })
+            : props.dropdown}
         </Text>
       </Popover.Dropdown>
     </Popover>
   )
 }
 
+// Both applet grids share the same rhythm — xs between columns, tight
+// rows — so the popovers read as one family
+const appletGridGap = {
+  columnGap: "var(--mantine-spacing-xs)",
+  rowGap: "2px",
+}
+
 interface Bip39MnemonicAppletProps {
+  onShowAsQrCode: () => void
   words: Bip39MnemonicResult["properties"]["words"]
 }
 
 const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
   props
 ) => {
+  const { t } = useTranslation()
   const nodes: ReactNode[] = []
   for (const [index, word] of props.words.entries()) {
     nodes.push(
-      <Fragment key={`dropdown-node-${nodes.length}`}>
-        <Text sx={{ display: "inline-block" }}>
-          <Text c="dark.4" span>
-            {index + 1}.{" "}
-          </Text>
-          {word}
+      <Text
+        key={`dropdown-node-${nodes.length}`}
+        sx={{ whiteSpace: "nowrap" }}
+        ta="left"
+      >
+        {/* Numbers right-align on a fixed width (accounting style), so
+            single and double digits line up down each column */}
+        <Text
+          c="dark.4"
+          span
+          sx={{
+            display: "inline-block",
+            minWidth: "3ch",
+            textAlign: "right",
+          }}
+        >
+          {index + 1}.
         </Text>{" "}
-      </Fragment>
+        {word}
+      </Text>
     )
   }
-  return nodes
+  return (
+    <Fragment>
+      <Text fw={700} ta="center">
+        {t("routes.restore.bip39Mnemonic")}
+      </Text>
+      <Space h="xs" />
+      {/* Six columns per row, so 12- and 24-word mnemonics form clean 2-
+          and 4-row grids. Numbers align down each column, and max-content
+          columns hug their own widest cell — equal-width columns would
+          pad every column to the grid-wide widest word */}
+      <Box
+        sx={{
+          ...appletGridGap,
+          display: "grid",
+          gridTemplateColumns: "repeat(6, max-content)",
+        }}
+      >
+        {nodes}
+      </Box>
+      <Space h="xl" />
+      <Group justify="center">
+        <Button
+          onClick={props.onShowAsQrCode}
+          rightSection={<IconQrcode size={16} />}
+          variant="default"
+        >
+          {t("routes.restore.showAsQrCode")}
+        </Button>
+      </Group>
+    </Fragment>
+  )
+}
+
+interface Bip39PassphraseAppletProps {
+  mnemonics: string[]
+  onShowAsQrCode: () => void
+  passphrase: Bip39PassphraseResult["properties"]["passphrase"]
+}
+
+// The fingerprint a signing device and wallet (for example Trezor
+// connected to Electrum) display for the wallet this mnemonic and
+// passphrase unlock — the master node’s identity, so no derivation path
+// enters or is shown (see src/utilities/crypto/bip32.ts). One section
+// per mnemonic in the secret, each identified by its abbreviated words,
+// so multiple mnemonics stay unambiguous
+const Bip39PassphraseApplet: FunctionComponent<Bip39PassphraseAppletProps> = (
+  props
+) => {
+  const { t } = useTranslation()
+  const [fingerprints, setFingerprints] = useState<null | string[]>(null)
+  useEffect(() => {
+    let cancelled = false
+    const compute = async () => {
+      const computed: string[] = []
+      for (const mnemonic of props.mnemonics) {
+        computed.push(
+          await window.api.invoke.computeBip32RootFingerprint(
+            mnemonic,
+            props.passphrase
+          )
+        )
+      }
+      if (cancelled === false) {
+        setFingerprints(computed)
+      }
+    }
+    void compute()
+    return () => {
+      cancelled = true
+    }
+  }, [props.mnemonics, props.passphrase])
+  const abbreviate = (mnemonic: string) => {
+    const words = mnemonic.split(" ")
+    return `${words[0]}…${words[words.length - 1]}`
+  }
+  return (
+    <Fragment>
+      <Text fw={700} ta="center">
+        {t("routes.restore.bip39Passphrase")}
+      </Text>
+      {props.mnemonics.map((mnemonic, index) => (
+        <Fragment key={mnemonic}>
+          <Space h="xs" />
+          {/* Text labels align left (numbers align right, text does
+              not); the grid column gives values a shared left edge —
+              same max-content column treatment as the word grid */}
+          <Box
+            sx={{
+              ...appletGridGap,
+              display: "grid",
+              gridTemplateColumns: "repeat(2, max-content)",
+            }}
+          >
+            <Text c="dark.4" ta="left">
+              {t("routes.restore.bip39Mnemonic")}:
+            </Text>
+            <Text ta="left">{abbreviate(mnemonic)}</Text>
+            <Text c="dark.4" ta="left">
+              {t("routes.restore.bip32RootFingerprint")}:
+            </Text>
+            <Text ta="left">
+              {fingerprints === null ? "…" : fingerprints[index]}
+            </Text>
+          </Box>
+        </Fragment>
+      ))}
+      <Space h="xl" />
+      <Group justify="center">
+        <Button
+          onClick={props.onShowAsQrCode}
+          rightSection={<IconQrcode size={16} />}
+          variant="default"
+        >
+          {t("routes.restore.showAsQrCode")}
+        </Button>
+      </Group>
+    </Fragment>
+  )
 }
 
 interface TotpAppletProps {
@@ -195,6 +371,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const [showScanNextBlockBadge, setShowScanNextBlockBadge] = useState(false)
   const [secret, setSecret] = useState<null | string>(null)
   const [showSecret, setShowSecret] = useState(false)
+  const [qrCodeValue, setQrCodeValue] = useState<null | string>(null)
   // Present when the restored block pairs with a detached archive — held
   // opaquely and handed back verbatim (see src/handlers/detachedArchive.ts)
   const [detachedArchive, setDetachedArchive] =
@@ -299,13 +476,25 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   if (secret) {
     if (showSecret === true) {
       const nodes: ReactNode[] = []
+      // Mnemonics gate passphrase extraction and feed the fingerprint
+      // applet — collected over the whole secret, as the mnemonic
+      // usually sits on another line than the passphrase, and deduped so
+      // a repeated mnemonic yields one fingerprint section (which also
+      // makes the mnemonic a safe React key)
+      const bip39Mnemonics = Array.from(
+        new Set(
+          extract(secret)
+            .filter((result) => result.type === "bip39Mnemonic")
+            .map((result) => result.string)
+        )
+      )
       const lines = secret.split(/\n/)
       for (const line of lines) {
         if (line === "") {
           nodes.push(<Space key={`node-${nodes.length}`} h="lg" />)
         } else {
           const lineNodes: ReactNode[] = []
-          const results = extract(line)
+          const results = extract(line, bip39Mnemonics.length > 0)
           let startIndex = 0
           if (results.length === 0) {
             lineNodes.push(line)
@@ -316,11 +505,35 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                 lineNodes.push(
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}
-                    dropdown={
-                      <Bip39MnemonicApplet words={result.properties.words} />
-                    }
+                    dropdown={(controls) => (
+                      <Bip39MnemonicApplet
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.string)
+                        }}
+                        words={result.properties.words}
+                      />
+                    )}
+                    interactive
                     target={line.substring(result.start, result.end)}
-                    width="440px"
+                  />
+                )
+              } else if (result.type === "bip39Passphrase") {
+                lineNodes.push(
+                  <SmartPopover
+                    key={`line-node-${lineNodes.length}`}
+                    dropdown={(controls) => (
+                      <Bip39PassphraseApplet
+                        mnemonics={bip39Mnemonics}
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.properties.passphrase)
+                        }}
+                        passphrase={result.properties.passphrase}
+                      />
+                    )}
+                    interactive
+                    target={line.substring(result.start, result.end)}
                   />
                 )
               } else if (result.type === "totpUri") {
@@ -377,6 +590,11 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               </Button>
             </Button.Group>
           </Container>
+          <QrCodeModal
+            onClose={() => setQrCodeValue(null)}
+            opened={qrCodeValue !== null}
+            value={qrCodeValue ?? ""}
+          />
         </Fragment>
       )
     } else {

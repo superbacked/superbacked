@@ -1,10 +1,11 @@
 import {
   generateMnemonic as _generateMnemonic,
   validateMnemonic as _validateMnemonic,
+  mnemonicToSeed,
 } from "@scure/bip39"
 import { wordlist } from "@scure/bip39/wordlists/english.js"
 
-export { wordlist }
+export { mnemonicToSeed, wordlist }
 
 export type Strength = 128 | 256
 

@@ -201,7 +201,7 @@ export const setMenu = () => {
       submenu: [
         {
           enabled: enabledModes.has("insert"),
-          label: t("menu.insert.mnemonic"),
+          label: t("menu.insert.bip39Mnemonic"),
           accelerator: runningMacOS ? "Shift+Command+M" : "Shift+Ctrl+M",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
@@ -212,8 +212,19 @@ export const setMenu = () => {
         },
         {
           enabled: enabledModes.has("insert"),
-          label: t("menu.insert.passphrase"),
+          label: t("menu.insert.bip39Passphrase"),
           accelerator: runningMacOS ? "Shift+Command+P" : "Shift+Ctrl+P",
+          click() {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              sendEvent(focusedWindow, "menuInsert", "password")
+            }
+          },
+        },
+        {
+          enabled: enabledModes.has("insert"),
+          label: t("menu.insert.passphrase"),
+          accelerator: runningMacOS ? "Shift+Command+E" : "Shift+Ctrl+E",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {

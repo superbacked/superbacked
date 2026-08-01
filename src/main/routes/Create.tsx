@@ -795,6 +795,9 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       } else if (type === "passphrase") {
         const passphrase = await window.api.invoke.generatePassphrase()
         insertAtCursor(passphrase)
+      } else if (type === "password") {
+        const password = await window.api.invoke.generatePassword()
+        insertAtCursor(password)
       } else if (type === "scanQrCode") {
         setSelection(captureSelection())
         setShowScanner(true)

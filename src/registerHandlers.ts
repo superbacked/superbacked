@@ -12,6 +12,7 @@ import {
 } from "@/src/handlers/detachedArchive"
 import duplicate from "@/src/handlers/duplicate"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
+import generatePassword from "@/src/handlers/generatePassword"
 import getDesktopCapturerSources from "@/src/handlers/getDesktopCapturerSources"
 import openExternalUrl from "@/src/handlers/openExternalUrl"
 import openPath from "@/src/handlers/openPath"
@@ -39,18 +40,20 @@ import {
   unset as unsetConfig,
 } from "@/src/utilities/config"
 import { encodeBlockContent, getBlockUsage } from "@/src/utilities/core/block"
+import { computeBip32RootFingerprint } from "@/src/utilities/crypto/bip32"
 import {
   generateMnemonic,
   validateMnemonic,
   wordlist,
 } from "@/src/utilities/crypto/bip39"
+import { characterClasses } from "@/src/utilities/crypto/derivedPassword"
 import { generateToken } from "@/src/utilities/crypto/totp"
 import { handle } from "@/src/utilities/ipc/handle"
 import { handleSync } from "@/src/utilities/ipc/handleSync"
 import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
 import { Slot } from "@/src/utilities/yubikey/otp"
 
-type InsertType = "mnemonic" | "passphrase" | "scanQrCode"
+type InsertType = "mnemonic" | "passphrase" | "password" | "scanQrCode"
 
 // Helper type for event listener registration
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,6 +84,8 @@ const asyncHandlers = {
   disableModes,
   toggleMaximize,
   generatePassphrase,
+  generatePassword,
+  computeBip32RootFingerprint,
   renderCarrierPdf,
   duplicate,
   getDefaultPrinter,
@@ -179,6 +184,7 @@ const syncHandlers = {
   generateMnemonic,
   validateMnemonic,
   getWordlist: () => wordlist,
+  getPasswordCharacterClasses: () => characterClasses,
   getBlockUsage,
   encodeBlockContent,
   generateMasterKey,
@@ -198,7 +204,7 @@ export const registerSyncHandlers = () => {
     ][]
   ).forEach(([name, handler]) => {
     handleSync(name, (...args: never[]) => {
-      // @ts-expect-error - TypeScript can't properly type handler union
+      // @ts-expect-error - TypeScript can’t properly type handler union
       return handler(...args)
     })
   })

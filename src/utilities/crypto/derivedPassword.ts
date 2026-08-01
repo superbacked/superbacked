@@ -30,14 +30,17 @@ const uppercaseCharacters = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 const digitCharacters = "23456789"
 const specialCharacters = "!#$%&()*+,-./:;<=>?@[\\]^_{}~"
 
-const characterClasses = [
+// Exported for the random password generator (see
+// src/utilities/crypto/password.ts), which draws from the same set —
+// the constants stay frozen here with the scheme that owns them
+export const characterClasses = [
   lowercaseCharacters,
   uppercaseCharacters,
   digitCharacters,
   specialCharacters,
 ]
 
-const characters = characterClasses.join("")
+export const characters = characterClasses.join("")
 
 // Character to class index — lets the compliance scan avoid searching class
 // strings, whose early exit would leak character positions through timing
