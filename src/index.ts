@@ -23,7 +23,7 @@ import {
   locales,
   setLocale as setLocaleI18n,
 } from "@/src/i18n"
-import { disableModes, setMenu } from "@/src/menu"
+import { attachContextMenu, disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
@@ -268,6 +268,7 @@ export const createWindow = async (): Promise<BrowserWindow> => {
       },
     })
     mainWindowId = mainWindow.id
+    attachContextMenu(mainWindow)
     mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY).catch((error) => {
       reject(error)
     })

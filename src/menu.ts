@@ -312,3 +312,44 @@ export const disableModes = (modes: Mode[]) => {
     setMenu()
   }
 }
+
+// Right-click menu for editable fields — a subset of the Edit menu
+// (cut, copy, paste, select all) with the same roles and labels, no new
+// capability (undo/redo, Insert and the selection applets deliberately
+// stay out, and static text shows no menu — the Edit menu and its
+// shortcuts still cover copying a revealed secret). Electron ships no
+// default context menu, so without this right-click does nothing. Built
+// at popup time, so labels follow the active language and enabled
+// states follow the target through editFlags
+export const attachContextMenu = (window: BrowserWindow) => {
+  window.webContents.on("context-menu", (_event, params) => {
+    const template: MenuItemConstructorOptions[] = []
+    if (params.isEditable === true) {
+      template.push(
+        {
+          role: "cut",
+          label: t("menu.edit.cut"),
+          enabled: params.editFlags.canCut,
+        },
+        {
+          role: "copy",
+          label: t("menu.edit.copy"),
+          enabled: params.editFlags.canCopy,
+        },
+        {
+          role: "paste",
+          label: t("menu.edit.paste"),
+          enabled: params.editFlags.canPaste,
+        },
+        {
+          role: "selectAll",
+          label: t("menu.edit.selectAll"),
+          enabled: params.editFlags.canSelectAll,
+        }
+      )
+    }
+    if (template.length > 0) {
+      Menu.buildFromTemplate(template).popup({ window })
+    }
+  })
+}
