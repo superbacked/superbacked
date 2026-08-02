@@ -14,6 +14,17 @@ import effLargeWordlist from "@/wordlists/eff_large_wordlist.json"
 import effShortWordlist1 from "@/wordlists/eff_short_wordlist_1.json"
 import effShortWordlist20 from "@/wordlists/eff_short_wordlist_2_0.json"
 
+// Configured once at module load — setOptions rebuilds the ranked
+// dictionaries (tens of thousands of words), far too heavy to re-run
+// per evaluation while the strength popover re-prices every keystroke
+zxcvbnOptions.setOptions({
+  graphs: languageCommonAdjacencyGraphs,
+  dictionary: {
+    ...languageCommonDictionary,
+    ...languageEnDictionary,
+  },
+})
+
 const second = 1
 const minute = second * 60
 const hour = minute * 60
@@ -312,14 +323,6 @@ export default (
   passphrase: string,
   profile: KdfProfile = standardKdfProfile
 ): Result => {
-  const options = {
-    graphs: languageCommonAdjacencyGraphs,
-    dictionary: {
-      ...languageCommonDictionary,
-      ...languageEnDictionary,
-    },
-  }
-  zxcvbnOptions.setOptions(options)
   const result = zxcvbn(passphrase, userInputs) as Result
   const wordlistMatch = wordlistEntropy(passphrase)
   const entropy = wordlistMatch?.bits ?? result.guessesLog10 * Math.log2(10)
