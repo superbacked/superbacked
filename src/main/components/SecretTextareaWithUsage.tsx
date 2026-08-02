@@ -236,15 +236,13 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
   } else {
     for (const memoizedExtraction of memoizedExtractions) {
       textChildren.push(value.substring(startIndex, memoizedExtraction.start))
+      // Plain child text, never innerHTML — the overlay must render the
+      // exact characters the textarea holds to stay aligned, and secret
+      // content must not reach an HTML parser (a passphrase containing
+      // “<” would otherwise start a tag and swallow the rest of the mark)
       textChildren.push(
         <Mark
           key={`${memoizedExtraction.string}-${textChildren.length}`}
-          dangerouslySetInnerHTML={{
-            __html: value.substring(
-              memoizedExtraction.start,
-              memoizedExtraction.end
-            ),
-          }}
           sx={{
             backgroundColor: memoizedExtraction.color,
             color: "transparent",
@@ -252,7 +250,9 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
             transition: "background-color 100ms ease",
             whiteSpace: "pre-wrap",
           }}
-        />
+        >
+          {value.substring(memoizedExtraction.start, memoizedExtraction.end)}
+        </Mark>
       )
       startIndex = memoizedExtraction.end
     }
