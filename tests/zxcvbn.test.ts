@@ -55,19 +55,19 @@ suite("zxcvbn", () => {
     assert.ok(result.strength < minimumPassphraseStrength)
   })
 
-  test("passes sixteen random characters at the gate boundary (reference vector)", () => {
+  test("passes sixteen random characters just past the gate (reference vector)", () => {
     // Generated with KeePassXC (~105 bits over the 95-symbol printable
     // set) — zxcvbn charges brute force ten guesses per character (10¹⁶)
     // and no generator-aware path exists for character passwords. At the
-    // v2 profile the estimate lands exactly on the fifty-year requirement
+    // v2 profile the estimate lands just past the fifty-year requirement
     const result = zxcvbn("+^D*_d@R(p8LS[va")
     assert.strictEqual(result.entropy, 53)
     assert.strictEqual(result.entropyDeterministic, false)
     assert.strictEqual(result.slowKey, "years")
-    assert.strictEqual(result.slowBase, 50)
+    assert.strictEqual(result.slowBase, 51)
     assert.strictEqual(result.fastKey, "years")
     assert.strictEqual(result.fastBase, 8)
-    assert.strictEqual(result.strength, 50)
+    assert.strictEqual(result.strength, 51)
     assert.ok(result.strength >= minimumPassphraseStrength)
   })
 
@@ -84,7 +84,7 @@ suite("zxcvbn", () => {
     assert.strictEqual(anchored.strength, 24)
     const paranoid = zxcvbn("blast dance visor jog broil", paranoidKdfProfile)
     assert.strictEqual(paranoid.slowKey, "years")
-    assert.strictEqual(paranoid.slowBase, 117)
+    assert.strictEqual(paranoid.slowBase, 118)
     assert.strictEqual(paranoid.fastKey, "years")
     assert.strictEqual(paranoid.fastBase, 13)
     assert.strictEqual(paranoid.strength, 100)

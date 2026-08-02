@@ -29,8 +29,10 @@ const second = 1
 const minute = second * 60
 const hour = minute * 60
 const day = hour * 24
-const month = day * 31
-const year = month * 12
+// Gregorian mean year; the display month is a twelfth of it, so the
+// units nest exactly
+const year = day * 365.2425
+const month = year / 12
 
 // New passphrases must score a strength of at least 50 — fifty years
 // against a million-dollar standing attack budget, priced at the KDF
