@@ -25,6 +25,7 @@ import {
 } from "@/src/i18n"
 import { attachContextMenu, disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
+import { defaultClipboardClearSeconds } from "@/src/shared/utilities/clipboard"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
@@ -127,7 +128,7 @@ cli
     "--clear <seconds>",
     "seconds before revealed secret is cleared from clipboard",
     parseClear,
-    10
+    defaultClipboardClearSeconds
   )
   .option(
     "--confirm",
@@ -178,7 +179,7 @@ cli
     "--clear <seconds>",
     "seconds before copied password is cleared from clipboard",
     parseClear,
-    10
+    defaultClipboardClearSeconds
   )
   .option(
     "--confirm",

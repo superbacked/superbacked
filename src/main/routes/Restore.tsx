@@ -35,6 +35,7 @@ import Loading from "@/src/main/components/Loading"
 import PassphraseModal from "@/src/main/components/PassphraseModal"
 import QrCodeModal from "@/src/main/components/QrCodeModal"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
+import { copySecretText } from "@/src/main/utilities/clipboard"
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   Bip39MnemonicResult,
@@ -386,11 +387,7 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
             reachable through the full secret’s otpauth URI */}
         <Button
           onClick={async () => {
-            await navigator.clipboard.writeText(token)
-            notifications.show({
-              id: "copy",
-              message: t("common.copied"),
-            })
+            await copySecretText(token)
           }}
           size="xs"
           variant="default"
@@ -570,11 +567,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                     dropdown={(controls) => (
                       <Bip39MnemonicApplet
                         onCopy={async () => {
-                          await navigator.clipboard.writeText(result.string)
-                          notifications.show({
-                            id: "copy",
-                            message: t("common.copied"),
-                          })
+                          await copySecretText(result.string)
                         }}
                         onShowAsQrCode={() => {
                           controls.close()
@@ -596,13 +589,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                       <Bip39PassphraseApplet
                         mnemonics={bip39Mnemonics}
                         onCopy={async () => {
-                          await navigator.clipboard.writeText(
-                            result.properties.passphrase
-                          )
-                          notifications.show({
-                            id: "copy",
-                            message: t("common.copied"),
-                          })
+                          await copySecretText(result.properties.passphrase)
                         }}
                         onShowAsQrCode={() => {
                           controls.close()
@@ -651,11 +638,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               <Button
                 variant="default"
                 onClick={async () => {
-                  await navigator.clipboard.writeText(secret)
-                  notifications.show({
-                    id: "copy",
-                    message: t("common.copied"),
-                  })
+                  await copySecretText(secret)
                 }}
               >
                 {t("common.copy")}
@@ -752,11 +735,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               <Button
                 variant="default"
                 onClick={async () => {
-                  await navigator.clipboard.writeText(secret)
-                  notifications.show({
-                    id: "copy",
-                    message: t("common.copied"),
-                  })
+                  await copySecretText(secret)
                 }}
               >
                 {t("common.copy")}

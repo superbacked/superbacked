@@ -49,6 +49,8 @@
     },
     "settings": {
       "settings": "Réglages",
+      "clearClipboardAfter": "Effacer le presse-papiers après",
+      "seconds": "secondes",
       "paranoidMode": "Activer le mode paranoïaque",
       "paranoidModeDescription": "Les blocs et archives autonomes sont créés avec une dérivation de clé renforcée (coût 10× supérieur au standard). Leur restauration nécessite le mode paranoïaque et au moins 1 Go de mémoire libre, et prend plusieurs secondes par tentative."
     },
@@ -222,7 +224,8 @@
   "common": {
     "back": "Retour",
     "cancel": "Annuler",
-    "copied": "Copié",
+    "copiedToClipboard_one": "Copié dans le presse-papiers, effacement dans {{count}} seconde…",
+    "copiedToClipboard_other": "Copié dans le presse-papiers, effacement dans {{count}} secondes…",
     "copy": "Copier",
     "done": "Terminer",
     "gotIt": "J’ai compris",

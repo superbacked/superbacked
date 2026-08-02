@@ -280,6 +280,22 @@ const App = () => {
                 },
               },
             },
+            NumberInput: {
+              // The increment and decrement controls keep a quiet
+              // surface in every state — the app never brightens
+              // hovered or pressed controls (same treatment as
+              // SegmentedControl labels below)
+              styles: {
+                control: {
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                  "&:active": {
+                    backgroundColor: "transparent",
+                  },
+                },
+              },
+            },
             Menu: {
               // Same surface as Popover and Combobox dropdowns — and the
               // same hover as Combobox options, whose dark-mode hover
@@ -323,8 +339,15 @@ const App = () => {
             },
             Notification: {
               styles: {
+                // Toasts hug their message instead of stretching to the
+                // container (whose width only caps wrapping — see
+                // containerWidth below); auto left margin keeps them
+                // pinned to the container’s right edge
                 root: {
                   "&::before": { display: "none" },
+                  marginLeft: "auto",
+                  maxWidth: "100%",
+                  width: "fit-content",
                 },
                 title: {
                   color: "var(--mantine-color-text)",
@@ -500,7 +523,11 @@ const App = () => {
           </MenuEvents>
         </MemoryRouter>
         <Disclaimer />
-        <Notifications containerWidth={400} />
+        {/* The width is a wrap ceiling, not a toast width — toasts fit
+            their content (see the Notification theme entry), and 500
+            keeps the clipboard-clearing message on one line in both
+            locales */}
+        <Notifications containerWidth={500} />
       </MantineProvider>
     </MantineEmotionProvider>
   )

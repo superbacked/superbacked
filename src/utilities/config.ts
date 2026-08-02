@@ -1,6 +1,10 @@
 import store, { Schema } from "electron-store"
 
 import type { PaperSize, PrintSetting } from "@/src/shared/types/print"
+import {
+  maximumClipboardClearSeconds,
+  minimumClipboardClearSeconds,
+} from "@/src/shared/utilities/clipboard"
 
 // width/height are the window’s *content* size (createWindow consumes them
 // with useContentSize: true); x/y are the outer window position.
@@ -19,6 +23,11 @@ export interface YubiKeySettings {
 }
 
 export interface Store {
+  // Seconds before app-copied secrets are cleared from the clipboard,
+  // defaulting to defaultClipboardClearSeconds when unset (see
+  // src/shared/utilities/clipboard.ts); the command-line interface
+  // reads its --clear flags only
+  clipboardClearSeconds?: number
   scannerDevice?: string
   scannerSource?: string
   windowGeometry?: WindowGeometry
@@ -37,6 +46,11 @@ export interface Store {
 }
 
 const schema: Schema<Store> = {
+  clipboardClearSeconds: {
+    type: "integer",
+    minimum: minimumClipboardClearSeconds,
+    maximum: maximumClipboardClearSeconds,
+  },
   scannerDevice: {
     type: "string",
   },

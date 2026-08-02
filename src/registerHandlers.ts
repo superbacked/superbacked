@@ -25,6 +25,7 @@ import {
 } from "@/src/handlers/print"
 import restore, { restoreReset } from "@/src/handlers/restore"
 import save from "@/src/handlers/save"
+import scheduleClipboardClear from "@/src/handlers/scheduleClipboardClear"
 import {
   createStandaloneArchive,
   restoreStandaloneArchive,
@@ -86,6 +87,7 @@ const asyncHandlers = {
   generatePassphrase,
   generatePassword,
   computeBip32RootFingerprint,
+  scheduleClipboardClear,
   renderCarrierPdf,
   duplicate,
   getDefaultPrinter,

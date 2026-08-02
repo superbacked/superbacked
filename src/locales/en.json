@@ -49,6 +49,8 @@
     },
     "settings": {
       "settings": "Settings",
+      "clearClipboardAfter": "Clear clipboard after",
+      "seconds": "seconds",
       "paranoidMode": "Enable paranoid mode",
       "paranoidModeDescription": "Blocks and standalone archives are created with hardened key derivation (10× standard cost). Restoring them requires paranoid mode and at least 1 GiB of free memory, and takes several seconds per attempt."
     },
@@ -222,7 +224,8 @@
   "common": {
     "back": "Back",
     "cancel": "Cancel",
-    "copied": "Copied",
+    "copiedToClipboard_one": "Copied to clipboard, clearing in {{count}} second…",
+    "copiedToClipboard_other": "Copied to clipboard, clearing in {{count}} seconds…",
     "copy": "Copy",
     "done": "Done",
     "gotIt": "Got it",
