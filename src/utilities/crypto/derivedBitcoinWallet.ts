@@ -1,8 +1,12 @@
-import { bech32 } from "@scure/base"
-import { HDKey } from "@scure/bip32"
 import { entropyToMnemonic, mnemonicToSeedSync } from "@scure/bip39"
 import { wordlist } from "@scure/bip39/wordlists/english.js"
 
+import {
+  bip84DerivationPath,
+  deriveBip84Addresses,
+  deriveBip84ExtendedPrivateKey,
+  deriveBip84ExtendedPublicKey,
+} from "@/src/utilities/crypto/bip84"
 import {
   computeDerivedKey,
   computeSingleFactorDerivedKey,
@@ -29,18 +33,17 @@ import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 // The derivation path is fixed at the BIP84 first account — a stateless
 // wallet punishes every forgettable input with silently empty wallets,
 // and the mnemonic is Superbacked-independent, so other paths and script
-// types stay reachable by importing it into wallet software.
+// types stay reachable by importing it into wallet software. The BIP84
+// projections (extended keys, addresses) are spec, not scheme — they
+// live in src/utilities/crypto/bip84.ts and are consumed here over
+// passphrase-less seeds: a BIP39 passphrase is deliberately not a
+// determinism input of this scheme.
 
 const mnemonicContext = "superbacked-derived-mnemonic"
 
-export const derivationPath = "m/84'/0'/0'"
+export const derivationPath = bip84DerivationPath
 
 export type MnemonicWords = 12 | 24
-
-// SLIP-132 mainnet version bytes for native segwit (zpub and zprv) —
-// what the fixed path derives. Version bytes in the BIP32 serialization
-// sense, unrelated to scheme versioning
-const slip132Versions = { private: 0x04b2430c, public: 0x04b24746 }
 
 /**
  * Render a BIP39 mnemonic from a derived key
@@ -68,10 +71,6 @@ export const deriveMnemonic = (
   return entropyToMnemonic(entropy, wordlist)
 }
 
-const rootForMnemonic = (mnemonic: string): HDKey => {
-  return HDKey.fromMasterSeed(mnemonicToSeedSync(mnemonic), slip132Versions)
-}
-
 /**
  * Derive the extended public key of a mnemonic — the verification
  * handle: re-deriving on any device must yield the same key, without
@@ -80,7 +79,7 @@ const rootForMnemonic = (mnemonic: string): HDKey => {
  * @returns extended public key (zpub)
  */
 export const deriveExtendedPublicKey = (mnemonic: string): string => {
-  return rootForMnemonic(mnemonic).derive(derivationPath).publicExtendedKey
+  return deriveBip84ExtendedPublicKey(mnemonicToSeedSync(mnemonic))
 }
 
 /**
@@ -91,7 +90,7 @@ export const deriveExtendedPublicKey = (mnemonic: string): string => {
  * @returns extended private key (zprv)
  */
 export const deriveExtendedPrivateKey = (mnemonic: string): string => {
-  return rootForMnemonic(mnemonic).derive(derivationPath).privateExtendedKey
+  return deriveBip84ExtendedPrivateKey(mnemonicToSeedSync(mnemonic))
 }
 
 /**
@@ -102,23 +101,7 @@ export const deriveExtendedPrivateKey = (mnemonic: string): string => {
  * @returns bech32 addresses at derivationPath/0/0 through /0/count-1
  */
 export const deriveAddresses = (mnemonic: string, count: number): string[] => {
-  if (Number.isInteger(count) === false || count < 1) {
-    throw new Error("Count must be a positive integer")
-  }
-  const root = rootForMnemonic(mnemonic)
-  const addresses: string[] = []
-  for (let index = 0; index < count; index++) {
-    const node = root.derive(`${derivationPath}/0/${index}`)
-    // Native segwit P2WPKH — witness version 0 over hash160 of the
-    // compressed public key (the node identifier), bech32-encoded. The
-    // identifier is only ever absent on a wiped key, which derive cannot
-    // return
-    if (node.identifier === undefined) {
-      throw new Error("Could not derive address")
-    }
-    addresses.push(bech32.encode("bc", [0, ...bech32.toWords(node.identifier)]))
-  }
-  return addresses
+  return deriveBip84Addresses(mnemonicToSeedSync(mnemonic), count)
 }
 
 /**
