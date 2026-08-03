@@ -635,7 +635,13 @@ const Create: FunctionComponent<CreateProps> = (props) => {
       try {
         sizes = await window.api.invoke.getSupportedPaperSizes(printerName)
       } catch {
-        // Fall back to all sizes; print() validates support as a safety net
+        sizes = []
+      }
+      if (sizes.length === 0) {
+        // Fall back to all sizes on failure and on an empty answer alike
+        // (a driver advertising none of the app’s sizes) — print()
+        // validates support as a safety net, whereas accepting an empty
+        // list would gray the paper select with no way forward
         sizes = paperSizeOptions.map((option) => option.value)
       }
       setSupportedPaperSizes(sizes)
@@ -1499,9 +1505,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                 }}
               />
               <Space h="md" />
+              {/* Options that only configure a print enable exactly when
+                  a print is possible — same gate as the Print button */}
               <Switch
                 checked={heavyweight}
-                disabled={!selectedPrinter}
+                disabled={!selectedPrinter || !paperSize}
                 label={t("routes.create.heavyweight")}
                 withThumbIndicator={false}
                 onChange={(event) =>
@@ -1511,7 +1519,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               <Space h="md" />
               <Switch
                 checked={customScale}
-                disabled={!selectedPrinter}
+                disabled={!selectedPrinter || !paperSize}
                 label={t("routes.create.customScale")}
                 withThumbIndicator={false}
                 onChange={(event) =>
@@ -1538,6 +1546,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   <Space h="xs" />
                   <Button
                     fullWidth
+                    disabled={!selectedPrinter || !paperSize}
                     size="sm"
                     variant="signatureTextGradient"
                     onClick={() => {

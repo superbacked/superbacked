@@ -46,7 +46,17 @@ export const getDefaultPrinter = async (): Promise<null | Printer> => {
 }
 
 export const getPrinterPageSizes = async (printer: string): Promise<string> => {
-  const { stdout } = await spawn("lpoptions", ["-p", printer, "-l"])
+  // Timeboxed — CUPS can block indefinitely resolving a queue whose
+  // device is asleep or unreachable, which would otherwise leave the
+  // print modal’s paper select disabled forever with no feedback. Kept
+  // short because the select stays grayed while this runs: healthy
+  // queues answer in milliseconds, and a cut-off slow one degrades to
+  // the all-sizes fallback with print-time validation as the safety
+  // net. A killed lpoptions yields no PageSize line, so the timeout
+  // surfaces as the error below and callers fall back
+  const { stdout } = await spawn("lpoptions", ["-p", printer, "-l"], {
+    timeout: 3000,
+  })
   const lines = stdout.split("\n")
   const pageSizeLine = lines.find((line) =>
     line.startsWith("PageSize/Media Size:")
