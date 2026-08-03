@@ -59,7 +59,7 @@ export const derivePasswordAction = async (
   label: string | undefined,
   options: {
     clear: number
-    confirm?: boolean
+    confirmPassphrase?: boolean
     // Selects the derivation scheme — derivation is stateless, so the
     // version is part of what the user knows and is echoed at every
     // derivation. Only scheme v1 exists; the option gates and documents
@@ -90,7 +90,9 @@ export const derivePasswordAction = async (
       options.yubikey === false ? undefined : options.slot === "1" ? 1 : 2
     // Confirmation catches typos when creating a password — a mistyped
     // passphrase silently derives a different password
-    const masterPassphrase = await readPassphrase(options.confirm === true)
+    const masterPassphrase = await readPassphrase(
+      options.confirmPassphrase === true
+    )
     if (masterPassphrase === "") {
       throw new Error("Passphrase required")
     }
@@ -131,7 +133,7 @@ export const derivePasswordAction = async (
     // A wrong version or mode at a future derivation would silently
     // produce a different password, so every derivation states both
     console.error(
-      `Derived with scheme v${schemeVersion}${
+      `Derived using scheme v${schemeVersion}${
         paranoid === true ? " (paranoid)" : ""
       }`
     )

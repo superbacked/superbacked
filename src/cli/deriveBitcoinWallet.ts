@@ -54,7 +54,7 @@ export const deriveBitcoinWalletAction = async (
   options: {
     addresses?: number
     clear: number
-    confirm?: boolean
+    confirmPassphrase?: boolean
     // See src/cli/derivePassword.ts — only scheme v1 exists; the option
     // gates and documents rather than branches
     derivationVersion: string
@@ -99,7 +99,9 @@ export const deriveBitcoinWalletAction = async (
       options.yubikey === false ? undefined : options.slot === "1" ? 1 : 2
     // Confirmation catches typos when creating a wallet — a mistyped
     // passphrase silently derives a different mnemonic
-    const masterPassphrase = await readPassphrase(options.confirm === true)
+    const masterPassphrase = await readPassphrase(
+      options.confirmPassphrase === true
+    )
     if (masterPassphrase === "") {
       throw new Error("Passphrase required")
     }
@@ -141,7 +143,7 @@ export const deriveBitcoinWalletAction = async (
     // them all — the path is fixed, echoed for cross-verification in
     // wallet software
     console.error(
-      `Derived with scheme v${schemeVersion}${
+      `Derived using scheme v${schemeVersion}${
         paranoid === true ? " (paranoid)" : ""
       }, path ${derivationPath}, ${words} words`
     )

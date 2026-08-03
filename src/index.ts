@@ -131,7 +131,7 @@ cli
     defaultClipboardClearSeconds
   )
   .option(
-    "--confirm",
+    "--confirm-passphrase",
     "confirm master passphrase (recommended when creating wallets)"
   )
   .addOption(
@@ -182,7 +182,7 @@ cli
     defaultClipboardClearSeconds
   )
   .option(
-    "--confirm",
+    "--confirm-passphrase",
     "confirm master passphrase (recommended when creating passwords)"
   )
   .addOption(

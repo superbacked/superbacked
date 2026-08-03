@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of the derived Bitcoin wallet feature in Superbacked. Derived Bitcoin wallets are deterministic BIP39 wallets rendered from a [derived key](derived-key.md) — a 256-bit key binding a memorized master passphrase, a label and a YubiKey HMAC-SHA1 challenge-response — two-factor wallet derivation with nothing stored anywhere. The mnemonic is the root artifact; the extended keys and receive addresses are projections of it. The source ([src/utilities/crypto/derivedBitcoinWallet.ts](../../src/utilities/crypto/derivedBitcoinWallet.ts) and [src/utilities/crypto/derivedKey.ts](../../src/utilities/crypto/derivedKey.ts)) is the ground truth for this document, and the reference vectors in [tests/derivedBitcoinWallet.test.ts](../../tests/derivedBitcoinWallet.test.ts) pin the scheme.
+This document specifies the cryptographic design and implementation of the derived Bitcoin wallet feature in Superbacked. Derived Bitcoin wallets are deterministic BIP39 wallets rendered from a [derived key](derived-key.md) — a 256-bit key binding a memorized master passphrase, a label and a YubiKey HMAC-SHA1 challenge-response — two-factor wallet derivation with nothing stored anywhere. The mnemonic is the root artifact; the extended keys and receive addresses are projections of it. The source ([src/utilities/crypto/derivedBitcoinWallet.ts](../../src/utilities/crypto/derivedBitcoinWallet.ts), [src/utilities/crypto/bip84.ts](../../src/utilities/crypto/bip84.ts) — the shared BIP84 projections — and [src/utilities/crypto/derivedKey.ts](../../src/utilities/crypto/derivedKey.ts)) is the ground truth for this document, and the reference vectors in [tests/derivedBitcoinWallet.test.ts](../../tests/derivedBitcoinWallet.test.ts) and [tests/bip84.test.ts](../../tests/bip84.test.ts) pin the scheme.
 
 ## Introduction
 
@@ -89,7 +89,7 @@ The two-factor security model — what each combination of leaked material allow
 - **No rotation**: Derivation is deterministic, so a leaked mnemonic re-derives identically forever — recovering from a leak means moving the funds to a new label’s wallet
 - **Determinism inputs**: The word count and Paranoid mode each derive a different wallet from the same passphrase and label — every derivation echoes both, and re-deriving with a forgotten flag silently produces an empty wallet, not an error
 - **Loss of YubiKey**: Without a second YubiKey programmed with the same slot secret, a two-factor wallet — and the funds it guards — is unrecoverable
-- **No verifier**: No fingerprint or checksum of the passphrase is ever displayed or stored — a mistyped passphrase silently derives a different wallet (use `--confirm` when creating a wallet, and verify the extended public key against a previous derivation)
+- **No verifier**: No fingerprint or checksum of the passphrase is ever displayed or stored — a mistyped passphrase silently derives a different wallet (use `--confirm-passphrase` when creating a wallet, and verify the extended public key against a previous derivation)
 
 ## Command-line interface
 
@@ -105,7 +105,7 @@ The command is public by default, secret by request: the extended public key (an
 
 - `--addresses <count>`: Print first receive addresses (maximum `100`)
 - `--clear <seconds>`: Seconds before revealed secret is cleared from clipboard (default `10`)
-- `--confirm`: Prompt for master passphrase twice and require a match — catches typos when creating a wallet (interactive prompts only; a piped passphrase is used as-is)
+- `--confirm-passphrase`: Prompt for master passphrase twice and require a match — catches typos when creating a wallet (interactive prompts only; a piped passphrase is used as-is)
 - `--no-yubikey`: Derive without YubiKey (single factor, weaker — see the [derived key technical documentation](derived-key.md))
 - `-p, --print`: Print revealed secret to stdout instead of copying it to clipboard (requires `--reveal`; the public outputs move to stderr so piping stays single-purpose)
 - `--reveal <secret>`: Materialize `mnemonic` or `zprv`, copied to clipboard with the same clearing, guarding and platform behavior as [derive-password](derived-password.md)

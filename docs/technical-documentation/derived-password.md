@@ -81,7 +81,7 @@ The two-factor security model — what each combination of leaked material allow
 - **Determinism inputs**: The scheme version and [Paranoid mode](scheme-registry.md) each derive a different password from the same passphrase and label — every derivation echoes both, and re-deriving with a forgotten flag silently produces a different password, not an error
 - **Length is not rotation**: Passwords of different lengths for the same label are windows into the same byte stream and share material — to replace a password, change the label, not the length
 - **Loss of YubiKey**: Without a second YubiKey programmed with the same slot secret, all derived passwords are unrecoverable
-- **No verifier**: No fingerprint or checksum of the passphrase is ever displayed or stored — any passphrase-only verifier would reintroduce the offline attack the keyed challenge eliminates, so a mistyped passphrase silently derives a different password (use `--confirm` when creating a password)
+- **No verifier**: No fingerprint or checksum of the passphrase is ever displayed or stored — any passphrase-only verifier would reintroduce the offline attack the keyed challenge eliminates, so a mistyped passphrase silently derives a different password (use `--confirm-passphrase` when creating a password)
 
 ## Command-line interface
 
@@ -96,14 +96,14 @@ The master passphrase must score a strength of at least 50 (see the [passphrase 
 **Options:**
 
 - `--clear <seconds>`: Seconds before copied password is cleared from clipboard (default `10`)
-- `--confirm`: Prompt for master passphrase twice and require a match — catches typos when creating a password (interactive prompts only; a piped passphrase is used as-is)
+- `--confirm-passphrase`: Prompt for master passphrase twice and require a match — catches typos when creating a password (interactive prompts only; a piped passphrase is used as-is)
 - `--derivation-version <version>`: Derivation scheme version (only `1` exists — the option gates and documents rather than branches, and every derivation states the version used)
 - `-l, --length <length>`: Password length (default `16`, minimum `8`, maximum `128`)
 - `--no-yubikey`: Derive without YubiKey (single factor, weaker — see the [derived key technical documentation](derived-key.md))
 - `-p, --print`: Print password to stdout instead of copying it to clipboard
 - `-s, --slot <slot>`: HMAC-SHA1 challenge-response slot (default `2`)
 
-The root `--paranoid` flag derives at the paranoid [KDF profile](scheme-registry.md). Derivation is stateless, so the mode is a determinism input on par with the label — deriving without it silently produces a different password — which is why every derivation echoes the scheme version and mode (for example `Derived with scheme v1 (paranoid)`).
+The root `--paranoid` flag derives at the paranoid [KDF profile](scheme-registry.md). Derivation is stateless, so the mode is a determinism input on par with the label — deriving without it silently produces a different password — which is why every derivation echoes the scheme version and mode (for example `Derived using scheme v1 (paranoid)`).
 
 ### Derivation workflow
 

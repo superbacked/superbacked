@@ -77,6 +77,8 @@ export const createStandaloneArchiveAction = async (
     if (existsSync(archivePath) === true && options.force !== true) {
       throw new Error(`Archive already exists: ${archivePath}`)
     }
+    // Confirmation is mandatory when creating — a typo locks the
+    // archive forever
     const passphrase = await readPassphrase(true)
     if (passphrase === "") {
       throw new Error("Passphrase required")

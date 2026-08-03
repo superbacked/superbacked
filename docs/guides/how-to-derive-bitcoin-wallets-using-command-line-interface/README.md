@@ -43,7 +43,7 @@ Deriving wallets with a YubiKey uses the same HMAC-SHA1 challenge-response crede
 
 ### Step 3: derive wallet
 
-> Heads-up: no fingerprint or checksum of the master passphrase is ever displayed or stored, so a mistyped passphrase silently derives a different wallet. Use `--confirm` when creating a wallet — and verify the extended public key against a previous derivation before funding.
+> Heads-up: no fingerprint or checksum of the master passphrase is ever displayed or stored, so a mistyped passphrase silently derives a different wallet. Use `--confirm-passphrase` when creating a wallet — and verify the extended public key against a previous derivation before funding.
 
 The command is public by default, secret by request: it prints the wallet’s extended public key (`zpub…`) — the watch-only verification handle — without materializing the mnemonic (the command refuses weak master passphrases, like everywhere else in Superbacked).
 
@@ -55,7 +55,7 @@ Do you wish to continue (yes or no)? yes
 Label: savings
 Passphrase:
 Touch YubiKey…
-Derived with scheme v1, path m/84'/0'/0', 24 words
+Derived using scheme v1, path m/84'/0'/0', 24 words
 zpub6rskz9PppDLZKurVF9qhu7bs1TvadsejsGWmsFfQ2aVkKHi3eGiDCQXMEtgHBb1ucSHPMWnbRPoUsGwnAMS81q2ie77dD5sGzSXXpwKbFSo
 ```
 
