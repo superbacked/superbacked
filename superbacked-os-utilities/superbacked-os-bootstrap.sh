@@ -655,6 +655,31 @@ for profile in firefox keepassxc.profile superbacked.profile yubico-authenticato
   apparmor_parser --skip-kernel-load "/etc/apparmor.d/${profile}"
 done
 
+# apparmor.service ships a live-media guard
+# (ConditionPathExists=!/run/live/overlay/work) that would silently
+# leave every profile unloaded on the always-live Superbacked OS — a
+# drop-in resetting the condition is the established fix. History,
+# precedents and runtime verification are documented in
+# docs/technical-documentation/superbacked-os-security.md. The
+# assertion fails the build if packaging ever changes the guard
+# mechanism — resetting the condition would no longer be known
+# sufficient, and a broken build beats an image that silently boots
+# unconfined.
+if ! grep --quiet '^ConditionPathExists=!/run/live/overlay/work$' \
+  /usr/lib/systemd/system/apparmor.service; then
+  printf "%s\n" "Error: apparmor.service no longer ships the live-system guard this override resets" >&2
+  exit 1
+fi
+
+mkdir --parents /etc/systemd/system/apparmor.service.d
+
+tee /etc/systemd/system/apparmor.service.d/superbacked-live.conf > /dev/null << 'EOF'
+[Unit]
+# Reset the packaged live-system guard — profiles must load on the
+# (always live) Superbacked OS
+ConditionPathExists=
+EOF
+
 printf "%s\n" "Configuring clearnet user…"
 
 # Firefox runs as a separate user, clearnet — the only identity allowed
@@ -668,6 +693,14 @@ useradd --create-home --shell /usr/sbin/nologin clearnet
 # socket (created below) over to clearnet — files can only be re-grouped
 # to a group their owner belongs to.
 usermod --append --groups clearnet superbacked
+
+# That membership is for the socket handover and the shared Downloads
+# folder (2770), not for browsing clearnet’s home — which useradd left
+# group-traversable (750), letting superbacked enumerate it and enter
+# world-readable corners like .config. superbacked reaches Downloads
+# through the bind mount at its own home, and path resolution through a
+# mountpoint never walks /home/clearnet, so the home closes completely.
+chmod 700 /home/clearnet
 
 # What loginctl enable-linger records — logind is not running in the
 # chroot, but all it does is create this marker.

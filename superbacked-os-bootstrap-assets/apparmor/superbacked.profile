@@ -38,10 +38,13 @@ profile superbacked /home/superbacked/.local/superbacked/superbacked.AppImage fl
   # already blocks egress; denying it here means a compromised app
   # cannot exfiltrate secrets even if the firewall is somehow bypassed.
   # Unix sockets (Wayland, D-Bus) and netlink (nss) stay.
+  # Family denials only — a type-level "deny network raw" would also
+  # sweep netlink raw, which nss interface enumeration needs; the inet
+  # families cover their own raw sockets
   deny network inet,
   deny network inet6,
-  deny network raw,
   deny network packet,
+  deny network bluetooth,
   unix,
 
   # Chromium/Electron sandbox: unprivileged user namespaces and the
@@ -115,9 +118,13 @@ profile superbacked /home/superbacked/.local/superbacked/superbacked.AppImage fl
 
   # Printing blocks. CUPS job privacy (the cupsd.conf default)
   # keeps other users’ job names and documents opaque, so allowing the
-  # socket does not let the app read what else was printed.
+  # socket does not let the app read what else was printed. Beyond the
+  # socket, the app shells out to the CUPS utilities (see
+  # src/handlers/print.ts): lp submits jobs, lpstat reads queue state,
+  # lpoptions reads supported page sizes.
   /{run,var/run}/cups/cups.sock rw,
   /etc/cups/client.conf r,
+  /usr/bin/lp{,stat,options} mrix,
 
   # Scratch space and self-introspection Chromium needs.
   owner /tmp/ r,
@@ -137,6 +144,7 @@ profile superbacked /home/superbacked/.local/superbacked/superbacked.AppImage fl
   deny /home/clearnet/{,**} mrwklx,
   deny @{HOME}/.gnupg/{,**} mrwkl,
   deny @{HOME}/.ssh/{,**} mrwkl,
+  deny @{HOME}/.local/share/keyrings/{,**} mrwkl,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/superbacked>

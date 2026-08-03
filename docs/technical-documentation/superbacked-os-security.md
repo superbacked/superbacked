@@ -78,9 +78,10 @@ Reviewers who know these stacks will already know their sharp edges — the Chro
 
 **Approach:** Debian packages and tarballs ship unconfined, so each of the four apps has a confined profile ([`superbacked-os-bootstrap-assets/apparmor/`](../../superbacked-os-bootstrap-assets/apparmor/)) that grants what the app genuinely needs and denies the rest. Profiles are syntax-checked at build time (a syntax error fails the build) and compiled and loaded by `apparmor.service` at each boot; they ship enforcing, with an `APPARMOR_MODE=complain` flag (disabled by default) used to tune them against real behavior on hardware. A few cross-cutting decisions are worth noting:
 
-- The three apps that must never reach the network (KeePassXC, Superbacked, Yubico Authenticator) deny the inet families explicitly rather than using a bare `deny network`, which would also sweep the AF_UNIX sockets that D-Bus and Wayland depend on.
+- The three apps that must never reach the network (KeePassXC, Superbacked, Yubico Authenticator) deny the same four socket families explicitly — `inet`, `inet6`, `packet` and `bluetooth` — rather than using a bare `deny network`, which would also sweep the AF_UNIX sockets that D-Bus and Wayland depend on and the netlink sockets that interface enumeration needs.
 - Firefox and the Superbacked app both keep the `userns` grant their content sandboxes require under Ubuntu 24.04’s restricted-user-namespace policy; removing it would break the sandbox.
 - The Superbacked profile (an Electron AppImage that FUSE-mounts itself and runs a Chromium sandbox) is the hardest to confine, and its namespace/mount grants are deliberately broad — the intended confinement there is the network denial and filesystem scope, not the sandbox internals.
+- Loading profiles on a live system requires overriding the packaging. Debian and Ubuntu ship `apparmor.service` with live-media guards (`ConditionPathExists=!/run/live/overlay/work` for `live-boot`, `!/rofs/etc/apparmor.d` for legacy casper), added when overlayfs canonicalized paths in ways that broke profile matching ([Debian #922378](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=922378)) — without intervention, a live system silently boots with every profile unloaded and every app unconfined. The bootstrap installs a systemd drop-in resetting the condition, which is the established fix (Kicksecure ships the same; [Debian #995367](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=995367) requests dropping the guard outright and Ubuntu’s own live ISOs enforce AppArmor on overlayfs) and asserts at build time that the packaged guard is still the mechanism being reset, so packaging drift fails the build instead of shipping an unconfined image. Should complain-mode journals ever show denials on `/run/live/…` paths — the historical live-media problem the guard was protecting against — alias tunables mapping those paths onto profile paths are the remedy (Tails’ approach on its older live-boot layout).
 
 Rather than enumerate every rule here, this document defers to the [profiles themselves](../../superbacked-os-bootstrap-assets/apparmor/), each commented rule-group by rule-group with the intent behind it.
 
@@ -94,7 +95,7 @@ Rather than enumerate every rule here, this document defers to the [profiles the
 
 **Intent:** the only user-facing storage is removable USB media; internal disks stay hidden.
 
-**Approach:** the root filesystem is the read-only squashfs. Internal disks are marked so the desktop never offers to mount them: one-click access to an internal drive would invite the persistence and exfiltration risks the OS exists to prevent. USB drives are the only storage surfaced to the user, and browser downloads are confined to one folder, exposed read-only to the primary user.
+**Approach:** the root filesystem is the read-only squashfs. Internal disks are marked so the desktop never offers to mount them: one-click access to an internal drive would invite the persistence and exfiltration risks the OS exists to prevent. USB drives are the only storage surfaced to the user, and browser downloads are confined to one folder, exposed to the primary user through a non-executable bind mount (who can read and clear it — the browser gains nothing in return).
 
 ### Desktop hardening
 
@@ -117,6 +118,58 @@ Rather than enumerate every rule here, this document defers to the [profiles the
 **Approach:** the image is provisioned in a Docker chroot starting from a vanilla Ubuntu install. The pipeline is scripted end to end: a vanilla autoinstall image is captured once ([`ubuntu-desktop-utilities/autoinstall.yaml`](../../ubuntu-desktop-utilities/autoinstall.yaml), [source image guide](../../superbacked-os-guides/superbacked-os-source-image-guide.md)), then every build provisions and assembles it in a container ([`package.sh`](../../package.sh) → [`docker/create-superbacked-os-live-image.sh`](../../docker/create-superbacked-os-live-image.sh) → [`superbacked-os-bootstrap.sh`](../../superbacked-os-utilities/superbacked-os-bootstrap.sh)). Packages resolve against a pinned Ubuntu archive snapshot (a timestamp in the bootstrap), so the same inputs yield the same packages. Firefox, KeePassXC and Yubico Authenticator are pinned by version; the Python command-line tools are pinned by version and by the SHA-256 of their wheels, verified before install; repository keys (Mozilla, the KeePassXC PPA) and the Yubico release signature are checked against pinned fingerprints, with the build failing loudly on any mismatch. Updaters, crash reporters, the Ubuntu Pro client, snapd and other phone-home software are removed outright.
 
 **Limits:** a few inputs still float — the pinned tools’ transitive dependencies, and the udev rules and `yubikey-prov.sh` fetched from upstream repositories at build time. These are pulled over HTTPS but are neither version-pinned nor signature-verified, so their integrity rests on the transport and the upstream host. Full byte-for-byte reproducibility (fixed timestamps, deterministic filesystem and partition identifiers) is a known gap and a direction we intend to pursue, not a property we claim today.
+
+## Verifying the hardening
+
+Every layer above can be checked from a running session as the unprivileged `superbacked` user — `sudo` is removed by provisioning, and deliberately nothing below needs it. Launch the applications you want confinement-checked first; a process that is not running has no label to inspect.
+
+**Application confinement.** The kernel module, the loader service (see the live-system note above — an inactive service means every profile sits unloaded) and the per-process labels:
+
+```console
+cat /sys/module/apparmor/parameters/enabled
+systemctl is-active apparmor.service
+cat /proc/$(pgrep --full superbacked.AppImage | head --lines 1)/attr/current
+cat /proc/$(pgrep --full /usr/bin/keepassxc | head --lines 1)/attr/current
+```
+
+Expected: `Y`, `active` and labels ending in `(enforce)`. `unconfined` means profiles did not load; a `(complain)` label means an `APPARMOR_MODE=complain` test build.
+
+**Network isolation.** In air-gapped mode:
+
+```console
+systemctl is-enabled NetworkManager.service
+ip route show default
+systemctl is-active nftables.service
+timeout 3 bash -c "exec 3<> /dev/tcp/1.1.1.1/443" && echo reachable || echo unreachable
+```
+
+Expected: `masked`, no output (no default route), `active`, `unreachable`. The egress probe must print `unreachable` in hardened browser mode too — only the `clearnet` user may reach the internet there.
+
+**Privilege and user separation.**
+
+```console
+id --name --groups
+ls /home/clearnet
+```
+
+Expected: a group list without `sudo`, and `Permission denied`.
+
+**Persistence and storage.**
+
+```console
+findmnt --noheadings --output FSTYPE /
+findmnt --noheadings --output OPTIONS /home/superbacked/Downloads
+```
+
+Expected: `overlay` (the RAM-backed live root), and Downloads options containing `noexec`. For deeper persistence verification, see [How to verify data persistence is disabled](../guides/how-to-verify-data-persistence-is-disabled/README.md).
+
+**Least software.**
+
+```console
+ls /usr/bin/Xorg /usr/lib/xorg/Xorg /usr/bin/snap
+```
+
+Expected: `No such file or directory` for all three.
 
 ## Source of truth
 
@@ -149,7 +202,7 @@ The firewall rulesets stay inline as heredocs in the bootstrap so they sit next 
 Collected honestly in one place:
 
 - **Cold-boot / physical access.** `init_on_free` reduces but does not remove the risk from an attacker with physical access to RAM.
-- **The AppArmor confinement is new.** This is the first Superbacked OS release with per-application AppArmor profiles; none are field-tested yet, and the Superbacked (Electron) profile in particular was tuned partly without hardware and grants broad namespace/mount operations. All four want review and field testing.
+- **The AppArmor confinement is new.** This is the first Superbacked OS release with per-application AppArmor profiles; none are field-tested yet, and the Superbacked (Electron) profile in particular was tuned partly without hardware and grants broad namespace/mount operations. Earlier test images also never enforced any of them — the packaged live-media guard silently skipped profile loading until the bootstrap override described above, which is why the verification section exists. All four want review and field testing.
 - **Reproducibility is partial.** Same-inputs-same-packages, not yet byte-for-byte identical images.
 - **Floating inputs.** The pinned tools’ transitive Python dependencies and a few upstream-fetched files (udev rules, `yubikey-prov.sh`) are pulled over HTTPS without a version pin or a pinned signature.
 - **Upstream trust.** The system inherits the trust placed in Ubuntu, Mozilla, KeePassXC, Yubico and their signing keys.

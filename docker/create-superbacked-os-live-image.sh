@@ -266,6 +266,12 @@ rm --force --recursive \
 # bootstrap only covers its own shell)
 rm --force /mnt/root/home/*/.bash_history
 
+# The autoinstall ssh section leaves an empty ~/.ssh/authorized_keys
+# behind (see ubuntu-desktop-utilities/autoinstall.yaml) — installer
+# state like the histories above, and an audit red herring on an image
+# that ships no ssh server
+rm --force --recursive /mnt/root/home/*/.ssh /mnt/root/root/.ssh
+
 # User caches (thumbnails, pip downloads, tracker file index…) and
 # gvfs metadata (records which files were touched during provisioning)
 rm --force --recursive \
