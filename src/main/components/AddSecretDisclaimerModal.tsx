@@ -19,7 +19,7 @@ const AddSecretDisclaimerModal: FunctionComponent<
       onClose={props.onClose}
       opened={props.opened}
       size="sm"
-      title={t("common.important")}
+      title={t("components.addSecretDisclaimerModal.addSecret")}
       styles={{
         title: {
           fontWeight: "bold",
@@ -32,7 +32,7 @@ const AddSecretDisclaimerModal: FunctionComponent<
       <Space h="xl" />
       <Group justify="flex-end">
         <Button onClick={props.onConfirm} variant="signatureGradient">
-          {t("common.gotIt")}
+          {t("components.addSecretDisclaimerModal.add")}
         </Button>
       </Group>
     </Modal>

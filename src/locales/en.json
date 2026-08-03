@@ -55,6 +55,8 @@
       "paranoidModeDescription": "Blocks and standalone archives are created with hardened key derivation (10× standard cost). Restoring them requires paranoid mode and at least 1 GiB of free memory, and takes several seconds per attempt."
     },
     "addSecretDisclaimerModal": {
+      "add": "Add",
+      "addSecret": "Add secret",
       "description": "Additional secrets use separate passphrases and are concealed in unused block space."
     },
     "createStandaloneArchiveModal": {
@@ -65,6 +67,9 @@
       "restoringRequiresYubiKey": "Restoring archive requires YubiKey provisioned with the same challenge-response secret"
     },
     "createDisclaimerModal": {
+      "create": "Create",
+      "createBlock": "Create block",
+      "createBlockset": "Create blockset",
       "standardDescription_one": "Block and passphrase required to restore secret",
       "standardDescription_other": "Block and passphrases required to restore secrets",
       "standardWithOneDetachedArchiveDescription_one": "Block and passphrase required to restore secret and detached archive",
@@ -228,8 +233,6 @@
     "copiedToClipboard_other": "Copied to clipboard, clearing in {{count}} seconds…",
     "copy": "Copy",
     "done": "Done",
-    "gotIt": "Got it",
-    "important": "Important",
     "next": "Next",
     "show": "Show",
     "passphrase": "Passphrase",

@@ -75,7 +75,11 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
       onClose={props.onClose}
       opened={props.opened}
       size="sm"
-      title={t("common.important")}
+      title={t(
+        props.backupType === "standard"
+          ? "components.createDisclaimerModal.createBlock"
+          : "components.createDisclaimerModal.createBlockset"
+      )}
       styles={{
         title: {
           fontWeight: "bold",
@@ -94,7 +98,7 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
       <Space h="xl" />
       <Group justify="flex-end">
         <Button onClick={props.onConfirm} variant="signatureGradient">
-          {t("common.gotIt")}
+          {t("components.createDisclaimerModal.create")}
         </Button>
       </Group>
     </Modal>

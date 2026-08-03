@@ -55,6 +55,8 @@
       "paranoidModeDescription": "Les blocs et archives autonomes sont créés avec une dérivation de clé renforcée (coût 10× supérieur au standard). Leur restauration nécessite le mode paranoïaque et au moins 1 Go de mémoire libre, et prend plusieurs secondes par tentative."
     },
     "addSecretDisclaimerModal": {
+      "add": "Ajouter",
+      "addSecret": "Ajouter un secret",
       "description": "Les secrets additionnels utilisent des phrases de passe distinctes et sont dissimulés dans l’espace de bloc inutilisé."
     },
     "createStandaloneArchiveModal": {
@@ -65,6 +67,9 @@
       "restoringRequiresYubiKey": "La restauration de l’archive nécessite une YubiKey provisionnée avec le même secret défi-réponse"
     },
     "createDisclaimerModal": {
+      "create": "Créer",
+      "createBlock": "Créer un bloc",
+      "createBlockset": "Créer un ensemble de blocs",
       "standardDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
       "standardDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets",
       "standardWithOneDetachedArchiveDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
@@ -228,8 +233,6 @@
     "copiedToClipboard_other": "Copié dans le presse-papiers, effacement dans {{count}} secondes…",
     "copy": "Copier",
     "done": "Terminer",
-    "gotIt": "J’ai compris",
-    "important": "Important",
     "next": "Suivant",
     "show": "Afficher",
     "passphrase": "Phrase de passe",
