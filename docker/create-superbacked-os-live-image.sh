@@ -403,18 +403,29 @@ mv /tmp/filesystem.squashfs /mnt/boot/live/
 # menu — with less memory, live-boot falls back to running from the
 # drive and the toram status warning tells the user to keep it plugged
 # in.
+#
+# Complain-mode test images disable printk rate limiting so profile
+# harvests are complete — the kernel otherwise silently drops audit
+# events under load, and an incomplete harvest folds incomplete rules
+# (see superbacked-os-utilities/aggregate-apparmor-log.sh, which fails
+# loudly when it detects suppression). Never set on release images.
+apparmor_boot_parameters=""
+if [ "${APPARMOR_MODE:-}" = "complain" ]; then
+  apparmor_boot_parameters=" sysctl.kernel.printk_ratelimit=0"
+fi
+
 cat > /mnt/boot/boot/grub/grub.cfg << EOF
 set default=0
 set timeout=5
 
 menuentry "Superbacked OS (air-gapped)" {
   search --no-floppy --fs-uuid --set=root ${boot_uuid}
-  linux /live/${kernel} boot=live init_on_free=1 live-media-path=/live quiet splash toram
+  linux /live/${kernel} boot=live init_on_free=1 live-media-path=/live quiet splash toram${apparmor_boot_parameters}
   initrd /live/${initrd}
 }
 menuentry "Superbacked OS (hardened browser)" {
   search --no-floppy --fs-uuid --set=root ${boot_uuid}
-  linux /live/${kernel} boot=live init_on_free=1 live-media-path=/live quiet splash toram superbacked.browser
+  linux /live/${kernel} boot=live init_on_free=1 live-media-path=/live quiet splash toram superbacked.browser${apparmor_boot_parameters}
   initrd /live/${initrd}
 }
 EOF

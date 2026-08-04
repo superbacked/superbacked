@@ -117,7 +117,12 @@ if [ "${build_os}" = true ]; then
   # network required for the snapshot-pinned packages) and the live
   # image is written straight to its distribution name
   # (<product>-<arch>-<component>-<version>).
+  # APPARMOR_MODE=complain (exported on the host) builds a test image
+  # whose app profiles log denials instead of enforcing them — the
+  # container does not inherit host environment, so it is forwarded
+  # explicitly here, then into the chroot by the build script.
   docker run \
+    --env APPARMOR_MODE="${APPARMOR_MODE:-}" \
     --interactive \
     --privileged \
     --rm \
