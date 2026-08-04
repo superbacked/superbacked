@@ -41,6 +41,7 @@ import {
   Bip39MnemonicResult,
   Bip39PassphraseResult,
   TotpUriResult,
+  YubiKeyChallengeResponseSecretResult,
   extract,
 } from "@/src/main/utilities/regexp"
 import { TranslationKey } from "@/src/shared/types/i18n"
@@ -103,6 +104,9 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
           onMouseLeave={leave}
           sx={{
             backgroundColor: rgba(theme.colors.pink[8], 0.35),
+            // Layout-neutral rounding — wrapped highlights round only
+            // their true start and end (box-decoration-break: slice)
+            borderRadius: "var(--mantine-radius-sm)",
             color: "var(--mantine-color-gradient-0)",
             cursor: "default",
             overflowWrap: "anywhere",
@@ -309,6 +313,121 @@ const Bip39PassphraseApplet: FunctionComponent<Bip39PassphraseAppletProps> = (
           </Button>
         </Button.Group>
       </Group>
+    </Fragment>
+  )
+}
+
+interface YubiKeyChallengeResponseSecretAppletProps {
+  onCopy: () => void
+  onShowAsQrCode: () => void
+  secret: YubiKeyChallengeResponseSecretResult["properties"]["secret"]
+}
+
+// A slot secret can never be read back from a YubiKey, so verification
+// challenges the connected key and compares its response against the
+// one the extracted secret predicts (see
+// src/handlers/yubikeyChallengeResponseSecret.ts) — the honest answer to “is
+// this backup the secret my key uses”
+const YubiKeyChallengeResponseSecretApplet: FunctionComponent<
+  YubiKeyChallengeResponseSecretAppletProps
+> = (props) => {
+  const { t } = useTranslation()
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [touchAwaited, setTouchAwaited] = useState(false)
+  const [verification, setVerification] = useState<
+    | null
+    | { outcome: "match"; slot: Slot }
+    | { outcome: "noMatch" }
+    | { outcome: "error"; message: TranslationKey }
+  >(null)
+  useEffect(() => {
+    return window.api.events.yubikeyTouchRequired(() => {
+      setTouchAwaited(true)
+    })
+  }, [])
+  const verify = async () => {
+    setIsVerifying(true)
+    setTouchAwaited(false)
+    setVerification(null)
+    const result = await window.api.invoke.verifyYubiKeyChallengeResponseSecret(
+      props.secret
+    )
+    setIsVerifying(false)
+    setTouchAwaited(false)
+    if (result.success === false) {
+      setVerification({
+        outcome: "error",
+        message:
+          result.yubikeyErrorCode !== undefined
+            ? yubikeyErrorMessage(result.yubikeyErrorCode)
+            : "common.couldNotCommunicateWithYubiKey",
+      })
+    } else if (result.slot === null) {
+      setVerification({ outcome: "noMatch" })
+    } else {
+      setVerification({ outcome: "match", slot: result.slot })
+    }
+  }
+  return (
+    <Fragment>
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
+        {t("routes.restore.yubikeyChallengeResponseSecret")}
+      </Text>
+      <Space h="lg" />
+      <Group justify="center">
+        <Button.Group>
+          <Button onClick={props.onCopy} size="xs" variant="default">
+            {t("common.copy")}
+          </Button>
+          <Button
+            disabled={isVerifying}
+            loading={isVerifying}
+            onClick={() => {
+              void verify()
+            }}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.verify")}
+          </Button>
+          <Button
+            onClick={props.onShowAsQrCode}
+            rightSection={<IconQrcode size={14} />}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.showAsQrCode")}
+          </Button>
+        </Button.Group>
+      </Group>
+      {isVerifying === true && touchAwaited === true ? (
+        <Fragment>
+          <Space h="md" />
+          <Text size="sm" ta="center">
+            {t("common.touchYubiKey")}
+          </Text>
+        </Fragment>
+      ) : null}
+      {verification !== null ? (
+        <Fragment>
+          <Space h="md" />
+          <Text
+            c={verification.outcome === "match" ? undefined : "red"}
+            size="sm"
+            ta="center"
+          >
+            {verification.outcome === "match"
+              ? t("routes.restore.provisionedInSlot", {
+                  slot: verification.slot,
+                })
+              : verification.outcome === "noMatch"
+                ? t("routes.restore.notProvisionedOnYubiKey")
+                : t(verification.message)}
+          </Text>
+        </Fragment>
+      ) : null}
     </Fragment>
   )
 }
@@ -608,6 +727,27 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}
                     dropdown={<TotpApplet secret={result.properties.secret} />}
+                    interactive
+                    target={line.substring(result.start, result.end)}
+                  />
+                )
+              } else if (result.type === "yubikeyChallengeResponseSecret") {
+                lineNodes.push(
+                  <SmartPopover
+                    key={`line-node-${lineNodes.length}`}
+                    dropdown={(controls) => (
+                      <YubiKeyChallengeResponseSecretApplet
+                        onCopy={async () => {
+                          await copySecretText(result.properties.secret)
+                        }}
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.properties.secret)
+                          setShowQrCodeModal(true)
+                        }}
+                        secret={result.properties.secret}
+                      />
+                    )}
                     interactive
                     target={line.substring(result.start, result.end)}
                   />

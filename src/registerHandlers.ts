@@ -31,6 +31,7 @@ import {
   restoreStandaloneArchive,
 } from "@/src/handlers/standaloneArchive"
 import toggleMaximize from "@/src/handlers/toggleMaximize"
+import { verifyYubiKeyChallengeResponseSecret } from "@/src/handlers/yubikeyChallengeResponseSecret"
 import { Locale } from "@/src/i18n"
 import { locale } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
@@ -156,6 +157,8 @@ const asyncHandlers = {
       slot,
       broadcastYubiKeyTouchRequired
     ),
+  verifyYubiKeyChallengeResponseSecret: (secret: string) =>
+    verifyYubiKeyChallengeResponseSecret(secret, broadcastYubiKeyTouchRequired),
 } as const
 
 // Derive interface from handler map

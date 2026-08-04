@@ -5,6 +5,7 @@ export type {
   Bip39PassphraseResult,
   ExtractionType,
   TotpUriResult,
+  YubiKeyChallengeResponseSecretResult,
 } from "@/src/main/utilities/extraction"
 
 // The window binding — extraction itself is pure (see

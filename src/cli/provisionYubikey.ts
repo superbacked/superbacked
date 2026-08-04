@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from "crypto"
+import { randomBytes } from "crypto"
 
 import confirmYes from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
@@ -8,9 +8,9 @@ import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 import {
   Slot,
-  calculateHmacSha1,
   getStatus,
   provisionHmacSha1,
+  verifyHmacSha1,
 } from "@/src/utilities/yubikey/otp"
 
 // Command action (the CLI surface is declared in index.ts). Provisions a
@@ -96,12 +96,10 @@ export const provisionYubikeyAction = async (options: {
     await provisionHmacSha1(slot, secret, options.touch === true)
     // Challenge the freshly programmed slot and recompute the response
     // locally — proves the write end to end, not just the status update
-    const challenge = randomBytes(32)
-    const response = await calculateHmacSha1(slot, challenge, () => {
+    const verified = await verifyHmacSha1(slot, secret, () => {
       console.error(touchYubiKeyText)
     })
-    const expected = createHmac("sha1", secret).update(challenge).digest()
-    if (timingSafeEqual(response, expected) === false) {
+    if (verified === false) {
       throw new Error(
         "Verification failed (slot response does not match secret)"
       )

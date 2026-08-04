@@ -4,6 +4,7 @@ import { suite, test } from "node:test"
 import {
   bip39PassphraseLength,
   createExtractor,
+  yubikeyChallengeResponseSecretLength,
 } from "@/src/main/utilities/extraction"
 import { validateMnemonic, wordlist } from "@/src/utilities/crypto/bip39"
 import { characterClasses } from "@/src/utilities/crypto/derivedPassword"
@@ -46,6 +47,10 @@ const totpUri =
 suite("extraction", () => {
   test("freezes generated passphrase length", () => {
     assert.strictEqual(bip39PassphraseLength, 20)
+  })
+
+  test("freezes challenge-response secret length", () => {
+    assert.strictEqual(yubikeyChallengeResponseSecretLength, 40)
   })
 
   test("extracts 12- and 24-word mnemonics wherever they sit", () => {
@@ -135,11 +140,61 @@ suite("extraction", () => {
   })
 
   test("sorts results by position across extractors", () => {
-    const secret = `${passphrase} then ${mnemonic12} then ${totpUri}`
+    const yubikeySecret = "d4c30e7a91f25b86ca01d9e34f7ab2c85d16e0f3"
+    const secret = `${passphrase} then ${mnemonic12} then ${totpUri} then ${yubikeySecret}`
     const results = extract(secret, true)
     assert.deepStrictEqual(
       results.map((result) => result.type),
-      ["bip39Passphrase", "bip39Mnemonic", "totpUri"]
+      [
+        "bip39Passphrase",
+        "bip39Mnemonic",
+        "totpUri",
+        "yubikeyChallengeResponseSecret",
+      ]
     )
+  })
+
+  test("extracts challenge-response secrets wherever they sit", () => {
+    const secret = "d4c30e7a91f25b86ca01d9e34f7ab2c85d16e0f3"
+    for (const text of [
+      secret,
+      `YubiKey secret: ${secret}`,
+      `${secret} programmed in slot 2`,
+      secret.toUpperCase(),
+    ]) {
+      const results = extract(text)
+      assert.strictEqual(results.length, 1)
+      const result = results[0]
+      assert.strictEqual(result?.type, "yubikeyChallengeResponseSecret")
+      if (result?.type === "yubikeyChallengeResponseSecret") {
+        assert.strictEqual(result.string.toLowerCase(), secret)
+        assert.strictEqual(result.properties.secret, result.string)
+        assert.strictEqual(
+          text.substring(result.start, result.end),
+          result.string
+        )
+      }
+    }
+  })
+
+  test("fails to extract hex runs that are not slot secrets", () => {
+    const secret = "d4c30e7a91f25b86ca01d9e34f7ab2c85d16e0f3"
+    // Not exactly 40 — one short, one long, and a SHA-256 (64): the
+    // lookarounds keep longer hex from matching through its substrings
+    assert.strictEqual(extract(secret.substring(1)).length, 0)
+    assert.strictEqual(extract(`${secret}a`).length, 0)
+    assert.strictEqual(extract(`${secret}${secret.substring(16)}`).length, 0)
+    // Digit-only and letter-only runs are numbers and prose, not secrets
+    assert.strictEqual(extract("1234567890".repeat(4)).length, 0)
+    assert.strictEqual(extract("abcdefabcd".repeat(4)).length, 0)
+  })
+
+  test("fails to extract challenge-response secrets overlapping other extractions", () => {
+    // A base32 TOTP secret can embed a hex-only run — the URI wins
+    const embedded =
+      "otpauth://totp/Proton:hello@example.com?secret=ABCDEF234567ABCDEF234567ABCDEF234567ABCD&issuer=Proton"
+    const results = extract(embedded)
+    assert.strictEqual(results.length, 1)
+    assert.strictEqual(results[0]?.type, "totpUri")
   })
 })

@@ -200,6 +200,8 @@
       "bip39Mnemonic_other": "mnémoniques",
       "bip39Passphrase_one": "phrase de passe",
       "bip39Passphrase_other": "phrases de passe",
+      "challengeResponseSecret_one": "secret défi-réponse",
+      "challengeResponseSecret_other": "secrets défi-réponse",
       "totpUri_one": "URI",
       "totpUri_other": "URIs",
       "found_one": "trouvé",
@@ -326,13 +328,17 @@
       "detachedArchiveRequiresNewerVersion": "L’archive détachée nécessite une version plus récente de Superbacked",
       "detachedArchiveRestored": "Archive détachée restaurée",
       "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
+      "notProvisionedOnYubiKey": "Non provisionné sur la YubiKey connectée",
+      "provisionedInSlot": "Provisionné dans le slot {{slot}}",
       "restoringDetachedArchive": "Restauration de l’archive détachée",
       "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
       "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
       "showAsQrCode": "Afficher en code QR",
       "showSecret": "Afficher le secret",
       "token": "Jeton",
-      "totp": "TOTP"
+      "totp": "TOTP",
+      "verify": "Vérifier",
+      "yubikeyChallengeResponseSecret": "Secret défi-réponse YubiKey"
     }
   }
 }

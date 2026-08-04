@@ -200,6 +200,8 @@
       "bip39Mnemonic_other": "mnemonics",
       "bip39Passphrase_one": "passphrase",
       "bip39Passphrase_other": "passphrases",
+      "challengeResponseSecret_one": "challenge-response secret",
+      "challengeResponseSecret_other": "challenge-response secrets",
       "totpUri_one": "URI",
       "totpUri_other": "URIs",
       "found_one": "found",
@@ -324,13 +326,17 @@
       "detachedArchiveRequiresNewerVersion": "Detached archive requires a newer version of Superbacked",
       "detachedArchiveRestored": "Detached archive restored",
       "dragAndDropArchiveToRestore": "Drag and drop {{filename}} to restore archive",
+      "notProvisionedOnYubiKey": "Not provisioned on connected YubiKey",
+      "provisionedInSlot": "Provisioned in slot {{slot}}",
       "restoringDetachedArchive": "Restoring detached archive",
       "scanOrDragAndDropBlock": "Scan or drag and drop block",
       "scanOrDragAndDropNextBlock": "Scan or drag and drop next block",
       "showAsQrCode": "Show as QR code",
       "showSecret": "Show secret",
       "token": "Token",
-      "totp": "TOTP"
+      "totp": "TOTP",
+      "verify": "Verify",
+      "yubikeyChallengeResponseSecret": "YubiKey challenge-response secret"
     }
   }
 }

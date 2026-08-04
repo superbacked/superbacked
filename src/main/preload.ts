@@ -62,6 +62,9 @@ const api: Api = {
     createStandaloneArchive: invoke("createStandaloneArchive"),
     restoreDetachedArchive: invoke("restoreDetachedArchive"),
     restoreStandaloneArchive: invoke("restoreStandaloneArchive"),
+    verifyYubiKeyChallengeResponseSecret: invoke(
+      "verifyYubiKeyChallengeResponseSecret"
+    ),
   } satisfies IpcHandlers,
   invokeSync: {
     getLocale: invokeSync("getLocale"),

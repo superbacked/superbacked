@@ -58,6 +58,15 @@ type ExtractionBadges = {
   [type in ExtractionType]?: ExtractionBadge
 }
 
+// Count-line nouns per extraction type — the YubiKey type's noun drops
+// the brand (its badge already carries it)
+const badgeCountKeys = {
+  bip39Mnemonic: "bip39Mnemonic",
+  bip39Passphrase: "bip39Passphrase",
+  totpUri: "totpUri",
+  yubikeyChallengeResponseSecret: "challengeResponseSecret",
+} as const satisfies Record<ExtractionType, string>
+
 const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
   props
 ) => {
@@ -126,6 +135,16 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
           type: result.type,
           color: rgba(theme.colors.pink[8], selected ? 0.7 : 0.35),
           label: "TOTP",
+          start: result.start,
+          end: result.end,
+          selected: selected,
+        })
+      } else if (result.type === "yubikeyChallengeResponseSecret") {
+        extractions.push({
+          string: result.string,
+          type: result.type,
+          color: rgba(theme.colors.pink[8], selected ? 0.7 : 0.35),
+          label: "YubiKey",
           start: result.start,
           end: result.end,
           selected: selected,
@@ -203,7 +222,9 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
                   root: {
                     backgroundColor: badge.color,
                     transition: "background-color 100ms ease",
-                    width: "60px",
+                    // Wide enough for the widest label (YUBIKEY) — fixed
+                    // so the counts align in a column across badges
+                    width: "80px",
                   },
                   label: {
                     color: theme.colors.dark[9],
@@ -214,9 +235,12 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
               </Badge>
               <Text size="sm">
                 {badge.count}{" "}
-                {t(`components.secretTextareaWithUsage.${type}`, {
-                  count: badge.count,
-                })}{" "}
+                {t(
+                  `components.secretTextareaWithUsage.${badgeCountKeys[type]}`,
+                  {
+                    count: badge.count,
+                  }
+                )}{" "}
                 {t("components.secretTextareaWithUsage.found", {
                   count: badge.count,
                 })}
@@ -245,6 +269,9 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
           key={`${memoizedExtraction.string}-${textChildren.length}`}
           sx={{
             backgroundColor: memoizedExtraction.color,
+            // Layout-neutral rounding (no padding — the overlay must
+            // keep character-for-character alignment with the textarea)
+            borderRadius: "var(--mantine-radius-sm)",
             color: "transparent",
             overflowWrap: "anywhere",
             transition: "background-color 100ms ease",

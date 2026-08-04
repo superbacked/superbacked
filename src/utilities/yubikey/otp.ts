@@ -1,3 +1,5 @@
+import { createHmac, randomBytes, timingSafeEqual } from "crypto"
+
 import { Device, HIDAsync, devicesAsync } from "node-hid"
 
 import sleep from "@/src/utilities/sleep"
@@ -369,6 +371,30 @@ export const calculateHmacSha1 = async (
   } catch (error) {
     throw asYubiKeyError(error)
   }
+}
+
+/**
+ * Verify that a slot is configured with a secret — a slot secret can
+ * never be read back, so the slot is challenged with fresh randomness
+ * and its response compared against the one the secret predicts (a
+ * fresh challenge proves the key computes rather than replays)
+ * @param slot slot provisioned for HMAC-SHA1 challenge-response
+ * @param secret 20-byte slot secret
+ * @param onTouchRequired called once if the slot requires touch
+ * @returns whether the slot response matches the secret
+ */
+export const verifyHmacSha1 = async (
+  slot: Slot,
+  secret: Buffer,
+  onTouchRequired?: () => void
+): Promise<boolean> => {
+  const challenge = randomBytes(32)
+  const expected = createHmac("sha1", secret).update(challenge).digest()
+  const response = await calculateHmacSha1(slot, challenge, onTouchRequired)
+  return (
+    response.length === expected.length &&
+    timingSafeEqual(response, expected) === true
+  )
 }
 
 export interface Status {

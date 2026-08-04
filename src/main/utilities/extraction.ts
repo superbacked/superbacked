@@ -1,13 +1,22 @@
-// Pure secret extraction — BIP39 mnemonics, generated BIP39 passphrases
-// and TOTP URIs, recognized inside free-form secret text. Kept free of
-// window and crypto imports so every extractor is testable (see
+// Pure secret extraction — BIP39 mnemonics, generated BIP39
+// passphrases, TOTP URIs and YubiKey challenge-response secrets,
+// recognized inside free-form secret text. Kept free of window and
+// crypto imports so every extractor is testable (see
 // tests/extraction.test.ts): the caller injects the wordlist, the
 // mnemonic validator and the password character classes (see
 // src/main/utilities/regexp.ts, which binds them through the bridge).
 
 export const bip39PassphraseLength = 20
 
-export type ExtractionType = "bip39Mnemonic" | "bip39Passphrase" | "totpUri"
+// Hexadecimal characters of a 20-byte HMAC-SHA1 slot secret — the size
+// YubiKey provisioning programs (see src/cli/provisionYubikey.ts)
+export const yubikeyChallengeResponseSecretLength = 40
+
+export type ExtractionType =
+  | "bip39Mnemonic"
+  | "bip39Passphrase"
+  | "totpUri"
+  | "yubikeyChallengeResponseSecret"
 
 interface ResultBase {
   string: string
@@ -42,7 +51,18 @@ export interface TotpUriResult extends ResultBase {
   }
 }
 
-export type Result = Bip39MnemonicResult | Bip39PassphraseResult | TotpUriResult
+export interface YubiKeyChallengeResponseSecretResult extends ResultBase {
+  type: "yubikeyChallengeResponseSecret"
+  properties: {
+    secret: string
+  }
+}
+
+export type Result =
+  | Bip39MnemonicResult
+  | Bip39PassphraseResult
+  | TotpUriResult
+  | YubiKeyChallengeResponseSecretResult
 
 export interface ExtractorOptions {
   characterClasses: string[]
@@ -55,9 +75,18 @@ export const totpUriRegExp = new RegExp(
   /otpauth:\/\/totp\/((.+)(:|%3A))?(.+)\?secret=([a-zA-Z2-7]+)&issuer=([^&\s]+)(&algorithm=(SHA1))?(&digits=(6))?(&period=(30))?/g
 )
 
+// Exactly the provisioned secret length of hexadecimal characters,
+// bounded by non-hex on both sides — the lookarounds keep longer hex (a
+// SHA-256 for example) from matching through its substrings
+export const yubikeyChallengeResponseSecretRegExp = new RegExp(
+  `(?<![0-9a-fA-F])[0-9a-fA-F]{${yubikeyChallengeResponseSecretLength}}(?![0-9a-fA-F])`,
+  "g"
+)
+
 /**
  * Create extractor bound to a wordlist, mnemonic validator and password
- * character classes
+ * character classes — the challenge-response secret extractor needs no
+ * binding (a fixed hexadecimal shape) but runs in the same pass
  * @param options wordlist, validator and character classes
  * @returns extract function
  */
@@ -129,6 +158,37 @@ export const createExtractor = (options: ExtractorOptions) => {
         end: totpUriExecArray.index + totpUriExecArray[0].length,
         properties: properties,
       })
+    }
+    // Extract YubiKey challenge-response secrets — the hex-run regexp
+    // above, requiring at least one digit and one letter (a random
+    // 20-byte secret virtually always has both, and the rule keeps long
+    // decimal numbers and letter prose out); overlap with an extracted
+    // URI disqualifies (a base32 TOTP secret can embed hex-only runs)
+    let yubikeySecretExecArray: null | RegExpExecArray
+    while (
+      (yubikeySecretExecArray =
+        yubikeyChallengeResponseSecretRegExp.exec(secret))
+    ) {
+      const run = yubikeySecretExecArray[0]
+      const start = yubikeySecretExecArray.index
+      const end = start + run.length
+      if (/[0-9]/.test(run) === false || /[a-fA-F]/.test(run) === false) {
+        continue
+      }
+      const overlaps = results.some(
+        (result) => start < result.end && end > result.start
+      )
+      if (overlaps === false) {
+        results.push({
+          string: run,
+          type: "yubikeyChallengeResponseSecret",
+          start: start,
+          end: end,
+          properties: {
+            secret: run,
+          },
+        })
+      }
     }
     // Extract generated BIP39 passphrases — only when the secret holds a
     // BIP39 mnemonic (usually on another line, hence the caller-supplied
