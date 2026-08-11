@@ -68,55 +68,7 @@
         "Status": "locked",
         "Value": false
       },
-      "browser.newtabpage.activity-stream.section.highlights.includeBookmarks": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.section.highlights.includeVisited": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.showSponsoredCheckboxes": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.system.showWeather": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.clocks.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.crossword.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.focusTimer.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.lists.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.privacy.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.sportsWidget.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.stocks.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.system.enabled": {
-        "Status": "locked",
-        "Value": false
-      },
-      "browser.newtabpage.activity-stream.widgets.weather.enabled": {
+      "browser.newtabpage.activity-stream.widgets.enabled": {
         "Status": "locked",
         "Value": false
       },
