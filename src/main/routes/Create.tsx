@@ -69,6 +69,7 @@ import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
 import { BlockUsage } from "@/src/utilities/core/block"
+import sleep from "@/src/utilities/sleep"
 
 const blocksetBackupTypes = [
   { value: "2of3", threshold: 2, shares: 3 },
@@ -262,6 +263,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     | "routes.create.couldNotCreateBlock"
     | "routes.create.couldNotCreateBlockset"
     | "routes.create.pleaseConnectPrinter"
+    | "routes.create.printerCommunicationFailed"
     | "routes.create.printerDoesNotSupportPaperSize"
   >>(null)
   // Recoverable hardware states surface inline beside the YubiKey controls
@@ -733,11 +735,26 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           if (status === "standby") {
             setIsPrinting(false)
             done = true
+          } else {
+            // Polling without a delay spawns lpstat as fast as the IPC
+            // round-trip allows
+            await sleep(1000)
           }
         }
-      } catch {
+      } catch (printError) {
         setIsPrinting(false)
-        setError({ message: "routes.create.printerDoesNotSupportPaperSize" })
+        // Only the genuine unsupported-size refusal (see print.ts) gets
+        // the paper-size message — every other failure in the flow (a
+        // sleeping printer timing out, a submission error) is a
+        // communication problem, and misreporting it as a paper-size
+        // problem sends the user down the wrong path
+        setError({
+          message:
+            printError instanceof Error &&
+            printError.message.includes("does not support")
+              ? "routes.create.printerDoesNotSupportPaperSize"
+              : "routes.create.printerCommunicationFailed",
+        })
       }
     },
     [qrs, t, customScale, scale, heavyweight, savePrintSettings]
@@ -770,12 +787,27 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           if (status === "standby") {
             setIsPrinting(false)
             done = true
+          } else {
+            // Polling without a delay spawns lpstat as fast as the IPC
+            // round-trip allows
+            await sleep(1000)
           }
         }
         setDetermineScaleStep("measure")
-      } catch {
+      } catch (printError) {
         setIsPrinting(false)
-        setError({ message: "routes.create.printerDoesNotSupportPaperSize" })
+        // Only the genuine unsupported-size refusal (see print.ts) gets
+        // the paper-size message — every other failure in the flow (a
+        // sleeping printer timing out, a submission error) is a
+        // communication problem, and misreporting it as a paper-size
+        // problem sends the user down the wrong path
+        setError({
+          message:
+            printError instanceof Error &&
+            printError.message.includes("does not support")
+              ? "routes.create.printerDoesNotSupportPaperSize"
+              : "routes.create.printerCommunicationFailed",
+        })
       }
     },
     [qrs, t]

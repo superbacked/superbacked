@@ -294,6 +294,7 @@
       "detachedArchiveCreated_other": "Detached archives created",
       "print": "Print",
       "pleaseConnectPrinter": "Please connect printer",
+      "printerCommunicationFailed": "Could not communicate with printer (it may be waking from sleep), please try again",
       "printerDoesNotSupportPaperSize": "This printer does not support the selected paper size",
       "printer": "Printer",
       "selectPrinter": "Select printer",

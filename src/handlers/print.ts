@@ -45,17 +45,20 @@ export const getDefaultPrinter = async (): Promise<null | Printer> => {
   return null
 }
 
-export const getPrinterPageSizes = async (printer: string): Promise<string> => {
+export const getPrinterPageSizes = async (
+  printer: string,
+  timeout = 3000
+): Promise<string> => {
   // Timeboxed — CUPS can block indefinitely resolving a queue whose
   // device is asleep or unreachable, which would otherwise leave the
-  // print modal’s paper select disabled forever with no feedback. Kept
-  // short because the select stays grayed while this runs: healthy
-  // queues answer in milliseconds, and a cut-off slow one degrades to
-  // the all-sizes fallback with print-time validation as the safety
-  // net. A killed lpoptions yields no PageSize line, so the timeout
-  // surfaces as the error below and callers fall back
+  // print modal’s paper select disabled forever with no feedback. The
+  // default stays short because the select is grayed while this runs:
+  // healthy queues answer in milliseconds, and a cut-off slow one
+  // degrades to the all-sizes fallback with print-time validation as
+  // the safety net. A killed lpoptions yields no PageSize line, so the
+  // timeout surfaces as the error below and callers fall back
   const { stdout } = await spawn("lpoptions", ["-p", printer, "-l"], {
-    timeout: 3000,
+    timeout,
   })
   const lines = stdout.split("\n")
   const pageSizeLine = lines.find((line) =>
@@ -75,8 +78,11 @@ const paperSizeMedia: Record<PaperSize, { named: string; custom: string }> = {
 }
 
 // Printer’s supported page sizes, with the default marker stripped
-const getPageSizes = async (printer: string): Promise<string[]> => {
-  return (await getPrinterPageSizes(printer))
+const getPageSizes = async (
+  printer: string,
+  timeout?: number
+): Promise<string[]> => {
+  return (await getPrinterPageSizes(printer, timeout))
     .split(/\s+/)
     .map((pageSize) => pageSize.replace(/^\*/, ""))
 }
@@ -117,8 +123,11 @@ export const print = async (
     "-o",
     "Quality=High",
   ]
-  // Prefer the named page size, fall back to a custom size, else fail
-  const pageSizes = await getPageSizes(printer)
+  // Prefer the named page size, fall back to a custom size, else fail.
+  // Print time gets a generous timeout: the user has already committed,
+  // and a USB printer waking from sleep can take several seconds to
+  // answer — the modal’s short default would misreport it as failed
+  const pageSizes = await getPageSizes(printer, 15000)
   const { named, custom } = paperSizeMedia[paperSize]
   if (pageSizes.includes(named)) {
     execaArguments.push(...["-o", `media=${named}`])

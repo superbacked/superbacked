@@ -294,6 +294,7 @@
       "detachedArchiveCreated_other": "Archives détachées créées",
       "print": "Imprimer",
       "pleaseConnectPrinter": "Veuillez connecter l’imprimante",
+      "printerCommunicationFailed": "Impossible de communiquer avec l’imprimante (elle sort peut-être de veille), veuillez réessayer",
       "printerDoesNotSupportPaperSize": "Cette imprimante ne prend pas en charge le format de papier sélectionné",
       "printer": "Imprimante",
       "selectPrinter": "Sélectionner l’imprimante",
