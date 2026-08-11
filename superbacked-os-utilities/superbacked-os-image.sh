@@ -1,7 +1,7 @@
 #! /bin/sh
 # Used to create Superbacked OS images using macOS
 
-set -e
+set -o errexit
 set -o pipefail
 
 bold=$(tput bold)

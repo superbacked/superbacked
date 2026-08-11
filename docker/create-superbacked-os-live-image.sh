@@ -29,7 +29,7 @@
 #
 # Writes the live image (and its .sha256sums) to the output path.
 
-set -e
+set -o errexit
 set -o pipefail
 
 source_image="${1}"

@@ -17,7 +17,7 @@ Isolate purpose per file — place logic by role, not convenience:
 
 ## Shell style
 
-- `#! /bin/bash`, `set -e`, `set -o pipefail`.
+- `#! /bin/bash`, `set -o errexit`, `set -o pipefail`.
 - Long-form flags always **in the Linux scripts** (the bootstrap and the `docker/` scripts, which run in the container/image): `rm --force --recursive`, `mkdir --parents`, `grep --quiet`, `curl --fail --location`. Short-form only when no long form exists (`mkfs.ext4 -m 0`, `mksquashfs -b`) — say so in a comment when it looks like an oversight.
 - **The macOS host scripts run BSD coreutils, which lack GNU long options — use short-form there.** These are `package.sh`, `superbacked-os-utilities/superbacked-os-image.sh` and `ubuntu-desktop-utilities/provision-ubuntu-desktop-iso.sh` (they drive `colima`/`docker`/`diskutil`/`dd` on the Mac). `mkdir --parents` fails there with “illegal option — -”; use `mkdir -p`, `rm -rf`, `split -b`. Rule of thumb: runs in the container → long-form; runs on the Mac → short-form.
 - Section banners: `printf "%s\n" "Doing thing…"` with a typographic ellipsis (`…`), phrased as a gerund.

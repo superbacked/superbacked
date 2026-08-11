@@ -1,7 +1,7 @@
 #! /bin/bash
 # Used to provision Ubuntu Desktop ISO
 
-set -e
+set -o errexit
 
 iso="$1"
 

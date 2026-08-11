@@ -19,7 +19,7 @@
 # Usage (inside the chroot):
 # bash superbacked-os-bootstrap.sh 1.13.0
 
-set -e
+set -o errexit
 set -o pipefail
 
 version="${1}"
