@@ -433,6 +433,7 @@ const YubiKeyChallengeResponseSecretApplet: FunctionComponent<
 }
 
 interface TotpAppletProps {
+  onShowAsQrCode: () => void
   secret: TotpUriResult["properties"]["secret"]
 }
 
@@ -499,20 +500,31 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
       </Box>
       <Space h="xl" />
       <Group justify="center">
-        {/* Copies the current token (the value pasted into a login) —
-            the handler lives here, next to the token state, rather than
-            at the call site like the other applets. No QR counterpart:
-            tokens are short-lived and typed, and re-enrollment stays
-            reachable through the full secret’s otpauth URI */}
-        <Button
-          onClick={async () => {
-            await copySecretText(token)
-          }}
-          size="xs"
-          variant="default"
-        >
-          {t("common.copy")}
-        </Button>
+        <Button.Group>
+          {/* Copies the current token (the value pasted into a login) —
+              the handler lives here, next to the token state, rather
+              than at the call site like the other applets. The QR
+              deliberately differs from the copy: it shows the full
+              otpauth URI (what phone authenticators scan to enroll),
+              never the short-lived token */}
+          <Button
+            onClick={async () => {
+              await copySecretText(token)
+            }}
+            size="xs"
+            variant="default"
+          >
+            {t("common.copy")}
+          </Button>
+          <Button
+            onClick={props.onShowAsQrCode}
+            rightSection={<IconQrcode size={14} />}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.showAsQrCode")}
+          </Button>
+        </Button.Group>
       </Group>
     </Fragment>
   )
@@ -726,7 +738,16 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                 lineNodes.push(
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}
-                    dropdown={<TotpApplet secret={result.properties.secret} />}
+                    dropdown={(controls) => (
+                      <TotpApplet
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.string)
+                          setShowQrCodeModal(true)
+                        }}
+                        secret={result.properties.secret}
+                      />
+                    )}
                     interactive
                     target={line.substring(result.start, result.end)}
                   />
