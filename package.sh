@@ -81,6 +81,14 @@ if [ "${build_app}" = true ]; then
   for file in dist/*.AppImage; do
     mv "${file}" "$(echo "${file}" | sed 's/x86_64/x64/')"
   done
+
+  # deb names its x64 artifact amd64 (the arm64 name already matches)
+  for file in dist/*.deb; do
+    renamed="$(echo "${file}" | sed 's/amd64/x64/')"
+    if [ "${file}" != "${renamed}" ]; then
+      mv "${file}" "${renamed}"
+    fi
+  done
 fi
 
 # Prompt to build OS if not specified

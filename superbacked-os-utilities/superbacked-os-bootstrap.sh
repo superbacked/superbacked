@@ -67,8 +67,8 @@ printf "%s\n" "Configuring apt sources…"
 
 # Replaces the installer’s mirror configuration outright so nothing
 # keeps resolving against a moving archive. universe carries six
-# dependencies (exfatprogs, keepassxc, libfuse2, pcscd, pipx, scdaemon
-# and waypipe among them); everything else is in main.
+# dependencies (exfatprogs, keepassxc, pcscd, pipx, scdaemon and
+# waypipe among them); everything else is in main.
 tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null << EOF
 Types: deb
 URIs: https://snapshot.ubuntu.com/ubuntu/${apt_snapshot}
@@ -146,14 +146,13 @@ apt upgrade --yes
 printf "%s\n" "Installing dependencies…"
 
 # Build tools (build-essential, libpcsclite-dev, python3-dev, zlib1g-dev)
-# compile the wallet and YubiKey tools installed just below — all but
-# zlib1g-dev (which the Superbacked app needs) are removed at the end of
-# provisioning. curl and gnupg download and verify software, dconf-cli
+# compile the wallet and YubiKey tools installed just below — all are
+# removed at the end of provisioning. curl and gnupg download and verify software, dconf-cli
 # compiles the system dconf database (see “Configuring GNOME” below),
 # exfatprogs formats exFAT USB drives, qtwayland5 provides the Qt
 # Wayland platform plugin KeePassXC’s launcher pins (its deb does not
-# pull it in), language packs complete the English locale, libfuse2
-# runs AppImages, pcscd and scdaemon talk to smartcards and YubiKeys,
+# pull it in), language packs complete the English locale,
+# pcscd and scdaemon talk to smartcards and YubiKeys,
 # python3-pip downloads the pinned PyPI wheels just below,
 # totem plays video with gstreamer1.0-libav decoding it (H.264
 # including the 4:2:2 profile, plus AAC — the minimal install ships no
@@ -175,7 +174,6 @@ packages=(
   # language-pack-fr
   language-pack-gnome-en
   # language-pack-gnome-fr
-  libfuse2
   libpcsclite-dev
   pcscd
   pipx
@@ -582,33 +580,28 @@ printf "%s\n" "Installing Superbacked app…"
 # The app build and repository assets are bind mounted into the chroot
 # under /run by the caller — no tarball intermediary — and the mounts
 # vanish with the /run tmpfs when provisioning ends, leaving no trace
-# in the image. Ownership is handed to superbacked at the end of
-# provisioning.
-mkdir --parents \
-  /home/superbacked/.local/share/applications \
-  /home/superbacked/.local/superbacked
+# in the image. The deb installs the app to /opt/Superbacked and ships
+# what the AppImage era hand-placed: the hicolor icons, the desktop
+# entry (shadowed just below) and the command line entry point
+# /usr/bin/superbacked (superbacked provision-yubikey, superbacked
+# derive-password…) — an update-alternatives symlink chain the kernel
+# resolves to /opt/Superbacked/superbacked, so AppArmor confinement
+# holds for terminal launches. Its postinst also drops a stock
+# unconfined AppArmor profile, overwritten below. Recommends are
+# skipped: the deb’s only recommendation (libappindicator3-1, tray
+# support) has no user here.
+apt install --no-install-recommends --yes \
+  "/run/dist/superbacked-x64-${version}.deb"
+
+# The deb’s stock desktop entry launches the app without a display
+# backend pin — shadow it with a same-name entry in the higher-priority
+# directory that pins Wayland (the same mechanism “Overriding stock
+# launchers” below uses for Firefox and KeePassXC).
+mkdir --parents /usr/local/share/applications
 
 cp \
   /run/superbacked-os-bootstrap-assets/superbacked.desktop \
-  /home/superbacked/.local/share/applications/superbacked.desktop
-cp \
-  "/run/dist/superbacked-x64-${version}.AppImage" \
-  /home/superbacked/.local/superbacked/superbacked.AppImage
-cp \
-  /run/dist/.icon-icns/icon.icns \
-  /home/superbacked/.local/superbacked/superbacked.icns
-
-chmod +x \
-  /home/superbacked/.local/share/applications/superbacked.desktop
-chmod +x \
-  /home/superbacked/.local/superbacked/superbacked.AppImage
-
-# Command line entry point (superbacked provision-yubikey, superbacked
-# derive-password…) — a symlink keeps AppArmor confinement intact, as the
-# kernel resolves it to the AppImage path the profile attaches to
-ln --symbolic \
-  /home/superbacked/.local/superbacked/superbacked.AppImage \
-  /usr/local/bin/superbacked
+  /usr/local/share/applications/superbacked.desktop
 
 printf "%s\n" "Installing AppArmor profiles…"
 

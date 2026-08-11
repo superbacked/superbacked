@@ -35,7 +35,7 @@ set -o pipefail
 source_image="${1}"
 output_image="${2}"
 version="${3}"
-app_image="/dist/superbacked-x64-${version}.AppImage"
+app_deb="/dist/superbacked-x64-${version}.deb"
 
 if [ ! -f "${source_image}" ] \
   || [ -z "${output_image}" ] \
@@ -44,8 +44,8 @@ if [ ! -f "${source_image}" ] \
   exit 1
 fi
 
-if [ ! -f "${app_image}" ]; then
-  printf "%s\n" "Error: ${app_image} not found" >&2
+if [ ! -f "${app_deb}" ]; then
+  printf "%s\n" "Error: ${app_deb} not found" >&2
   exit 1
 fi
 

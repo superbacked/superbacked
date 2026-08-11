@@ -1,3 +1,6 @@
+# Same-name shadow of the deb’s stock entry (installed to
+# /usr/local/share/applications by the bootstrap), which launches the
+# app without a display backend pin.
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -5,8 +8,8 @@ Name=Superbacked
 # Pinned to native Wayland via environment (an argv flag would be rejected
 # by the app’s commander CLI) — “wayland” hard-selects the backend so the
 # passphrase-isolation property fails closed rather than silently falling
-# back to a snoopable X11 client. Same pin as superbacked-autostart.sh — the
-# two must stay in lockstep.
-Exec=env ELECTRON_OZONE_PLATFORM_HINT=wayland /home/superbacked/.local/superbacked/superbacked.AppImage
-Icon=/home/superbacked/.local/superbacked/superbacked.icns
+# back to a snoopable X11 client.
+Exec=env ELECTRON_OZONE_PLATFORM_HINT=wayland /opt/Superbacked/superbacked
+# The hicolor icons the deb installs
+Icon=superbacked
 Terminal=false

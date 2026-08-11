@@ -23,7 +23,7 @@ The four bundled GUI applications sit on very different stacks, which matters to
 
 | Application          | Purpose                                                       | Stack                                                  | Runs as       | Network             |
 | -------------------- | ------------------------------------------------------------- | ------------------------------------------------------ | ------------- | ------------------- |
-| Superbacked          | Create and restore blocks, blocksets and encrypted archives   | Electron (Chromium + Node.js), packaged as an AppImage | `superbacked` | Denied              |
+| Superbacked          | Create and restore blocks, blocksets and encrypted archives   | Electron (Chromium + Node.js), Debian package          | `superbacked` | Denied              |
 | KeePassXC            | Manage passwords                                              | Qt 5, Debian package (upstream PPA)                    | `superbacked` | Denied              |
 | Yubico Authenticator | Manage YubiKey TOTP secrets, passkeys, certificates and slots | Flutter, upstream tarball; speaks to `pcscd`           | `superbacked` | Denied              |
 | Firefox              | Navigate the web in hardened browser mode                     | Gecko, Mozilla’s Debian package                        | `clearnet`    | Allowed, firewalled |
@@ -76,11 +76,11 @@ Reviewers who know these stacks will already know their sharp edges — the Chro
 
 **Intent:** each application can do only what its job requires; the secret-handling apps additionally deny all network access, enforcing the air-gap _inside_ the process — a second layer beneath the firewall.
 
-**Approach:** Debian packages and tarballs ship unconfined, so each of the four apps has a confined profile ([`superbacked-os-bootstrap-assets/apparmor/`](../../superbacked-os-bootstrap-assets/apparmor/)) that grants what the app genuinely needs and denies the rest. Profiles are syntax-checked at build time (a syntax error fails the build) and compiled and loaded by `apparmor.service` at each boot; they ship enforcing, with an `APPARMOR_MODE=complain` flag (disabled by default) used to tune them against real behavior on hardware. A few cross-cutting decisions are worth noting:
+**Approach:** Debian packages and tarballs ship unconfined, so each of the four apps has a confined profile ([`superbacked-os-bootstrap-assets/apparmor/`](../../superbacked-os-bootstrap-assets/apparmor/)) that grants what the app genuinely needs and denies the rest. Profiles are syntax-checked at build time (a syntax error fails the build) and compiled and loaded by `apparmor.service` at each boot; they ship enforcing, with a `BUILD_VARIANT=debug` flag (disabled by default) that compiles them in complain mode to tune them against real behavior on hardware — debug images also keep `sudo` for the primary user so profiles can be edited and reloaded in place (`apparmor_parser --replace`) during tuning, one more reason they are test artifacts, never for distribution. A few cross-cutting decisions are worth noting:
 
 - The three apps that must never reach the network (KeePassXC, Superbacked, Yubico Authenticator) deny the same four socket families explicitly — `inet`, `inet6`, `packet` and `bluetooth` — rather than using a bare `deny network`, which would also sweep the AF_UNIX sockets that D-Bus and Wayland depend on and the netlink sockets that interface enumeration needs.
 - Firefox and the Superbacked app both keep the `userns` grant their content sandboxes require under Ubuntu 24.04’s restricted-user-namespace policy; removing it would break the sandbox.
-- The Superbacked profile (an Electron AppImage that FUSE-mounts itself and runs a Chromium sandbox) is the hardest to confine, and its namespace/mount grants are deliberately broad — the intended confinement there is the network denial and filesystem scope, not the sandbox internals.
+- The Superbacked profile (an Electron app whose Chromium sandbox creates user namespaces and pivots root) is the hardest to confine, and its namespace/mount grants are deliberately broad — the intended confinement there is the network denial and filesystem scope, not the sandbox internals. The app installs from its deb to `/opt/Superbacked`, so the profile attaches to a stable binary path; the bootstrap overwrites the stock unconfined profile the deb’s postinst installs, the same way the Firefox profile overwrites Ubuntu’s.
 - Loading profiles on a live system requires overriding the packaging. Debian and Ubuntu ship `apparmor.service` with live-media guards (`ConditionPathExists=!/run/live/overlay/work` for `live-boot`, `!/rofs/etc/apparmor.d` for legacy casper), added when overlayfs canonicalized paths in ways that broke profile matching ([Debian #922378](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=922378)) — without intervention, a live system silently boots with every profile unloaded and every app unconfined. The bootstrap installs a systemd drop-in resetting the condition, which is the established fix (Kicksecure ships the same; [Debian #995367](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=995367) requests dropping the guard outright and Ubuntu’s own live ISOs enforce AppArmor on overlayfs) and asserts at build time that the packaged guard is still the mechanism being reset, so packaging drift fails the build instead of shipping an unconfined image. Should complain-mode journals ever show denials on `/run/live/…` paths — the historical live-media problem the guard was protecting against — alias tunables mapping those paths onto profile paths are the remedy (Tails’ approach on its older live-boot layout).
 
 Rather than enumerate every rule here, this document defers to the [profiles themselves](../../superbacked-os-bootstrap-assets/apparmor/), each commented rule-group by rule-group with the intent behind it.
@@ -128,7 +128,7 @@ Every layer above can be checked from a running session as the unprivileged `sup
 ```console
 cat /sys/module/apparmor/parameters/enabled
 systemctl is-active apparmor.service
-cat /proc/$(pgrep --full superbacked.AppImage | head --lines 1)/attr/current
+cat /proc/$(pgrep --full /opt/Superbacked/superbacked | head --lines 1)/attr/current
 cat /proc/$(pgrep --full /usr/bin/keepassxc | head --lines 1)/attr/current
 ```
 

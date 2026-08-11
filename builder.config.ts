@@ -44,8 +44,15 @@ const config: Configuration = {
     title: "${productName}",
   },
   linux: {
+    category: "Utility",
     files: [{ from: "./bin/linux", to: "./bin/linux" }],
-    target: "AppImage",
+    // deb is what Superbacked OS and Ubuntu Desktop install — the app
+    // runs straight from /opt/Superbacked, giving AppArmor a stable
+    // attachment path (no FUSE mount or AppRun shell indirection), and
+    // the package ships the desktop entry, hicolor icons and
+    // /usr/bin/superbacked symlink the AppImage needed hand-placing.
+    // AppImage stays for Tails, where nothing is installed.
+    target: ["AppImage", "deb"],
   },
   mac: {
     entitlements: "build/entitlements.mac.plist",
