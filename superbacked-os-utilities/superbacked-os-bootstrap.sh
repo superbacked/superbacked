@@ -920,7 +920,7 @@ EOF
 tee /usr/local/bin/clearnet-browser > /dev/null << 'EOF'
 #! /bin/bash
 
-set -e
+set -o errexit
 
 if ! grep --quiet superbacked.browser /proc/cmdline; then
   zenity --info \
@@ -1024,7 +1024,7 @@ printf "%s\n" "Configuring hardened browser mode firewall…"
 tee /usr/local/sbin/superbacked-browser-firewall.sh > /dev/null << 'EOF'
 #! /bin/bash
 
-set -e
+set -o errexit
 
 # Old rules are flushed and new ones loaded in a single transaction, so
 # there is never a moment without a firewall.
