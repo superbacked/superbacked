@@ -1030,6 +1030,11 @@ printf "%s\n" "Configuring hardened browser mode firewall…"
 #   clearnet         → web traffic (Firefox; DNS rides inside HTTPS)
 #   systemd-timesync → time sync, to Cloudflare’s addresses only
 #   root             → DHCP (joining the network)
+# Loopback stays open for everyone except clearnet: cupsd and ipp-usb
+# listen on localhost TCP, and the browser user has no business
+# reaching root daemons on the trusted side. Firefox loses nothing —
+# its display, session-bus and waypipe-bridge traffic ride unix
+# sockets, which this inet filter never touches.
 tee /usr/local/sbin/superbacked-browser-firewall.sh > /dev/null << 'EOF'
 #! /bin/bash
 
@@ -1052,6 +1057,7 @@ table inet filter {
   }
   chain output {
     type filter hook output priority 0; policy drop;
+    meta skuid clearnet oif lo drop comment "no browser path to cupsd/ipp-usb"
     oif lo accept
     meta skuid clearnet tcp dport { 80, 443 } accept
     meta skuid clearnet udp dport 443 accept comment "QUIC"
