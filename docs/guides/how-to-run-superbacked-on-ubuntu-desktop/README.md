@@ -27,4 +27,6 @@ $ sudo apt install --yes ~/Downloads/superbacked-x64-2.0.0.deb
 
 ## Usage guide
 
+> Heads-up: YubiKey connected while installing Superbacked must be unplugged and plugged back in before use.
+
 Open Superbacked from the application grid or run `superbacked` in terminal to use the command line interface.

@@ -40,6 +40,17 @@ const config: Configuration = {
   // cross-compile Linux targets from macOS
   npmRebuild: false,
   productName: "Superbacked",
+  deb: {
+    // Stock Ubuntu only uaccess-tags the FIDO interface of a YubiKey
+    // (systemd’s fido_id); challenge-response runs over the OTP hidraw
+    // interface, and libu2f-udev has been an empty transitional
+    // package since 22.04 — so the deb ships its own vendor-wide rule
+    // (fpm src=dest mapping, added alongside the app payload). udevd
+    // picks up new rules automatically; they apply on next replug.
+    fpm: [
+      "build/70-superbacked-yubikey.rules=/usr/lib/udev/rules.d/70-superbacked-yubikey.rules",
+    ],
+  },
   dmg: {
     title: "${productName}",
   },

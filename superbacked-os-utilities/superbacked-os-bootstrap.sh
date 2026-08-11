@@ -487,11 +487,14 @@ EOF
 
 printf "%s\n" "Configuring udev rules…"
 
-# Let regular users talk to Trezor and YubiKey hardware over USB.
+# Let regular users talk to Trezor hardware — the official rules
+# uaccess-tag its usb and hidraw device nodes (wallet operations and
+# FIDO alike). YubiKey needs nothing here: systemd’s fido_id tags the
+# FIDO interface of every vendor’s key, and the Superbacked deb
+# installed below ships a vendor-wide hidraw rule for the OTP
+# (challenge-response) interface.
 curl --fail --location https://data.trezor.io/udev/51-trezor.rules \
   --output /etc/udev/rules.d/51-trezor.rules
-curl --fail --location https://raw.githubusercontent.com/Yubico/libfido2/main/udev/70-u2f.rules \
-  --output /etc/udev/rules.d/70-u2f.rules
 
 # Internal disks are invisible to the desktop: USB drives are the only
 # user-facing storage on Superbacked OS, and offering to mount internal
@@ -592,7 +595,11 @@ printf "%s\n" "Installing Superbacked app…"
 # holds for terminal launches. Its postinst also drops a stock
 # unconfined AppArmor profile, overwritten below. Recommends are
 # skipped: the deb’s only recommendation (libappindicator3-1, tray
-# support) has no user here.
+# support) has no user here. The deb also ships the vendor-wide
+# YubiKey hidraw udev rule that opens the OTP (challenge-response)
+# interface to seat users — here and on stock Ubuntu installs alike,
+# complementing systemd’s fido_id (FIDO interfaces) and the Trezor
+# rules installed under “Configuring udev rules…” above.
 apt install --no-install-recommends --yes \
   "/run/dist/superbacked-x64-${version}.deb"
 
