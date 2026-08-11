@@ -19,6 +19,18 @@ This guide walks through downloading and running Superbacked on Tails. Superback
 
 Download latest release from [superbacked.com/download](https://superbacked.com/download) and optionally [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
 
-### Step 2: run AppImage
+### Step 2 (optional): allow YubiKey access
+
+> Heads-up: this step is only required when using YubiKey features such as YubiKey protection and requires administration password which is set on welcome screen when starting Tails (restart Tails and set password if session was started without one). Tails persists nothing, so step must be repeated each session.
+
+Run following command and unplug and plug YubiKey back in.
+
+```console
+$ sudo tee /etc/udev/rules.d/70-superbacked-yubikey.rules << 'EOF'
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1050", TAG+="uaccess"
+EOF
+```
+
+### Step 3: run AppImage
 
 Right-click `.AppImage` file and select “Run”.
