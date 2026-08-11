@@ -1,7 +1,7 @@
 # Superbacked OS — confined Yubico Authenticator (Flutter tarball in
 # /opt/yubico-authenticator, launched with GDK_BACKEND=wayland).
 #
-# Installed as /etc/apparmor.d/yubico-authenticator.profile. Fully
+# Installed as /etc/apparmor.d/yubico-authenticator. Fully
 # offline: it reads codes straight off the YubiKey via pcscd (CCID) and
 # raw hidraw/USB (the OTP/FIDO paths of the bundled helper). Known
 # non-AppArmor pitfall: the tarball bundles its own libpcsclite — a
@@ -24,8 +24,12 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   include <abstractions/nameservice>
   include <abstractions/wayland>
 
-  # Offline by design (the denials override the inet grants
-  # abstractions/nameservice pulls in).
+  # Offline by design. The denials override the inet grants
+  # abstractions/nameservice pulls in, and pair with the abstraction
+  # deliberately — not a redundancy to fold away: explicit denies hold
+  # even in complain mode, so the air-gap stays enforced on
+  # debug-variant tuning images (dropping the abstraction and relying
+  # on omission would log-and-allow there).
   deny network inet,
   deny network inet6,
   deny network packet,
@@ -34,8 +38,15 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   dbus (send, receive) bus=session,
 
   unix,
-  deny unix addr="@/tmp/.X11-unix/*",
-  deny unix peer=(addr="@/tmp/.X11-unix/*"),
+  # Abstract X11 socket wall (Wayland-only OS; the path-based X socket
+  # is denied below), scoped by operation: bind and connect know their
+  # address, so the match is exact. The scoping is load-bearing — an
+  # address-conditioned deny with no operation list also matches socket
+  # create, which has no address yet, silently swallowing every AF_UNIX
+  # socket the app makes (Wayland, D-Bus — and deny implies quiet, so
+  # nothing logs).
+  deny unix bind addr="@/tmp/.X11-unix/*",
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
 
   # Bundled Flutter app and libraries, and the bundled helper the GUI
   # spawns to talk to the key.
@@ -44,10 +55,19 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   /opt/yubico-authenticator/authenticator mrix,
   /opt/yubico-authenticator/helper/** mrix,
 
+  # The helper resolves libraries through Python ctypes, which shells
+  # out to ldconfig — a wrapper script on Ubuntu: dash is its
+  # interpreter, ldconfig.real the binary.
+  /usr/sbin/ldconfig{,.real} mrix,
+  /usr/bin/dash mr,
+
   # Smartcard path: the system pcscd socket.
   /run/pcscd/pcscd.comm rw,
 
-  # Direct USB/FIDO/OTP paths used by the helper.
+  # Direct USB/FIDO/OTP paths used by the helper. The /dev listing is
+  # its key-arrival watcher, polled constantly — by far the loudest
+  # rule in a complain harvest.
+  /dev/ r,
   /dev/bus/usb/ r,
   /dev/bus/usb/*/ r,
   /dev/bus/usb/*/[0-9]* rw,
@@ -65,12 +85,24 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   owner @{HOME}/.local/share/com.yubico*/{,**} rwk,
   owner @{HOME}/.cache/com.yubico*/{,**} rwk,
 
-  # GTK embedder (Flutter Linux shell) on superbacked’s Wayland socket.
+  # GTK embedder (Flutter Linux shell) on superbacked’s Wayland
+  # socket, its platform theme and audio (libcanberra event sounds
+  # cache per-machine state in home and read the pulse cookie).
   owner @{run}/user/[0-9]*/ r,
+  owner @{run}/user/[0-9]*/dconf/{,user} rw,
+  owner @{run}/user/[0-9]*/pulse/ r,
+  owner @{run}/user/[0-9]*/pulse/native rw,
   /usr/share/X11/xkb/{,**} r,
   /usr/share/glib-2.0/schemas/gschemas.compiled r,
   /etc/gtk-3.0/{,**} r,
+  /etc/glvnd/{,**} r,
+  /usr/share/glvnd/{,**} r,
+  /usr/share/themes/{,**} r,
+  /etc/pulse/{,**} r,
+  /dev/shm/ r,
   owner /dev/shm/** rwk,
+  owner @{HOME}/.cache/event-sound-cache.tdb.* rwk,
+  owner @{HOME}/.config/pulse/cookie rk,
 
   owner @{PROC}/@{pid}/cgroup r,
   owner @{PROC}/@{pid}/fd/ r,
@@ -78,6 +110,10 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   owner @{PROC}/@{pid}/status r,
   owner @{PROC}/@{pid}/task/ r,
   owner @{PROC}/@{pid}/task/*/comm rw,
+  # Flutter sizes its thread pools from CPU topology and cgroup limits.
+  /sys/devices/system/cpu/{,**} r,
+  /sys/fs/cgroup/user.slice/{,**/}cpu.max r,
+  @{PROC}/sys/vm/max_map_count r,
 
   # Temp files — includes PyInstaller self-extraction (/tmp/_MEI*) if
   # the bundled helper ships as a one-file bundle.

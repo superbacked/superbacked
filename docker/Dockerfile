@@ -1,6 +1,5 @@
-# Run `docker build --tag superbacked-os-docker:24.04 .` to build image
-# (rebuild whenever either COPY'd script changes — the container runs
-# the baked copies, not the repository files)
+# Superbacked OS build container — built as superbacked-os-docker:24.04
+# by package.sh at every OS build
 
 FROM ubuntu:24.04
 

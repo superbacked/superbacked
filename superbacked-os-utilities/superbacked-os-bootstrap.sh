@@ -13,8 +13,10 @@
 # is running — everything below is plain filesystem writes, offline
 # systemctl symlinks, and apt/curl over the network. Each build starts
 # from a pristine overlay, so nothing here guards against re-runs.
-# Exporting APPARMOR_MODE=complain builds a test image whose app
-# profiles log denials instead of enforcing them.
+# Exporting BUILD_VARIANT=debug builds the debug variant — app
+# profiles log denials (complain) instead of enforcing and superbacked
+# keeps sudo for on-device profile iteration (see “Disabling sudo”
+# below).
 #
 # Usage (inside the chroot):
 # bash superbacked-os-bootstrap.sh 1.13.0
@@ -145,22 +147,23 @@ apt upgrade --yes
 
 printf "%s\n" "Installing dependencies…"
 
-# Build tools (build-essential, libpcsclite-dev, python3-dev, zlib1g-dev)
-# compile the wallet and YubiKey tools installed just below — all are
-# removed at the end of provisioning. curl and gnupg download and verify software, dconf-cli
-# compiles the system dconf database (see “Configuring GNOME” below),
-# exfatprogs formats exFAT USB drives, qtwayland5 provides the Qt
-# Wayland platform plugin KeePassXC’s launcher pins (its deb does not
-# pull it in), language packs complete the English locale,
-# pcscd and scdaemon talk to smartcards and YubiKeys,
-# python3-pip downloads the pinned PyPI wheels just below,
-# totem plays video with gstreamer1.0-libav decoding it (H.264
-# including the 4:2:2 profile, plus AAC — the minimal install ships no
-# video decoder), waypipe puts the browser on screen, wl-clipboard
-# copies derived passwords to the clipboard (Wayland lets only a
-# focused surface set the selection, and the command-line interface is
-# windowless) and zenity shows error dialogs. (Firefox and KeePassXC
-# come from their own repositories — see the install sections below.)
+# Build tools (build-essential, libpcsclite-dev, python3-dev,
+# zlib1g-dev) compile the wallet and YubiKey tools installed just
+# below — all are removed at the end of provisioning. curl and gnupg
+# download and verify software, dconf-cli compiles the system dconf
+# database (see “Configuring GNOME” below), exfatprogs formats exFAT
+# USB drives, qtwayland5 provides the Qt Wayland platform plugin
+# KeePassXC’s launcher pins (its deb does not pull it in), language
+# packs complete the English locale, pcscd and scdaemon talk to
+# smartcards and YubiKeys, python3-pip downloads the pinned PyPI
+# wheels just below, totem plays video with gstreamer1.0-libav
+# decoding it (H.264 including the 4:2:2 profile, plus AAC — the
+# minimal install ships no video decoder), waypipe puts the browser on
+# screen, wl-clipboard copies derived passwords to the clipboard
+# (Wayland lets only a focused surface set the selection, and the
+# command-line interface is windowless) and zenity shows error
+# dialogs. (Firefox and KeePassXC come from their own repositories —
+# see the install sections below.)
 packages=(
   build-essential
   curl
@@ -606,27 +609,29 @@ cp \
 printf "%s\n" "Installing AppArmor profiles…"
 
 # Confinement for the bundled apps — what snap interfaces used to
-# provide (each profile documents the mapping). firefox deliberately
-# overwrites Ubuntu’s stock profile of the same name: the stock one is
-# unconfined (it exists only to grant userns) and two profiles cannot
+# provide (each profile documents the mapping). Installed under the
+# bare app name — the convention stock profiles use (Ubuntu’s firefox,
+# the Superbacked deb postinst’s superbacked) — so where a stock
+# profile exists it is deliberately overwritten: the stock ones are
+# unconfined (they exist only to grant userns) and two profiles cannot
 # share an attachment path.
 cp \
-  /run/superbacked-os-bootstrap-assets/apparmor/firefox.profile \
+  /run/superbacked-os-bootstrap-assets/apparmor/firefox \
   /etc/apparmor.d/firefox
 cp \
-  /run/superbacked-os-bootstrap-assets/apparmor/keepassxc.profile \
-  /etc/apparmor.d/keepassxc.profile
+  /run/superbacked-os-bootstrap-assets/apparmor/keepassxc \
+  /etc/apparmor.d/keepassxc
 cp \
-  /run/superbacked-os-bootstrap-assets/apparmor/superbacked.profile \
-  /etc/apparmor.d/superbacked.profile
+  /run/superbacked-os-bootstrap-assets/apparmor/superbacked \
+  /etc/apparmor.d/superbacked
 cp \
-  /run/superbacked-os-bootstrap-assets/apparmor/yubico-authenticator.profile \
-  /etc/apparmor.d/yubico-authenticator.profile
+  /run/superbacked-os-bootstrap-assets/apparmor/yubico-authenticator \
+  /etc/apparmor.d/yubico-authenticator
 
-# APPARMOR_MODE=complain builds a test image whose app profiles log
+# BUILD_VARIANT=debug builds a debug image whose app profiles log
 # denials instead of enforcing them — used to iterate on the profiles
 # against journalctl on hardware. Release builds enforce.
-if [ "${APPARMOR_MODE:-}" = "complain" ]; then
+if [ "${BUILD_VARIANT:-}" = "debug" ]; then
   # Add complain to each profile’s flags — folded into an existing
   # flags=(…) when present (superbacked carries attach_disconnected),
   # otherwise added as a new flags=(complain). Anchoring on the closing
@@ -637,14 +642,14 @@ if [ "${APPARMOR_MODE:-}" = "complain" ]; then
     -e 't' \
     -e 's| \{$| flags=(complain) {|' \
     /etc/apparmor.d/firefox \
-    /etc/apparmor.d/keepassxc.profile \
-    /etc/apparmor.d/superbacked.profile \
-    /etc/apparmor.d/yubico-authenticator.profile
+    /etc/apparmor.d/keepassxc \
+    /etc/apparmor.d/superbacked \
+    /etc/apparmor.d/yubico-authenticator
 fi
 
 # Compile without loading — catches profile syntax errors at build time
 # instead of at the first boot.
-for profile in firefox keepassxc.profile superbacked.profile yubico-authenticator.profile; do
+for profile in firefox keepassxc superbacked yubico-authenticator; do
   apparmor_parser --skip-kernel-load "/etc/apparmor.d/${profile}"
 done
 
@@ -716,7 +721,7 @@ printf "%s\n" "Configuring KeePassXC…"
 # stop provisioning if the Qt Wayland platform plugin is missing rather
 # than ship an image where it cannot launch. Its confinement lives in
 # an AppArmor profile installed at image creation time (see
-# superbacked-os-bootstrap-assets/apparmor/keepassxc.profile): no network, no
+# superbacked-os-bootstrap-assets/apparmor/keepassxc): no network, no
 # X11 — while home, USB drives and YubiKey challenge-response stay
 # available.
 if ! dpkg --listfiles qtwayland5 2> /dev/null \
@@ -744,7 +749,7 @@ printf "%s\n" "Configuring Firefox policies…"
 # can be changed from inside the browser (the deb reads
 # /etc/firefox/policies/policies.json natively). Its confinement lives
 # in an AppArmor profile installed at image creation time (see
-# superbacked-os-bootstrap-assets/apparmor/firefox.profile): no camera, no
+# superbacked-os-bootstrap-assets/apparmor/firefox): no camera, no
 # microphone, no X11, no printing, no USB media, no home folders beyond
 # its own profile and Downloads. Official policy keys are used wherever
 # one exists; the Preferences block pins only settings that have none.
@@ -769,9 +774,13 @@ printf "%s\n" "Configuring Firefox policies…"
 #   Search — DuckDuckGo by default; address bar recommendations, search
 #     suggestions and trending searches are off.
 #   New tab — a blank page: no recommendations, shortcuts, sponsored
-#     content or widgets — the widgets system is off and every widget
-#     (clocks, lists, sports, timer, weather…) is pinned off
-#     individually, because experiments can force the system back on.
+#     content or widgets. The FirefoxHome policy locks the sections
+#     (and their sub-prefs with them); widgets.enabled is the one pref
+#     the widgets need — every widget’s render is unconditionally gated
+#     behind it (verified in the newtab source: rollout levers are
+#     ANDed after it, and locked prefs resist experiment writes), so
+#     there is no per-widget enumeration to chase across Firefox
+#     releases.
 #   AI — everything blocked through the official AIControls policy;
 #     browser.ml.enable is also pinned off so the on-device inference
 #     engine itself can never start (the policy deliberately leaves that
@@ -1067,11 +1076,12 @@ Wants=systemd-timesyncd.service
 Type=oneshot
 RemainAfterExit=yes
 # Networking is masked in the base image (see “Disabling networking”
-# below). In hardened browser mode only, this service unmasks it, installs the
-# Firefox-only firewall, and then brings the network up — the firewall
-# is always in place before the machine goes online. The unmask lives in
-# RAM, so offline boots stay offline. Wi-Fi is unblocked explicitly so
-# stale rfkill state can never leave the radio off.
+# below). In hardened browser mode only, this service unmasks it,
+# installs the Firefox-only firewall, and then brings the network up —
+# the firewall is always in place before the machine goes online. The
+# unmask lives in RAM, so offline boots stay offline. Wi-Fi is
+# unblocked explicitly so stale rfkill state can never leave the radio
+# off.
 ExecStartPre=/usr/sbin/rfkill unblock wifi
 ExecStartPre=/usr/bin/systemctl unmask NetworkManager.service
 ExecStartPre=/usr/bin/systemctl daemon-reload
@@ -1088,17 +1098,19 @@ printf "%s\n" "Purging build packages…"
 
 # The packages needed only while building the image, removed now that
 # they have done their job: build-essential compiled the pinned PyPI
-# wheels, curl downloaded and verified software, and libpcsclite-dev and
-# python3-dev supplied the headers those wheels built against. None are
-# needed in the shipped image (zlib1g-dev stays — the Superbacked app
-# needs it). Everything else Ubuntu ships that the image will not keep
-# was purged before the upgrade — see “Purging extraneous packages”
-# above.
+# wheels, curl downloaded and verified software, and libpcsclite-dev,
+# python3-dev and zlib1g-dev supplied the headers those wheels built
+# against. None are needed in the shipped image (zlib1g-dev used to
+# stay for the AppImage runtime, which dlopens the unversioned libz.so
+# only the dev package ships — the deb-installed app has no such need).
+# Everything else Ubuntu ships that the image will not keep was purged
+# before the upgrade — see “Purging extraneous packages” above.
 apt remove --purge --yes \
   build-essential \
   curl \
   libpcsclite-dev \
-  python3-dev
+  python3-dev \
+  zlib1g-dev
 
 apt autoremove --purge --yes
 
@@ -1154,11 +1166,11 @@ systemctl mask bluetooth.service
 
 printf "%s\n" "Disabling Wi-Fi in air-gapped mode…"
 
-# In air-gapped mode the Wi-Fi radio is switched off — masked networking
-# already prevents connections; a blocked radio stops the card from
-# transmitting at all. Hardened browser mode keeps Wi-Fi available (not every
-# machine has Ethernet), managed by NetworkManager behind the
-# Firefox-only firewall.
+# In air-gapped mode the Wi-Fi radio is switched off — masked
+# networking already prevents connections; a blocked radio stops the
+# card from transmitting at all. Hardened browser mode keeps Wi-Fi
+# available (not every machine has Ethernet), managed by
+# NetworkManager behind the Firefox-only firewall.
 tee /etc/systemd/system/superbacked-airgap.service > /dev/null << 'EOF'
 [Unit]
 Description=Superbacked OS air-gapped mode (Wi-Fi radio off)
@@ -1189,13 +1201,21 @@ tee /etc/fstab > /dev/null << 'EOF'
 # from disk.
 EOF
 
-printf "%s\n" "Disabling sudo…"
-
 # superbacked keeps day-to-day use but loses root — a compromised
 # session cannot escalate, make the disk writable or rewrite the
 # firewall. (The browser grant above is unaffected; it does not rely on
-# sudo group membership.)
-deluser superbacked sudo
+# sudo group membership.) Debug images keep sudo: the
+# profile iteration loop needs root (edit /etc/apparmor.d/<profile>,
+# apparmor_parser --replace, relaunch the app — all in the RAM overlay,
+# so nothing survives a reboot) and a debug image is already
+# unshippable, as nothing in it enforces.
+if [ "${BUILD_VARIANT:-}" = "debug" ]; then
+  printf "%s\n" "Keeping sudo (BUILD_VARIANT=debug)…"
+else
+  printf "%s\n" "Disabling sudo…"
+
+  deluser superbacked sudo
+fi
 
 printf "%s\n" "Finishing provisioning…"
 

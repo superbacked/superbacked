@@ -82,4 +82,4 @@ Dialog prose keeps articles (“the browser”); the terse, article-free registe
 ## Verification
 
 - Minimum for any script change: `bash -n`.
-- Anything touching boot, audio, AppArmor or the browser bridge needs a hardware boot to verify; list the concrete checks (commands and expected output) when handing off. AppArmor profile changes iterate with an `APPARMOR_MODE=complain` build against `journalctl -b -k | grep DENIED` before shipping enforce.
+- Anything touching boot, audio, AppArmor or the browser bridge needs a hardware boot to verify; list the concrete checks (commands and expected output) when handing off. AppArmor profile changes iterate with a `BUILD_VARIANT=debug` build against `journalctl -b -k | grep DENIED` before shipping enforce.

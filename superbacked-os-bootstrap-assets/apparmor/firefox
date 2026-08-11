@@ -52,10 +52,14 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
 
   # AF_UNIX for Mozilla IPC socketpairs and the session bus, with the
   # abstract X11 socket carved out (Wayland-only OS; the path-based X
-  # socket is denied below).
+  # socket is denied below). The carve-out is scoped by operation: bind
+  # and connect know their address, so the match is exact — an
+  # address-conditioned deny with no operation list also matches socket
+  # create, which has no address yet, silently swallowing every AF_UNIX
+  # socket (Wayland, D-Bus — and deny implies quiet, so nothing logs).
   unix,
-  deny unix addr="@/tmp/.X11-unix/*",
-  deny unix peer=(addr="@/tmp/.X11-unix/*"),
+  deny unix bind addr="@/tmp/.X11-unix/*",
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
 
   # Own installation (libxul, omni.ja, dependentlibs.list,
   # distribution files).
@@ -66,8 +70,14 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   /usr/lib/firefox/{plugin-container,glxtest,vaapitest} mrix,
   # No crash reports, no self-updates (versions are decided by apt at
   # image creation time; policies.json disables updates too), no
-  # telemetry uploads.
-  deny /usr/lib/firefox/{crashreporter,minidump-analyzer,pingsender,updater} x,
+  # telemetry uploads. crashhelper is Firefox 153’s out-of-process
+  # crash handler — same family, same denial; if a trial enforce shows
+  # Firefox treating its absence as fatal, flip it to mrix.
+  deny /usr/lib/firefox/{crashhelper,crashreporter,minidump-analyzer,pingsender,updater} x,
+  # Firefox maps the crash binaries at startup even when their exec is
+  # denied — read/map keeps that probe from failing; execute stays
+  # denied above.
+  /usr/lib/firefox/{crashhelper,crashreporter} mr,
 
   # Enterprise policy.
   /etc/firefox/ r,
@@ -79,6 +89,13 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   owner /home/clearnet/ r,
   owner /home/clearnet/.mozilla/ rw,
   owner /home/clearnet/.mozilla/** rwk,
+  # Firefox follows XDG now and creates fresh profiles under
+  # .config/mozilla — which on this amnesic OS is every profile, since
+  # nothing survives to trigger the legacy .mozilla lookup (kept above
+  # regardless).
+  owner /home/clearnet/.config/ rw,
+  owner /home/clearnet/.config/mozilla/ rw,
+  owner /home/clearnet/.config/mozilla/** rwk,
   owner /home/clearnet/.cache/ rw,
   owner /home/clearnet/.cache/mozilla/ rw,
   owner /home/clearnet/.cache/mozilla/** rwk,
@@ -103,6 +120,15 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   # Session bus socket path (dbus-session-strict mediates the bus
   # itself).
   owner @{run}/user/[0-9]*/bus rw,
+  # Media threads ask rtkit for realtime scheduling over the system
+  # bus; the properties read answers from rtkit’s unique name, which a
+  # peer name rule cannot match — hence the interface-scoped rule.
+  /{run,var/run}/dbus/system_bus_socket rw,
+  dbus (send) bus=system peer=(name=org.freedesktop.DBus),
+  dbus (send) bus=system peer=(name=org.freedesktop.RealtimeKit1),
+  dbus (send) bus=system interface=org.freedesktop.DBus.Properties member=Get*,
+  dbus (receive) bus=system interface=org.freedesktop.DBus.Properties member=PropertiesChanged,
+  owner @{run}/user/[0-9]*/dconf/{,user} rw,
   # No audio in either direction. PipeWire carries playback and capture
   # over one socket, so allowing playback would also expose the
   # microphone — and this browser must never hear the room where
@@ -113,6 +139,8 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   # denied alongside the socket.
   deny @{run}/user/[0-9]*/pipewire-0 rw,
   deny /dev/snd/{,**} rw,
+  deny owner @{run}/user/[0-9]*/pulse/{,**} rw,
+  deny owner /home/clearnet/.config/pulse/{,**} rw,
 
   # Shared memory for Mozilla IPC and Wayland wl_shm buffers (modern
   # Firefox mostly uses memfd, which AppArmor does not path-mediate;
@@ -127,14 +155,21 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   /usr/share/glib-2.0/schemas/gschemas.compiled r,
   /etc/gtk-3.0/{,**} r,
   /usr/share/gtk-3.0/{,**} r,
+  /usr/share/themes/{,**} r,
   /etc/mime.types r,
+  /etc/pulse/{,**} r,
 
   # Process introspection Firefox does on itself and its children
   # (same-label signal/ptrace is implicitly allowed; nothing else is).
   @{PROC}/ r,
   @{PROC}/cpuinfo r,
   @{PROC}/meminfo r,
+  @{PROC}/pressure/memory r,
   @{PROC}/sys/kernel/yama/ptrace_scope r,
+  # The parent reads its content processes’ identity — same-owner, but
+  # @{pid} resolves to the accessing task’s own pid under AppArmor 4,
+  # so this needs its own rule.
+  owner @{PROC}/[0-9]*/cmdline r,
   owner @{PROC}/@{pid}/cgroup r,
   owner @{PROC}/@{pid}/environ r,
   owner @{PROC}/@{pid}/fd/ r,
@@ -150,7 +185,14 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   owner @{PROC}/@{pid}/task/*/comm rw,
   owner @{PROC}/@{pid}/task/*/stat r,
   /sys/devices/system/cpu/{,**} r,
+  /sys/devices/system/node/ r,
   /sys/bus/pci/devices/ r,
+  /sys/devices/pci[0-9]*/{,**/} r,
+  /sys/devices/pci[0-9]*/**/class r,
+  # GPU driver workaround lists key on the machine model.
+  /sys/devices/virtual/dmi/id/{product_name,product_sku} r,
+  /dev/ r,
+  /dev/shm/ r,
 
   # Temp files (clearnet owns nothing else in /tmp; downloads never
   # land here — the policy pins DownloadDirectory).
@@ -176,6 +218,9 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   deny /etc/sudoers r,
   deny /etc/sudoers.d/{,**} r,
   deny capability sys_ptrace,
+  # fontconfig tries to chmod the system cache directory — root-owned,
+  # so DAC refuses it anyway; the deny keeps enforce logs clean.
+  deny /var/cache/fontconfig/ w,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/firefox>

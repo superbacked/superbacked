@@ -54,6 +54,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Fail loudly on a misspelled build variant rather than silently
+# building a release image.
+if [ -n "${BUILD_VARIANT:-}" ] && [ "${BUILD_VARIANT}" != "debug" ]; then
+  printf "%s\n" "Error: unknown BUILD_VARIANT “${BUILD_VARIANT}” (expected debug)" >&2
+  exit 1
+fi
+
 version=$(node --eval 'console.log(require("./package.json").version)')
 
 # Prompt to build app if not specified
@@ -107,9 +114,23 @@ if [ "${build_os}" = true ]; then
 
   printf "%s\n" "Starting Colima…"
 
-  # 8 GB is load-bearing: the build stacks a tmpfs overlay (apt
-  # upgrade, Firefox, KeePassXC) on top of mksquashfs’ zstd-19 working
-  # set — 4 GB OOMs.
+  # Memory is load-bearing: the build stacks a tmpfs overlay (apt
+  # upgrade, Firefox, KeePassXC — every byte the overlay holds is RAM)
+  # on top of mksquashfs’ zstd-19 working set — 4 GB OOMs, and 8 GB is
+  # a thin margin: pressure shows up as Rosetta-translated subprocesses
+  # sporadically dying with empty output and nothing in dmesg — Rosetta
+  # allocation failures are silent there; retry, or bump memory if it
+  # becomes frequent.
+  #
+  # Colima profiles are not independent: every profile rides one
+  # shared user-v2 usernet daemon, and starting or stopping any
+  # profile also rewrites the active docker context — either can kill
+  # a running build (dead network mid-bootstrap, lima-vm/lima#3020
+  # class) or repoint the CLI. Run the superbacked profile alone while
+  # building.
+  #
+  # (Colima only applies a changed memory value on a fresh start:
+  # colima stop --profile superbacked first when changing it.)
   colima start \
     --cpu 4 \
     --disk 20 \
@@ -118,6 +139,15 @@ if [ "${build_os}" = true ]; then
     --vm-type vz \
     --vz-rosetta
 
+  printf "%s\n" "Building Superbacked OS Docker image…"
+
+  # The container runs the baked copies of the scripts under docker/,
+  # not the repository files — rebuild every time so the baked copies
+  # can never go stale (a cache hit when nothing changed).
+  docker build \
+    --tag superbacked-os-docker:24.04 \
+    docker/
+
   printf "%s\n" "Creating live Superbacked OS image…"
 
   # Provisioning and live conversion happen in one pass: the bootstrap
@@ -125,12 +155,13 @@ if [ "${build_os}" = true ]; then
   # network required for the snapshot-pinned packages) and the live
   # image is written straight to its distribution name
   # (<product>-<arch>-<component>-<version>).
-  # APPARMOR_MODE=complain (exported on the host) builds a test image
-  # whose app profiles log denials instead of enforcing them — the
+  # BUILD_VARIANT=debug (exported on the host) builds the debug variant
+  # — app profiles log denials (complain) instead of enforcing and
+  # superbacked keeps sudo for on-device profile iteration — the
   # container does not inherit host environment, so it is forwarded
   # explicitly here, then into the chroot by the build script.
   docker run \
-    --env APPARMOR_MODE="${APPARMOR_MODE:-}" \
+    --env BUILD_VARIANT="${BUILD_VARIANT:-}" \
     --interactive \
     --privileged \
     --rm \

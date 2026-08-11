@@ -1,0 +1,161 @@
+# Superbacked OS — confined KeePassXC (Ubuntu deb).
+#
+# Installed as /etc/apparmor.d/keepassxc. Replaces the snap’s
+# interface hardening: network and network-bind were disconnected
+# (denied below), x11 was disconnected (Wayland pin in the launcher +
+# X denials below); home, raw-usb (YubiKey challenge-response over
+# hidraw) and removable-media (databases on USB) were connected and are
+# preserved.
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+profile keepassxc /usr/bin/keepassxc {
+  include <abstractions/base>
+  include <abstractions/dbus-session-strict>
+  include <abstractions/dconf>
+  include <abstractions/dri-common>
+  include <abstractions/dri-enumerate>
+  include <abstractions/fonts>
+  include <abstractions/freedesktop.org>
+  include <abstractions/mesa>
+  include <abstractions/nameservice>
+  include <abstractions/qt5>
+  include <abstractions/wayland>
+
+  # A password manager has no business on the network (this also
+  # disables favicon downloads and update checks — intended). The
+  # denials override the inet grants abstractions/nameservice pulls in,
+  # and pair with the abstraction deliberately — not a redundancy to
+  # fold away: explicit denies hold even in complain mode, so the
+  # air-gap stays enforced on debug-variant tuning images (dropping the
+  # abstraction and relying on omission would log-and-allow there).
+  # AF_UNIX is deliberately untouched: the session bus and the Wayland
+  # socket ride on unix sockets (a bare "deny network," would sweep
+  # those in too), and netlink stays allowed for glibc interface
+  # enumeration.
+  deny network inet,
+  deny network inet6,
+  deny network packet,
+  deny network bluetooth,
+
+  # Session bus: tray/StatusNotifier, single-instance detection,
+  # screen-lock signals, and the Secret Service it can provide.
+  dbus (send, receive) bus=session,
+  dbus bind bus=session name=org.keepassxc.**,
+  dbus bind bus=session name=org.freedesktop.secrets,
+  dbus bind bus=session name=org.kde.StatusNotifierItem*,
+
+  # System bus: logind session lookup for lock-database-on-screen-lock.
+  # The properties read that follows GetSession answers from logind’s
+  # unique name, which a peer name rule cannot match — hence the
+  # interface-scoped rule.
+  /{run,var/run}/dbus/system_bus_socket rw,
+  dbus (send) bus=system peer=(name=org.freedesktop.DBus),
+  dbus (send) bus=system peer=(name=org.freedesktop.login1),
+  dbus (send) bus=system interface=org.freedesktop.DBus.Properties member=GetAll,
+  dbus (receive) bus=system interface=org.freedesktop.login1*,
+
+  unix,
+  # Abstract X11 socket wall (Wayland-only OS; the path-based X socket
+  # is denied below), scoped by operation: bind and connect know their
+  # address, so the match is exact. The scoping is load-bearing — an
+  # address-conditioned deny with no operation list also matches socket
+  # create, which has no address yet, silently swallowing every AF_UNIX
+  # socket the app makes (Wayland, D-Bus — and deny implies quiet, so
+  # nothing logs).
+  deny unix bind addr="@/tmp/.X11-unix/*",
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
+
+  /usr/bin/ r,
+  /usr/bin/keepassxc mr,
+  # Browser integration must never run — the browser lives in another
+  # user and KeePassXC has no network anyway.
+  deny /usr/bin/keepassxc-proxy x,
+  /usr/share/keepassxc/{,**} r,
+  /usr/lib/@{multiarch}/keepassxc/*.so mr,
+
+  # Home stays broad — the snap had the home interface connected, and
+  # users open databases from anywhere in home (nothing there survives
+  # a reboot). l: QSaveFile writes settings atomically through a
+  # hardlink-and-rename dance. The sensitive corners are carved out.
+  owner @{HOME}/ r,
+  owner @{HOME}/** rwkl,
+  deny @{HOME}/.gnupg/{,**} mrwkl,
+  deny @{HOME}/.ssh/{,**} mrwkl,
+  deny @{HOME}/.mozilla/{,**} mrwkl,
+  deny @{HOME}/.local/share/keyrings/{,**} mrwkl,
+
+  # Databases on USB drives — the only storage that survives a reboot.
+  /media/ r,
+  /media/*/ r,
+  /media/** rwk,
+
+  # YubiKey challenge-response over raw hidraw, libusb and PC/SC (snap
+  # raw-usb parity) — enumeration walks the USB sysfs tree; DAC keeps
+  # the device-node write narrow, as only uaccess-tagged nodes
+  # (security keys, hardware wallets) are openable by the seat user.
+  /dev/hidraw* rw,
+  /sys/class/hidraw/ r,
+  /sys/devices/**/hidraw*/uevent r,
+  /run/udev/data/* r,
+  /dev/bus/usb/ r,
+  /dev/bus/usb/*/ r,
+  /dev/bus/usb/*/[0-9]* rw,
+  /sys/bus/ r,
+  /sys/bus/usb/devices/ r,
+  /sys/class/ r,
+  /sys/devices/**/{bConfigurationValue,busnum,descriptors,devnum,speed} r,
+  /run/pcscd/pcscd.comm rw,
+
+  # Wayland session plumbing (abstractions/wayland covers the
+  # compositor socket) plus keymaps, Qt shm buffers, the dconf user
+  # database, audio for its beeps, and the gvfs sockets its file
+  # dialogs probe.
+  owner @{run}/user/[0-9]*/ r,
+  owner @{run}/user/[0-9]*/dconf/{,user} rw,
+  owner @{run}/user/[0-9]*/gvfsd/socket-* rw,
+  owner @{run}/user/[0-9]*/pulse/ r,
+  owner @{run}/user/[0-9]*/pulse/native rw,
+  /usr/share/X11/xkb/{,**} r,
+  /dev/shm/ r,
+  owner /dev/shm/** rwk,
+  # KeePassXC stirs gathered entropy back into the kernel pool.
+  /dev/urandom w,
+
+  # Qt/GTK platform theme, GPU stack enumeration and host probes.
+  /etc/glvnd/{,**} r,
+  /usr/share/glvnd/{,**} r,
+  /etc/gtk-3.0/{,**} r,
+  /usr/share/themes/{,**} r,
+  /usr/share/sounds/{,**} r,
+  /etc/pulse/{,**} r,
+  /sys/devices/system/cpu/{,**} r,
+  /run/mount/utab r,
+
+  owner @{PROC}/@{pid}/cgroup r,
+  owner @{PROC}/@{pid}/mounts r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/status r,
+  # Single-instance detection reads the peer instance’s identity —
+  # @{pid} resolves to the accessing task’s own pid under AppArmor 4,
+  # so these need their own same-owner rules.
+  owner @{PROC}/[0-9]*/cmdline r,
+  owner @{PROC}/[0-9]*/mountinfo r,
+  @{PROC}/sys/kernel/random/boot_id r,
+
+  # Single-instance lock and Qt temp files — QLocalServer parks its
+  # socket in a random /tmp dot-directory.
+  owner /tmp/ r,
+  owner /tmp/*keepassxc* rwk,
+  owner /tmp/#[0-9]* mrw,
+  owner /tmp/.??????/ rw,
+  owner /tmp/.??????/* rw,
+
+  deny /tmp/.X11-unix/{,**} rw,
+  deny capability sys_ptrace,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/keepassxc>
+}

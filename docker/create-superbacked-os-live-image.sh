@@ -20,8 +20,9 @@
 # Usage (inside superbacked-os-docker container, with /dist holding the
 # app build and /superbacked-os-bootstrap-assets plus
 # /superbacked-os-utilities mounted from the repository; set
-# APPARMOR_MODE=complain to build a test image whose app profiles log
-# denials instead of enforcing them):
+# BUILD_VARIANT=debug to build the debug variant, whose app profiles
+# log denials (complain) instead of enforcing and which keeps sudo for
+# on-device profile iteration):
 # /root/create-superbacked-os-live-image.sh \
 #   /superbacked-os/superbacked-os-amd64-24.04.4.img \
 #   /dist/superbacked-os-amd64-live-1.13.0.img \
@@ -142,9 +143,9 @@ cp \
 printf "%s\n" "Running bootstrap in chroot…"
 
 # --ignore-environment keeps container variables (and Docker’s PATH)
-# from leaking into the image; APPARMOR_MODE passes through explicitly.
+# from leaking into the image; BUILD_VARIANT passes through explicitly.
 chroot /mnt/root /usr/bin/env --ignore-environment \
-  APPARMOR_MODE="${APPARMOR_MODE:-}" \
+  BUILD_VARIANT="${BUILD_VARIANT:-}" \
   DEBIAN_FRONTEND=noninteractive \
   HOME=/root \
   LC_ALL=C.UTF-8 \
@@ -404,13 +405,14 @@ mv /tmp/filesystem.squashfs /mnt/boot/live/
 # drive and the toram status warning tells the user to keep it plugged
 # in.
 #
-# Complain-mode test images disable printk rate limiting so profile
+# Debug-variant images disable printk rate limiting so profile
 # harvests are complete — the kernel otherwise silently drops audit
 # events under load, and an incomplete harvest folds incomplete rules
-# (see superbacked-os-utilities/aggregate-apparmor-log.sh, which fails
-# loudly when it detects suppression). Never set on release images.
+# (see superbacked-os-utilities/debug/capture-apparmor-log.sh, which
+# fails loudly when it detects suppression). Never set on release
+# images.
 apparmor_boot_parameters=""
-if [ "${APPARMOR_MODE:-}" = "complain" ]; then
+if [ "${BUILD_VARIANT:-}" = "debug" ]; then
   apparmor_boot_parameters=" sysctl.kernel.printk_ratelimit=0"
 fi
 
