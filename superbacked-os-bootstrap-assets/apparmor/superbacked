@@ -45,7 +45,7 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   # abstractions/nameservice, whose broad inet grants the old denies
   # were overriding (its non-network pieces are re-granted below).
   # create carries no peer address and needs its own unconditional rule
-  # (the X11 lesson — see keepassxc). Loopback never reaches the wire,
+  # (the X11 lesson — see firefox). Loopback never reaches the wire,
   # and nftables blocks egress a layer below either way. UDP, packet
   # and bluetooth stay denied outright — quiet denies hold even on
   # complain-mode debug images; non-loopback TCP is default-deny, which
@@ -155,10 +155,10 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   /sys/class/video4linux/ r,
   /sys/class/video4linux/** r,
 
-  # YubiKey challenge-response over raw hidraw (derived passwords) — the
-  # KeePassXC rule group; enumeration’s udev data and uevent reads are
-  # granted above. DAC keeps this narrow: only uaccess-tagged nodes
-  # (security keys, hardware wallets) are openable by the seat user.
+  # YubiKey challenge-response over raw hidraw (derived passwords) —
+  # enumeration’s udev data and uevent reads are granted above. DAC
+  # keeps this narrow: only uaccess-tagged nodes (security keys,
+  # hardware wallets) are openable by the seat user.
   /dev/hidraw* rw,
   /sys/class/hidraw/ r,
   /sys/bus/ r,

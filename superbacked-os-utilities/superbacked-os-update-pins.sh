@@ -11,7 +11,6 @@
 # Sources queried:
 #   apt_snapshot          snapshot.ubuntu.com (today’s snapshot, existence-checked)
 #   firefox               packages.mozilla.org apt index
-#   keepassxc             phoerious/keepassxc PPA index
 #   trezor                PyPI simple index (wheel sha256 from its URL fragment)
 #   yubico_authenticator  developers.yubico.com release listing
 #   yubikey_manager       PyPI simple index (wheel sha256 from its URL fragment)
@@ -113,21 +112,6 @@ firefox_latest="$(
 )" || firefox_latest=""
 report firefox_version "$(pin firefox_version)" "${firefox_latest}" \
   "readonly firefox_version=\"${firefox_latest}\"
-"
-
-# keepassxc — highest version in the PPA index (Launchpad serves
-# compressed indexes only), -1ppa1~noble1 suffix stripped to match the
-# pin’s glob.
-keepassxc_latest="$(
-  curl --fail --location --silent \
-    "https://ppa.launchpadcontent.net/phoerious/keepassxc/ubuntu/dists/noble/main/binary-amd64/Packages.gz" \
-    | gunzip \
-    | awk '/^Package: keepassxc$/ { f = 1 } f && /^Version:/ { print $2; f = 0 }' \
-    | sed 's/[-~].*//' \
-    | highest_version
-)" || keepassxc_latest=""
-report keepassxc_version "$(pin keepassxc_version)" "${keepassxc_latest}" \
-  "readonly keepassxc_version=\"${keepassxc_latest}\"
 "
 
 # trezor — version and wheel sha256 move together.

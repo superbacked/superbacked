@@ -115,7 +115,7 @@ if [ "${build_os}" = true ]; then
   printf "%s\n" "Starting Colima…"
 
   # Memory is load-bearing: the build stacks a tmpfs overlay (apt
-  # upgrade, Firefox, KeePassXC — every byte the overlay holds is RAM)
+  # upgrade, Firefox — every byte the overlay holds is RAM)
   # on top of mksquashfs’ zstd-19 working set — 4 GB OOMs, and 8 GB is
   # a thin margin: pressure shows up as Rosetta-translated subprocesses
   # sporadically dying with empty output and nothing in dmesg — Rosetta

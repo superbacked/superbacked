@@ -38,8 +38,8 @@ printf "%s\n" "Starting bootstrap…"
 # Version pins, grouped so a release bump is one edit. The Ubuntu
 # archive is pinned wholesale by snapshot timestamp — every package it
 # provides resolves against that instant, so the same timestamp always
-# yields the same packages. Firefox, KeePassXC and Yubico Authenticator
-# come from repositories without snapshots and are pinned by version
+# yields the same packages. Firefox and Yubico Authenticator come
+# from repositories without snapshots and are pinned by version
 # instead: when an upstream drops a pinned version, the build fails
 # loudly and the pin is bumped deliberately. The PyPI tools are pinned
 # by version and by the sha256 of their wheel, verified before
@@ -49,7 +49,6 @@ printf "%s\n" "Starting bootstrap…"
 # signature checks pin integrity, not versions.)
 readonly apt_snapshot="20260810T000000Z"
 readonly firefox_version="153.0.3"
-readonly keepassxc_version="2.7.12"
 readonly trezor_sha256="1acd67664bdc1cf389e719c91a09e6069688afa05959715955d5c1c54a2fefde"
 readonly trezor_version="0.20.2"
 readonly yubico_authenticator_version="7.4.1"
@@ -68,9 +67,9 @@ EOF
 printf "%s\n" "Configuring apt sources…"
 
 # Replaces the installer’s mirror configuration outright so nothing
-# keeps resolving against a moving archive. universe carries six
-# dependencies (exfatprogs, keepassxc, pcscd, pipx, scdaemon and
-# waypipe among them); everything else is in main.
+# keeps resolving against a moving archive. universe carries five
+# dependencies (exfatprogs, pcscd, pipx, scdaemon and waypipe among
+# them); everything else is in main.
 tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null << EOF
 Types: deb
 URIs: https://snapshot.ubuntu.com/ubuntu/${apt_snapshot}
@@ -93,8 +92,8 @@ printf "%s\n" "Purging extraneous packages…"
 # running a postinst for — a package about to leave. Most are obvious
 # removals from the vanilla desktop; two are deliberate hardening:
 #
-# - snapd: Superbacked OS ships no snaps — Firefox and KeePassXC are debs
-#   confined by AppArmor instead of snap interfaces (see
+# - snapd: Superbacked OS ships no snaps — Firefox is a deb confined
+#   by AppArmor instead of snap interfaces (see
 #   superbacked-os-bootstrap-assets/). The pin above keeps it from
 #   returning; its leftover directories are wiped below.
 # - xserver-xorg*: a session X server runs one flat trust domain where
@@ -152,9 +151,8 @@ printf "%s\n" "Installing dependencies…"
 # below — all are removed at the end of provisioning. curl and gnupg
 # download and verify software, dconf-cli compiles the system dconf
 # database (see “Configuring GNOME” below), exfatprogs formats exFAT
-# USB drives, qtwayland5 provides the Qt Wayland platform plugin
-# KeePassXC’s launcher pins (its deb does not pull it in), language
-# packs complete the English locale, pcscd and scdaemon talk to
+# USB drives, language packs complete the English locale, pcscd and
+# scdaemon talk to
 # smartcards and YubiKeys, python3-pip downloads the pinned PyPI
 # wheels just below, totem plays video with gstreamer1.0-libav
 # decoding it (H.264 including the 4:2:2 profile, plus AAC — the
@@ -162,8 +160,8 @@ printf "%s\n" "Installing dependencies…"
 # screen, wl-clipboard copies derived passwords to the clipboard
 # (Wayland lets only a focused surface set the selection, and the
 # command-line interface is windowless) and zenity shows error
-# dialogs. (Firefox and KeePassXC come from their own repositories —
-# see the install sections below.)
+# dialogs. (Firefox comes from its own repository — see the install
+# section below.)
 packages=(
   build-essential
   curl
@@ -182,7 +180,6 @@ packages=(
   pipx
   python3-dev
   python3-pip
-  qtwayland5
   scdaemon
   totem
   waypipe
@@ -302,40 +299,6 @@ apt update
 # weeks), apt fails loudly here — bump firefox_version deliberately.
 apt install --yes "firefox=${firefox_version}*"
 
-printf "%s\n" "Installing KeePassXC…"
-
-# KeePassXC comes from the team’s own PPA — Ubuntu’s archive carries a
-# release several versions behind. Same fail-loud pattern as Mozilla’s
-# repository: the signing key is fetched over HTTPS (Launchpad serves
-# PPA keys through its keyserver) and its fingerprint checked before
-# anything is trusted.
-curl --fail --location \
-  "https://keyserver.ubuntu.com/pks/lookup?op=get&options=mr&search=0xD89C66D0E31FEA2874EBD20561922AB60068FCD6" \
-  --output /etc/apt/keyrings/keepassxc.asc
-
-keepassxc_fingerprint="$(gpg --quiet --with-colons --show-keys \
-  /etc/apt/keyrings/keepassxc.asc | awk -F: '/^fpr:/ { print $10; exit }')"
-
-if [ "${keepassxc_fingerprint}" != "D89C66D0E31FEA2874EBD20561922AB60068FCD6" ]; then
-  printf "%s\n" "Error: unexpected KeePassXC PPA signing key ${keepassxc_fingerprint}" >&2
-  exit 1
-fi
-
-tee /etc/apt/sources.list.d/keepassxc.sources > /dev/null << 'EOF'
-Types: deb
-URIs: https://ppa.launchpadcontent.net/phoerious/keepassxc/ubuntu
-Suites: noble
-Components: main
-Signed-By: /etc/apt/keyrings/keepassxc.asc
-EOF
-
-apt update
-
-# The glob tolerates the PPA’s -1ppa1~noble1 version suffix; a dropped
-# pinned version fails loudly here — bump keepassxc_version
-# deliberately.
-apt install --yes "keepassxc=${keepassxc_version}*"
-
 printf "%s\n" "Configuring GNOME…"
 
 # A quiet, dark desktop: black background, floating bottom dock
@@ -389,7 +352,7 @@ usb-protection-level='lockscreen'
 center-new-windows=true
 
 [org/gnome/shell]
-favorite-apps=['superbacked.desktop', 'org.keepassxc.KeePassXC.desktop', 'com.yubico.yubioath.desktop', 'firefox.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop']
+favorite-apps=['superbacked.desktop', 'com.yubico.yubioath.desktop', 'firefox.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop']
 
 [org/gnome/shell/extensions/dash-to-dock]
 dash-max-icon-size=48
@@ -638,7 +601,7 @@ apt install --no-install-recommends --yes \
 # The deb’s stock desktop entry launches the app without a display
 # backend pin — shadow it with a same-name entry in the higher-priority
 # directory that pins Wayland (the same mechanism “Overriding stock
-# launchers” below uses for Firefox and KeePassXC).
+# launchers” below uses for Firefox).
 mkdir --parents /usr/local/share/applications
 
 cp \
@@ -657,9 +620,6 @@ printf "%s\n" "Installing AppArmor profiles…"
 cp \
   /run/superbacked-os-bootstrap-assets/apparmor/firefox \
   /etc/apparmor.d/firefox
-cp \
-  /run/superbacked-os-bootstrap-assets/apparmor/keepassxc \
-  /etc/apparmor.d/keepassxc
 cp \
   /run/superbacked-os-bootstrap-assets/apparmor/superbacked \
   /etc/apparmor.d/superbacked
@@ -681,14 +641,13 @@ if [ "${BUILD_VARIANT:-}" = "debug" ]; then
     -e 't' \
     -e 's| \{$| flags=(complain) {|' \
     /etc/apparmor.d/firefox \
-    /etc/apparmor.d/keepassxc \
     /etc/apparmor.d/superbacked \
     /etc/apparmor.d/yubico-authenticator
 fi
 
 # Compile without loading — catches profile syntax errors at build time
 # instead of at the first boot.
-for profile in firefox keepassxc superbacked yubico-authenticator; do
+for profile in firefox superbacked yubico-authenticator; do
   apparmor_parser --skip-kernel-load "/etc/apparmor.d/${profile}"
 done
 
@@ -754,34 +713,6 @@ mkdir --parents /home/clearnet/.config/systemd/user
 ln --force --symbolic /dev/null \
   /home/clearnet/.config/systemd/user/xdg-desktop-portal.service
 
-printf "%s\n" "Configuring KeePassXC…"
-
-# KeePassXC is pinned to Wayland (see the launcher override below) —
-# stop provisioning if the Qt Wayland platform plugin is missing rather
-# than ship an image where it cannot launch. Its confinement lives in
-# an AppArmor profile installed at image creation time (see
-# superbacked-os-bootstrap-assets/apparmor/keepassxc): no network, no
-# X11 — while home, USB drives and YubiKey challenge-response stay
-# available.
-if ! dpkg --listfiles qtwayland5 2> /dev/null \
-  | grep --quiet 'plugins/platforms/libqwayland'; then
-  printf "%s\n" "Error: Qt Wayland platform plugin not found for KeePassXC" >&2
-  exit 1
-fi
-
-# The desktop is dark-mode only — pin the theme so KeePassXC never
-# launches in light mode regardless of what it can read from the
-# session.
-mkdir --parents /home/superbacked/.config/keepassxc
-
-tee /home/superbacked/.config/keepassxc/keepassxc.ini > /dev/null << 'EOF'
-[General]
-ConfigVersion=2
-
-[GUI]
-ApplicationTheme=dark
-EOF
-
 printf "%s\n" "Configuring Firefox policies…"
 
 # Firefox is configured through an enterprise policy, locked so nothing
@@ -808,8 +739,8 @@ printf "%s\n" "Configuring Firefox policies…"
 #     never the system resolver (the pinned address bootstraps it);
 #     HTTPS is required, tracking protection is strict, WebRTC is off.
 #   Passwords — Firefox never saves, autofills or suggests credentials,
-#     addresses or payment methods (KeePassXC is the password manager
-#     here); Firefox Relay and profile backup/restore are off.
+#     addresses or payment methods; Firefox Relay and profile
+#     backup/restore are off.
 #   Search — DuckDuckGo by default; address bar recommendations, search
 #     suggestions and trending searches are off.
 #   New tab — a blank page: no recommendations, shortcuts, sponsored
@@ -843,11 +774,10 @@ python3 -m json.tool /etc/firefox/policies/policies.json > /dev/null
 
 printf "%s\n" "Overriding stock launchers…"
 
-# Replace the stock launchers with same-name entries in a
-# higher-priority directory, so the familiar icons do the right thing:
-#   Firefox   → starts through the clearnet wrapper (hardened browser
-#               mode only)
-#   KeePassXC → pinned to Wayland
+# Replace the stock launcher with a same-name entry in a
+# higher-priority directory, so the familiar icon does the right thing:
+#   Firefox → starts through the clearnet wrapper (hardened browser
+#             mode only)
 # The Exec assertion fails loudly if Mozilla ever reshapes its desktop
 # file — better a broken build than a dock icon that bypasses the
 # wrapper.
@@ -866,27 +796,11 @@ sed --in-place \
   's|^Exec=.*|Exec=/usr/local/bin/clearnet-browser|' \
   /usr/local/share/applications/firefox.desktop
 
-cp \
-  /usr/share/applications/org.keepassxc.KeePassXC.desktop \
-  /usr/local/share/applications/org.keepassxc.KeePassXC.desktop
-
-sed --in-place \
-  's|^Exec=|Exec=env QT_QPA_PLATFORM=wayland |' \
-  /usr/local/share/applications/org.keepassxc.KeePassXC.desktop
-
-# The stock entry’s StartupNotify=false stays: KeePassXC’s Qt never
-# completes the Wayland startup sequence (no xdg-activation), so
-# enabling it trades no feedback for a spinner that only dies by
-# timeout — verified on hardware. Superbacked and Yubico Authenticator
-# complete theirs and declare StartupNotify=true.
-
 # Same-name overrides shadow the stock entries including their MIME
 # claims, which GIO only reads from a directory’s mimeinfo.cache. dpkg
 # triggers maintain the cache for /usr/share/applications but nothing
-# does for /usr/local — without one, double-clicking a .kdbx file
-# reports that no application is installed. Regenerate it so the
-# overrides keep their associations (KeePassXC claims
-# application/x-keepass2, Firefox its web types).
+# does for /usr/local — regenerate it so the Firefox override keeps
+# its web-type associations.
 update-desktop-database /usr/local/share/applications
 
 printf "%s\n" "Configuring shared Downloads folder…"
@@ -991,7 +905,7 @@ bridge_socket="/run/clearnet-bridge/waypipe.sock"
 # another user’s screen, so waypipe bridges the two: one end runs as
 # superbacked and talks to the compositor, the other runs as clearnet
 # and gives Firefox its own private display socket. The compositor keeps
-# Firefox from seeing the Superbacked app or KeePassXC.
+# Firefox from seeing the Superbacked app.
 rm --force "${bridge_socket}"
 
 waypipe --oneshot --socket "${bridge_socket}" client &
