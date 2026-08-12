@@ -13,3 +13,7 @@ Exec=env ELECTRON_OZONE_PLATFORM_HINT=wayland /opt/Superbacked/superbacked
 # The hicolor icons the deb installs
 Icon=superbacked
 Terminal=false
+# Dock launch feedback — the icon shows a starting state until the first
+# window maps (Electron completes the Wayland startup sequence; verified
+# on hardware).
+StartupNotify=true

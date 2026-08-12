@@ -56,6 +56,15 @@ const config: Configuration = {
   },
   linux: {
     category: "Utility",
+    desktop: {
+      // Dock/launcher feedback on GNOME — the icon shows a starting
+      // state until the first window maps (Chromium completes the
+      // Wayland startup sequence; verified on Superbacked OS, whose
+      // shadow entry carries the same key).
+      entry: {
+        StartupNotify: "true",
+      },
+    },
     files: [{ from: "./bin/linux", to: "./bin/linux" }],
     // deb is what Superbacked OS and Ubuntu Desktop install — the app
     // runs straight from /opt/Superbacked, giving AppArmor a stable

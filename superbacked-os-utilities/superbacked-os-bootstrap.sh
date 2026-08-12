@@ -608,6 +608,7 @@ Name=Yubico Authenticator
 Exec=env GDK_BACKEND=wayland /opt/yubico-authenticator/authenticator
 Icon=/opt/yubico-authenticator/linux_support/com.yubico.yubioath.png
 StartupWMClass=com.yubico.yubioath
+StartupNotify=true
 Terminal=false
 Categories=Utility;Security;
 EOF
@@ -872,6 +873,12 @@ cp \
 sed --in-place \
   's|^Exec=|Exec=env QT_QPA_PLATFORM=wayland |' \
   /usr/local/share/applications/org.keepassxc.KeePassXC.desktop
+
+# The stock entry’s StartupNotify=false stays: KeePassXC’s Qt never
+# completes the Wayland startup sequence (no xdg-activation), so
+# enabling it trades no feedback for a spinner that only dies by
+# timeout — verified on hardware. Superbacked and Yubico Authenticator
+# complete theirs and declare StartupNotify=true.
 
 # Same-name overrides shadow the stock entries including their MIME
 # claims, which GIO only reads from a directory’s mimeinfo.cache. dpkg
