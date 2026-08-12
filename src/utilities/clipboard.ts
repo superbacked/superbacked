@@ -1,6 +1,7 @@
 import { app, clipboard } from "electron"
 
-import spawn, { spawnGuard } from "@/src/utilities/spawn"
+import spawn, { SpawnError } from "@/src/utilities/spawn"
+import spawnGuard from "@/src/utilities/spawnGuard"
 
 // The clipboard goes through the operating system’s own utility wherever
 // the platform ships or requires one: pbcopy and pbpaste on macOS, and
@@ -64,16 +65,26 @@ export const readText = async (): Promise<string> => {
       // --no-newline strips the newline wl-paste otherwise appends
       const { stdout } = await spawn("wl-paste", ["--no-newline"])
       return stdout
-    } catch {
-      // Empty clipboard (wl-paste exits non-zero) — nothing to compare
+    } catch (error) {
+      // Empty clipboard (wl-paste exits non-zero) — nothing to compare.
+      // A wl-paste that could not run at all carries no exit code and
+      // must surface: reading “empty” where reading is impossible would
+      // silently defeat the conditional clear
+      if ((error as SpawnError).exitCode === undefined) {
+        throw error
+      }
       return ""
     }
   } else if (process.platform === "darwin") {
     try {
       const { stdout } = await spawn("pbpaste")
       return stdout
-    } catch {
-      // Unreadable pasteboard — nothing to compare
+    } catch (error) {
+      // Unreadable pasteboard — nothing to compare; same spawn-failure
+      // distinction as the wl-paste branch
+      if ((error as SpawnError).exitCode === undefined) {
+        throw error
+      }
       return ""
     }
   } else {
@@ -95,29 +106,23 @@ export const clearText = async (): Promise<void> => {
   }
 }
 
-// The clipboard outlives the process on macOS (the pasteboard) and on
-// Wayland (the wl-copy daemon) — X11 drops the selection with its owner,
-// needing no guard
-const clearCommand = (): string | undefined =>
-  usesWayland() === true
-    ? "wl-copy --clear"
-    : process.platform === "darwin"
-      ? "pbcopy < /dev/null"
-      : undefined
-
 /**
  * Guard against dying before a scheduled clipboard clear — where the
- * clipboard outlives the process, copied text would otherwise survive
- * Ctrl-C. The guard blocks on a pipe held by this process: normal exit and
- * death by any signal alike close the pipe, unblocking the guard, which
- * clears the clipboard. The happy path clears conditionally itself and
- * releases the guard before it can fire.
+ * clipboard outlives the process (the pasteboard on macOS, the wl-copy
+ * daemon on Wayland), copied text would otherwise survive Ctrl-C. X11
+ * drops a selection with its owner, needing no guard. The guard blocks
+ * on a pipe held by this process: normal exit and death by any signal
+ * alike close the pipe, unblocking the guard, which clears the clipboard.
+ * The happy path clears conditionally itself and releases the guard
+ * before it can fire.
  * @returns release function
  */
-export const spawnClearGuard = (): (() => void) => {
-  const command = clearCommand()
-  if (command === undefined) {
-    return () => undefined
+export const spawnClearGuard = async (): Promise<() => void> => {
+  if (usesWayland() === true) {
+    return spawnGuard("clear-clipboard-wayland")
   }
-  return spawnGuard(command)
+  if (process.platform === "darwin") {
+    return spawnGuard("clear-clipboard-darwin")
+  }
+  return () => undefined
 }

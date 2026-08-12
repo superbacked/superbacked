@@ -179,7 +179,7 @@ export const deriveBitcoinWalletAction = async (
       } else {
         // The guard precedes the copy so no window exists where death
         // leaves the secret on the clipboard unguarded
-        const releaseClearGuard = spawnClearGuard()
+        const releaseClearGuard = await spawnClearGuard()
         await copyText(secret)
         process.stderr.write(
           `${secretName} copied to clipboard, clearing in ${

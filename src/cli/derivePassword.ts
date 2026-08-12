@@ -142,7 +142,7 @@ export const derivePasswordAction = async (
     } else {
       // The guard precedes the copy so no window exists where death leaves
       // the password on the clipboard unguarded
-      const releaseClearGuard = spawnClearGuard()
+      const releaseClearGuard = await spawnClearGuard()
       await copyText(password)
       process.stderr.write(
         `Password copied to clipboard, clearing in ${options.clear} second${

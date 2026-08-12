@@ -197,6 +197,25 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   dbus (send) bus=system peer=(name=org.freedesktop.Avahi),
   dbus (receive) bus=system interface=org.freedesktop.Avahi*,
 
+  # Clipboard on Wayland (see src/utilities/clipboard.ts): wl-copy
+  # writes and clears — forking a daemon that keeps owning the
+  # selection — and wl-paste reads it back for the conditional deferred
+  # clear; both pipe the selection data itself through cat. The
+  # clear-on-death guard is a bundled script under /opt/Superbacked
+  # (executable through the mrix grant above), interpreted by dash
+  # under its mmap-only grant below — the shell itself stays
+  # unexecutable, and each guard script hardcodes its one command.
+  /usr/bin/cat mrix,
+  /usr/bin/wl-copy mrix,
+  /usr/bin/wl-paste mrix,
+
+  # Terminal-launched command-line flows: stty hides passphrase echo,
+  # the bundled guard script restores the saved terminal state should
+  # the process die mid-prompt, and the controlling terminal backs the
+  # prompts and countdowns.
+  /usr/bin/stty mrix,
+  owner /dev/pts/[0-9]* rw,
+
   # “Show in folder” hand-offs: the app shells out to xdg-open, a shell
   # script (dash is its interpreter — mmap only, never a direct exec)
   # that resolves the handler through gio, probing alternatives with

@@ -5,7 +5,7 @@ import { ReadStream } from "tty"
 
 import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
 import sleep from "@/src/utilities/sleep"
-import { spawnGuard } from "@/src/utilities/spawn"
+import spawnGuard from "@/src/utilities/spawnGuard"
 
 const stripTrailingNewline = (value: string): string => {
   if (value.endsWith("\r\n")) {
@@ -143,7 +143,7 @@ export const promptHidden = async (query: string): Promise<string> => {
   // echo off — the guard restores the saved terminal state whenever this
   // process dies. Restoring twice is harmless, so the happy path also
   // restores directly.
-  const releaseGuard = spawnGuard('stty "$1" < /dev/tty', [savedState])
+  const releaseGuard = await spawnGuard("restore-terminal-state", [savedState])
   execFileSync("stty", ["-echo"], { stdio: ["inherit", "ignore", "inherit"] })
   try {
     return await readLine()

@@ -4,44 +4,13 @@ interface ExtendedSpawnOptions extends SpawnOptions {
   input?: Buffer | string
 }
 
-interface SpawnError extends Error {
+export interface SpawnError extends Error {
   exitCode: number
 }
 
 interface SpawnReturnValue {
   stdout: string
   stderr: string
-}
-
-/**
- * Spawn a guard that runs a command when this process dies — the guard
- * blocks on a pipe held by this process, so normal exit and death by any
- * signal alike close the pipe and trigger the command. Electron’s main
- * process does not reliably dispatch POSIX signals to JavaScript handlers
- * (Chromium installs its own), so in-process cleanup alone can be skipped.
- * @param command shell command (positional arguments available as $1…)
- * @param args positional arguments
- * @returns release function, preventing the command from running
- */
-export const spawnGuard = (
-  command: string,
-  args: readonly string[] = []
-): (() => void) => {
-  const guard = spawn(
-    "sh",
-    ["-c", `read -r _ || true; exec ${command}`, "sh", ...args],
-    {
-      // Ctrl-C signals the whole foreground process group — the guard must
-      // live in its own group and session or it dies alongside the very
-      // process it guards
-      detached: true,
-      stdio: ["pipe", "ignore", "ignore"],
-    }
-  )
-  guard.unref()
-  return () => {
-    guard.kill()
-  }
 }
 
 const stripFinalNewline = (input: string) => {

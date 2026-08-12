@@ -65,7 +65,12 @@ const config: Configuration = {
         StartupNotify: "true",
       },
     },
-    files: [{ from: "./bin/linux", to: "./bin/linux" }],
+    // bin/posix ships everywhere: pure POSIX sh scripts (the guards —
+    // see src/utilities/spawnGuard.ts), platform- and arch-independent
+    files: [
+      { from: "./bin/linux", to: "./bin/linux" },
+      { from: "./bin/posix", to: "./bin/posix" },
+    ],
     // deb is what Superbacked OS and Ubuntu Desktop install — the app
     // runs straight from /opt/Superbacked, giving AppArmor a stable
     // attachment path (no FUSE mount or AppRun shell indirection), and
@@ -81,6 +86,7 @@ const config: Configuration = {
         from: "./bin/darwin/${arch}",
         to: "./bin/darwin/${arch}",
       },
+      { from: "./bin/posix", to: "./bin/posix" },
     ],
     hardenedRuntime: true,
     // Create “App Manager” API key using https://appstoreconnect.apple.com/access/integrations/api and run `xcrun notarytool store-credentials superbacked-notarytool` to create credentials

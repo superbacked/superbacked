@@ -12,25 +12,47 @@ import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
 // timer survives navigation and window close. One clear is pending at a
 // time: a newer copy supersedes the older timer (the older text is off
 // the clipboard anyway), and the guard spans until no clear is pending.
+// A guard that cannot spawn rejects here, propagating over IPC before
+// anything is copied — see src/main/utilities/clipboard.ts.
 
 let timer: NodeJS.Timeout | undefined
-let releaseClearGuard: (() => void) | undefined
+let clearGuard: Promise<() => void> | undefined
 
 export default async (text: string): Promise<void> => {
   clearTimeout(timer)
-  releaseClearGuard ??= spawnClearGuard()
+  // The promise (not its release function) is what is cached — two
+  // copies in quick succession must share one guard, or the loser’s
+  // guard would lurk unreleased and clear the clipboard at app death
+  // long after the pending clear completed
+  clearGuard ??= spawnClearGuard()
+  let releaseClearGuard: () => void
+  try {
+    releaseClearGuard = await clearGuard
+  } catch (error) {
+    // Leave the next copy free to retry rather than caching the rejection
+    clearGuard = undefined
+    throw error
+  }
   const seconds =
     getConfig("clipboardClearSeconds") ?? defaultClipboardClearSeconds
   timer = setTimeout(() => {
     void (async () => {
-      // Leave the clipboard alone if the user copied something else
-      // meanwhile
-      if (timingSafeEqualStrings(await readText(), text) === true) {
-        await clearText()
+      try {
+        // Leave the clipboard alone if the user copied something else
+        // meanwhile
+        if (timingSafeEqualStrings(await readText(), text) === true) {
+          await clearText()
+        }
+        releaseClearGuard()
+        clearGuard = undefined
+      } catch (error) {
+        // A clear that could not run leaves the guard armed — clearing
+        // at app death is the remaining backstop — and logs: no caller
+        // is left to reject to
+        console.error(error)
+      } finally {
+        timer = undefined
       }
-      releaseClearGuard?.()
-      releaseClearGuard = undefined
-      timer = undefined
     })()
   }, seconds * 1000)
 }
