@@ -415,6 +415,37 @@ EOF
 
 dconf update
 
+printf "%s\n" "Patching ubuntu-dock…"
+
+# DING’s desktop helper flashes into the dock’s running-apps slot at
+# login — its extension only adopts the window on the compositor map
+# signal, and DING itself must stay (yubikey-prov.sh stages secrets on
+# ~/Desktop). Pre-adoption the shell tracks the helper as a fallback
+# window-backed app (id “window:N”), and every legitimate app on this
+# image resolves to a real id (volumes included) — so window-backed
+# apps are dropped from the running section. The assertions fail the
+# build if ubuntu-dock drifts.
+dock_dash=/usr/share/gnome-shell/extensions/ubuntu-dock@ubuntu.com/dash.js
+
+if [ "$(grep --count "this\._appSystem\.get_running()" "${dock_dash}")" != "1" ]; then
+  printf "%s\n" "Error: ubuntu-dock running-apps anchor not found exactly once in ${dock_dash}" >&2
+  exit 1
+fi
+
+awk '{ print }
+/this\._appSystem\.get_running\(\)/ {
+  print "        // Superbacked: hide window-backed apps — DING’s pre-adoption"
+  print "        // helper (see bootstrap)."
+  print "        running = running.filter((app) => !app.get_id().startsWith(\"window:\"));"
+}' "${dock_dash}" > "${dock_dash}.patched"
+
+mv "${dock_dash}.patched" "${dock_dash}"
+
+if [ "$(grep --count 'startsWith("window:")' "${dock_dash}")" != "1" ]; then
+  printf "%s\n" "Error: DING filter failed to apply to ${dock_dash}" >&2
+  exit 1
+fi
+
 printf "%s\n" "Disabling Xorg login sessions…"
 
 # Superbacked OS is Wayland-only — X11 has no window isolation (any
