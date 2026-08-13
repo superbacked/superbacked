@@ -126,8 +126,9 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   owner /dev/shm/** rwk,
   /etc/machine-id r,
   # GPU stack enumeration (Vulkan ICDs and layers), the audio client
-  # configuration, and the session/VT probe — all read by Chromium at
-  # startup.
+  # configuration, the GTK settings and the session/VT probe — all
+  # read by Chromium at startup.
+  /etc/gtk-3.0/{,**} r,
   /etc/vulkan/{,**} r,
   /usr/share/vulkan/{,**} r,
   /etc/glvnd/{,**} r,
@@ -138,12 +139,16 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   owner @{run}/user/[0-9]*/pulse/native rw,
   /usr/share/themes/{,**} r,
   /sys/devices/virtual/tty/tty0/active r,
-  /sys/devices/pci[0-9]*/**/{boot_vga,class,device,resource,revision,subsystem_device,subsystem_vendor,vendor} r,
+  /sys/devices/pci[0-9]*/**/{boot_vga,class,device,irq,resource,revision,subsystem_device,subsystem_vendor,vendor} r,
   /sys/devices/pci[0-9]*/**/drm/ r,
   # Chromium probes mutter’s Xwayland auth cookie even when pinned to
   # Wayland — denied quietly so enforce-mode logs stay clean (the app
   # never gets an X connection either way).
   deny owner @{run}/user/[0-9]*/.mutter-Xwaylandauth.* r,
+  # fontconfig freshens the system cache directory’s permissions while
+  # validating it — denied quietly, the per-user cache under home
+  # serves.
+  deny /var/cache/fontconfig/ w,
   /run/udev/data/* r,
   /sys/bus/pci/devices/ r,
   /sys/devices/**/uevent r,
@@ -196,6 +201,10 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   dbus (send) bus=system peer=(name=org.freedesktop.DBus),
   dbus (send) bus=system peer=(name=org.freedesktop.Avahi),
   dbus (receive) bus=system interface=org.freedesktop.Avahi*,
+  # Chromium probes BlueZ adapters over the system bus at startup —
+  # bluetooth stays denied by design (see the network rules above), so
+  # the probe is denied quietly.
+  deny dbus (send) bus=system peer=(name=org.bluez),
 
   # Clipboard on Wayland (see src/utilities/clipboard.ts): wl-copy
   # writes and clears — forking a daemon that keeps owning the
@@ -254,6 +263,10 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   @{PROC}/sys/vm/max_map_count r,
   owner @{PROC}/@{pid}/ r,
   owner @{PROC}/@{pid}/** rw,
+  # Chromium reads child-process stat for its process metrics — sandbox
+  # children live inside user namespaces whose proc entries read as
+  # root-owned, so owner cannot scope this.
+  @{PROC}/[0-9]*/stat r,
   /sys/fs/cgroup/** r,
 
   # Off-limits even though same-user or otherwise reachable: the
