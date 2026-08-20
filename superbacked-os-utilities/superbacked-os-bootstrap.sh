@@ -45,15 +45,18 @@ printf "%s\n" "Starting bootstrap…"
 # by version and by the sha256 of their wheel, verified before
 # installation (bump both together after checking the “Download files”
 # hashes on pypi.org) — their transitive dependencies still resolve at
-# install time. (The raw GitHub downloads below still float; their
-# signature checks pin integrity, not versions.)
-readonly apt_snapshot="20260810T000000Z"
-readonly firefox_version="153.0.3"
+# install time. yubikey-prov.sh is pinned by release tag and by the
+# sha256 of the script, verified before installation (bump both
+# together — superbacked-os-update-pins.sh computes the hash).
+readonly apt_snapshot="20260820T000000Z"
+readonly firefox_version="154.0"
 readonly trezor_sha256="1acd67664bdc1cf389e719c91a09e6069688afa05959715955d5c1c54a2fefde"
 readonly trezor_version="0.20.2"
 readonly yubico_authenticator_version="7.4.1"
 readonly yubikey_manager_sha256="19a1173106b104bea37722e61ce748fb2d39c87a02880c1964461837ddaa7fba"
 readonly yubikey_manager_version="5.9.2"
+readonly yubikey_prov_sha256="a64ccafcb7526c1435655499a5cc9d854f49b4165906784c89cc19c56dc4c606"
+readonly yubikey_prov_version="1.1.0"
 
 printf "%s\n" "Writing release marker…"
 
@@ -526,8 +529,11 @@ printf "%s\n" "Configuring yubikey-prov.sh…"
 # handed back to superbacked at the end of provisioning.)
 mkdir --parents /home/superbacked/.local/bin/
 
-curl --fail --location https://raw.githubusercontent.com/sunknudsen/yubikey-prov/main/yubikey-prov.sh \
+curl --fail --location --proto '=https' "https://raw.githubusercontent.com/sunknudsen/yubikey-prov/v${yubikey_prov_version}/yubikey-prov.sh" \
   --output /home/superbacked/.local/bin/yubikey-prov.sh
+
+printf "%s  %s\n" "${yubikey_prov_sha256}" /home/superbacked/.local/bin/yubikey-prov.sh \
+  | sha256sum --check
 
 chmod +x /home/superbacked/.local/bin/yubikey-prov.sh
 

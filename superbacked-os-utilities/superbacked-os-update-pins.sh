@@ -14,6 +14,7 @@
 #   trezor                PyPI simple index (wheel sha256 from its URL fragment)
 #   yubico_authenticator  developers.yubico.com release listing
 #   yubikey_manager       PyPI simple index (wheel sha256 from its URL fragment)
+#   yubikey_prov          GitHub release feed (script sha256 computed from its content)
 #
 # Runs on the host (macOS), so only portable tool options are used —
 # unlike the bootstrap, which runs in a GNU chroot and prefers long
@@ -142,6 +143,30 @@ report yubikey_manager_version \
   "$(pin yubikey_manager_version)" "${yubikey_manager_latest% *}" \
   "readonly yubikey_manager_sha256=\"${yubikey_manager_latest#* }\"
 readonly yubikey_manager_version=\"${yubikey_manager_latest% *}\"
+"
+
+# yubikey_prov — highest release tag in the GitHub release feed, with
+# the script sha256 computed from its content at that tag (version and
+# sha256 move together).
+yubikey_prov_latest="$(
+  curl --fail --location --proto '=https' --silent \
+    https://github.com/sunknudsen/yubikey-prov/releases.atom \
+    | grep -o 'releases/tag/v[0-9][0-9.]*' \
+    | sed 's|releases/tag/v||' \
+    | highest_version
+)" || yubikey_prov_latest=""
+if [ -n "${yubikey_prov_latest}" ]; then
+  yubikey_prov_latest_sha256="$(
+    curl --fail --location --proto '=https' --silent \
+      "https://raw.githubusercontent.com/sunknudsen/yubikey-prov/v${yubikey_prov_latest}/yubikey-prov.sh" \
+      | shasum -a 256 \
+      | awk '{ print $1 }'
+  )" || yubikey_prov_latest=""
+fi
+report yubikey_prov_version \
+  "$(pin yubikey_prov_version)" "${yubikey_prov_latest}" \
+  "readonly yubikey_prov_sha256=\"${yubikey_prov_latest_sha256}\"
+readonly yubikey_prov_version=\"${yubikey_prov_latest}\"
 "
 
 # A failed query means the report is partial — never offer to apply a
