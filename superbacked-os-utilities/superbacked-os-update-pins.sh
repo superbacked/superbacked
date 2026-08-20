@@ -58,7 +58,7 @@ highest_version() {
 # the same hash pypi.org shows under “Download files”. ${2} is the
 # wheel filename prefix (PEP 427 turns dashes into underscores).
 pypi_latest() {
-  curl --fail --location --silent "https://pypi.org/simple/${1}/" \
+  curl --fail --location --proto '=https' --silent "https://pypi.org/simple/${1}/" \
     | grep -o "${2}-[0-9][0-9.]*-py3-none-any\.whl#sha256=[0-9a-f]*" \
     | sed "s/^${2}-//; s/-py3-none-any\.whl#sha256=/ /" \
     | sort -u -t . -k 1,1n -k 2,2n -k 3,3n \
@@ -93,7 +93,7 @@ printf "\n"
 # apt_snapshot — today’s snapshot exists once the service has captured
 # midnight UTC; the noble Release file is the cheapest existence probe.
 apt_snapshot_latest="$(date -u +%Y%m%dT000000Z)"
-if ! curl --fail --head --location --silent \
+if ! curl --fail --head --location --proto '=https' --silent \
   "https://snapshot.ubuntu.com/ubuntu/${apt_snapshot_latest}/dists/noble/Release" \
   > /dev/null; then
   apt_snapshot_latest=""
@@ -105,7 +105,7 @@ report apt_snapshot "$(pin apt_snapshot)" "${apt_snapshot_latest}" \
 # firefox — highest version in Mozilla’s apt index (what the bootstrap
 # installs from), ~buildN suffix stripped to match the pin’s glob.
 firefox_latest="$(
-  curl --fail --location --silent \
+  curl --fail --location --proto '=https' --silent \
     https://packages.mozilla.org/apt/dists/mozilla/main/binary-amd64/Packages \
     | awk '/^Package: firefox$/ { f = 1 } f && /^Version:/ { print $2; f = 0 }' \
     | sed 's/~.*//' \
@@ -125,7 +125,7 @@ readonly trezor_version=\"${trezor_latest% *}\"
 # yubico_authenticator — highest -linux.tar.gz in Yubico’s release
 # listing (the directory the bootstrap downloads from).
 yubico_authenticator_latest="$(
-  curl --fail --location --silent \
+  curl --fail --location --proto '=https' --silent \
     https://developers.yubico.com/yubioath-flutter/Releases/ \
     | grep -o 'yubico-authenticator-[0-9][0-9.]*-linux\.tar\.gz' \
     | sed 's/^yubico-authenticator-//; s/-linux\.tar\.gz$//' \

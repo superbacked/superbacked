@@ -281,7 +281,7 @@ printf "%s\n" "Installing Firefox…"
 # transitional package for every overlapping name.
 mkdir --parents /etc/apt/keyrings
 
-curl --fail --location https://packages.mozilla.org/apt/repo-signing-key.gpg \
+curl --fail --location --proto '=https' https://packages.mozilla.org/apt/repo-signing-key.gpg \
   --output /etc/apt/keyrings/packages.mozilla.org.asc
 
 mozilla_fingerprint="$(gpg --quiet --with-colons --show-keys \
@@ -501,7 +501,7 @@ printf "%s\n" "Configuring udev rules…"
 # FIDO interface of every vendor’s key, and the Superbacked deb
 # installed below ships a vendor-wide hidraw rule for the OTP
 # (challenge-response) interface.
-curl --fail --location https://data.trezor.io/udev/51-trezor.rules \
+curl --fail --location --proto '=https' https://data.trezor.io/udev/51-trezor.rules \
   --output /etc/udev/rules.d/51-trezor.rules
 
 # Internal disks are invisible to the desktop: USB drives are the only
@@ -525,8 +525,10 @@ EOF
 
 printf "%s\n" "Configuring yubikey-prov.sh…"
 
-# Helper script that provisions YubiKeys. (Home folder ownership is
-# handed back to superbacked at the end of provisioning.)
+# Helper script that provisions YubiKeys — pinned by release tag with
+# its sha256 verified before use, failing loudly on any drift. (Home
+# folder ownership is handed back to superbacked at the end of
+# provisioning.)
 mkdir --parents /home/superbacked/.local/bin/
 
 curl --fail --location --proto '=https' "https://raw.githubusercontent.com/sunknudsen/yubikey-prov/v${yubikey_prov_version}/yubikey-prov.sh" \
@@ -551,13 +553,13 @@ printf "%s\n" "Installing Yubico Authenticator…"
 # https://developers.yubico.com/Software_Projects/Software_Signing.html.
 yubico_authenticator_url="https://developers.yubico.com/yubioath-flutter/Releases/yubico-authenticator-${yubico_authenticator_version}-linux.tar.gz"
 
-curl --fail --location --silent \
+curl --fail --location --proto '=https' --silent \
   "https://keys.openpgp.org/vks/v1/by-fingerprint/20EE325B86A81BCBD3E56798F04367096FBA95E8" \
   | gpg --import
 
-curl --fail --location "${yubico_authenticator_url}" \
+curl --fail --location --proto '=https' "${yubico_authenticator_url}" \
   --output /tmp/yubico-authenticator.tar.gz
-curl --fail --location "${yubico_authenticator_url}.sig" \
+curl --fail --location --proto '=https' "${yubico_authenticator_url}.sig" \
   --output /tmp/yubico-authenticator.tar.gz.sig
 
 gpg --verify \
