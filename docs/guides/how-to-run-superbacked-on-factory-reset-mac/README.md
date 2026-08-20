@@ -2,7 +2,7 @@
 Title: How to run Superbacked on factory-reset Mac
 Description: Learn how to run Superbacked on a factory reset Apple silicon Mac running macOS Sequoia or Tahoe
 Publication date: 2026-04-17T12:00:00.000Z
-Pinned: 3
+Pinned: 2
 -->
 
 # How to run Superbacked on factory-reset Mac

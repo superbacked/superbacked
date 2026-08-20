@@ -27,13 +27,13 @@ Running Superbacked OS on flash drive with signed firmware and write protection 
 
 ## Setup guide
 
-### Step 1: install [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
+### Step 1: install Raspberry Pi Imager
 
 #### macOS or Windows
 
-Go to https://www.raspberrypi.com/software/, download and install Raspberry Pi Imager.
+Go to [raspberrypi.com/software](https://www.raspberrypi.com/software/), download and install Raspberry Pi Imager.
 
-#### Ubuntu
+#### Ubuntu Desktop
 
 > Heads-up: Raspberry Pi Imager depends on [Qt](https://www.qt.io/).
 
@@ -43,25 +43,25 @@ $ sudo add-apt-repository --yes universe
 $ sudo apt install --yes rpi-imager
 ```
 
-### Step 2 (optional): opt out of Raspberry Pi Imager [telemetry](https://github.com/raspberrypi/rpi-imager#opting-out)
+### Step 2 (optional): opt out of Raspberry Pi Imager telemetry
 
-Select “App Options”, disable “Enable anonymous statistics (telemetry) collection” and click “Save”.
+Select “App Options”, disable “Enable anonymous statistics ([telemetry](https://github.com/raspberrypi/rpi-imager#opting-out)) collection” and click “Save”.
 
 ### Step 3: download Superbacked OS
 
-> Heads-up: for additional security, [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
+> Heads-up: optionally, [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
 
 > Heads-up: when reading this guide on GitHub, replace the version placeholder in the following commands with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
 
-#### macOS or Ubuntu
+#### macOS or Ubuntu Desktop
 
 ```console
 $ cd ~/Downloads
 
 $ part=1; \
   url="https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-amd64-live-${latestRelease}.img.part"; \
-  while curl --fail --head --location --output /dev/null --retry 3 --silent "${url}${part}"; do \
-    curl --fail --location "${url}${part}" || break; \
+  while curl --fail --head --location --output /dev/null --proto '=https' --retry 3 --silent "${url}${part}"; do \
+    curl --fail --location --proto '=https' "${url}${part}" || break; \
     part=$((part + 1)); \
   done > superbacked-os-amd64-live-${latestRelease}.img
 ```
@@ -79,8 +79,8 @@ $ cd /mnt/c/Users/Sun\ Knudsen/Downloads
 
 $ part=1; \
   url="https://github.com/superbacked/superbacked/releases/download/v${latestRelease}/superbacked-os-amd64-live-${latestRelease}.img.part"; \
-  while curl --fail --head --location --output /dev/null --retry 3 --silent "${url}${part}"; do \
-    curl --fail --location "${url}${part}" || break; \
+  while curl --fail --head --location --output /dev/null --proto '=https' --retry 3 --silent "${url}${part}"; do \
+    curl --fail --location --proto '=https' "${url}${part}" || break; \
     part=$((part + 1)); \
   done > superbacked-os-amd64-live-${latestRelease}.img
 ```

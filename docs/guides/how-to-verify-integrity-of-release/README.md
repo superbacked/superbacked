@@ -21,7 +21,7 @@ Download `SHA256SUMS` and `SHA256SUMS.asc` from the [release page](https://githu
 $ ls
 SHA256SUMS
 SHA256SUMS.asc
-superbacked-arm64-1.9.0.dmg
+superbacked-arm64-1.12.1.dmg
 ```
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using GnuPG
@@ -33,7 +33,7 @@ superbacked-arm64-1.9.0.dmg
 Import Sun’s PGP public key and verify the signature.
 
 ```console
-$ curl https://sunknudsen.com/sunknudsen.asc | gpg --import
+$ curl --proto '=https' https://sunknudsen.com/sunknudsen.asc | gpg --import
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100  2070  100  2070    0     0   6044      0 --:--:-- --:--:-- --:--:--  6160
@@ -45,7 +45,7 @@ gpg: no ultimately trusted keys found
 
 $ gpg --verify SHA256SUMS.asc
 gpg: assuming signed data in 'SHA256SUMS'
-gpg: Signature made Thu 18 Dec 06:40:08 2025 EST
+gpg: Signature made Tue 26 May 13:27:39 2026 EDT
 gpg:                using EDDSA key 9C7887E1B5FCBCE2DFED0E1C02C43AD072D57783
 gpg: Good signature from "Sun Knudsen <hello@sunknudsen.com>" [unknown]
 gpg: WARNING: This key is not certified with a trusted signature!
@@ -60,7 +60,7 @@ Verify the output shows `Good signature from "Sun Knudsen <hello@sunknudsen.com>
 
 ```console
 $ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
-./superbacked-arm64-1.9.0.dmg: OK
+./superbacked-arm64-1.12.1.dmg: OK
 ```
 
 Verify the output shows `OK` for the downloaded release.

@@ -19,14 +19,16 @@ Download latest release from [superbacked.com/download](https://superbacked.com/
 
 ### Step 2: install Superbacked
 
-Run following command adjusting version to match downloaded release.
+> Heads-up: when reading this guide on GitHub, replace the version placeholder in the following command with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
+
+Run following command.
 
 ```console
-$ sudo apt install --yes ~/Downloads/superbacked-x64-2.0.0.deb
+$ sudo apt install --yes ~/Downloads/superbacked-x64-${latestRelease}.deb
 ```
 
 ## Usage guide
 
 > Heads-up: YubiKey connected while installing Superbacked must be unplugged and plugged back in before use.
 
-Open Superbacked from the application grid or run `superbacked` in terminal to use the command line interface.
+Open Superbacked from the application grid or run `superbacked` in terminal to use the command-line interface.

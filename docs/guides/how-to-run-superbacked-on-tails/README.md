@@ -13,7 +13,7 @@ Pinned:
 
 This guide walks through downloading and running Superbacked on Tails. Superbacked is distributed as AppImage binary — a portable format that runs on Tails with no installation.
 
-## Guide
+## Setup guide
 
 ### Step 1: download Superbacked
 
@@ -31,6 +31,6 @@ KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1050", TAG+="uaccess"
 EOF
 ```
 
-### Step 3: run AppImage
+## Usage guide
 
 Right-click `.AppImage` file and select “Run”.

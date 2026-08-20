@@ -34,16 +34,22 @@ $ sudo diskutil unmountDisk /dev/disk4
 Password:
 Unmount of all volumes on disk4 was successful
 
-$ sudo sha256sum /dev/rdisk4s1 /dev/rdisk4s2
-4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be  /dev/rdisk4s1
-bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d  /dev/rdisk4s2
+$ sudo shasum --algorithm 256 /dev/rdisk4s1 /dev/rdisk4s2
+9a4c3b8eddfa2d56c581488f27d490b11ab7e30bc6255a20e1db0ae8433d25df  /dev/rdisk4s1
+9c2414d78142bb48f2661723c5705d42caf7f3de133f8fd029f36281aa4c9935  /dev/rdisk4s2
 
-$ cat superbacked-os-amd64-1.10.0.img.sha256sums
-Boot partition: 4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be
-Root partition: bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d
+$ cat superbacked-os-amd64-1.12.1.img.sha256sums
+Boot partition: 9a4c3b8eddfa2d56c581488f27d490b11ab7e30bc6255a20e1db0ae8433d25df
+Root partition: 9c2414d78142bb48f2661723c5705d42caf7f3de133f8fd029f36281aa4c9935
 ```
 
-### Ubuntu
+#### Step 2: verify disk checksum after use
+
+Complete step 1 again after using Superbacked OS and verify checksums have not changed.
+
+### Ubuntu Desktop
+
+#### Step 1: compute disk checksum
 
 > Heads-up: replace `sdb` with the disk found using `sudo fdisk --list`.
 
@@ -68,10 +74,14 @@ umount: /dev/sdb1: not mounted.
 umount: /dev/sdb2: not mounted.
 
 $ sudo sha256sum /dev/sdb1 /dev/sdb2
-4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be  /dev/sdb1
-bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d  /dev/sdb2
+9a4c3b8eddfa2d56c581488f27d490b11ab7e30bc6255a20e1db0ae8433d25df  /dev/sdb1
+9c2414d78142bb48f2661723c5705d42caf7f3de133f8fd029f36281aa4c9935  /dev/sdb2
 
-$ cat superbacked-os-amd64-1.10.0.img.sha256sums
-Boot partition: 4bdf74fabaeb4bdbd493b99159f743702c1f2eb11975d44c186d513522cb68be
-Root partition: bc9c0448061b7449a31fb25e001871166c53e0514872ba16e8139c1a60f0984d
+$ cat superbacked-os-amd64-1.12.1.img.sha256sums
+Boot partition: 9a4c3b8eddfa2d56c581488f27d490b11ab7e30bc6255a20e1db0ae8433d25df
+Root partition: 9c2414d78142bb48f2661723c5705d42caf7f3de133f8fd029f36281aa4c9935
 ```
+
+#### Step 2: verify disk checksum after use
+
+Complete step 1 again after using Superbacked OS and verify checksums have not changed.

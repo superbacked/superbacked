@@ -11,13 +11,15 @@ Pinned:
 
 Superbacked can encrypt files and folders as standalone archives — portable `.superbacked` files encrypted using AES-256-GCM with a key derived from a passphrase using Argon2d. Archives created using the command-line interface are byte-identical to app-created ones, so they can also be restored by drag and drop in the app.
 
-## Guide
+> Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
-### Step 1: access command-line interface
+## Setup guide
 
-The command-line interface is built into the app.
+The command-line interface is built into the app — download latest release from [superbacked.com/download](https://superbacked.com/download) and optionally [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
 
-On macOS, add a persistent alias to the app binary (running the following commands once).
+### macOS
+
+Drag Superbacked to Applications (opening the downloaded disk image) and add a persistent alias to the app binary (running the following commands once).
 
 ```console
 $ echo 'alias superbacked="/Applications/Superbacked.app/Contents/MacOS/Superbacked"' >> "$HOME/.zshrc"
@@ -25,15 +27,35 @@ $ echo 'alias superbacked="/Applications/Superbacked.app/Contents/MacOS/Superbac
 $ source "$HOME/.zshrc"
 ```
 
-On Linux, install the AppImage as `superbacked` in `~/.local/bin` (adjusting the path and version to match the downloaded AppImage and opening a new terminal if `~/.local/bin` did not exist).
+### Ubuntu Desktop
+
+Install the deb (see [how to run Superbacked on Ubuntu Desktop](https://superbacked.com/guides/how-to-run-superbacked-on-ubuntu-desktop)) — the `superbacked` command is then available in terminal.
+
+### Other Linux systems
+
+> Heads-up: when reading this guide on GitHub, replace the version placeholder in the following command with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
+
+Install the AppImage as `superbacked` in `~/.local/bin` (opening a new terminal if `~/.local/bin` did not exist).
 
 ```console
 $ install -m 755 "$HOME/Downloads/superbacked-x64-${latestRelease}.AppImage" "$HOME/.local/bin/superbacked"
 ```
 
-On Superbacked OS, the `superbacked` command is preinstalled.
+When planning to use a YubiKey, allow YubiKey access by running following command and unplugging and plugging YubiKey back in.
 
-### Step 2: create standalone archive
+```console
+$ sudo tee /etc/udev/rules.d/70-superbacked-yubikey.rules << 'EOF'
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1050", TAG+="uaccess"
+EOF
+```
+
+### Superbacked OS
+
+The `superbacked` command is preinstalled.
+
+## Usage guide
+
+### Step 1: create standalone archive
 
 > Heads-up: the passphrase cannot be recovered — without it, the standalone archive content is lost. Consider backing up the passphrase using a Superbacked block or blockset.
 
@@ -52,7 +74,7 @@ Use `--yubikey` to require a provisioned YubiKey as a second factor (see [how to
 
 The root `--paranoid` flag hardens key derivation (requiring at least 1 GiB of memory) — a paranoid archive can only be restored with `--paranoid` (or the app’s “Enable paranoid mode” setting), and without it reports a wrong passphrase.
 
-### Step 3: restore standalone archive
+### Step 2: restore standalone archive
 
 Restore the standalone archive to an existing directory.
 
