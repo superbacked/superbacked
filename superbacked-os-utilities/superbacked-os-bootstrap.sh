@@ -67,9 +67,9 @@ EOF
 printf "%s\n" "Configuring apt sources…"
 
 # Replaces the installer’s mirror configuration outright so nothing
-# keeps resolving against a moving archive. universe carries five
-# dependencies (exfatprogs, pcscd, pipx, scdaemon and waypipe among
-# them); everything else is in main.
+# keeps resolving against a moving archive. universe carries six
+# dependencies (exfatprogs, libfuse2, pcscd, pipx, scdaemon and
+# waypipe among them); everything else is in main.
 tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null << EOF
 Types: deb
 URIs: https://snapshot.ubuntu.com/ubuntu/${apt_snapshot}
@@ -151,8 +151,8 @@ printf "%s\n" "Installing dependencies…"
 # below — all are removed at the end of provisioning. curl and gnupg
 # download and verify software, dconf-cli compiles the system dconf
 # database (see “Configuring GNOME” below), exfatprogs formats exFAT
-# USB drives, language packs complete the English locale, pcscd and
-# scdaemon talk to
+# USB drives, language packs complete the English locale, libfuse2
+# runs AppImages, pcscd and scdaemon talk to
 # smartcards and YubiKeys, python3-pip downloads the pinned PyPI
 # wheels just below, totem plays video with gstreamer1.0-libav
 # decoding it (H.264 including the 4:2:2 profile, plus AAC — the
@@ -175,6 +175,7 @@ packages=(
   # language-pack-fr
   language-pack-gnome-en
   # language-pack-gnome-fr
+  libfuse2
   libpcsclite-dev
   pcscd
   pipx
