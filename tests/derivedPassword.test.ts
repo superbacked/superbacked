@@ -1,14 +1,8 @@
 import assert from "assert"
 import { suite, test } from "node:test"
 
+import { computeMasterKey, deriveKey } from "@/src/utilities/crypto/derivedKey"
 import {
-  computeMasterKey,
-  computeSingleFactorDerivedKey,
-  deriveKey,
-  noYubiKeySalt,
-} from "@/src/utilities/crypto/derivedKey"
-import {
-  computeDerivedPassword,
   derivePassword,
   maximumPasswordLength,
   minimumPasswordLength,
@@ -16,9 +10,13 @@ import {
 
 // Reference vectors freeze the rendering scheme — changing any constant or
 // construction in the module breaks them, as does any change to the derived
-// key scheme beneath it (see tests/derivedKey.test.ts)
+// key scheme beneath it (see tests/derivedKey.test.ts). Derivation always
+// mixes in a YubiKey response, so composed tests pin against a fixed
+// response-shaped salt (computeDerivedPassword itself requires hardware
+// and is exercised through its parts)
 const derivedKey = Buffer.alloc(32, 1)
 const otherDerivedKey = Buffer.alloc(32, 2)
+const testSalt = Buffer.alloc(20, 4)
 
 suite("derivedPassword", () => {
   test("derives password", () => {
@@ -85,46 +83,38 @@ suite("derivedPassword", () => {
     })
   })
 
-  test("computes derived password without YubiKey", async () => {
+  test("computes derived password of composed derivation", async () => {
     // Rendered from the standard profile master key — the permanent
-    // cost of scheme v1 (see tests/derivedKey.test.ts)
-    const password = await computeDerivedPassword(
-      "lip gift name net sixth",
-      "github",
-      { length: 16, paranoid: false }
+    // cost of scheme v1 (see tests/derivedKey.test.ts) — through the
+    // full pipeline against the fixed response-shaped salt
+    const password = derivePassword(
+      deriveKey(
+        await computeMasterKey("lip gift name net sixth", "github", false),
+        testSalt
+      ),
+      16
     )
-    assert.strictEqual(password, "iqd!_AC4}Lm.c=jN")
-  })
-
-  test("computes derived password equal to composed derivation", async () => {
-    assert.strictEqual(
-      await computeDerivedPassword("lip gift name net sixth", "github", {
-        length: 16,
-        paranoid: false,
-      }),
-      derivePassword(
-        await computeSingleFactorDerivedKey(
-          "lip gift name net sixth",
-          "github",
-          false
-        ),
-        16
-      )
-    )
+    assert.strictEqual(password, "ATy3y6e6i-H{y-^r")
   })
 
   test("computes distinct passwords under Paranoid mode", async () => {
     // The mode is a domain input — forgetting it derives a different
     // password, which is why the command-line interface echoes it
     assert.notStrictEqual(
-      await computeDerivedPassword("lip gift name net sixth", "github", {
-        length: 16,
-        paranoid: true,
-      }),
-      await computeDerivedPassword("lip gift name net sixth", "github", {
-        length: 16,
-        paranoid: false,
-      })
+      derivePassword(
+        deriveKey(
+          await computeMasterKey("lip gift name net sixth", "github", true),
+          testSalt
+        ),
+        16
+      ),
+      derivePassword(
+        deriveKey(
+          await computeMasterKey("lip gift name net sixth", "github", false),
+          testSalt
+        ),
+        16
+      )
     )
   })
 
@@ -133,7 +123,7 @@ suite("derivedPassword", () => {
     // rendered password must not be a substring or trivial projection of it
     const key = deriveKey(
       await computeMasterKey("lip gift name net sixth", "github", false),
-      noYubiKeySalt
+      testSalt
     )
     const password = derivePassword(key, 16)
     assert.ok(key.toString("hex").includes(password) === false)

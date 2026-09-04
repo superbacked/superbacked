@@ -85,7 +85,7 @@ The path is fixed by design. A stateless wallet punishes every forgettable input
 
 The two-factor security model — what each combination of leaked material allows — lives with the derived key scheme in the [derived key technical documentation](derived-key.md). Wallet-specific limitations:
 
-- **Funds at stake**: Deriving exposes the wallet to the computer running the derivation — unlike a signing device, which never releases its seed — and a forgotten passphrase, label or flag is unrecoverable, so derived Bitcoin wallets should only be used for amounts you are willing to lose; for larger amounts, use a signing device such as a Trezor (the command requires typed confirmation of this warning at every derivation)
+- **Host exposure**: Deriving exposes the wallet’s private keys to the computer running the command — unlike a signing device, which never releases its seed — and a forgotten passphrase, label or flag is unrecoverable; for larger amounts, use a signing device such as a Trezor (the command requires typed confirmation of this warning at every derivation)
 - **No rotation**: Derivation is deterministic, so a leaked mnemonic re-derives identically forever — recovering from a leak means moving the funds to a new label’s wallet
 - **Determinism inputs**: The word count and Paranoid mode each derive a different wallet from the same passphrase and label — every derivation echoes both, and re-deriving with a forgotten flag silently produces an empty wallet, not an error
 - **Loss of YubiKey**: Without a second YubiKey programmed with the same slot secret, a two-factor wallet — and the funds it guards — is unrecoverable
@@ -97,7 +97,7 @@ The two-factor security model — what each combination of leaked material allow
 superbacked derive-bitcoin-wallet [label] [options]
 ```
 
-Every derivation opens with the funds-at-stake warning and requires the full word `yes` to continue — never assumed, and refused without a controlling terminal. Label prompting, stdin passphrase behavior and the strength gate match [derive-password](derived-password.md); under [Paranoid mode](../../src/shared/utilities/kdfProfiles.ts) the gate is priced at the paranoid profile and the mode is a determinism input echoed at every derivation.
+Every derivation opens with the host-exposure warning and requires the full word `yes` to continue — never assumed, and refused without a controlling terminal. Label prompting, stdin passphrase behavior and the strength gate match [derive-password](derived-password.md); under [Paranoid mode](../../src/shared/utilities/kdfProfiles.ts) the gate is priced at the paranoid profile and the mode is a determinism input echoed at every derivation.
 
 The command is public by default, secret by request: the extended public key (and addresses, when asked) print to stdout, while the mnemonic or extended private key materialize only under `--reveal`.
 
@@ -106,7 +106,6 @@ The command is public by default, secret by request: the extended public key (an
 - `--addresses <count>`: Print first receive addresses (maximum `100`)
 - `--clear <seconds>`: Seconds before revealed secret is cleared from clipboard (default `10`)
 - `--confirm-passphrase`: Prompt for master passphrase twice and require a match — catches typos when creating a wallet (interactive prompts only; a piped passphrase is used as-is)
-- `--no-yubikey`: Derive without YubiKey (single factor, weaker — see the [derived key technical documentation](derived-key.md))
 - `-p, --print`: Print revealed secret to stdout instead of copying it to clipboard (requires `--reveal`; the public outputs move to stderr so piping stays single-purpose)
 - `--reveal <secret>`: Materialize `mnemonic` or `zprv`, copied to clipboard with the same clearing, guarding and platform behavior as [derive-password](derived-password.md)
 - `-s, --slot <slot>`: HMAC-SHA1 challenge-response slot (default `2`)
@@ -115,7 +114,7 @@ The command is public by default, secret by request: the extended public key (an
 ### Derivation workflow
 
 1. User runs `superbacked derive-bitcoin-wallet`
-2. User confirms the funds-at-stake warning by typing `yes`
+2. User confirms the host-exposure warning by typing `yes`
 3. User enters label
 4. User enters master passphrase (hidden prompt or piped via stdin)
 5. User touches YubiKey if slot requires touch

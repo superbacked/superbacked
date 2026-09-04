@@ -9,9 +9,9 @@ Pinned:
 
 ## Overview
 
-Superbacked can derive deterministic Bitcoin wallets from a master passphrase, a memorized label (for example `savings`) and, optionally, a YubiKey. The same inputs always derive the same wallet, so nothing needs to be stored or backed up — and the output is a standard BIP39 mnemonic, so recovery is Superbacked-independent: any wallet software can restore it.
+Superbacked can derive deterministic Bitcoin wallets from a master passphrase, a memorized label (for example `savings`) and a YubiKey. The same inputs always derive the same wallet, so nothing needs to be stored or backed up — and the output is a standard BIP39 mnemonic, so recovery is Superbacked-independent: any wallet software can restore it.
 
-> Heads-up: derived Bitcoin wallets should only be used for amounts you are willing to lose — deriving exposes the wallet to the computer running the derivation (unlike a signing device, which never releases its seed) and a forgotten passphrase, label or flag is unrecoverable. For larger amounts, use a signing device such as a Trezor.
+> Heads-up: deriving a Bitcoin wallet exposes its private keys to the computer running the command (unlike a signing device, which never releases its seed) and a forgotten passphrase, label or flag is unrecoverable. For larger amounts, use a signing device such as a Trezor.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
@@ -57,7 +57,7 @@ The `superbacked` command is preinstalled.
 
 ## Usage guide
 
-### Step 1 (optional): provision YubiKey
+### Step 1: provision YubiKey
 
 Deriving wallets with a YubiKey uses the same HMAC-SHA1 challenge-response credential as derived passwords — see [how to derive passwords](https://superbacked.com/guides/how-to-derive-passwords-using-command-line-interface) for provisioning. Without a second YubiKey provisioned with the same secret, a two-factor wallet — and the funds it guards — is unrecoverable if the YubiKey is lost.
 
@@ -69,7 +69,7 @@ The command is public by default, secret by request: it prints the wallet’s ex
 
 ```console
 $ superbacked derive-bitcoin-wallet
-Derived Bitcoin wallets should only be used for amounts you are willing to lose.
+Deriving a Bitcoin wallet exposes its private keys to the computer running the command.
 For larger amounts, use a signing device such as a Trezor.
 Do you wish to continue (yes or no)? yes
 Label: savings

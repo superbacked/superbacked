@@ -18,12 +18,14 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
 // derivation to its purpose (a memorized label per password), giving
 // every label an independent key.
 //
-// Deriving without a YubiKey substitutes a fixed public salt: single
-// factor, so leaked derived material becomes offline-attackable (Argon2d
-// is the only remaining wall) — the trade-off for working without hardware.
+// Derivation requires the hardware: a hardware-less variant would be
+// single factor, and leaked derived material would become
+// offline-attackable with Argon2d as the only remaining wall — for
+// derived Bitcoin wallets the public blockchain itself would be the
+// verification oracle, so no such variant exists.
 //
 // Context strings share the superbacked-derived-key- prefix followed by
-// a role segment (salt-, challenge-, no-yubikey) — roles diverge at a fixed
+// a role segment (salt-, challenge-) — roles diverge at a fixed
 // position, so no label can make two contexts collide.
 //
 // The whole scheme is frozen: changing any constant, cost parameter or
@@ -39,13 +41,6 @@ import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
 // below belong to version 1 permanently; a future version introduces new
 // strings, it never edits these
 export const schemeVersion = 1
-
-// Salt standing in for the YubiKey response when deriving without hardware —
-// fixed and public, and never equal to a real response (responses are 20
-// bytes), so the two modes derive independent keys
-export const noYubiKeySalt = createHash("sha256")
-  .update("superbacked-derived-key-no-yubikey", "utf8")
-  .digest()
 
 /**
  * Stretch master passphrase into master key using Argon2d
@@ -101,8 +96,7 @@ export const computeChallenge = (masterKey: Buffer, label: string): Buffer => {
 /**
  * Derive 256-bit key from master key and salt
  * @param masterKey 32-byte master key
- * @param salt 20-byte YubiKey HMAC-SHA1 response (or noYubiKeySalt when
- * deriving without hardware)
+ * @param salt 20-byte YubiKey HMAC-SHA1 response
  * @returns 32-byte derived key
  */
 export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
@@ -140,23 +134,4 @@ export const computeDerivedKey = async (
     onTouchRequired
   )
   return deriveKey(masterKey, response)
-}
-
-/**
- * Derive 256-bit key from master passphrase and label alone — single
- * factor, substituting the fixed public salt for the YubiKey response
- * @param masterPassphrase memorized master passphrase
- * @param label label binding the derivation to its purpose
- * @param paranoid stretch at the paranoid profile (see computeMasterKey)
- * @returns 32-byte derived key
- */
-export const computeSingleFactorDerivedKey = async (
-  masterPassphrase: string,
-  label: string,
-  paranoid: boolean
-): Promise<Buffer> => {
-  return deriveKey(
-    await computeMasterKey(masterPassphrase, label, paranoid),
-    noYubiKeySalt
-  )
 }

@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto"
 
-import confirmYes from "@/src/cli/utilities/confirmYes"
+import confirmYes, { CancelledError } from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
 import { promptHidden } from "@/src/cli/utilities/readPassphrase"
 import { bold, red } from "@/src/cli/utilities/style"
@@ -63,7 +63,7 @@ export const provisionYubikeyAction = async (options: {
       await confirmYes(
         red(
           "Provisioning a YubiKey exposes a long-lived secret to the computer running the command.\n" +
-            "We recommend using Superbacked OS when provisioning YubiKey hardware."
+            "When provisioning YubiKey hardware, use Superbacked OS."
         ) + "\nDo you wish to continue (yes or no)? ",
         "Provisioning a YubiKey on this computer requires interactive confirmation"
       )
@@ -116,7 +116,11 @@ export const provisionYubikeyAction = async (options: {
     }
     process.exit(0)
   } catch (error) {
-    console.error(red(errorText(error, "Could not provision YubiKey")))
+    if (error instanceof CancelledError) {
+      console.error(error.message)
+    } else {
+      console.error(red(errorText(error, "Could not provision YubiKey")))
+    }
     process.exit(1)
   }
 }

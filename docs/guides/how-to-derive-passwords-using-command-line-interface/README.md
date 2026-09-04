@@ -9,7 +9,7 @@ Pinned:
 
 ## Overview
 
-Superbacked can derive strong deterministic passwords from a master passphrase, a memorized label (for example `github` or `proton`) and, optionally, a YubiKey. The same inputs always derive the same password, so passwords do not need to be stored or synced — and, when a YubiKey is used, guessing the master passphrase requires the YubiKey hardware.
+Superbacked can derive strong deterministic passwords from a master passphrase, a memorized label (for example `github` or `proton`) and a YubiKey. The same inputs always derive the same password, so passwords do not need to be stored or synced — and guessing the master passphrase requires the YubiKey hardware.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk — especially when provisioning YubiKey hardware.
 
@@ -55,7 +55,7 @@ The `superbacked` command is preinstalled.
 
 ## Usage guide
 
-### Step 1 (optional): provision YubiKey
+### Step 1: provision YubiKey
 
 > Heads-up: on most YubiKeys, slot 1 ships programmed with the factory Yubico OTP credential and overwriting it is permanent — which is why Superbacked defaults to slot 2, leaving the factory credential intact. Use `--slot 1` only if overwriting it is deliberate.
 
@@ -96,6 +96,6 @@ Password copied to clipboard, clearing in 10 seconds…
 
 The password is copied to the clipboard by default, keeping it out of terminal scrollback — pressing enter clears the clipboard immediately. Every derivation states the scheme version (and Paranoid mode, when enabled) — derivation is stateless, so these are part of what must be remembered to re-derive the same password.
 
-Use `--print` to print the password to stdout instead, `--length` to set the password length (default `16`) and `--no-yubikey` to derive without a YubiKey (single factor, weaker). The root `--paranoid` flag hardens key derivation (requiring at least 1 GiB of memory) — a password derived with it can only be re-derived with it.
+Use `--print` to print the password to stdout instead and `--length` to set the password length (default `16`). The root `--paranoid` flag hardens key derivation (requiring at least 1 GiB of memory) — a password derived with it can only be re-derived with it.
 
 To replace a password (for example following a leak), change the label (for example `github2`) — the same label always derives the same password.

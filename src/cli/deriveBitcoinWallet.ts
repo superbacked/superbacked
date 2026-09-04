@@ -1,6 +1,6 @@
 import { InvalidArgumentError, program as cli } from "commander"
 
-import confirmYes from "@/src/cli/utilities/confirmYes"
+import confirmYes, { CancelledError } from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
 import readPassphrase, {
   promptVisible,
@@ -62,7 +62,6 @@ export const deriveBitcoinWalletAction = async (
     reveal?: "mnemonic" | "zprv"
     slot: "1" | "2"
     words: string
-    yubikey: boolean
   }
 ): Promise<void> => {
   try {
@@ -76,7 +75,7 @@ export const deriveBitcoinWalletAction = async (
     // or flag is unrecoverable — so the warning gates every derivation
     await confirmYes(
       red(
-        "Derived Bitcoin wallets should only be used for amounts you are willing to lose.\n" +
+        "Deriving a Bitcoin wallet exposes its private keys to the computer running the command.\n" +
           "For larger amounts, use a signing device such as a Trezor."
       ) + "\nDo you wish to continue (yes or no)? ",
       "Deriving a Bitcoin wallet requires interactive confirmation"
@@ -95,8 +94,7 @@ export const deriveBitcoinWalletAction = async (
     if (resolvedLabel === undefined || resolvedLabel === "") {
       throw new Error("Label required")
     }
-    const slot: Slot | undefined =
-      options.yubikey === false ? undefined : options.slot === "1" ? 1 : 2
+    const slot: Slot = options.slot === "1" ? 1 : 2
     // Confirmation catches typos when creating a wallet — a mistyped
     // passphrase silently derives a different mnemonic
     const masterPassphrase = await readPassphrase(
@@ -127,15 +125,12 @@ export const deriveBitcoinWalletAction = async (
       {
         paranoid: paranoid,
         words: words,
-        yubikey:
-          slot === undefined
-            ? undefined
-            : {
-                onTouchRequired: () => {
-                  console.error(touchYubiKeyText)
-                },
-                slot: slot,
-              },
+        yubikey: {
+          onTouchRequired: () => {
+            console.error(touchYubiKeyText)
+          },
+          slot: slot,
+        },
       }
     )
     // A wrong version, mode or word count at a future derivation would
@@ -202,7 +197,11 @@ export const deriveBitcoinWalletAction = async (
     }
     process.exit(0)
   } catch (error) {
-    console.error(red(errorText(error, "Could not derive Bitcoin wallet")))
+    if (error instanceof CancelledError) {
+      console.error(error.message)
+    } else {
+      console.error(red(errorText(error, "Could not derive Bitcoin wallet")))
+    }
     process.exit(1)
   }
 }

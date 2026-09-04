@@ -7,7 +7,6 @@ import { wordlist } from "@scure/bip39/wordlists/english.js"
 
 import { validateMnemonic } from "@/src/utilities/crypto/bip39"
 import {
-  computeDerivedBitcoinWallet,
   derivationPath,
   deriveAddresses,
   deriveExtendedPrivateKey,
@@ -16,8 +15,8 @@ import {
 } from "@/src/utilities/crypto/derivedBitcoinWallet"
 import {
   computeChallenge,
+  computeMasterKey,
   deriveKey,
-  noYubiKeySalt,
 } from "@/src/utilities/crypto/derivedKey"
 
 // Reference vectors freeze the rendering scheme — changing any constant
@@ -25,7 +24,11 @@ import {
 // derived key scheme beneath it (see tests/derivedKey.test.ts). A
 // mnemonic can guard funds, so unlike a password it can never be rotated
 // away from a mistake: these vectors are the recovery contract.
+// Derivation always mixes in a YubiKey response, so composed tests pin
+// against a fixed response-shaped salt (computeDerivedBitcoinWallet
+// itself requires hardware and is exercised through its parts)
 const derivedKey = Buffer.alloc(32, 1)
+const testSalt = Buffer.alloc(20, 4)
 
 const mnemonic24 =
   "clay knife lonely captain palace usual tissue laugh ring sponsor resemble dismiss fish acid bless juice cool frost surge chair rely fun armed toddler"
@@ -62,11 +65,11 @@ suite("derivedBitcoinWallet", () => {
       deriveMnemonic(deriveKey(masterKey, response), 24),
       "clinic local loan drive sphere feel knife pulse comic olive clinic illegal pistol foot bronze help meat layer yellow stone lady language nest speed"
     )
-    // The single-factor wallet of the same master key is a different one
-    // — the hardware is a factor of the wallet itself
-    assert.strictEqual(
-      deriveMnemonic(deriveKey(masterKey, noYubiKeySalt), 24),
-      "wash shoot humble session conduct slide conduct citizen agent token success program income pottery short away trophy unique clap cheese raccoon rival island usual"
+    // A different response derives a different wallet — the hardware is
+    // a factor of the wallet itself
+    assert.notStrictEqual(
+      deriveMnemonic(deriveKey(masterKey, testSalt), 24),
+      deriveMnemonic(deriveKey(masterKey, response), 24)
     )
   })
 
@@ -147,30 +150,33 @@ suite("derivedBitcoinWallet", () => {
     }
   })
 
-  test("computes derived Bitcoin wallet without YubiKey (reference vector)", async () => {
-    // The full single-factor pipeline — master passphrase to wallet —
-    // over the frozen master key vector (see tests/derivedKey.test.ts)
-    const { extendedPublicKey, mnemonic } = await computeDerivedBitcoinWallet(
-      "lip gift name net sixth",
-      "github",
-      { paranoid: false, words: 24 }
+  test("computes derived Bitcoin wallet of composed derivation (reference vector)", async () => {
+    // The full pipeline — master passphrase to wallet — over the frozen
+    // standard master key vector (see tests/derivedKey.test.ts) against
+    // the fixed response-shaped salt
+    const mnemonic = deriveMnemonic(
+      deriveKey(
+        await computeMasterKey("lip gift name net sixth", "github", false),
+        testSalt
+      ),
+      24
     )
     assert.strictEqual(
       mnemonic,
-      "morning tip first lend amount fortune chimney human chunk rookie decrease clutch mystery amazing screen snack profit gather december crystal hand visual village mule"
+      "latin embrace horn peanut plastic across cigar angry jar fetch gasp napkin slight lava blue trial beyond peasant dizzy heart speak twice country faculty"
     )
     assert.strictEqual(
-      extendedPublicKey,
-      "zpub6rskz9PppDLZKurVF9qhu7bs1TvadsejsGWmsFfQ2aVkKHi3eGiDCQXMEtgHBb1ucSHPMWnbRPoUsGwnAMS81q2ie77dD5sGzSXXpwKbFSo"
+      deriveExtendedPublicKey(mnemonic),
+      "zpub6riKn74K8rCdNac6iZVFqLAbaRiEeDnHx6989W59W3yn883RM35FAumPwmBrs6uYDf94BFerujUHvTgYUZYBjFktiGYPbFvAuWer3BAjiFN"
     )
     // The wallet the reference master passphrase derives — first receive
     // address and account private key, importable into any wallet
     assert.deepStrictEqual(deriveAddresses(mnemonic, 1), [
-      "bc1qmmvmyjcpcqkkw7ssewyd8vw6ud6ctv6rh9m7xq",
+      "bc1qc9prheeuy9yh4qwzw6tnu39wwdejsywupy47j9",
     ])
     assert.strictEqual(
       deriveExtendedPrivateKey(mnemonic),
-      "zprvAdtQadrvyqnG7Rn298JhXyf8TS66EQvtW3bB4sFnUExmSVNu6jPxecCsPcLW3Cp7PGnYqGBr3sx5pQD8RmcCeTgqidMsvZuLS4zcpJE8wbi"
+      "zprvAdiyNbXRJUeLA6XdcXxFUCDs2PskEm4SasDXM7fXwiSoFKiGoVkzd7Sv6VmTETq9Xf5crQgN4ZW2VER1BfqYMmdKrAtjzRRKjUdeuDokYcF"
     )
   })
 
@@ -178,14 +184,16 @@ suite("derivedBitcoinWallet", () => {
     // The mode is a domain input — chained from the frozen paranoid
     // master key vector (see tests/derivedKey.test.ts), and a different
     // wallet than the standard derivation of the same inputs
-    const { mnemonic } = await computeDerivedBitcoinWallet(
-      "lip gift name net sixth",
-      "github",
-      { paranoid: true, words: 24 }
+    const mnemonic = deriveMnemonic(
+      deriveKey(
+        await computeMasterKey("lip gift name net sixth", "github", true),
+        testSalt
+      ),
+      24
     )
     assert.strictEqual(
       mnemonic,
-      "diesel blame drive two section flame fetch this liberty series crater crisp that word heavy half dilemma arrange number doll broken position silly lens"
+      "damage onion kingdom close proud addict sponsor draw sound defense chunk paddle vicious omit any captain illegal print affair alarm decade truck elder garbage"
     )
   })
 })

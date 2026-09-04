@@ -99,7 +99,6 @@ The master passphrase must score a strength of at least 50 (see the [passphrase 
 - `--confirm-passphrase`: Prompt for master passphrase twice and require a match — catches typos when creating a password (interactive prompts only; a piped passphrase is used as-is)
 - `--derivation-version <version>`: Derivation scheme version (only `1` exists — the option gates and documents rather than branches, and every derivation states the version used)
 - `-l, --length <length>`: Password length (default `16`, minimum `8`, maximum `128`)
-- `--no-yubikey`: Derive without YubiKey (single factor, weaker — see the [derived key technical documentation](derived-key.md))
 - `-p, --print`: Print password to stdout instead of copying it to clipboard
 - `-s, --slot <slot>`: HMAC-SHA1 challenge-response slot (default `2`)
 

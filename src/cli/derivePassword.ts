@@ -68,7 +68,6 @@ export const derivePasswordAction = async (
     length: number
     print?: boolean
     slot: "1" | "2"
-    yubikey: boolean
   }
 ): Promise<void> => {
   try {
@@ -86,8 +85,7 @@ export const derivePasswordAction = async (
     if (resolvedLabel === undefined || resolvedLabel === "") {
       throw new Error("Label required")
     }
-    const slot: Slot | undefined =
-      options.yubikey === false ? undefined : options.slot === "1" ? 1 : 2
+    const slot: Slot = options.slot === "1" ? 1 : 2
     // Confirmation catches typos when creating a password — a mistyped
     // passphrase silently derives a different password
     const masterPassphrase = await readPassphrase(
@@ -119,15 +117,12 @@ export const derivePasswordAction = async (
       {
         length: options.length,
         paranoid: paranoid,
-        yubikey:
-          slot === undefined
-            ? undefined
-            : {
-                onTouchRequired: () => {
-                  console.error(touchYubiKeyText)
-                },
-                slot: slot,
-              },
+        yubikey: {
+          onTouchRequired: () => {
+            console.error(touchYubiKeyText)
+          },
+          slot: slot,
+        },
       }
     )
     // A wrong version or mode at a future derivation would silently

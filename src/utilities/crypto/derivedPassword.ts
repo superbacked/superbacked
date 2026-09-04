@@ -1,13 +1,10 @@
-import {
-  computeDerivedKey,
-  computeSingleFactorDerivedKey,
-} from "@/src/utilities/crypto/derivedKey"
+import { computeDerivedKey } from "@/src/utilities/crypto/derivedKey"
 import { hkdf } from "@/src/utilities/crypto/primitives"
 import { ChallengeResponseOptions } from "@/src/utilities/yubikey/otp"
 
 // Deterministic password rendering from a derived key (see
 // src/utilities/crypto/derivedKey.ts, which binds the master passphrase, the label
-// and the optional YubiKey response) — the key is the HKDF input keying
+// and the YubiKey response) — the key is the HKDF input keying
 // material for an unbounded byte stream that is rejection-sampled into the
 // password character set.
 //
@@ -127,7 +124,7 @@ export const derivePassword = (derivedKey: Buffer, length: number): string => {
 
 /**
  * Derive password from master passphrase and label, computing the response
- * on YubiKey when challenge-response is requested (single factor otherwise)
+ * on YubiKey
  * @param masterPassphrase memorized master passphrase
  * @param label memorized label (for example github or proton)
  * @param options derivation options — paranoid stretches at the paranoid
@@ -141,22 +138,15 @@ export const computeDerivedPassword = async (
   options: {
     length: number
     paranoid: boolean
-    yubikey?: ChallengeResponseOptions
+    yubikey: ChallengeResponseOptions
   }
 ): Promise<string> => {
-  const derivedKey =
-    options.yubikey === undefined
-      ? await computeSingleFactorDerivedKey(
-          masterPassphrase,
-          label,
-          options.paranoid
-        )
-      : await computeDerivedKey(
-          masterPassphrase,
-          label,
-          options.paranoid,
-          options.yubikey.slot,
-          options.yubikey.onTouchRequired
-        )
+  const derivedKey = await computeDerivedKey(
+    masterPassphrase,
+    label,
+    options.paranoid,
+    options.yubikey.slot,
+    options.yubikey.onTouchRequired
+  )
   return derivePassword(derivedKey, options.length)
 }

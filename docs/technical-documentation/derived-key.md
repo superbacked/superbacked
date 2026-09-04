@@ -109,7 +109,7 @@ export const computeChallenge = (masterKey: Buffer, label: string): Buffer => {
 
 - **Passphrase concealment**: YubiKey receives one 32-byte HMAC-SHA256 output per label — under the PRF assumption this value is computationally indistinguishable from random data and reveals nothing about the master key, so even a backdoored device logging every challenge collects only PRF images (inverting one to the passphrase requires a memory-hard dictionary attack through Argon2d)
 - **Hardware gating**: The challenge is a secret function of the master passphrase, so an attacker cannot pose the right question to the YubiKey without already knowing the passphrase — given leaked derived material, each passphrase guess requires Argon2d plus a live round-trip through the physical YubiKey, capping brute-force throughput at USB challenge-response speed instead of GPU speed (no offline attack exists)
-- **Domain separation**: Context strings share the `superbacked-derived-key-` prefix followed by a role segment (`salt-`, `challenge-`, `no-yubikey`) — roles diverge at a fixed position so no label can make two contexts collide, and fixed 32-byte output keeps the challenge within the 64-byte HMAC-SHA1 challenge limit regardless of label length
+- **Domain separation**: Context strings share the `superbacked-derived-key-` prefix followed by a role segment (`salt-`, `challenge-`) — roles diverge at a fixed position so no label can make two contexts collide, and fixed 32-byte output keeps the challenge within the 64-byte HMAC-SHA1 challenge limit regardless of label length
 
 ## YubiKey challenge-response
 
@@ -164,7 +164,7 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
 **Parameters:**
 
 - **Input keying material**: 256-bit master key
-- **Salt**: 160-bit YubiKey response (or fixed public salt when deriving without YubiKey)
+- **Salt**: 160-bit YubiKey response
 - **Info**: `superbacked-derived-key` — the label is already bound through the master key salt and the challenge
 - **Output**: 256-bit derived key
 
@@ -174,18 +174,9 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
 - **Label independence**: Under the PRF assumption, keys for different labels are computationally independent — material leaked from one label reveals nothing about any other
 - **Fixed width**: The output is always 256 bits — consumers needing further key material derive purpose-bound subkeys from it (HKDF outputs of different lengths would share prefixes, not be independent)
 
-## Deriving without YubiKey
+## Why derivation requires a YubiKey
 
-The single-factor variant (`computeSingleFactorDerivedKey`) substitutes a fixed public salt for the response — a deliberate, separately-named choice rather than a mode of the two-factor derivation:
-
-```typescript
-export const noYubiKeySalt = createHash("sha256")
-  .update("superbacked-derived-key-no-yubikey", "utf8")
-  .digest()
-```
-
-- **Independence**: The fixed salt is 32 bytes and can never equal a 20-byte response, so keys derived with and without YubiKey for the same label are independent — deriving without YubiKey is not a fallback for a lost key
-- **Trade-off**: Single factor — leaked derived material becomes offline-attackable, with Argon2d as the only remaining wall
+A hardware-less variant would be single factor: leaked derived material would become offline-attackable, with Argon2d as the only remaining wall — and for derived Bitcoin wallets the public blockchain itself would be the verification oracle, letting anyone grind passphrase and label guesses against on-chain activity without any leak at all. No such variant exists: every derivation mixes in the YubiKey response, and hardware redundancy (a second YubiKey programmed with the same slot secret, backed up in a block or blockset) is the recovery story.
 
 ## Security model
 
@@ -205,7 +196,7 @@ export const noYubiKeySalt = createHash("sha256")
 
 ## Consumers
 
-- **[Derived passwords](derived-password.md)**: the derived key (`computeDerivedKey`, or `computeSingleFactorDerivedKey` without hardware) is the input keying material for a rendering stream domain-separated by the `superbacked-derived-password` context — a rendered password reveals nothing about the key itself
+- **[Derived passwords](derived-password.md)**: the derived key (`computeDerivedKey`) is the input keying material for a rendering stream domain-separated by the `superbacked-derived-password` context — a rendered password reveals nothing about the key itself
 - **[Derived Bitcoin wallets](derived-bitcoin-wallet.md)**: the same derived key expanded into BIP39 entropy under the `superbacked-derived-mnemonic-` context — a wallet and a password derived from the same label never share bytes
 
 YubiKey-protected standalone archives and blocks do not consume this scheme — they store a salt, so they bind it from the first step through the [passphrase key](passphrase-key.md) scheme instead. Both schemes share slot provisioning and the wire protocol above.

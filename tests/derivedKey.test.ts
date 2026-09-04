@@ -1,13 +1,11 @@
 import assert from "assert"
-import { createHash, createHmac, hkdfSync } from "crypto"
+import { createHmac, hkdfSync } from "crypto"
 import { suite, test } from "node:test"
 
 import {
   computeChallenge,
   computeMasterKey,
-  computeSingleFactorDerivedKey,
   deriveKey,
-  noYubiKeySalt,
   schemeVersion,
 } from "@/src/utilities/crypto/derivedKey"
 
@@ -16,6 +14,9 @@ import {
 // are pinned by raw crypto recomputation, not just output values.
 const masterKey = Buffer.alloc(32, 1)
 const otherMasterKey = Buffer.alloc(32, 2)
+// Stands in for a YubiKey HMAC-SHA1 response (20 bytes) — derivation
+// always mixes in a response, so tests pin against a fixed one
+const testSalt = Buffer.alloc(20, 4)
 
 suite("derivedKey", () => {
   test("freezes scheme version", () => {
@@ -23,23 +24,6 @@ suite("derivedKey", () => {
     // --derivation-version — a silent bump would strand every derived
     // password and wallet behind a version nobody chose
     assert.strictEqual(schemeVersion, 1)
-  })
-
-  test("freezes no-YubiKey salt", () => {
-    assert.strictEqual(
-      noYubiKeySalt.toString("hex"),
-      "7df9f6209325de42d129e9cc4900ca2f0c34fefad9c8ee76874010e0e89917a3"
-    )
-    // Raw crypto recomputation pins the frozen context string
-    assert.deepStrictEqual(
-      noYubiKeySalt,
-      createHash("sha256")
-        .update("superbacked-derived-key-no-yubikey", "utf8")
-        .digest()
-    )
-    // A real YubiKey response is 20 bytes, so the two modes can never share
-    // a salt
-    assert.strictEqual(noYubiKeySalt.length, 32)
   })
 
   test("computes challenge", () => {
@@ -69,20 +53,20 @@ suite("derivedKey", () => {
 
   test("derives key", () => {
     assert.strictEqual(
-      deriveKey(masterKey, noYubiKeySalt).toString("hex"),
-      "e623b3ec80f5042f2e4e5453b2bd4bcb25cf78c3d4a1bdd0dfeee030535ce20a"
+      deriveKey(masterKey, testSalt).toString("hex"),
+      "0c23a1d44867c6ee155a5c85c1ca3e8e7c3b09ad83d8847d9bafa3089da53113"
     )
   })
 
   test("verifies key construction independently", () => {
     // Raw crypto recomputation pins the frozen info string
     assert.deepStrictEqual(
-      deriveKey(masterKey, noYubiKeySalt),
+      deriveKey(masterKey, testSalt),
       Buffer.from(
         hkdfSync(
           "sha256",
           masterKey,
-          noYubiKeySalt,
+          testSalt,
           Buffer.from("superbacked-derived-key", "utf8"),
           32
         )
@@ -106,15 +90,15 @@ suite("derivedKey", () => {
 
   test("derives distinct keys for distinct salts", () => {
     assert.notDeepStrictEqual(
-      deriveKey(masterKey, noYubiKeySalt),
+      deriveKey(masterKey, testSalt),
       deriveKey(masterKey, Buffer.alloc(20, 3))
     )
   })
 
   test("derives distinct keys for distinct master keys", () => {
     assert.notDeepStrictEqual(
-      deriveKey(masterKey, noYubiKeySalt),
-      deriveKey(otherMasterKey, noYubiKeySalt)
+      deriveKey(masterKey, testSalt),
+      deriveKey(otherMasterKey, testSalt)
     )
   })
 
@@ -152,22 +136,6 @@ suite("derivedKey", () => {
     assert.notDeepStrictEqual(
       await computeMasterKey("lip gift name net sixth", "github", false),
       await computeMasterKey("lip gift name net sixth", "proton", false)
-    )
-  })
-
-  test("computes single-factor derived key equal to composed derivation", async () => {
-    // The single-factor variant substitutes the fixed public salt for the
-    // response
-    assert.deepStrictEqual(
-      await computeSingleFactorDerivedKey(
-        "lip gift name net sixth",
-        "github",
-        false
-      ),
-      deriveKey(
-        await computeMasterKey("lip gift name net sixth", "github", false),
-        noYubiKeySalt
-      )
     )
   })
 })
