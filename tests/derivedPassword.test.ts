@@ -93,7 +93,7 @@ suite("derivedPassword", () => {
       "github",
       { length: 16, paranoid: false }
     )
-    assert.strictEqual(password, "R2hy}w9U@ct3<%K]")
+    assert.strictEqual(password, "iqd!_AC4}Lm.c=jN")
   })
 
   test("computes derived password equal to composed derivation", async () => {

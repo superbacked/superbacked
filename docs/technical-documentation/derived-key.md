@@ -51,8 +51,9 @@ export const computeMasterKey = async (
 ): Promise<Buffer> => {
   const salt = createHash("sha256")
     .update(`superbacked-derived-key-salt-${label}`, "utf8")
-    .digest("hex")
-    .substring(0, 32)
+    .digest()
+    .subarray(0, 16)
+    .toString("base64")
   return argon2(
     masterPassphrase,
     salt,
@@ -67,7 +68,7 @@ export const computeMasterKey = async (
 
 **Parameters:**
 
-- **Salt**: First 16 bytes (hex-encoded) of SHA-256 of `superbacked-derived-key-salt-` followed by label
+- **Salt**: First 16 bytes (base64-encoded) of SHA-256 of `superbacked-derived-key-salt-` followed by label
 - **Variant**: Argon2d (`-d`)
 - **Parallelism**: 4 lanes (`-p 4`)
 - **Memory**: 64 MiB (`-k 65536`) — 1 GiB (`-k 1048576`) under Paranoid mode

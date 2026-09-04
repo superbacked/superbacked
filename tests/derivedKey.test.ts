@@ -129,7 +129,7 @@ suite("derivedKey", () => {
     )
     assert.strictEqual(
       key.toString("hex"),
-      "794091dfc706c2e8e916389801ca58c83cf155d34c7248ec870eefb9b83d072c"
+      "48121ed96e95351ffc9a24d71b9e140e2c0b393d5922e17695806ba66578bf2e"
     )
   })
 
@@ -144,7 +144,7 @@ suite("derivedKey", () => {
     )
     assert.strictEqual(
       key.toString("hex"),
-      "951c1fc722e2b39e62a21d89b948f6d75453c662c614f219fcdc3c63d58984c7"
+      "02bc93548a5e177d5a74987ce7d787a2f60c99595c7d5f69bd460dc53f5b565b"
     )
   })
 

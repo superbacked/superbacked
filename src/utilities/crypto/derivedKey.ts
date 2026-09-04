@@ -67,10 +67,14 @@ export const computeMasterKey = async (
   // full gigabyte across 50 passes under Paranoid mode). The scheme is
   // stateless so the salt is derived, not stored — binding it to the
   // label keeps a precomputed dictionary from transferring across labels.
+  // First 16 digest bytes serialized as base64 — the Argon2d salt shape
+  // shared by every scheme (the binary consumes the literal ASCII bytes,
+  // so the serialization is part of the frozen scheme)
   const salt = createHash("sha256")
     .update(`superbacked-derived-key-salt-${label}`, "utf8")
-    .digest("hex")
-    .substring(0, 32)
+    .digest()
+    .subarray(0, 16)
+    .toString("base64")
   return argon2(
     masterPassphrase,
     salt,
