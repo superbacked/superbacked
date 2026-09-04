@@ -11,7 +11,7 @@ Pinned:
 
 Superbacked can derive deterministic Bitcoin wallets from a master passphrase, a memorized label (for example `savings`) and a YubiKey. The same inputs always derive the same wallet, so nothing needs to be stored or backed up — and the output is a standard BIP39 mnemonic, so recovery is Superbacked-independent: any wallet software can restore it.
 
-> Heads-up: deriving a Bitcoin wallet exposes its private keys to the computer running the command (unlike a signing device, which never releases its seed) and a forgotten passphrase, label or flag is unrecoverable. For larger amounts, use a signing device such as a Trezor.
+> Heads-up: deriving a Bitcoin wallet exposes its private keys to the computer running the command (unlike a signing device, which never releases its seed) and a forgotten passphrase, label or flag is unrecoverable. For amounts you are not willing to lose, use a signing device such as a Trezor.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
@@ -70,7 +70,7 @@ The command is public by default, secret by request: it prints the wallet’s ex
 ```console
 $ superbacked derive-bitcoin-wallet
 Deriving a Bitcoin wallet exposes its private keys to the computer running the command.
-For larger amounts, use a signing device such as a Trezor.
+For amounts you are not willing to lose, use a signing device such as a Trezor.
 Do you wish to continue (yes or no)? yes
 Label: savings
 Passphrase:

@@ -76,7 +76,7 @@ export const deriveBitcoinWalletAction = async (
     await confirmYes(
       red(
         "Deriving a Bitcoin wallet exposes its private keys to the computer running the command.\n" +
-          "For larger amounts, use a signing device such as a Trezor."
+          "For amounts you are not willing to lose, use a signing device such as a Trezor."
       ) + "\nDo you wish to continue (yes or no)? ",
       "Deriving a Bitcoin wallet requires interactive confirmation"
     )
