@@ -48,6 +48,7 @@ import {
   validateMnemonic,
   wordlist,
 } from "@/src/utilities/crypto/bip39"
+import { computeBip85Mnemonic } from "@/src/utilities/crypto/bip85"
 import { characterClasses } from "@/src/utilities/crypto/derivedPassword"
 import { generateToken } from "@/src/utilities/crypto/totp"
 import { handle } from "@/src/utilities/ipc/handle"
@@ -88,6 +89,7 @@ const asyncHandlers = {
   generatePassphrase,
   generatePassword,
   computeBip32RootFingerprint,
+  computeBip85Mnemonic,
   scheduleClipboardClear,
   renderCarrierPdf,
   duplicate,

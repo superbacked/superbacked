@@ -19,7 +19,7 @@ suite("primitives", () => {
     )
   })
 
-  test("short hash is the first eight characters of the hash", () => {
+  test("truncates short hash to the first eight characters of the hash", () => {
     assert.strictEqual(shortHash("superbacked"), "07376996")
     assert.strictEqual(
       shortHash("superbacked"),

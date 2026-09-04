@@ -320,13 +320,16 @@
       "bip32RootFingerprint": "BIP32 root fingerprint",
       "bip39Mnemonic": "BIP39 mnemonic",
       "bip39Passphrase": "BIP39 passphrase",
+      "bip85Mnemonic": "BIP85 mnemonic",
       "blockRequiresNewerVersion": "Block requires a newer version of Superbacked",
       "couldNotRestoreDetachedArchive": "Could not restore detached archive",
       "couldNotUnlockBlock": "Could not unlock block",
       "couldNotUnlockBlockYubiKey": "Could not unlock block — wrong passphrase, YubiKey or slot",
+      "deriveBip85Mnemonic": "Derive BIP85 mnemonic",
       "detachedArchiveRequiresNewerVersion": "Detached archive requires a newer version of Superbacked",
       "detachedArchiveRestored": "Detached archive restored",
       "dragAndDropArchiveToRestore": "Drag and drop {{filename}} to restore archive",
+      "index": "Index",
       "notProvisionedOnYubiKey": "Not provisioned on connected YubiKey",
       "provisionedInSlot": "Provisioned in slot {{slot}}",
       "restoringDetachedArchive": "Restoring detached archive",
@@ -337,6 +340,7 @@
       "token": "Token",
       "totp": "TOTP",
       "verify": "Verify",
+      "words": "Words",
       "yubikeyChallengeResponseSecret": "YubiKey challenge-response secret"
     }
   }

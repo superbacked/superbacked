@@ -4,8 +4,10 @@ import {
   Button,
   Group,
   Mark,
+  NumberInput,
   Popover,
   RingProgress,
+  SegmentedControl,
   Space,
   Text,
   rgba,
@@ -144,16 +146,17 @@ const appletGridGap = {
   rowGap: "2px",
 }
 
-interface Bip39MnemonicAppletProps {
-  onCopy: () => void
-  onShowAsQrCode: () => void
-  words: Bip39MnemonicResult["properties"]["words"]
+interface MnemonicWordGridProps {
+  words: string[]
 }
 
-const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
-  props
-) => {
-  const { t } = useTranslation()
+// Six columns per row, so 12- and 24-word mnemonics form clean 2- and
+// 4-row grids. Numbers align down each column, and equal fixed-width
+// columns (13ch fits the longest wordlist words after their numbers)
+// keep every slot in place as words change — toggling between the
+// BIP39 and BIP85 views or iterating the child index never shifts the
+// grid
+const MnemonicWordGrid: FunctionComponent<MnemonicWordGridProps> = (props) => {
   const nodes: ReactNode[] = []
   for (const [index, word] of props.words.entries()) {
     nodes.push(
@@ -180,6 +183,162 @@ const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
     )
   }
   return (
+    <Box
+      sx={{
+        ...appletGridGap,
+        display: "grid",
+        gridTemplateColumns: "repeat(6, 13ch)",
+        justifyContent: "center",
+      }}
+    >
+      {nodes}
+    </Box>
+  )
+}
+
+interface Bip39MnemonicAppletProps {
+  mnemonic: string
+  onCopy: () => void
+  onShowAsQrCode: (value: string) => void
+  words: Bip39MnemonicResult["properties"]["words"]
+}
+
+const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
+  props
+) => {
+  const { t } = useTranslation()
+  const [view, setView] = useState<"mnemonic" | "bip85">("mnemonic")
+  const [childWords, setChildWords] = useState<"12" | "24">("24")
+  const [childIndex, setChildIndex] = useState<number | string>(0)
+  const [childMnemonic, setChildMnemonic] = useState<null | string>(null)
+  // Derives live as inputs change (same compute-and-cancel pattern as
+  // the fingerprint applet) — derivation is deterministic and fast, so a
+  // Derive button would only add a step. Children derive without a BIP39
+  // passphrase (empty by convention). State resets when the popover
+  // closes (the dropdown unmounts), so derived children never linger
+  useEffect(() => {
+    if (view !== "bip85" || typeof childIndex !== "number") {
+      return
+    }
+    let cancelled = false
+    const compute = async () => {
+      const computed = await window.api.invoke.computeBip85Mnemonic(
+        props.mnemonic,
+        "",
+        childWords === "12" ? 12 : 24,
+        childIndex
+      )
+      if (cancelled === false) {
+        setChildMnemonic(computed)
+      }
+    }
+    void compute()
+    return () => {
+      cancelled = true
+    }
+  }, [childIndex, childWords, props.mnemonic, view])
+  if (view === "bip85") {
+    return (
+      <Fragment>
+        {/* Same title treatment and lg gap as the passphrase-strength and
+            block-capacity popovers, so popovers read as one family */}
+        <Text fw="bold" ta="center" variant="signatureGradient">
+          {t("routes.restore.bip85Mnemonic")}
+        </Text>
+        <Space h="lg" />
+        {/* Word count and index share a line — dark labels next to their
+            controls, centered like the rest of the applet */}
+        <Box
+          sx={{
+            ...appletGridGap,
+            alignItems: "center",
+            display: "grid",
+            gridTemplateColumns: "repeat(4, max-content)",
+            justifyContent: "center",
+          }}
+        >
+          {/* The BIP39 application's own parameter names ({words} and
+              {index} in the spec path), so labels match the standard */}
+          <Text c="dark.4" ta="left">
+            {t("routes.restore.words")}:
+          </Text>
+          <SegmentedControl
+            data={[
+              { label: "12", value: "12" },
+              { label: "24", value: "24" },
+            ]}
+            onChange={(value) => {
+              setChildWords(value as "12" | "24")
+            }}
+            size="xs"
+            value={childWords}
+          />
+          <Text c="dark.4" ta="left">
+            {t("routes.restore.index")}:
+          </Text>
+          <NumberInput
+            allowDecimal={false}
+            allowNegative={false}
+            hideControls
+            max={2147483647}
+            min={0}
+            onChange={(value) => {
+              setChildIndex(value)
+              // Cleared at the event site (the effect only computes) — a
+              // cleared index has no derivation to show
+              if (typeof value !== "number") {
+                setChildMnemonic(null)
+              }
+            }}
+            size="xs"
+            value={childIndex}
+            w={80}
+          />
+        </Box>
+        <Space h="xl" />
+        {/* Empty slots while a cleared index has no derivation to show —
+            numbers keep their places instead of the grid vanishing */}
+        <MnemonicWordGrid
+          words={
+            childMnemonic === null
+              ? Array.from({ length: childWords === "12" ? 12 : 24 }, () => "")
+              : childMnemonic.split(" ")
+          }
+        />
+        <Space h="xl" />
+        <Group justify="center">
+          <Button.Group>
+            <Button
+              disabled={childMnemonic === null}
+              onClick={async () => {
+                if (childMnemonic !== null) {
+                  await copySecretText(childMnemonic)
+                }
+              }}
+              size="xs"
+              variant="default"
+            >
+              {t("common.copy")}
+            </Button>
+            <Button
+              disabled={childMnemonic === null}
+              onClick={() => {
+                if (childMnemonic !== null) {
+                  props.onShowAsQrCode(childMnemonic)
+                }
+              }}
+              rightSection={<IconQrcode size={14} />}
+              size="xs"
+              variant="default"
+            >
+              {t("routes.restore.showAsQrCode")}
+            </Button>
+          </Button.Group>
+        </Group>
+      </Fragment>
+    )
+  }
+  return (
     <Fragment>
       {/* Same title treatment and lg gap as the passphrase-strength and
           block-capacity popovers, so popovers read as one family */}
@@ -187,27 +346,29 @@ const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
         {t("routes.restore.bip39Mnemonic")}
       </Text>
       <Space h="lg" />
-      {/* Six columns per row, so 12- and 24-word mnemonics form clean 2-
-          and 4-row grids. Numbers align down each column, and max-content
-          columns hug their own widest cell — equal-width columns would
-          pad every column to the grid-wide widest word */}
-      <Box
-        sx={{
-          ...appletGridGap,
-          display: "grid",
-          gridTemplateColumns: "repeat(6, max-content)",
-        }}
-      >
-        {nodes}
-      </Box>
+      <MnemonicWordGrid words={props.words} />
       <Space h="xl" />
       <Group justify="center">
         <Button.Group>
           <Button onClick={props.onCopy} size="xs" variant="default">
             {t("common.copy")}
           </Button>
+          {/* Between copy and QR like verify on the YubiKey applet —
+              applet-specific actions sit in the middle, show as QR code
+              closes the group */}
           <Button
-            onClick={props.onShowAsQrCode}
+            onClick={() => {
+              setView("bip85")
+            }}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.deriveBip85Mnemonic")}
+          </Button>
+          <Button
+            onClick={() => {
+              props.onShowAsQrCode(props.mnemonic)
+            }}
             rightSection={<IconQrcode size={14} />}
             size="xs"
             variant="default"
@@ -697,12 +858,13 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                     key={`line-node-${lineNodes.length}`}
                     dropdown={(controls) => (
                       <Bip39MnemonicApplet
+                        mnemonic={result.string}
                         onCopy={async () => {
                           await copySecretText(result.string)
                         }}
-                        onShowAsQrCode={() => {
+                        onShowAsQrCode={(value) => {
                           controls.close()
-                          setQrCodeValue(result.string)
+                          setQrCodeValue(value)
                           setShowQrCodeModal(true)
                         }}
                         words={result.properties.words}

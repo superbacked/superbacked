@@ -45,6 +45,7 @@ const api: Api = {
     generatePassphrase: invoke("generatePassphrase"),
     generatePassword: invoke("generatePassword"),
     computeBip32RootFingerprint: invoke("computeBip32RootFingerprint"),
+    computeBip85Mnemonic: invoke("computeBip85Mnemonic"),
     scheduleClipboardClear: invoke("scheduleClipboardClear"),
     create: invoke("create"),
     renderCarrierPdf: invoke("renderCarrierPdf"),

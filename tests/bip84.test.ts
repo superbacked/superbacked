@@ -23,7 +23,7 @@ const zpub =
   "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs"
 
 suite("bip84", () => {
-  test("derivation path is the BIP84 first account", () => {
+  test("freezes derivation path at the BIP84 first account", () => {
     assert.strictEqual(bip84DerivationPath, "m/84'/0'/0'")
   })
 
