@@ -118,7 +118,8 @@
     },
     "featureDescriptionModal": {
       "learnMore": "En savoir plus",
-      "detachedArchiveDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les blocs et sont restaurées à l’aide de blocs et de phrases de passe.",
+      "detachedArchiveBlockDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les blocs et sont restaurées à l’aide de blocs, de phrases de passe et optionnellement d’une YubiKey.",
+      "detachedArchiveBlocksetDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les ensembles de blocs et sont restaurées à l’aide d’un seuil de blocs et de phrases de passe.",
       "standaloneArchiveDescription": "Les archives autonomes chiffrent les fichiers et dossiers à l’aide de phrases de passe et optionnellement d’une YubiKey et sont restaurées sans blocs."
     },
     "fileManager": {

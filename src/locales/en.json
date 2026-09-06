@@ -118,7 +118,8 @@
     },
     "featureDescriptionModal": {
       "learnMore": "Learn more",
-      "detachedArchiveDescription": "Detached archives encrypt files and folders using master keys embedded in blocks and are restored using blocks and passphrases.",
+      "detachedArchiveBlockDescription": "Detached archives encrypt files and folders using master keys embedded in blocks and are restored using blocks, passphrases and optional YubiKeys.",
+      "detachedArchiveBlocksetDescription": "Detached archives encrypt files and folders using master keys embedded in blocksets and are restored using a threshold of blocks and passphrases.",
       "standaloneArchiveDescription": "Standalone archives encrypt files and folders using passphrases and optional YubiKeys and are restored without blocks."
     },
     "fileManager": {

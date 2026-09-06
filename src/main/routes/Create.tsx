@@ -1063,9 +1063,13 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         !currentSecret?.detachedArchive ? (
           <ActionBadge>
             {t("routes.create.dragAndDropFileToProvisionDetachedArchive")}{" "}
+            {/* YubiKey protection applies to standard blocks only, so
+                only the block variant mentions it */}
             <InfoButton tabIndex={-1}>
               {t(
-                "components.featureDescriptionModal.detachedArchiveDescription"
+                isBlockset === true
+                  ? "components.featureDescriptionModal.detachedArchiveBlocksetDescription"
+                  : "components.featureDescriptionModal.detachedArchiveBlockDescription"
               )}
             </InfoButton>
           </ActionBadge>
