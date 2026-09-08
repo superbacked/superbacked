@@ -26,6 +26,7 @@ import {
   minimumPasswordLength,
 } from "@/src/utilities/crypto/derivedPassword"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
+import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import { Slot } from "@/src/utilities/yubikey/otp"
 
 // Command action (the CLI surface is declared in index.ts). The password is
@@ -158,7 +159,11 @@ export const derivePasswordAction = async (
     }
     process.exit(0)
   } catch (error) {
-    console.error(red(errorText(error, "Could not derive password")))
+    console.error(
+      red(
+        errorText(await refineYubiKeyError(error), "Could not derive password")
+      )
+    )
     process.exit(1)
   }
 }

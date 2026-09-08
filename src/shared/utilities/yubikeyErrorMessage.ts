@@ -5,6 +5,9 @@ export type YubiKeyErrorMessage = ValidateTranslationKeys<
   | "common.couldNotCommunicateWithYubiKey"
   | "common.noYubiKeyDetected"
   | "common.multipleYubiKeysDetected"
+  | "common.yubiKeyConfigurationLocked"
+  | "common.yubiKeyOtpInterfaceDisabled"
+  | "common.yubiKeyOtpNotSupported"
   | "common.yubiKeySlotNotProvisioned"
   | "common.yubiKeyTouchTimedOut"
 >
@@ -18,9 +21,12 @@ export const yubikeyErrorMessageKeys: Partial<
   Record<YubiKeyErrorCode, YubiKeyErrorMessage>
 > = {
   communication: "common.couldNotCommunicateWithYubiKey",
+  configurationLocked: "common.yubiKeyConfigurationLocked",
   multipleDevices: "common.multipleYubiKeysDetected",
   noDevice: "common.noYubiKeyDetected",
   notProvisioned: "common.yubiKeySlotNotProvisioned",
+  otpInterfaceDisabled: "common.yubiKeyOtpInterfaceDisabled",
+  otpNotSupported: "common.yubiKeyOtpNotSupported",
   touchTimeout: "common.yubiKeyTouchTimedOut",
 }
 

@@ -118,9 +118,12 @@ const matchesOtpInterface = (device: Device): boolean => {
 // asYubiKeyError below)
 export type YubiKeyErrorCode =
   | "communication"
+  | "configurationLocked"
   | "multipleDevices"
   | "noDevice"
   | "notProvisioned"
+  | "otpInterfaceDisabled"
+  | "otpNotSupported"
   | "provisioningRejected"
   | "touchTimeout"
 
@@ -134,12 +137,13 @@ export class YubiKeyError extends Error {
   }
 }
 
-// Every error escaping the public functions below is a YubiKeyError, so
-// both surfaces resolve the same code into the same wording — the message
+// Every error escaping the public functions of this module (and of
+// management.ts, which shares this collapse) is a YubiKeyError, so both
+// surfaces resolve the same code into the same wording — the message
 // carried here serves logs, cause chains and codes without a locale key,
 // with low-level failures collapsed into one, preserving the underlying
 // error as cause
-const asYubiKeyError = (error: unknown): YubiKeyError => {
+export const asYubiKeyError = (error: unknown): YubiKeyError => {
   if (error instanceof YubiKeyError) {
     return error
   }
@@ -152,8 +156,21 @@ const asYubiKeyError = (error: unknown): YubiKeyError => {
 
 const findDevicePath = async (): Promise<string> => {
   const devices = await devicesAsync()
-  const matches = devices.filter(matchesOtpInterface)
+  const yubicoDevices = devices.filter(
+    (device) => device.vendorId === yubicoVendorId
+  )
+  const matches = yubicoDevices.filter(matchesOtpInterface)
   if (matches.length === 0) {
+    // A Yubico device without the keyboard interface either has OTP
+    // disabled over USB or is a model without the OTP application
+    // (Security Key and Bio series) — tools speaking CCID, such as Yubico
+    // Authenticator, still detect it, so "no device" would mislead
+    if (yubicoDevices.length > 0) {
+      throw new YubiKeyError(
+        "otpInterfaceDisabled",
+        "YubiKey detected but OTP interface is disabled"
+      )
+    }
     throw new YubiKeyError("noDevice", "No YubiKey detected")
   }
   if (matches.length > 1) {
@@ -499,7 +516,7 @@ const awaitConfigurationWrite = async (
       // access-code hint is the actionable part
       throw new YubiKeyError(
         "provisioningRejected",
-        "Provisioning rejected (is the slot protected by an access code?)"
+        "Provisioning rejected (slot may be protected by an access code)"
       )
     }
     // Device is busy applying the write

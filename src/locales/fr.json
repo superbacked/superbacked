@@ -250,6 +250,9 @@
     "couldNotCommunicateWithYubiKey": "Impossible de communiquer avec la YubiKey",
     "noYubiKeyDetected": "Aucune YubiKey détectée",
     "multipleYubiKeysDetected": "Plusieurs YubiKey détectées — n’en garder qu’une seule connectée",
+    "yubiKeyConfigurationLocked": "Configuration YubiKey protégée par un code de verrouillage",
+    "yubiKeyOtpInterfaceDisabled": "YubiKey détectée mais interface OTP désactivée",
+    "yubiKeyOtpNotSupported": "YubiKey non compatible avec le défi-réponse OTP (séries Bio et Security Key)",
     "yubiKeySlotNotProvisioned": "Slot YubiKey non provisionné pour le défi-réponse",
     "yubiKeyTouchTimedOut": "YubiKey non touchée à temps"
   },

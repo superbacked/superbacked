@@ -17,6 +17,7 @@ import { classifyPrefixedShare } from "@/src/utilities/core/legacy/blockset"
 import { UnsupportedVersionError } from "@/src/utilities/crypto/schemeHeader"
 import { getSenderWebContents } from "@/src/utilities/ipc/handleContext"
 import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
+import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import {
   Slot,
   YubiKeyError,
@@ -174,7 +175,8 @@ export default async (
     } else {
       return assembleSuccess(message.toString(), legacyPayload)
     }
-  } catch (error) {
+  } catch (caughtError) {
+    const error = await refineYubiKeyError(caughtError)
     return {
       error: error instanceof Error ? error.message : "Could not restore block",
       success: false,

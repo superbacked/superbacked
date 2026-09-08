@@ -2,6 +2,10 @@ import assert from "assert"
 import { suite, test } from "node:test"
 
 import {
+  buildEnableOtpConfiguration,
+  parseDeviceInfo,
+} from "@/src/utilities/yubikey/management"
+import {
   buildHmacSha1Configuration,
   calculateCrc,
 } from "@/src/utilities/yubikey/otp"
@@ -72,5 +76,68 @@ suite("yubikey", () => {
     assert.throws(() => buildHmacSha1Configuration(Buffer.alloc(21), false), {
       message: "Secret must be 20 bytes",
     })
+  })
+})
+
+// The device info layout and write payload are frozen against the reference
+// implementation in yubikey-manager (yubikit/management.py, DeviceInfo and
+// DeviceConfig.get_bytes)
+suite("yubikey management", () => {
+  // Length prefix, then TLVs: USB supported (0x033f), USB enabled (0x023e —
+  // OTP off), version 5.7.1 and unset configuration lock
+  const deviceInfo = Buffer.from("100102033f0302023e05030507010a0100", "hex")
+
+  test("parses device info", () => {
+    assert.deepStrictEqual(parseDeviceInfo(deviceInfo), {
+      configurationLocked: false,
+      firmwareVersion: "5.7.1",
+      otpSupported: true,
+      usbConfigurable: true,
+      usbEnabledFlags: 0x023e,
+    })
+  })
+
+  test("parses configuration lock and single-byte capability masks", () => {
+    // USB supported and enabled on 1 byte (pre-FIDO2 masks), version 4.3.2
+    // (interface modes, not per-application configuration), locked
+    const info = parseDeviceInfo(
+      Buffer.from("0e01013f03013e05030403020a0101", "hex")
+    )
+    assert.deepStrictEqual(info, {
+      configurationLocked: true,
+      firmwareVersion: "4.3.2",
+      otpSupported: true,
+      usbConfigurable: false,
+      usbEnabledFlags: 0x3e,
+    })
+  })
+
+  test("rejects malformed device info", () => {
+    // Wrong length prefix
+    assert.throws(() => parseDeviceInfo(Buffer.from("ff0102033f", "hex")), {
+      message: "Malformed device info",
+    })
+    // TLV overruns the structure
+    assert.throws(() => parseDeviceInfo(Buffer.from("030110ff", "hex")), {
+      message: "Malformed device info",
+    })
+    // Missing version
+    assert.throws(() => parseDeviceInfo(Buffer.from("040102033f", "hex")), {
+      message: "Malformed device info",
+    })
+  })
+
+  test("builds length-prefixed configuration enabling OTP with reboot", () => {
+    assert.deepStrictEqual(
+      buildEnableOtpConfiguration(0x023e),
+      Buffer.from("060c000302023f", "hex")
+    )
+  })
+
+  test("preserves already enabled applications", () => {
+    assert.deepStrictEqual(
+      buildEnableOtpConfiguration(0x023f),
+      Buffer.from("060c000302023f", "hex")
+    )
   })
 })

@@ -18,6 +18,7 @@ import { encryptBlockset } from "@/src/utilities/core/blockset"
 import { LegacyPayload } from "@/src/utilities/core/legacy/block"
 import { hash, shortHash } from "@/src/utilities/crypto/primitives"
 import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
+import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import { YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey/otp"
 
 // LegacyPayload is re-exported so renderer and consumer imports stay off
@@ -227,7 +228,8 @@ export default async function create(
       qrs: qrs,
       success: true,
     }
-  } catch (error) {
+  } catch (caughtError) {
+    const error = await refineYubiKeyError(caughtError)
     return {
       error: error instanceof Error ? error.message : "Could not create block",
       success: false,

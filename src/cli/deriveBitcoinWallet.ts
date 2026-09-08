@@ -29,6 +29,7 @@ import {
 } from "@/src/utilities/crypto/derivedBitcoinWallet"
 import { schemeVersion } from "@/src/utilities/crypto/derivedKey"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
+import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import { Slot } from "@/src/utilities/yubikey/otp"
 
 // Command action (the CLI surface is declared in index.ts). Public by
@@ -200,7 +201,14 @@ export const deriveBitcoinWalletAction = async (
     if (error instanceof CancelledError) {
       console.error(error.message)
     } else {
-      console.error(red(errorText(error, "Could not derive Bitcoin wallet")))
+      console.error(
+        red(
+          errorText(
+            await refineYubiKeyError(error),
+            "Could not derive Bitcoin wallet"
+          )
+        )
+      )
     }
     process.exit(1)
   }

@@ -250,6 +250,9 @@
     "couldNotCommunicateWithYubiKey": "Could not communicate with YubiKey",
     "noYubiKeyDetected": "No YubiKey detected",
     "multipleYubiKeysDetected": "Multiple YubiKeys detected — keep only one connected",
+    "yubiKeyConfigurationLocked": "YubiKey configuration protected by a lock code",
+    "yubiKeyOtpInterfaceDisabled": "YubiKey detected but OTP interface is disabled",
+    "yubiKeyOtpNotSupported": "YubiKey does not support OTP challenge-response (Bio and Security Key series)",
     "yubiKeySlotNotProvisioned": "YubiKey slot not provisioned for challenge-response",
     "yubiKeyTouchTimedOut": "YubiKey touch timed out"
   },

@@ -17,6 +17,9 @@ const yubikeyErrorText: Record<YubiKeyErrorMessage, string> = {
     en.common.couldNotCommunicateWithYubiKey,
   "common.multipleYubiKeysDetected": en.common.multipleYubiKeysDetected,
   "common.noYubiKeyDetected": en.common.noYubiKeyDetected,
+  "common.yubiKeyConfigurationLocked": en.common.yubiKeyConfigurationLocked,
+  "common.yubiKeyOtpInterfaceDisabled": en.common.yubiKeyOtpInterfaceDisabled,
+  "common.yubiKeyOtpNotSupported": en.common.yubiKeyOtpNotSupported,
   "common.yubiKeySlotNotProvisioned": en.common.yubiKeySlotNotProvisioned,
   "common.yubiKeyTouchTimedOut": en.common.yubiKeyTouchTimedOut,
 }

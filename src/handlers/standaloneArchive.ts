@@ -20,6 +20,7 @@ import {
   schemeVersion,
 } from "@/src/utilities/core/standaloneArchive"
 import { generateSalt } from "@/src/utilities/crypto/primitives"
+import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import {
   Slot,
   YubiKeyError,
@@ -88,7 +89,8 @@ export async function createStandaloneArchive(
       manifest,
       success: true,
     }
-  } catch (error) {
+  } catch (caughtError) {
+    const error = await refineYubiKeyError(caughtError)
     await unlink(temporaryPath).catch(() => {})
     return {
       error:
@@ -186,7 +188,8 @@ export async function restoreStandaloneArchive(
       files,
       success: true,
     }
-  } catch (error) {
+  } catch (caughtError) {
+    const error = await refineYubiKeyError(caughtError)
     return {
       authenticationFailed: error instanceof AuthenticationError,
       error:

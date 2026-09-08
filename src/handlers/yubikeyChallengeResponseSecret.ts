@@ -1,3 +1,4 @@
+import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import {
   Slot,
   YubiKeyError,
@@ -53,7 +54,8 @@ export const verifyYubiKeyChallengeResponseSecret = async (
       }
     }
     return { success: true, slot: null }
-  } catch (error) {
+  } catch (caughtError) {
+    const error = await refineYubiKeyError(caughtError)
     if (error instanceof YubiKeyError) {
       return {
         success: false,
