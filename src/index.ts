@@ -375,6 +375,16 @@ cli
 cli.hook("preSubcommand", () => {
   app.disableHardwareAcceleration()
   app.commandLine.appendSwitch("disable-gpu")
+  // The GPU process starts even with the GPU disabled (it hosts the
+  // display compositor) and enumerates hardware video codecs on the way
+  // up — on hardware without a matching libva driver the VA-API probe
+  // itself logs an error (vaInitialize failed). Subcommands decode no
+  // media, so the probes are skipped outright
+  app.commandLine.appendSwitch("disable-accelerated-video-decode")
+  app.commandLine.appendSwitch("disable-accelerated-video-encode")
+  // log-level only takes effect alongside enable-logging (whose stderr
+  // value also keeps Chromium from considering log files)
+  app.commandLine.appendSwitch("enable-logging", "stderr")
   app.commandLine.appendSwitch("log-level", "3")
   // Chromium catches SIGINT and SIGTERM and shuts down cleanly with exit
   // code 0, so an interrupted prompt reads as success to the shell —
