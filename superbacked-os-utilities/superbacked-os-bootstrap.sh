@@ -754,7 +754,7 @@ printf "%s\n" "Configuring Firefox policies…"
 #     at image creation time by apt.
 #   History — Firefox always runs in private browsing; nothing is
 #     remembered between sessions.
-#   Network — DNS goes exclusively through Mullvad’s encrypted resolver,
+#   Network — DNS goes exclusively through Quad9’s encrypted resolver,
 #     never the system resolver (the pinned address bootstraps it);
 #     HTTPS is required, tracking protection is strict, WebRTC is off.
 #   Passwords — Firefox never saves, autofills or suggests credentials,

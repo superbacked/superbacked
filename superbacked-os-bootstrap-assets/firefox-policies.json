@@ -22,7 +22,7 @@
     "DNSOverHTTPS": {
       "Enabled": true,
       "Fallback": false,
-      "ProviderURL": "https://dns.mullvad.net/dns-query",
+      "ProviderURL": "https://dns.quad9.net/dns-query",
       "Locked": true
     },
     "DontCheckDefaultBrowser": true,
