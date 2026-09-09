@@ -1098,8 +1098,6 @@ apt remove --purge --yes \
 
 apt autoremove --purge --yes
 
-apt clean
-
 printf "%s\n" "Disabling networking…"
 
 # Networking is masked, not merely disabled — a disabled service can

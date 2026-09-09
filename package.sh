@@ -10,6 +10,8 @@ normal=$(tput sgr0)
 # Parse command-line options
 build_app=""
 build_os=""
+clear_cache=false
+no_cache=false
 partial=false
 
 function show_help() {
@@ -17,10 +19,12 @@ function show_help() {
 Usage: package.sh [options]
 
 Options:
-  --app       Build app only
-  --os        Build Superbacked OS only
-  --all       Build and package everything without prompts
-  -h, --help  Show this help message
+  --app          Build app only
+  --os           Build Superbacked OS only
+  --all          Build and package everything without prompts
+  --no-cache     Build Superbacked OS without the persistent apt cache
+  --clear-cache  Clear the persistent apt cache before building Superbacked OS
+  -h, --help     Show this help message
 
 If no options are provided, the script will prompt for each step.
 EOF
@@ -45,6 +49,14 @@ while [[ $# -gt 0 ]]; do
     --all)
       build_app=true
       build_os=true
+      shift
+      ;;
+    --clear-cache)
+      clear_cache=true
+      shift
+      ;;
+    --no-cache)
+      no_cache=true
       shift
       ;;
     *)
@@ -107,6 +119,14 @@ if [ "${partial}" != true ] && [ -z "${build_os}" ]; then
   fi
 fi
 
+# --clear-cache rides the OS build’s Colima lifecycle rather than
+# spinning the VM up on its own — declining the build above would
+# silently skip the requested clear, so fail loudly instead
+if [ "${clear_cache}" = true ] && [ "${build_os}" != true ]; then
+  echo "Error: --clear-cache requires building Superbacked OS" >&2
+  exit 1
+fi
+
 if [ "${build_os}" = true ]; then
   printf "%s\n" "Purging Superbacked OS images…"
 
@@ -120,17 +140,23 @@ if [ "${build_os}" = true ]; then
   # a thin margin: pressure shows up as Rosetta-translated subprocesses
   # sporadically dying with empty output and nothing in dmesg — Rosetta
   # allocation failures are silent there; retry, or bump memory if it
-  # becomes frequent.
+  # becomes frequent. (Colima only applies a changed memory value on a
+  # fresh start: colima stop --profile superbacked first when changing
+  # it.)
   #
-  # Colima profiles are not independent: every profile rides one
-  # shared user-v2 usernet daemon, and starting or stopping any
-  # profile also rewrites the active docker context — either can kill
-  # a running build (dead network mid-bootstrap, lima-vm/lima#3020
-  # class) or repoint the CLI. Run the superbacked profile alone while
-  # building.
+  # Colima profiles are not independent: every profile rides one shared
+  # user-v2 usernet daemon, so starting or stopping another profile can
+  # kill a running build’s network mid-bootstrap (lima-vm/lima#3020
+  # class) — avoid profile churn while a build is running.
   #
-  # (Colima only applies a changed memory value on a fresh start:
-  # colima stop --profile superbacked first when changing it.)
+  # The active docker context is just as shared: starting any profile
+  # repoints it, and colima start on an already-running profile does
+  # not point it back, which would land the build in another profile’s
+  # VM (wrong CPU and memory, foreign volumes). Every docker invocation
+  # below therefore pins the superbacked profile’s socket instead of
+  # trusting the context (colima itself ignores DOCKER_HOST).
+  export DOCKER_HOST="unix://${HOME}/.colima/superbacked/docker.sock"
+
   colima start \
     --cpu 4 \
     --disk 20 \
@@ -138,6 +164,12 @@ if [ "${build_os}" = true ]; then
     --profile superbacked \
     --vm-type vz \
     --vz-rosetta
+
+  if [ "${clear_cache}" = true ]; then
+    printf "%s\n" "Clearing apt cache…"
+
+    docker volume rm --force superbacked-apt-cache > /dev/null
+  fi
 
   printf "%s\n" "Building Superbacked OS Docker image…"
 
@@ -160,12 +192,23 @@ if [ "${build_os}" = true ]; then
   # superbacked keeps sudo for on-device profile iteration — the
   # container does not inherit host environment, so it is forwarded
   # explicitly here, then into the chroot by the build script.
+  #
+  # apt archives and indexes persist in a named volume on the Colima VM
+  # disk (surviving colima stop), so interrupted or repeated builds only
+  # download missing packages — see the /cache mounts in
+  # docker/create-superbacked-os-live-image.sh. Integrity is unaffected:
+  # apt verifies cached files against the pinned snapshot hashes.
+  cache_volume=(--volume superbacked-apt-cache:/cache)
+  if [ "${no_cache}" = true ]; then
+    cache_volume=()
+  fi
   docker run \
     --env BUILD_VARIANT="${BUILD_VARIANT:-}" \
     --interactive \
     --privileged \
     --rm \
     --tty \
+    "${cache_volume[@]}" \
     --volume $(pwd)/dist:/dist \
     --volume $(pwd)/superbacked-os:/superbacked-os:ro \
     --volume $(pwd)/superbacked-os-bootstrap-assets:/superbacked-os-bootstrap-assets:ro \

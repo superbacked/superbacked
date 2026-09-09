@@ -60,6 +60,8 @@ function cleanup()
   umount /mnt/root/proc 2> /dev/null || true
   umount /mnt/root/sys 2> /dev/null || true
   umount --recursive /mnt/root/run 2> /dev/null || true
+  umount /mnt/root/var/cache/apt/archives 2> /dev/null || true
+  umount /mnt/root/var/lib/apt/lists 2> /dev/null || true
   umount /mnt/root 2> /dev/null || true
   umount /mnt/scratch 2> /dev/null || true
   umount /mnt/lower 2> /dev/null || true
@@ -115,6 +117,30 @@ mkdir --parents \
 mount --bind /dist /mnt/root/run/dist
 mount --bind /superbacked-os-bootstrap-assets \
   /mnt/root/run/superbacked-os-bootstrap-assets
+
+# apt downloads otherwise land in the tmpfs overlay and vanish with it —
+# when the host provides /cache (a Docker volume mounted by package.sh,
+# absent with --no-cache), archives and indexes persist across builds
+# and interrupted bootstraps, so a retry only downloads what is
+# missing. apt verifies every cached file against the pinned snapshot
+# hashes before use, so a stale or damaged cache entry is re-fetched,
+# never trusted.
+if [ -d /cache ]; then
+  mkdir --parents \
+    /cache/apt/archives/partial \
+    /cache/apt/lists/partial
+  printf "%s\n" "Mounting apt cache ($(find /cache/apt/archives -maxdepth 1 -name '*.deb' | wc --lines) debs, $(du --summarize --human-readable /cache/apt/archives | cut --fields=1))…"
+  mount --bind /cache/apt/archives /mnt/root/var/cache/apt/archives
+  mount --bind /cache/apt/lists /mnt/root/var/lib/apt/lists
+  # The apt binary (unlike apt-get) deletes fetched debs after each
+  # successful install — a built-in Binary::apt default — which would
+  # empty the cache transaction by transaction; keep them while the
+  # cache is mounted (removed with the unmount below)
+  printf '%s\n' \
+    'APT::Keep-Downloaded-Packages "true";' \
+    'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    > /mnt/root/etc/apt/apt.conf.d/99superbacked-apt-cache
+fi
 
 # The source image’s /etc/resolv.conf is a dangling symlink into
 # /run/systemd/resolve — replace it with the container’s resolver for
@@ -186,9 +212,29 @@ mapfile -t old_kernel_packages < <(
 )
 
 if [ "${#old_kernel_packages[@]}" -gt 0 ]; then
-  chroot /mnt/root apt-get purge --yes "${old_kernel_packages[@]}"
-  chroot /mnt/root apt-get clean
+  chroot /mnt/root apt purge --yes "${old_kernel_packages[@]}"
 fi
+
+printf "%s\n" "Cleaning apt archives…"
+
+if [ -d /cache ]; then
+  # Unmounted before the clean below, so the persistent cache is
+  # neither wiped by image hygiene nor shipped in the image.
+  # Deliberately no apt autoclean: its downloadability judgement
+  # inside the chroot deletes the whole cache rather than just
+  # superseded snapshots — package.sh --clear-cache is the growth
+  # valve instead.
+  rm --force /mnt/root/etc/apt/apt.conf.d/99superbacked-apt-cache
+  umount /mnt/root/var/lib/apt/lists
+  umount /mnt/root/var/cache/apt/archives
+fi
+
+# The bootstrap leaves apt archives in place (cleaning there would
+# empty the bind-mounted cache) and the source image ships
+# installer-leftover debs beneath the cache mount — cleaning here,
+# after the last apt operation of the build, keeps archives out of the
+# squashfs on both cached and uncached builds
+chroot /mnt/root apt clean
 
 printf "%s\n" "Regenerating initramfs…"
 
