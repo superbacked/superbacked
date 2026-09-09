@@ -48,8 +48,8 @@ printf "%s\n" "Starting bootstrap…"
 # install time. yubikey-prov.sh is pinned by release tag and by the
 # sha256 of the script, verified before installation (bump both
 # together — superbacked-os-update-pins.sh computes the hash).
-readonly apt_snapshot="20260820T000000Z"
-readonly firefox_version="154.0"
+readonly apt_snapshot="20260908T000000Z"
+readonly firefox_version="155.0.1"
 readonly trezor_sha256="1acd67664bdc1cf389e719c91a09e6069688afa05959715955d5c1c54a2fefde"
 readonly trezor_version="0.20.2"
 readonly yubico_authenticator_version="7.4.1"
