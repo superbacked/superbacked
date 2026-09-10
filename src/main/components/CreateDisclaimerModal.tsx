@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 import { TranslationKey } from "@/src/shared/types/i18n"
 
 interface CreateDisclaimerModalProps {
-  backupType: "standard" | "2of3" | "3of5" | "4of7"
+  backupType: "singleBlock" | "2of3" | "3of5" | "4of7"
   detachedArchiveCount?: number
   secretCount?: number
   // 1-based positions of YubiKey-protected secrets, in creation order
@@ -30,36 +30,36 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
   // mixed-protection sentences whose plural noun is the protected secrets
   let descriptionCount = secretCount
   if (
-    props.backupType === "standard" &&
+    props.backupType === "singleBlock" &&
     yubikeyProtectedCount > 0 &&
     yubikeyProtectedCount === secretCount
   ) {
-    // YubiKey protection applies to standard blocks only — with every
+    // YubiKey protection applies to single blocks only — with every
     // secret protected, the requirement reads collectively
     if (detachedArchiveCount === 0) {
       descriptionKey =
-        "components.createDisclaimerModal.standardWithYubiKeyDescription"
+        "components.createDisclaimerModal.singleBlockWithYubiKeyDescription"
     } else if (detachedArchiveCount === 1) {
       descriptionKey =
-        "components.createDisclaimerModal.standardWithOneDetachedArchiveAndYubiKeyDescription"
+        "components.createDisclaimerModal.singleBlockWithOneDetachedArchiveAndYubiKeyDescription"
     } else {
       descriptionKey =
-        "components.createDisclaimerModal.standardWithMultipleDetachedArchivesAndYubiKeyDescription"
+        "components.createDisclaimerModal.singleBlockWithMultipleDetachedArchivesAndYubiKeyDescription"
     }
-  } else if (props.backupType === "standard" && yubikeyProtectedCount > 0) {
+  } else if (props.backupType === "singleBlock" && yubikeyProtectedCount > 0) {
     // Some secrets protected, others not — the YubiKey clause names the
     // protected secrets by position so the universal requirements are not
     // overstated
     descriptionCount = yubikeyProtectedCount
     if (detachedArchiveCount === 0) {
       descriptionKey =
-        "components.createDisclaimerModal.standardWithSomeYubiKeyDescription"
+        "components.createDisclaimerModal.singleBlockWithSomeYubiKeyDescription"
     } else if (detachedArchiveCount === 1) {
       descriptionKey =
-        "components.createDisclaimerModal.standardWithOneDetachedArchiveAndSomeYubiKeyDescription"
+        "components.createDisclaimerModal.singleBlockWithOneDetachedArchiveAndSomeYubiKeyDescription"
     } else {
       descriptionKey =
-        "components.createDisclaimerModal.standardWithMultipleDetachedArchivesAndSomeYubiKeyDescription"
+        "components.createDisclaimerModal.singleBlockWithMultipleDetachedArchivesAndSomeYubiKeyDescription"
     }
   } else if (detachedArchiveCount === 0) {
     descriptionKey = `components.createDisclaimerModal.${props.backupType}Description`
@@ -76,7 +76,7 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
       opened={props.opened}
       size="sm"
       title={t(
-        props.backupType === "standard"
+        props.backupType === "singleBlock"
           ? "components.createDisclaimerModal.createBlock"
           : "components.createDisclaimerModal.createBlockset"
       )}

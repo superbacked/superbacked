@@ -138,7 +138,7 @@ const Block = styled.img`
 // null is the unselected state — the same sentinel Select reports on
 // deselect, so form state never needs coercion at the input boundary
 type BackupType =
-  null | "standard" | (typeof blocksetBackupTypes)[number]["value"]
+  null | "singleBlock" | (typeof blocksetBackupTypes)[number]["value"]
 
 type ValidBackupType = Exclude<BackupType, null>
 
@@ -506,7 +506,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               message:
                 secrets[index]?.detachedArchive?.blockContent ?? entry.secret,
               passphrase: entry.passphrase,
-              // YubiKey protection applies to standard blocks only — the
+              // YubiKey protection applies to single blocks only — the
               // toggle is never shown for blocksets
               slot:
                 isBlockset === false && entry.yubikey === true
@@ -871,8 +871,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             required
             data={[
               {
-                value: "standard",
-                label: t("routes.create.standard"),
+                value: "singleBlock",
+                label: t("routes.create.singleBlock"),
               },
               ...blocksetBackupTypes.map((type) => ({
                 value: type.value,
@@ -1063,7 +1063,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         !currentSecret?.detachedArchive ? (
           <ActionBadge>
             {t("routes.create.dragAndDropFileToProvisionDetachedArchive")}{" "}
-            {/* YubiKey protection applies to standard blocks only, so
+            {/* YubiKey protection applies to single blocks only, so
                 only the block variant mentions it */}
             <InfoButton tabIndex={-1}>
               {t(
@@ -1148,7 +1148,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           })
     }
 
-    const backupType: ValidBackupType = form.values.backupType ?? "standard"
+    const backupType: ValidBackupType = form.values.backupType ?? "singleBlock"
 
     return (
       <Fragment>
