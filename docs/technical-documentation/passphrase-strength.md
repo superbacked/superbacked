@@ -2,11 +2,11 @@
 
 ## Abstract
 
-This document specifies how Superbacked estimates passphrase strength and gates new passphrases. Strength is a 0–100 score — estimated years of attack at a million-dollar standing budget against the [KDF profile](scheme-registry.md) the passphrase will actually stretch under — and every point where Superbacked accepts a new passphrase requires a score of at least 50, with no override. The requirement is the attack time, not an entropy quota: a stronger profile buys real years and admits proportionally weaker passphrases. The source ([src/shared/utilities/zxcvbn.ts](../../src/shared/utilities/zxcvbn.ts)) is the ground truth for this document, and the reference vectors in [tests/zxcvbn.test.ts](../../tests/zxcvbn.test.ts) pin the estimation scheme.
+This document specifies the design and implementation of passphrase strength estimation. Strength is a 1–100 score — estimated years of attack at a million-dollar standing budget against the [KDF profile](../../src/shared/kdfProfiles.ts) the passphrase will actually stretch under — and every point where Superbacked accepts a new passphrase requires a score of at least 50, with no override. The requirement is the attack time, not an entropy quota: a stronger profile buys real years and admits proportionally weaker passphrases. The source code ([src/shared/utilities/zxcvbn.ts](../../src/shared/utilities/zxcvbn.ts)) is the ground truth for this document, and the reference vectors in [tests/zxcvbn.test.ts](../../tests/zxcvbn.test.ts) pin the estimation scheme.
 
 ## Introduction
 
-Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked protects secrets too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Secrets are backed up — encrypted, offline, with succession planning built in — or never stored at all: derived on demand from a master passphrase and YubiKey.
 
 Passphrases are the knowledge factor behind everything Superbacked protects — blocks, blocksets, standalone archives and derived keys — so a weak passphrase undermines guarantees no cipher or key derivation can restore. Superbacked therefore gates every new passphrase behind a single strength threshold, applied identically in the app and the command-line interface.
 
@@ -15,13 +15,13 @@ Passphrases are the knowledge factor behind everything Superbacked protects — 
 - **Entropy**: bits displayed alongside the attack time — the wordlist bound for passphrases matching a wordlist exactly or within one edit (exact matches alone display without a tilde), log2 of guesses otherwise.
 - **Gate**: the minimum strength required to accept a new passphrase (50).
 - **Guesses**: the number of attempts an informed attacker needs, as estimated by zxcvbn.
-- **Strength**: 0–100 score — estimated years of attack at a million-dollar standing budget, clamped.
+- **Strength**: 1–100 score — estimated years of attack at a million-dollar standing budget, clamped.
 
 ## Estimation
 
 Strength estimation uses [zxcvbn](https://github.com/zxcvbn-ts/zxcvbn) (the maintained TypeScript implementation, loaded with the common and English dictionaries — the common set contributes a breach-derived ranked password list of about 49,000 entries and the EFF large wordlist as a diceware dictionary), extended with product-context user inputs (`superbacked`). zxcvbn decomposes a passphrase into patterns — dictionary words with case and leet variants, keyboard walks, dates, sequences, repeats and brute-force filler — and estimates the number of guesses an attacker exploiting those patterns needs.
 
-Superbacked converts the estimate into a score by pricing zxcvbn’s guess count against the calibrated million-dollar attack budget at the active [KDF profile](scheme-registry.md) (see below):
+Superbacked converts the estimate into a score by pricing zxcvbn’s guess count against the calibrated million-dollar attack budget at the active [KDF profile](../../src/shared/kdfProfiles.ts) (see below):
 
 ```typescript
 export const computeStrength = (guesses: number, profile: KdfProfile) => {
@@ -40,7 +40,7 @@ export const computeStrength = (guesses: number, profile: KdfProfile) => {
 }
 ```
 
-One point of strength is one estimated year of attack at a million-dollar standing budget, rounded to whole years — the same integer the display prints, so the meter and the displayed time can never disagree at the gate boundary — and clamped to 1–100. A score of 50 corresponds to fifty years — roughly 2⁵³ guesses at the standard profile, and fewer under Paranoid mode, whose 80× cost buys the same years from weaker passphrases. The gate is fed the cheapest known attack — the smaller of zxcvbn’s guess count and the wordlist guess count (exact or within one edit, see below). An attacker knows the shipped wordlists, so five short-wordlist words cost at most 1296⁵ (~2⁵² — below the gate at the standard profile) however rare the words are in English; conversely, the wordlist bound assumes uniform random selection, so repeated or hand-picked wordlist words are caught by zxcvbn’s estimate instead.
+One point of strength is one estimated year of attack at a million-dollar standing budget, rounded to whole years — the same integer the display prints, so the meter and the displayed time can never disagree at the gate boundary — and clamped to 1–100. A score of 50 corresponds to fifty years — roughly 2⁵³ guesses at the standard profile, and fewer under Paranoid mode, whose 10× cost buys the same years from weaker passphrases. The gate is fed the cheapest known attack — the smaller of zxcvbn’s guess count and the wordlist guess count (exact or within one edit, see below). An attacker knows the shipped wordlists, so five short-wordlist words cost at most 1296⁵ (~2⁵² — below the gate at the standard profile) however rare the words are in English; conversely, the wordlist bound assumes uniform random selection, so repeated or hand-picked wordlist words are caught by zxcvbn’s estimate instead.
 
 The strength meter displays the score alongside the estimated attack time and entropy in bits. When every word of a passphrase (split on spaces) belongs to a single shipped EFF wordlist, entropy is deterministic — length × log2(wordlist size), using the smallest qualifying wordlist since an attacker who knows the generator searches the smallest space containing every word. zxcvbn cannot provide this: it special-cases its diceware dictionary at a fixed 3,888 guesses per word (average-case credit for large wordlist words, about a bit per word under the full space) and prices short wordlist words by ordinary dictionary rank — arbitrarily off. Words within one Levenshtein edit of a list member qualify too — wordlist plus mangling rules is standard cracking methodology, and single-character edits cost the attacker at most about 2⁹ variants per word, so a near miss is priced identically to an exact match, understating attacker cost by at most ~9 bits per word and erring safe. Stray spaces — leading, trailing or doubled — are likewise trim variants costing the attacker a handful of guesses, so they are ignored for matching but downgrade an exact match to a bound. Near matches and stray-space matches display the same bits marked with a tilde — a bound under an attack model, not exact by construction — and feed the gate through the cheapest-attack minimum like exact matches. Any other passphrase displays zxcvbn’s estimate, log2 of guesses, also marked with a tilde (`~45 bits`) — exact deterministic entropy alone displays without one, while estimates can be off by orders of magnitude.
 
@@ -50,7 +50,7 @@ Budgets are standing capital, not cumulative spend: at any moment the attacker f
 
 ## The gate
 
-New passphrases must score a strength of at least **50**, priced at the [KDF profile](scheme-registry.md) the passphrase will stretch under — the threshold holds the attack time constant across profiles, not the entropy, so Paranoid mode admits proportionally weaker passphrases as a deliberate, user-owned trade. The gate applies wherever a **new** passphrase is accepted:
+New passphrases must score a strength of at least **50**, priced at the [KDF profile](../../src/shared/kdfProfiles.ts) the passphrase will stretch under — the threshold holds the attack time constant across profiles, not the entropy, so Paranoid mode admits proportionally weaker passphrases as a deliberate, user-owned trade. The gate applies wherever a **new** passphrase is accepted:
 
 - Block and blockset creation (app)
 - Standalone archive creation (app modal and `create-standalone-archive`)
@@ -74,7 +74,7 @@ The first is the generator’s default shape (seven large wordlist words): deter
 
 ## Freeze
 
-The threshold — and the calibration that defines it — can never effectively rise. Derived passwords and wallets re-derive deterministically and statelessly, so a raised bar would strand master passphrases that legitimately passed the gate when their passwords were established. The gate was raised to the calibrated definition in the same release that first ships the derived key scheme, so no derivable passphrase predates it; from that release on, the fifty-year floor is frozen, which freezes the anchor rates and the growth constants with it. Profile pricing only ever lowers the entropy bar — appending a stronger [KDF profile](scheme-registry.md) admits weaker passphrases, never rejects previously accepted ones — so no strengthening can strand anything. Passphrases that passed the pre-calibration gate can still restore everything they protect — restoration is never gated — but creating new blocks or archives may require a stronger passphrase.
+The threshold — and the calibration that defines it — can never effectively rise. Derived passwords and wallets re-derive deterministically and statelessly, so a raised bar would strand master passphrases that legitimately passed the gate when their passwords were established. The gate was raised to the calibrated definition in the same release that first ships the derived key scheme, so no derivable passphrase predates it; from that release on, the fifty-year floor is frozen, which freezes the anchor rates and the growth constants with it. Profile pricing only ever lowers the entropy bar — appending a stronger [KDF profile](../../src/shared/kdfProfiles.ts) admits weaker passphrases, never rejects previously accepted ones — so no strengthening can strand anything. Passphrases that passed the pre-calibration gate can still restore everything they protect — restoration is never gated — but creating new blocks or archives may require a stronger passphrase.
 
 **Limitations:**
 

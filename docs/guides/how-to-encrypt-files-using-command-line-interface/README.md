@@ -33,7 +33,7 @@ Install the deb (see [how to run Superbacked on Ubuntu Desktop](https://superbac
 
 ### Other Linux systems
 
-> Heads-up: when reading this guide on GitHub, replace the version placeholder in the following command with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
+> Heads-up: replace `x64` with `arm64` in the following command if applicable — and, when reading this guide on GitHub, the version placeholder with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
 
 Install the AppImage as `superbacked` in `~/.local/bin` (opening a new terminal if `~/.local/bin` did not exist).
 
@@ -57,7 +57,7 @@ The `superbacked` command is preinstalled.
 
 ### Step 1: create standalone archive
 
-> Heads-up: the passphrase cannot be recovered — without it, the standalone archive content is lost. Consider backing up the passphrase using a Superbacked block or blockset.
+> Heads-up: a forgotten passphrase — and the standalone archive content it encrypts — is unrecoverable.
 
 Encrypt one or more files and/or folders (the `.superbacked` extension is appended automatically and the command refuses weak passphrases).
 

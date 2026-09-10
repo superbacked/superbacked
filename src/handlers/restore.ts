@@ -6,7 +6,7 @@ import {
 import {
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import { decodeBlockContent, decryptBlock } from "@/src/utilities/core/block"
 import {
   combineBlocksetShares,

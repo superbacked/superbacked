@@ -1,10 +1,10 @@
 import store, { Schema } from "electron-store"
 
-import type { PaperSize, PrintSetting } from "@/src/shared/types/print"
 import {
   maximumClipboardClearSeconds,
   minimumClipboardClearSeconds,
-} from "@/src/shared/utilities/clipboard"
+} from "@/src/shared/clipboardClearSeconds"
+import type { PaperSize, PrintSetting } from "@/src/shared/types/print"
 
 // width/height are the window’s *content* size (createWindow consumes them
 // with useContentSize: true); x/y are the outer window position.
@@ -25,7 +25,7 @@ export interface YubiKeySettings {
 export interface Store {
   // Seconds before app-copied secrets are cleared from the clipboard,
   // defaulting to defaultClipboardClearSeconds when unset (see
-  // src/shared/utilities/clipboard.ts); the command-line interface
+  // src/shared/clipboardClearSeconds.ts); the command-line interface
   // reads its --clear flags only
   clipboardClearSeconds?: number
   scannerDevice?: string
@@ -39,7 +39,7 @@ export interface Store {
   printSettings?: Record<string, Record<string, PrintSetting>>
   yubikey?: YubiKeySettings
   // Role name resolved to the newest matching profile row (see
-  // src/shared/utilities/kdfProfiles.ts) — gates creation cost and
+  // src/shared/kdfProfiles.ts) — gates creation cost and
   // whether restoration trials the paranoid row; the command-line
   // interface reads the --paranoid flag only
   kdfProfile?: "paranoid" | "standard"

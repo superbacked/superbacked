@@ -15,17 +15,17 @@ const secretSize = 20
 
 export type VerifyYubiKeyChallengeResponseSecretResult =
   | { success: false; error: string; yubikeyErrorCode?: YubiKeyErrorCode }
-  // slot null — connected YubiKey has no slot configured with the
+  // slot null — connected YubiKey has no slot provisioned with the
   // secret (unprovisioned slots included)
   | { success: true; slot: Slot | null }
 
 /**
- * Verify which slot of the connected YubiKey is configured with a
+ * Verify which slot of the connected YubiKey is provisioned with a
  * challenge-response secret, computing the response on the key —
  * touch-required slots prompt once per challenged slot
  * @param secret 40-hexadecimal-character slot secret
  * @param onTouchRequired called while the device awaits touch
- * @returns matching slot, or null when no configured slot matches
+ * @returns matching slot, or null when no provisioned slot matches
  */
 export const verifyYubiKeyChallengeResponseSecret = async (
   secret: string,

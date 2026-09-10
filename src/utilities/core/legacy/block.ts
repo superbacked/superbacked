@@ -1,4 +1,4 @@
-import { legacyKdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { legacyKdfProfile } from "@/src/shared/kdfProfiles"
 import { Metadata } from "@/src/utilities/core/block"
 import argon2 from "@/src/utilities/crypto/argon2"
 import { decrypt } from "@/src/utilities/crypto/legacy/fixedSizeEncryption"

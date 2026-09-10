@@ -87,6 +87,10 @@ export const derivePassword = (derivedKey: Buffer, length: number): string => {
       streamContext.copy(info)
       info.writeUInt32BE(counter, streamContext.length)
       counter++
+      // 64 bytes is two HKDF-SHA256 output blocks — enough for a
+      // default-length password in a single expansion despite rejection
+      // losses, and frozen like every constant here: chunk boundaries
+      // shape the stream, so changing it would change derived passwords
       chunk = hkdf(derivedKey, Buffer.alloc(0), info, 64)
       offset = 0
     }
@@ -123,7 +127,7 @@ export const derivePassword = (derivedKey: Buffer, length: number): string => {
 }
 
 /**
- * Derive password from master passphrase and label, computing the response
+ * Derive password from label and master passphrase, computing the response
  * on YubiKey
  * @param masterPassphrase memorized master passphrase
  * @param label memorized label (for example github or proton)

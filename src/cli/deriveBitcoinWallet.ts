@@ -10,7 +10,7 @@ import { red } from "@/src/cli/utilities/style"
 import {
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
@@ -33,7 +33,7 @@ import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import { Slot } from "@/src/utilities/yubikey/otp"
 
 // Command action (the CLI surface is declared in index.ts). Public by
-// default, secret by request: the extended public key (and addresses,
+// default, secret on demand: the extended public key (and addresses,
 // when asked) print to stdout, while the mnemonic or extended private
 // key materialize only under --reveal — copied to the clipboard, keeping
 // them out of terminal scrollback
@@ -72,8 +72,9 @@ export const deriveBitcoinWalletAction = async (
       throw new Error("The --print option requires --reveal")
     }
     // A derived wallet trades hardware isolation for determinism — the
-    // derivation host sees the wallet, and a forgotten passphrase, label
-    // or flag is unrecoverable — so the warning gates every derivation
+    // derivation host sees the wallet, and a forgotten label, forgotten
+    // passphrase or lost YubiKey secret is unrecoverable — so the warning
+    // gates every derivation
     await confirmYes(
       red(
         "Deriving a Bitcoin wallet exposes its private keys to the computer running the command.\n" +
@@ -106,7 +107,7 @@ export const deriveBitcoinWalletAction = async (
     }
     // Derivation is stateless, so the mode is part of what the user must
     // know — deriving without it silently produces a different wallet,
-    // which is why every derivation echoes it below
+    // which is why every derivation prints it below
     const paranoid = cli.opts().paranoid === true
     // Matches the app’s passphrase gates, priced at the profile the
     // derivation stretches under (see src/cli/derivePassword.ts) — and
@@ -136,7 +137,7 @@ export const deriveBitcoinWalletAction = async (
     )
     // A wrong version, mode or word count at a future derivation would
     // silently produce a different wallet, so every derivation states
-    // them all — the path is fixed, echoed for cross-verification in
+    // them all — the path is fixed, printed for cross-verification in
     // wallet software
     console.error(
       `Derived using scheme v${schemeVersion}${

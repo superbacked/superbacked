@@ -2,11 +2,11 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of legacy fixed-size encryption — the scheme used by blocks created before the [current scheme](../fixed-size-encryption.md): every release up to v1.12.1, with subkey mode from v1.6.0 and [legacy mode](#key-derivation) up to v1.5.1. The scheme was formerly published as the standalone [Blockcrypt](https://github.com/superbacked/blockcrypt) package — the brand was discontinued, but the scheme is unchanged (vendored into Superbacked at 0.0.1-beta.24). The format is frozen — printed blocks in the wild must decrypt forever — and restoration-only: creation paths were removed, so this document specifies the shipped format while the source implements only its decryption. The source ([src/utilities/crypto/legacy/fixedSizeEncryption.ts](../../../src/utilities/crypto/legacy/fixedSizeEncryption.ts)) is the ground truth for this document, and the frozen blocks in [tests/legacy/fixedSizeEncryption.test.ts](../../../tests/legacy/fixedSizeEncryption.test.ts) and the published legacy [reference blocks](../../../tests/fixtures/legacy/blocks) pin the format.
+This document specifies the cryptographic design and implementation of legacy fixed-size encryption — the scheme used by blocks created before the [current scheme](../fixed-size-encryption.md): every release up to v1.12.1, with subkey mode from v1.6.0 and [legacy mode](#key-derivation) up to v1.5.1. The scheme was formerly published as the standalone [Blockcrypt](https://github.com/superbacked/blockcrypt) package — the brand was discontinued, but the scheme is unchanged (vendored into Superbacked at 0.0.1-beta.24). The format is frozen — printed blocks in the wild must decrypt forever — and restoration-only: creation paths were removed, so this document specifies the shipped format while the source implements only its decryption. The source code ([src/utilities/crypto/legacy/fixedSizeEncryption.ts](../../../src/utilities/crypto/legacy/fixedSizeEncryption.ts)) is the ground truth for this document, and the frozen blocks in [tests/legacy/fixedSizeEncryption.test.ts](../../../tests/legacy/fixedSizeEncryption.test.ts) and the published legacy [reference blocks](../../../tests/fixtures/legacy/blocks) pin the format.
 
 ## Introduction
 
-Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked protects secrets too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Secrets are backed up — encrypted, offline, with succession planning built in.
 
 Legacy fixed-size encryption is the scheme blocks were built on before the current one. A block encrypted using it reveals only its size. Every byte — headers, data and padding — is either ciphertext or random, so the number of secrets, their sizes and their boundaries cannot be determined. Legacy payloads carry `iv` and `headers` fields — their presence is how restoration tells the formats apart (see the [block technical documentation](../block.md)).
 
@@ -49,7 +49,7 @@ Headers and data are then padded to their configured lengths with random bytes, 
 
 ## Decryption
 
-Decryption takes a single passphrase and scans for a header it can decrypt: every contiguous byte range of headers is tried until one decrypts — under the passphrase’s header key — to a plaintext matching `start:length`. No slot index or count is stored anywhere; a header is found by successfully decrypting it, or it does not exist as far as that passphrase can tell.
+Decryption takes a single passphrase and scans for a header it can decrypt: every contiguous byte range of headers is tried until one decrypts — using the passphrase’s header key — to a plaintext matching `start:length`. No slot index or count is stored anywhere; a header is found by successfully decrypting it, or it does not exist as far as that passphrase can tell.
 
 The pointer locates the secret’s ciphertext within data, the initialization vector and authentication tag follow it and the message is decrypted and verified using AES-256-GCM. A wrong passphrase and an absent secret fail identically (`Header not found`) — the error does not reveal whether there was anything to find.
 

@@ -7,7 +7,7 @@ import {
   defaultClipboardClearSeconds,
   maximumClipboardClearSeconds,
   minimumClipboardClearSeconds,
-} from "@/src/shared/utilities/clipboard"
+} from "@/src/shared/clipboardClearSeconds"
 
 const Settings: FunctionComponent = () => {
   const { t } = useTranslation()

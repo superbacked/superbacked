@@ -1,4 +1,4 @@
-import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { KdfProfile } from "@/src/shared/kdfProfiles"
 import {
   Payload,
   Secret,
@@ -36,7 +36,7 @@ export const encodeBlocksetShare = (share: Buffer): Buffer => {
 /**
  * Split a decrypted share message into its version and share — a
  * supported version reveals the share, an unsupported one reports that
- * the blockset requires a newer release of Superbacked, never a wrong
+ * the blockset requires a newer version of Superbacked, never a wrong
  * passphrase (the domain key already authenticated)
  * @param message decrypted share message
  * @returns share
@@ -77,7 +77,7 @@ export const combineBlocksetShares = async (
  * @param numberOfShares number of blocks
  * @param threshold blocks required to reconstruct
  * @param profile frozen Argon2d cost profile (see
- * src/shared/utilities/kdfProfiles.ts)
+ * src/shared/kdfProfiles.ts)
  * @param label optional plaintext label
  * @param onTouchRequired invoked while a YubiKey awaits touch
  * @returns one block payload per share

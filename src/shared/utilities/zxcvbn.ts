@@ -9,7 +9,7 @@ import {
   KdfProfile,
   legacyKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import effLargeWordlist from "@/wordlists/eff_large_wordlist.json"
 import effShortWordlist1 from "@/wordlists/eff_short_wordlist_1.json"
 import effShortWordlist20 from "@/wordlists/eff_short_wordlist_2_0.json"
@@ -317,7 +317,7 @@ const computeBudgetDisplay = (
 const userInputs = ["superbacked"]
 
 // The profile defaults to the creation default (see
-// src/shared/utilities/kdfProfiles.ts) — every surface that accepts a new
+// src/shared/kdfProfiles.ts) — every surface that accepts a new
 // passphrase stretches at it. Callers creating under another profile
 // (Paranoid mode) pass their row, scaling the displayed times and the
 // gate together — the requirement is fifty years, however they are bought

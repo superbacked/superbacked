@@ -2,13 +2,13 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of fixed-size encryption — the scheme behind blocks. Fixed-size encryption encrypts one or more secrets into a fixed-size block whose every byte is indistinguishable from random data, providing plausible deniability. The source ([src/utilities/crypto/fixedSizeEncryption.ts](../../src/utilities/crypto/fixedSizeEncryption.ts)) is the ground truth for this document, and the reference vectors in [tests/fixedSizeEncryption.test.ts](../../tests/fixedSizeEncryption.test.ts) pin the format.
+This document specifies the cryptographic design and implementation of fixed-size encryption. Fixed-size encryption encrypts one or more secrets into a fixed-size block whose every byte is indistinguishable from random data, providing plausible deniability. The source code ([src/utilities/crypto/fixedSizeEncryption.ts](../../src/utilities/crypto/fixedSizeEncryption.ts)) is the ground truth for this document, and the reference vectors in [tests/fixedSizeEncryption.test.ts](../../tests/fixedSizeEncryption.test.ts) pin the format.
 
 The scheme specified here — AES-256-GCM only, headerless, caller-supplied 256-bit keys — encrypts every new block. Blocks created before it use the [legacy scheme](legacy/fixed-size-encryption.md), which must decrypt forever.
 
 ## Introduction
 
-Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked protects secrets too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Secrets are backed up — encrypted, offline, with succession planning built in — or never stored at all: derived on demand from a master passphrase and YubiKey.
 
 Fixed-size encryption is the scheme every block is built on. A block encrypted using it reveals only its size. Every byte — entries and padding — is either ciphertext or random, so the number of secrets, their sizes and their boundaries cannot be determined. Only the first secret is ever known to exist — every block holds at least one — so plausible deniability covers the secrets beyond it: additional secrets are concealed in the padding, and without their passphrases, no one can tell whether they exist at all. Decrypting the first secret reveals nothing about the others; decrypting a later secret reveals that one or more secrets precede it in the block — though nothing more, nor whether more secrets exist.
 
@@ -39,7 +39,18 @@ Two subkeys are derived from each secret’s key using HKDF-SHA256 with an empty
 
 ## Length masking
 
-The ciphertext length is masked by XOR with the first 2 bytes of the HMAC-SHA256 of the initialization vector under the length subkey, making it indistinguishable from random data without the key while sparing decryption a search over lengths.
+The ciphertext length is stored masked — XORed with the first 2 bytes of the HMAC-SHA256 of the entry’s initialization vector, keyed by the length subkey:
+
+```typescript
+const lengthMask = (lengthKey: Buffer, iv: Buffer): number =>
+  createHmac("sha256", lengthKey).update(iv).digest().readUInt16BE(0)
+
+maskedLength.writeUInt16BE(ciphertext.length ^ lengthMask(lengthKey, iv))
+```
+
+Masking resolves a design conflict. A plaintext length field would put visible structure in a block whose every byte must be indistinguishable from random data. Omitting the field would preserve deniability, but decryption would have to try every candidate length at every offset. The masked length gets both properties: indistinguishable from random data without the key, one cheap unmask with it.
+
+The initialization vector is what makes each mask unique and findable. It is fresh and random per entry, so no two entries share a mask even under the same key — and it sits immediately before the masked length, so decryption can recompute the mask at any candidate offset (see [Decryption](#decryption)).
 
 ## Encryption
 
@@ -69,6 +80,13 @@ Decryption takes a single key, derives its subkeys once and slides over every by
 - Plausible deniability has a floor and a direction: every block provably holds at least one secret, so only the secrets beyond the first are deniable — and disclosing a later secret’s passphrase reveals, through its entry’s position (recoverable with its key), that one or more secrets precede it. Deniability is strongest when only the first secret is ever disclosed.
 - Deniability covers the block, not its handling: passphrase management and the decision of what to disclose remain with the user.
 - Keys are caller-supplied, so the cost of brute-forcing passphrases is set by the caller’s key derivation, not by fixed-size encryption.
+
+## Consumers
+
+- **[Blocks](block.md)**: the only direct consumer — `encrypt` and `decrypt` are called from [src/utilities/core/block.ts](../../src/utilities/core/block.ts), with 768-byte blocks bounded by QR code capacity and keys derived from passphrases under the `block-key` HKDF domain key
+- **[Blocksets](blockset.md)**: consume the scheme through the block layer — each block of a blockset is encrypted exactly like a single block, using the `blockset-key` HKDF domain key
+
+[Standalone](standalone-archive.md) and [detached](detached-archive.md) archives do not consume this scheme — their content is variable-size, so each uses its own AES-256-GCM layout instead of a fixed-size block.
 
 ## Acknowledgments
 

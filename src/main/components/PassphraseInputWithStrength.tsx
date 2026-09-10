@@ -17,7 +17,7 @@ import {
 } from "react"
 import { Trans, useTranslation } from "react-i18next"
 
-import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { KdfProfile } from "@/src/shared/kdfProfiles"
 import zxcvbn, {
   ZxcvbnTranslationKey,
   minimumPassphraseStrength,

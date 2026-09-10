@@ -1,7 +1,7 @@
 import { notifications } from "@mantine/notifications"
 import { t } from "i18next"
 
-import { defaultClipboardClearSeconds } from "@/src/shared/utilities/clipboard"
+import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds"
 
 // Copy a secret and schedule its deferred clearing — the write stays in
 // the renderer (navigator.clipboard needs only a focused window, no

@@ -9,7 +9,7 @@ import { red } from "@/src/cli/utilities/style"
 import {
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"
@@ -62,7 +62,7 @@ export const derivePasswordAction = async (
     clear: number
     confirmPassphrase?: boolean
     // Selects the derivation scheme — derivation is stateless, so the
-    // version is part of what the user knows and is echoed at every
+    // version is part of what the user knows and is printed at every
     // derivation. Only scheme v1 exists; the option gates and documents
     // rather than branches (see src/utilities/crypto/derivedKey.ts)
     derivationVersion: string
@@ -97,7 +97,7 @@ export const derivePasswordAction = async (
     }
     // Derivation is stateless, so the mode is part of what the user must
     // know — deriving without it silently produces different passwords,
-    // which is why every derivation echoes it below
+    // which is why every derivation prints it below
     const paranoid = cli.opts().paranoid === true
     // Matches the app’s passphrase gates, priced at the profile the
     // derivation stretches under and enforced since scheme v1 so every

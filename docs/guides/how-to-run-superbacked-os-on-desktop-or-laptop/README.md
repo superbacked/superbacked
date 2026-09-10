@@ -127,7 +127,7 @@ Superbacked OS runs in two modes: air-gapped (default, booted automatically) and
 
 Both modes copy Superbacked OS to memory (8 GB required) — the USB flash drive can be unplugged as soon as the login screen appears.
 
-> Heads-up: on computers with less than 8 GB of memory (4 GB min), Superbacked OS automatically runs from the USB flash drive instead, which must then stay plugged in for the whole session (equally amnesic, nothing persists across reboots) — when that happens, a warning is shown after login.
+> Heads-up: on computers with less than 8 GB of memory (4 GB min), Superbacked OS automatically runs from the USB flash drive instead, which must then stay plugged in for the whole session (equally amnesic, nothing persists across reboots) — when that happens, a warning is shown after login. Running from the USB flash drive can also be chosen on purpose by editing a boot entry at the GRUB menu (pressing “e”) and removing `toram`.
 
 ### Step 3: use Superbacked
 

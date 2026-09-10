@@ -2,7 +2,7 @@ import { createReadStream, createWriteStream } from "fs"
 import { open, stat } from "fs/promises"
 import { pipeline } from "stream/promises"
 
-import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { KdfProfile } from "@/src/shared/kdfProfiles"
 import {
   Manifest,
   RestoredFilePath,
@@ -71,7 +71,7 @@ export interface ArchiveKeys {
  * @param passphrase memorized passphrase
  * @param salt 16-byte archive salt
  * @param profile frozen Argon2d cost profile — the archive’s at restore,
- * discovered by probing (see src/shared/utilities/kdfProfiles.ts)
+ * discovered by probing (see src/shared/kdfProfiles.ts)
  * @param yubikey optional YubiKey challenge-response request
  * @returns 32-byte encryption and probe keys
  */

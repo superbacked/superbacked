@@ -9,6 +9,26 @@ import { createCipheriv, createDecipheriv, randomBytes } from "crypto"
 // the key is correct, the profile that stretched it (if any) is the
 // artifact's, and the version names the layout. Legacy v1 artifacts are
 // simply the ones no candidate reveals a header in.
+//
+// Version namespaces: every version number counts iterations of its own
+// scheme, from 1 — there is no global scheme version. Each versioned
+// scheme exports one uniformly named schemeVersion constant at the top
+// of the module that owns the format ("grep -rn 'export const
+// schemeVersion' src" lists the namespaces); modules whose version never
+// exists as a number (the passphrase key scheme, versioned by its
+// consumers) state it in a comment instead. Constants point, literals
+// enumerate: a version constant may select among frozen identity
+// strings, never generate them — interpolating a version into an
+// identity string would let a one-line bump silently rederive every key.
+// Identity strings carry no version suffix (the version lives in the
+// carrier), so block-key, blockset-key, kdf-key, archive-key and
+// version-probe are all bare; if a construction ever iterates, its
+// successor gets a new literal named at that moment and the old literal
+// stays forever. The one shipped exception is the legacy detached
+// archive chain (encryption-key-v1, hmac-v1, filename-v1) — frozen
+// shipped identities from before artifacts carried versions, quarantined
+// in src/utilities/core/legacy/detachedArchive.ts, not a pattern to
+// imitate.
 
 // Thrown when a decrypted header declares a version this build does not
 // implement — the passphrase is correct and the artifact is intact, so

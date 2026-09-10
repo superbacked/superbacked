@@ -1,10 +1,7 @@
 import assert from "assert"
 import { suite, test } from "node:test"
 
-import {
-  legacyKdfProfile,
-  paranoidKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+import { legacyKdfProfile, paranoidKdfProfile } from "@/src/shared/kdfProfiles"
 import zxcvbn, {
   minimumPassphraseStrength,
 } from "@/src/shared/utilities/zxcvbn"

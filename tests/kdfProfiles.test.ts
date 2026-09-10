@@ -5,7 +5,7 @@ import {
   legacyKdfProfile,
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 
 // Profiles are append-only and frozen forever — artifacts never store
 // parameters, so editing a row silently changes the key of every

@@ -25,7 +25,7 @@ import {
 } from "@/src/i18n"
 import { attachContextMenu, disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
-import { defaultClipboardClearSeconds } from "@/src/shared/utilities/clipboard"
+import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
@@ -48,7 +48,7 @@ cli.helpOption("-h, --help", "display help")
 
 // Root so the mode reads as app-wide, like the Settings toggle — creation
 // and derivation stretch at the paranoid profile and restoration trials
-// it (see src/shared/utilities/kdfProfiles.ts)
+// it (see src/shared/kdfProfiles.ts)
 cli.option(
   "--paranoid",
   "harden key derivation (requires at least 1 GiB of memory and --paranoid to restore or derive again)"
@@ -117,7 +117,7 @@ cli
   )
   .argument(
     "[label]",
-    "memorized label (for example savings), prompted when omitted"
+    "memorized label (for example hotwallet), prompted when omitted"
   )
   .option(
     "--addresses <count>",

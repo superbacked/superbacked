@@ -4,7 +4,7 @@ import {
   KdfProfile,
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 
 // Same-window signal fired by the Settings toggle — cross-window
 // staleness is covered by the focus re-read below, and the handlers read

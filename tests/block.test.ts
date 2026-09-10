@@ -2,7 +2,7 @@ import assert from "assert"
 import { createHmac } from "crypto"
 import { suite, test } from "node:test"
 
-import { legacyKdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { legacyKdfProfile } from "@/src/shared/kdfProfiles"
 import {
   blockSize,
   computeBlockKdfKey,

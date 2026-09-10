@@ -1,4 +1,4 @@
-import { defaultClipboardClearSeconds } from "@/src/shared/utilities/clipboard"
+import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds"
 import { clearText, readText, spawnClearGuard } from "@/src/utilities/clipboard"
 import { get as getConfig } from "@/src/utilities/config"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"

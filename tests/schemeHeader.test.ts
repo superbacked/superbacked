@@ -12,8 +12,8 @@ import {
   schemeHeaderMagic,
 } from "@/src/utilities/crypto/schemeHeader"
 
-// The header and probe codecs pin the scheme registry (see
-// docs/technical-documentation/scheme-registry.md) — the magic and
+// The header and probe codecs pin the version declaration scheme (see
+// docs/technical-documentation/README.md) — the magic and
 // layout are frozen forever, and the decoder’s null contract is the
 // false-positive gate every version trial leans on: wrong keys, wrong
 // profiles and headerless legacy artifacts must all land in the same

@@ -16,7 +16,7 @@ import { hkdf } from "@/src/utilities/crypto/primitives"
 // v1.12.1. Every string below is a shipped identity: archives in the
 // wild derive from these exact bytes, so their historic -v1 suffixes
 // stay — fossils of the era before artifacts carried versions (see
-// docs/technical-documentation/scheme-registry.md). The current scheme
+// src/utilities/crypto/schemeHeader.ts). The current scheme
 // lives in src/utilities/core/detachedArchive.ts, under its own keys.
 // Pinned against shipped artifacts by the legacy reference pair
 // (tests/fixtures/legacy/blocks/detached-archive).

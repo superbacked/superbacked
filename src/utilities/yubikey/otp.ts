@@ -391,7 +391,7 @@ export const calculateHmacSha1 = async (
 }
 
 /**
- * Verify that a slot is configured with a secret — a slot secret can
+ * Verify that a slot is provisioned with a secret — a slot secret can
  * never be read back, so the slot is challenged with fresh randomness
  * and its response compared against the one the secret predicts (a
  * fresh challenge proves the key computes rather than replays)

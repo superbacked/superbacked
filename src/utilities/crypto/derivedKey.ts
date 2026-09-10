@@ -3,7 +3,7 @@ import { createHash, createHmac } from "crypto"
 import {
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import argon2 from "@/src/utilities/crypto/argon2"
 import { hkdf } from "@/src/utilities/crypto/primitives"
 import { Slot, calculateHmacSha1 } from "@/src/utilities/yubikey/otp"
@@ -111,7 +111,7 @@ export const deriveKey = (masterKey: Buffer, salt: Buffer): Buffer => {
 }
 
 /**
- * Derive 256-bit key from master passphrase, label and YubiKey
+ * Derive 256-bit key from label, master passphrase and YubiKey
  * challenge-response — the two-factor scheme
  * @param masterPassphrase memorized master passphrase
  * @param label label binding the derivation to its purpose

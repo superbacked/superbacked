@@ -33,7 +33,7 @@ Install the deb (see [how to run Superbacked on Ubuntu Desktop](https://superbac
 
 ### Other Linux systems
 
-> Heads-up: when reading this guide on GitHub, replace the version placeholder in the following command with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
+> Heads-up: replace `x64` with `arm64` in the following command if applicable — and, when reading this guide on GitHub, the version placeholder with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
 
 Install the AppImage as `superbacked` in `~/.local/bin` (opening a new terminal if `~/.local/bin` did not exist).
 
@@ -41,7 +41,7 @@ Install the AppImage as `superbacked` in `~/.local/bin` (opening a new terminal 
 $ install -m 755 "$HOME/Downloads/superbacked-x64-${latestRelease}.AppImage" "$HOME/.local/bin/superbacked"
 ```
 
-When planning to use a YubiKey, allow YubiKey access by running following command and unplugging and plugging YubiKey back in.
+Allow YubiKey access by running following command and unplugging and plugging YubiKey back in.
 
 ```console
 $ sudo tee /etc/udev/rules.d/70-superbacked-yubikey.rules << 'EOF'
@@ -61,14 +61,16 @@ The `superbacked` command is preinstalled.
 
 > Heads-up: on macOS, opening the YubiKey may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring).
 
-Deriving passwords with a YubiKey uses HMAC-SHA1 challenge-response, so the YubiKey needs to be provisioned once with a challenge-response credential — the same operation Yubico Authenticator calls “Program a challenge-response credential”. The following command generates a secret, provisions slot 2 and displays the secret so it can be backed up (a replacement YubiKey provisioned with the same secret is equivalent).
+Deriving passwords uses HMAC-SHA1 challenge-response, so the YubiKey needs to be provisioned once with a challenge-response credential — the same operation Yubico Authenticator calls “Program a challenge-response credential”. The following command generates a secret, provisions slot 2 and displays the secret so it can be backed up (a replacement YubiKey provisioned with the same secret is equivalent).
 
 ```console
 $ superbacked provision-yubikey --generate
+Provisioning a YubiKey exposes a long-lived secret to computer.
+When provisioning YubiKey hardware, use Superbacked OS.
 Do you wish to continue (yes or no)? yes
-YubiKey detected (firmware 5.4.3)
+YubiKey detected
 The generated secret will be displayed only once and cannot be recovered from the YubiKey.
-Please be ready to back it up using a Superbacked block or blockset secured with a passphrase that does not depend on this YubiKey.
+Please be ready to back it up — a backup is the only way to recover from a lost or broken YubiKey, so it must not depend on this YubiKey.
 Do you wish to continue (yes or no)? yes
 Touch YubiKey…
 Slot 2 provisioned for HMAC-SHA1 challenge-response

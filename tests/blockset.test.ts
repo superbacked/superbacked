@@ -1,7 +1,7 @@
 import assert from "assert"
 import { suite, test } from "node:test"
 
-import { standardKdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { standardKdfProfile } from "@/src/shared/kdfProfiles"
 import {
   decodeBlocksetShare,
   encodeBlocksetShare,

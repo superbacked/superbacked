@@ -2,29 +2,26 @@
 
 ## Abstract
 
-This document specifies the cryptographic design and implementation of the detached archive feature in Superbacked. Detached archives allow users to encrypt files and folders using master keys that are embedded — alongside user-provided secrets — in encrypted QR codes called blocks. The content of archives is stored separately from blocks or blocksets while being cryptographically bound to block content — restoring detached archives requires both blocks and passphrases. The source ([src/utilities/core/detachedArchive.ts](../../src/utilities/core/detachedArchive.ts) and [src/utilities/core/archive.ts](../../src/utilities/core/archive.ts)) is the ground truth for this document, and the frozen key chain is pinned by [tests/detachedArchive.test.ts](../../tests/detachedArchive.test.ts). Archives created before version 2 restore through the [legacy detached archive](legacy/detached-archive.md) scheme.
+This document specifies the cryptographic design and implementation of detached archives. Detached archives allow users to encrypt files and folders using master keys that are embedded — alongside user-provided secrets — in [blocks](block.md). The content of archives is stored separately from blocks or blocksets while being cryptographically bound to blocks — restoring detached archives requires both blocks and passphrases. The source code ([src/utilities/core/detachedArchive.ts](../../src/utilities/core/detachedArchive.ts) and [src/utilities/core/archive.ts](../../src/utilities/core/archive.ts)) is the ground truth for this document, and the frozen key chain is pinned by [tests/detachedArchive.test.ts](../../tests/detachedArchive.test.ts). Archives created before version 2 restore through the [legacy detached archive](legacy/detached-archive.md) scheme.
 
 ## Introduction
 
-Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked protects secrets too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Secrets are backed up — encrypted, offline, with succession planning built in — or never stored at all: derived on demand from a master passphrase and YubiKey.
 
-Detached archives extend the platform with encrypted files and folders that are cryptographically bound to blocks.
+Detached archives extend Superbacked with encrypted files and folders that are cryptographically bound to blocks — the archive’s master key is embedded in the block, so restoration requires both the block and its passphrase.
 
-Superbacked supports two backup types: block and blockset — the latter embeds additional Shamir Secret Sharing key material alongside user-provided secrets and master keys to enable threshold-based recovery, and comes in three subtypes (2-of-3, 3-of-5 and 4-of-7).
+A block carries what fits inside a QR code; a detached archive lets files and folders ride with one, stored separately. Separate storage also anticipates a future capability: updating a detached archive without regenerating and redistributing blocks — most valuable in governance schemes where institutional block custodians hold the blocks.
 
-While using QR code encoding allows users to print blocks on archival paper, a format ideal for cold storage, larger datasets cannot be efficiently encoded this way. Detached archives solve this limitation by storing files and folders separately from blocks and blocksets while being cryptographically bound to them.
-
-This design also provides an important future capability: users will be able to update detached archives without regenerating and redistributing blocks. This is particularly valuable in governance schemes where institutional block custodians are involved.
+Files that need no block belong in a [standalone archive](standalone-archive.md) instead.
 
 ## Terminology
 
-- **Block**: an encrypted QR code printed on archival paper or saved as a JPG or PDF file.
 - **Block custodian**: trusted party in a governance scheme who custodies one or more blocks.
-- **Blockset**: a set of cryptographically bound blocks.
-- **Blockset threshold**: minimum number of blocks required to restore a blockset.
-- **Detached archive**: encrypted tar archive containing files and/or folders, stored separately from a block or blockset while being cryptographically bound to block content.
+- **Detached archive**: encrypted tar archive containing files and/or folders, stored separately from a block or blockset while being cryptographically bound to its block.
 - **Master key**: random 256-bit key embedded in a block alongside a secret, used to derive the detached archive encryption key, HMAC key and filename.
-- **Secret**: text entered in the secret field (for example a BIP39 mnemonic, master password or TOTP secret) embedded in a block.
+- **Secret**: text entered in the secret field (for example a master password, TOTP secret or BIP39 mnemonic) embedded in a block.
+
+Block, blockset and threshold carry the same meaning as in the [block](block.md) and [blockset](blockset.md) technical documentation.
 
 ## Overview
 
@@ -32,7 +29,7 @@ When you drag and drop files and/or folders to a block or blockset, the app prov
 
 1. Generating a cryptographically secure 256-bit master key
 2. Embedding the master key alongside the secret in the block or blockset
-3. Deriving the detached archive encryption key, HMAC key and filename from the master key
+3. Deriving the detached archive encryption key, HMAC key and filename from the master key — only the filename reaches the renderer (to name the archive); the keys never leave the main process
 
 Then, when you create the block or blockset, the detached archive is created and saved using the `.superbacked` extension.
 
@@ -40,11 +37,7 @@ Finally, the block or blockset is created.
 
 ## Master key generation
 
-The master key is generated when files or folders are first added to a block or blockset:
-
-```typescript
-masterKey = window.api.invokeSync.generateMasterKey()
-```
+The master key is generated when files or folders are first added to a block or blockset (see `generateMasterKey` in [src/handlers/archive.ts](../../src/handlers/archive.ts)).
 
 ### Security characteristics
 
@@ -55,7 +48,7 @@ masterKey = window.api.invokeSync.generateMasterKey()
 
 ## Key derivation
 
-The master key is expanded into a key chain — encryption key, HMAC key and filename — using HKDF-SHA256 (`deriveDetachedArchiveKeys` in [src/utilities/core/detachedArchive.ts](../../src/utilities/core/detachedArchive.ts)):
+The master key is expanded into a key chain — encryption key, HMAC key and filename — using HKDF-SHA256 (see `deriveDetachedArchiveKeys` in [src/utilities/core/detachedArchive.ts](../../src/utilities/core/detachedArchive.ts)):
 
 | Output         | Info                        | Length   | Purpose                                                                                    |
 | -------------- | --------------------------- | -------- | ------------------------------------------------------------------------------------------ |
@@ -69,31 +62,21 @@ Every derivation uses the 256-bit master key as input keying material with an em
 
 Archives created before version 2 derive a different chain from the same master key and restore through their own scheme — see the [legacy detached archive technical documentation](legacy/detached-archive.md). The legacy scheme is restoration-only, and the fallback is bounded in the consumer ([src/handlers/detachedArchive.ts](../../src/handlers/detachedArchive.ts)): restoration probes for the current scheme and falls back to the legacy scheme only when no probe matches, so neither scheme module references the other. The filename is the one property named by the block’s era rather than detected — the archive must be located on disk before restoration can probe it, and a legacy block always pairs with a legacy archive.
 
-## Detached archive format
+## Encryption
 
-Detached archives use the portable tar format as the container for files and folders.
+A portable tar archive of the files and folders is encrypted using AES-256-GCM and the encryption key derived from the master key (see [Key derivation](#key-derivation)). The construction provides the properties an archive relies on:
 
-- **Container**: Portable tar archive format
-- **Portability**: Omits system-specific metadata for cross-platform compatibility
-- **File metadata**: Preserves file names, sizes and permissions
+- **Authenticated encryption** — the GCM authentication tag detects tampering of the archive content, and the [HMAC](#message-authentication) binds the whole file to the block content
+- **Indistinguishability** — every byte of the file is ciphertext or random cryptographic metadata, indistinguishable from random data
+- **Portability** — the tar container omits system-specific metadata and preserves file names, sizes and permissions, so archives restore across platforms
 
-## Detached archive encryption
-
-Detached archives use AES-256-GCM authenticated encryption, providing confidentiality and integrity.
-
-**Security characteristics:**
-
-- **Algorithm**: AES-256-GCM authenticated encryption
-- **Confidentiality**: The AES-256 block cipher encrypts the detached archive content
-- **Integrity**: Galois/Counter Mode (GCM) provides an authentication tag to detect tampering
-
-## Detached archive structure
+## Structure
 
 Detached archives use a binary format with embedded cryptographic metadata.
 
 ### File format
 
-Version 2 detached archive files use the following binary structure:
+Detached archive files use the following binary structure:
 
 ```text
 [probe block (36 bytes)][iv (12 bytes)][encrypted data][tag (16 bytes)][hmac (32 bytes)]
@@ -101,7 +84,7 @@ Version 2 detached archive files use the following binary structure:
 
 **Components:**
 
-- **Probe block**: encrypted [scheme header](scheme-registry.md) — a 12-byte initialization vector, the 8-byte header encrypted with AES-256-GCM under the probe key and a 16-byte authentication tag
+- **Probe block**: encrypted [scheme header](../../src/utilities/crypto/schemeHeader.ts) — a 12-byte initialization vector, the 8-byte header (encrypted using AES-256-GCM and the probe key) and a 16-byte authentication tag
 - **Initialization vector**: 12-byte random initialization vector for AES-256-GCM detached archive encryption
 - **Encrypted data**: AES-256-GCM-encrypted portable tar archive
 - **Authentication tag**: 16-byte GCM authentication tag
@@ -113,7 +96,7 @@ Version 1 archives are identical without the probe block and restore through the
 
 The probe key is derived from the encryption key using HKDF-SHA256 under the frozen info `version-probe` — derived inside the archive core, so the handler wire format stays the stored key pair and block content. Because every key is already in hand at restoration (embedded in the block), the probe is free and always decisive:
 
-1. A probe revealing the header restores at the declared version — an unsupported version reports that the detached archive requires a newer release of Superbacked
+1. A probe revealing the header restores at the declared version — an unsupported version reports that the detached archive requires a newer version of Superbacked
 2. No probe match falls back to the [legacy scheme](legacy/detached-archive.md), whose HMAC delivers the verdict — so corruption surfaces there, never as a wrong key
 
 Master keys are random, so no KDF profile applies — detached archives are unaffected by Paranoid mode (their gate is the block that embeds their master key).
@@ -128,7 +111,7 @@ Detached archives use HMAC-SHA256 to bind block content to the detached archive:
 HMAC-SHA256(hmacKey, message || probe block || iv || encrypted data || tag)
 ```
 
-Where `message` contains the JSON-encoded block content (the [legacy scheme](legacy/detached-archive.md) binds the same way, without the probe block and under its own HMAC key). The probe block is authenticated by its own GCM tag, but binding it into the HMAC keeps the whole file under one integrity root.
+Where `message` contains the JSON-encoded block content (the [legacy scheme](legacy/detached-archive.md) binds the same way, without the probe block and using its own HMAC key). The probe block is authenticated by its own GCM tag, but binding it into the HMAC keeps the whole file under one integrity root.
 
 **Purpose:**
 
@@ -143,20 +126,20 @@ Where `message` contains the JSON-encoded block content (the [legacy scheme](leg
 - **Key**: Separate 256-bit HMAC key derived from the master key
 - **Verification**: Constant-time comparison using `crypto.timingSafeEqual`
 
-### Creation workflow
+## Creation workflow
 
 With the app in create mode:
 
-1. Select the backup type.
-2. Enter the block or blockset secret, passphrase and, optionally, label.
+1. Select the backup type and optionally enter a label.
+2. Enter the block or blockset secret and passphrase.
 3. Drag and drop files and/or folders.
-4. Click the create button.
+4. Click “Create”.
 5. Choose where to save the detached archive.
 6. The app creates, encrypts and saves the detached archive with its HMAC using the `.superbacked` extension.
 7. The app creates the block or blockset.
 8. Print or save the block or blockset.
 
-### Restoration workflow
+## Restoration workflow
 
 With the app in restore mode:
 

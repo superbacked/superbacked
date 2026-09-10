@@ -103,9 +103,9 @@ export const deriveAddresses = (mnemonic: string, count: number): string[] => {
 
 /**
  * Derive a Bitcoin wallet — its BIP39 mnemonic and extended public key —
- * from master passphrase and label, computing the response on YubiKey
+ * from label and master passphrase, computing the response on YubiKey
  * @param masterPassphrase memorized master passphrase
- * @param label memorized label (for example savings)
+ * @param label memorized label (for example hotwallet)
  * @param options derivation options — words and paranoid are determinism
  * inputs the user must know (see src/utilities/crypto/derivedKey.ts)
  * @returns mnemonic and extended public key

@@ -6,7 +6,7 @@ import { suite, test } from "node:test"
 import { tmpdir } from "os"
 import { join } from "path"
 
-import { legacyKdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { legacyKdfProfile } from "@/src/shared/kdfProfiles"
 import { restoreLegacyStandaloneArchive } from "@/src/utilities/core/legacy/standaloneArchive"
 import {
   AuthenticationError,

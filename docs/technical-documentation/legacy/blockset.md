@@ -2,11 +2,11 @@
 
 ## Abstract
 
-This document specifies the legacy blockset — the scheme used by blocksets created before the [current scheme](../blockset.md): every release up to v1.12.1. The scheme is frozen — printed blocks in the wild must decrypt forever — and restoration-only: creation always uses the current scheme. The source ([src/utilities/core/legacy/blockset.ts](../../../src/utilities/core/legacy/blockset.ts)) is the ground truth for this document, and the classification is pinned by [tests/legacy/blockset.test.ts](../../../tests/legacy/blockset.test.ts) and the published legacy reference blockset ([tests/fixtures/legacy/blocks/blockset](../../../tests/fixtures/legacy/blocks/blockset)).
+This document specifies the legacy blockset — the scheme used by blocksets created before the [current scheme](../blockset.md): every release up to v1.12.1. The scheme is frozen — printed blocks in the wild must decrypt forever — and restoration-only: creation always uses the current scheme. The source code ([src/utilities/core/legacy/blockset.ts](../../../src/utilities/core/legacy/blockset.ts)) is the ground truth for this document, and the classification is pinned by [tests/legacy/blockset.test.ts](../../../tests/legacy/blockset.test.ts) and the published legacy reference blockset ([tests/fixtures/legacy/blocks/blockset](../../../tests/fixtures/legacy/blocks/blockset)).
 
 ## Introduction
 
-Superbacked is a backup and succession planning platform for sensitive data such as critical credentials, signing keys and digital assets. Superbacked stores this data in encrypted QR codes called blocks, printed on archival paper or saved as JPG or PDF files.
+Superbacked protects secrets too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Secrets are backed up — encrypted, offline, with succession planning built in.
 
 Legacy blocksets share the current composition — each secret split into one share per block using Shamir Secret Sharing, each block a [legacy block](block.md) — but mark shares differently: where the current scheme recognizes shares by which domain key authenticates and versions them with a [version byte](../blockset.md#version-declaration), the legacy scheme marks each share with a plaintext `shamir:` prefix inside the encrypted message and carries no version byte. The prefix convention is blockset scheme version 1, recognized structurally — the era is known from the payload shape before classification runs.
 

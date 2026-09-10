@@ -5,7 +5,7 @@ import { ErrorCorrection } from "qr"
 import {
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 import {
   Metadata,

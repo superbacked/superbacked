@@ -10,7 +10,7 @@ import {
   legacyKdfProfile,
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import { restoreLegacyStandaloneArchive } from "@/src/utilities/core/legacy/standaloneArchive"
 import {
   AuthenticationError,

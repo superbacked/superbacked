@@ -1,11 +1,16 @@
 // Named Argon2d cost profiles — the append-only registry of every KDF
 // cost Superbacked has ever shipped. Artifacts never store parameters:
 // they are discovered at restore by trying profiles against the artifact
-// (see docs/technical-documentation/scheme-registry.md),
+// (see docs/technical-documentation/README.md),
 // so every row is
 // frozen forever — changing one silently changes the key of every
 // artifact created with it. Strengthening means appending a row, never
 // editing one.
+//
+// The rows live in src/shared rather than beside the argon2 primitive
+// because the renderer prices passphrase strength at them (see
+// src/shared/utilities/zxcvbn.ts) while argon2 spawns the bundled binary
+// in the main process.
 //
 // Units match the argon2 binary: memory in KiB (-k), passes (-t),
 // parallelism lanes (-p). Attack cost scales with memory × passes

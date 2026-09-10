@@ -67,7 +67,8 @@ const pair = (): Promise<Pair> => {
 suite("legacyDetachedArchive", () => {
   test("freezes legacy key chain", () => {
     // The shipped v1.10.0 identities — frozen shipped bytes, suffixes
-    // included (see the scheme registry technical documentation), pinned
+    // included (see the version namespace rules in
+    // src/utilities/crypto/schemeHeader.ts), pinned
     // by raw crypto recomputation against a fixed master key
     const masterKey = Buffer.alloc(32, 1)
     const legacy = deriveLegacyDetachedArchiveKeys(masterKey)

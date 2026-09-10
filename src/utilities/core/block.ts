@@ -2,7 +2,7 @@ import { hkdfSync } from "crypto"
 
 import type { ErrorCorrection } from "qr"
 
-import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { KdfProfile } from "@/src/shared/kdfProfiles"
 import {
   Secret as EncryptionSecret,
   Message,
@@ -34,7 +34,7 @@ export interface Secret {
   message: string
   passphrase: string
   // Optional YubiKey slot binding the passphrase and the YubiKey response
-  // into a derived key (see computeBlockKdfKey below) — standard blocks
+  // into a derived key (see computeBlockKdfKey below) — single blocks
   // only, never blocksets
   slot?: Slot
 }
@@ -177,7 +177,7 @@ export const decodeBlockMessage = (
  * @param passphrase memorized passphrase
  * @param salt 16-byte block salt
  * @param profile frozen Argon2d cost profile — the block’s at restore,
- * discovered by probing (see src/shared/utilities/kdfProfiles.ts)
+ * discovered by probing (see src/shared/kdfProfiles.ts)
  * @param yubikey optional YubiKey challenge-response request
  * @returns 32-byte key derivation function key
  */
@@ -207,7 +207,7 @@ export const computeBlockKdfKey = async (
  * @param blockset seal under the blockset domain key — the block and
  * blockset backup types yield indistinguishable blocks
  * @param profile frozen Argon2d cost profile (see
- * src/shared/utilities/kdfProfiles.ts)
+ * src/shared/kdfProfiles.ts)
  * @param label optional plaintext label
  * @param onTouchRequired invoked while a YubiKey awaits touch
  * @returns block payload

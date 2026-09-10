@@ -12,7 +12,7 @@ import {
   legacyKdfProfile,
   paranoidKdfProfile,
   standardKdfProfile,
-} from "@/src/shared/utilities/kdfProfiles"
+} from "@/src/shared/kdfProfiles"
 import {
   decodeBlockContent,
   decodeBlockMessage,

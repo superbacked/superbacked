@@ -1,7 +1,7 @@
 import { app } from "electron"
 import { join, resolve } from "path"
 
-import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { KdfProfile } from "@/src/shared/kdfProfiles"
 import spawn from "@/src/utilities/spawn"
 
 const env = process.env.ENV ?? "development"
@@ -23,7 +23,7 @@ const binDir =
 // docs/technical-documentation/derived-key.md).
 // Cost has no default —
 // every caller names a frozen profile, making its compatibility contract
-// visible at the call site (see src/shared/utilities/kdfProfiles.ts)
+// visible at the call site (see src/shared/kdfProfiles.ts)
 export default async (
   passphrase: string,
   salt: string,

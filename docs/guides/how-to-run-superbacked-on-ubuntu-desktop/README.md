@@ -19,7 +19,7 @@ Download latest release from [superbacked.com/download](https://superbacked.com/
 
 ### Step 2: install Superbacked
 
-> Heads-up: when reading this guide on GitHub, replace the version placeholder in the following command with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
+> Heads-up: replace `x64` with `arm64` in the following command if applicable — and, when reading this guide on GitHub, the version placeholder with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
 
 Run following command.
 

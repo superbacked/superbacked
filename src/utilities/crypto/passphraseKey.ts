@@ -1,6 +1,6 @@
 import { createHmac } from "crypto"
 
-import { KdfProfile } from "@/src/shared/utilities/kdfProfiles"
+import { KdfProfile } from "@/src/shared/kdfProfiles"
 import argon2 from "@/src/utilities/crypto/argon2"
 import { hkdf } from "@/src/utilities/crypto/primitives"
 import {
@@ -18,10 +18,10 @@ import {
 // its own HKDF info (see src/utilities/core/standaloneArchive.ts and
 // src/utilities/core/block.ts).
 //
-// The scheme is frozen: the single-factor arm is the derivation every
-// block and standalone archive in the wild already uses, and changing any
-// constant or construction below silently changes the key of every
-// YubiKey-protected block and standalone archive (see
+// The scheme is frozen: changing any constant or construction below
+// silently changes keys in the wild — the single-factor arm is the
+// derivation of every passphrase-only block and standalone archive and
+// the two-factor arm that of every YubiKey-protected one (see
 // docs/technical-documentation/passphrase-key.md).
 
 // Scheme version 1 — versioned by the artifacts that consume it: the
@@ -39,7 +39,7 @@ const challengeContext = "superbacked-passphrase-key-challenge"
  * @param passphrase memorized passphrase
  * @param salt salt stored in the block or standalone archive
  * @param profile frozen Argon2d cost profile — the artifact’s at restore,
- * discovered by probing (see src/shared/utilities/kdfProfiles.ts)
+ * discovered by probing (see src/shared/kdfProfiles.ts)
  * @returns 32-byte stretched key
  */
 export const computeStretchedKey = async (
@@ -119,7 +119,7 @@ export const computeProbeKey = (
  * @param passphrase memorized passphrase
  * @param salt salt stored in the block or standalone archive
  * @param profile frozen Argon2d cost profile — the artifact’s at restore,
- * discovered by probing (see src/shared/utilities/kdfProfiles.ts)
+ * discovered by probing (see src/shared/kdfProfiles.ts)
  * @param info frozen consumer HKDF info
  * @param yubikey optional YubiKey challenge-response request
  * @returns 32-byte key
