@@ -118,7 +118,7 @@
       },
       "network.trr.bootstrapAddr": {
         "Status": "locked",
-        "Value": "194.242.2.2"
+        "Value": "9.9.9.9"
       },
       "signon.autofillForms": {
         "Status": "locked",
