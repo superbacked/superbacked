@@ -1,7 +1,7 @@
 {
   "name": "superbacked",
   "productName": "Superbacked",
-  "version": "2.0.0-beta.13",
+  "version": "2.0.0-beta.14",
   "description": "Protect what matters most.",
   "homepage": "https://superbacked.com",
   "main": ".webpack/main/index.js",
