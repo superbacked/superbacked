@@ -66,3 +66,4 @@ The pointer locates the secret’s ciphertext within data, the initialization ve
 - Plausible deniability has a floor and a direction: every block provably holds at least one secret, so only the secrets beyond the first are deniable — and disclosing a later secret’s passphrase reveals, through its position, that one or more secrets precede it. Deniability is strongest when only the first secret is ever disclosed.
 - Deniability covers the block, not its handling: passphrase management and the decision of what to disclose remain with the user.
 - The KDF is injected, so the cost of brute-forcing passphrases is set by the caller’s choice, not by fixed-size encryption.
+- Legacy-mode blocks (v1.5.1 and earlier) reuse KDF output as both the AES-256-CBC header key and the AES-256-GCM data key.
