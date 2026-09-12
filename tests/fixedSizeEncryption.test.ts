@@ -118,6 +118,21 @@ suite("fixedSizeEncryption", () => {
     )
   })
 
+  test("fails to encrypt secrets sharing a key", () => {
+    const key = randomBytes(32)
+    assert.throws(
+      () =>
+        encrypt(
+          [
+            { key: key, message: "yo" },
+            { key: key, message: "lo" },
+          ],
+          blockSize
+        ),
+      { message: "Duplicate key" }
+    )
+  })
+
   test("fails to encrypt secrets that do not fit in block size", () => {
     const secrets = [newSecret(randomBytes(256)), newSecret(randomBytes(256))]
     assert.throws(() => encrypt(secrets, blockSize), {

@@ -63,6 +63,8 @@ For each secret:
 
 Entries are concatenated and the block is padded to the requested size with random bytes.
 
+Keys must be distinct across secrets: decryption returns the first entry a key authenticates, so a duplicate key would leave every later secret sharing it unreachable — encryption rejects duplicates outright (`Duplicate key`).
+
 ## Decryption
 
 Decryption takes a single key, derives its subkeys once and slides over every byte offset of the block: unmask the candidate length at the offset, bounds-check it and attempt authenticated decryption — the authentication tag rejects false candidates, costing O(block size) cheap attempts worst case. A wrong key and an absent secret fail identically (`Secret not found`) — the error does not reveal whether there was anything to find.

@@ -83,10 +83,23 @@ export const encrypt = (secrets: Secret[], blockSize: number): Buffer => {
   if (Number.isInteger(blockSize) === false || blockSize < secretOverhead) {
     throw new Error("Invalid block size")
   }
+  for (const secret of secrets) {
+    validateKey(secret.key)
+  }
+  // Decryption returns the first entry a key authenticates, so a
+  // duplicate key would leave every later secret sharing it unreachable —
+  // written but permanently lost. Rejected at creation, the only moment
+  // the loss is preventable
+  for (const [index, secret] of secrets.entries()) {
+    for (const other of secrets.slice(index + 1)) {
+      if (secret.key.equals(other.key)) {
+        throw new Error("Duplicate key")
+      }
+    }
+  }
   const entries: Buffer[] = []
   let entriesLength = 0
   for (const secret of secrets) {
-    validateKey(secret.key)
     const message = Buffer.from(secret.message)
     if (message.length > maximumMessageLength) {
       throw new Error("Message too long")
