@@ -65,7 +65,7 @@ Reviewers who know these stacks will already know their sharp edges — the Chro
 
 **Intent:** the browser cannot reach the secret-handling world, and a compromised session cannot escalate.
 
-**Approach:** Firefox runs as a dedicated no-shell user, `clearnet`, which owns nothing the other applications touch; everything else runs as the primary user, `superbacked`. After provisioning, `superbacked` is removed from the `sudo` group, so a compromised desktop session cannot gain root, remount the disk or rewrite the firewall. The narrow, audited exception is a single `sudoers` rule that lets `superbacked` launch Firefox as `clearnet` through the display bridge — one exact command line and nothing else.
+**Approach:** Firefox runs as a dedicated no-shell user, `clearnet`, which owns nothing the other applications touch; everything else runs as the primary user, `superbacked`. After provisioning, `superbacked` is removed from the `sudo` group, so a compromised desktop session cannot gain root, remount the disk or rewrite the firewall. The exception is a single `sudoers` rule that lets `superbacked` invoke a root-owned browser helper as `clearnet`. The helper accepts zero arguments or one HTTP/HTTPS URL, constructs a clean environment and launches a fixed waypipe/Firefox command. The rule uses `NOSETENV`; callers cannot select another executable or pass Firefox options. The main desktop entry forwards one URL, while unsupported new-window and private-window desktop actions are removed.
 
 ### Display isolation (Wayland and waypipe)
 

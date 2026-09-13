@@ -42,7 +42,7 @@ const Disclaimer: FunctionComponent = () => {
                     style={{ cursor: "pointer" }}
                     onClick={() => {
                       void window.api.invoke.openExternalUrl(
-                        `${process.env.SUPERBACKED_WEBSITE_BASE_URI}/superbacked-os`
+                        "https://superbacked.com/superbacked-os"
                       )
                     }}
                   />

@@ -27,8 +27,8 @@ import { attachContextMenu, disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
 import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
-import { hasUrlOrigin } from "@/src/utilities/hasUrlOrigin"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
+import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -340,15 +340,14 @@ cli
       // so every page (including the main window) goes through the filter.
       session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
         const allowed =
-          /^devtools:\/\//.test(details.url) ||
           // #if process.env.ENV === "development"
-          hasUrlOrigin(details.url, "http://localhost:3000") ||
-          hasUrlOrigin(details.url, "ws://localhost:3000") ||
+          matchesUrlOrigin(details.url, "http://localhost:3000") ||
+          matchesUrlOrigin(details.url, "ws://localhost:3000") ||
           // #endif
           // #if process.env.ENV === "production"
           /^file:\/\//.test(details.url) ||
           // #endif
-          hasUrlOrigin(details.url, "https://superbacked.com")
+          /^devtools:\/\//.test(details.url)
         callback({ cancel: !allowed })
       })
       await createWindow()

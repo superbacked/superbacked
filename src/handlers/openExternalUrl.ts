@@ -1,12 +1,10 @@
 import { shell } from "electron"
 
+import allowedExternalUrls from "@/src/shared/allowedExternalUrls"
+
 export default async (url: string) => {
-  const baseUri = process.env.SUPERBACKED_WEBSITE_BASE_URI as string
-  try {
-    if (new URL(url).origin === new URL(baseUri).origin) {
-      await shell.openExternal(url)
-    }
-  } catch {
-    // Ignore invalid URLs
+  if (!allowedExternalUrls.includes(url)) {
+    throw new Error("External URL is not allowed")
   }
+  await shell.openExternal(url)
 }

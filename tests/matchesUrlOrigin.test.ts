@@ -1,21 +1,21 @@
 import assert from "assert"
 import { suite, test } from "node:test"
 
-import { hasUrlOrigin } from "@/src/utilities/hasUrlOrigin"
+import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"
 
 // Network origin matching for the request allowlist (see src/index.ts) —
 // lookalike hosts and deceptive userinfo must never admit another origin.
 
 const origin = "https://superbacked.com"
 
-suite("hasUrlOrigin", () => {
+suite("matchesUrlOrigin", () => {
   test("matches HTTPS URLs with the default port", () => {
     for (const value of [
       "https://superbacked.com",
       "https://superbacked.com/docs?language=en#intro",
       "https://superbacked.com:443/",
     ]) {
-      assert.strictEqual(hasUrlOrigin(value, origin), true)
+      assert.strictEqual(matchesUrlOrigin(value, origin), true)
     }
   })
 
@@ -26,7 +26,7 @@ suite("hasUrlOrigin", () => {
       "https://sub.superbacked.com/",
       "https://attacker.invalid/?url=https://superbacked.com",
     ]) {
-      assert.strictEqual(hasUrlOrigin(value, origin), false)
+      assert.strictEqual(matchesUrlOrigin(value, origin), false)
     }
   })
 
@@ -40,7 +40,7 @@ suite("hasUrlOrigin", () => {
       "not a URL",
       "",
     ]) {
-      assert.strictEqual(hasUrlOrigin(value, origin), false)
+      assert.strictEqual(matchesUrlOrigin(value, origin), false)
     }
   })
 
@@ -48,14 +48,14 @@ suite("hasUrlOrigin", () => {
     for (const protocol of ["http", "ws"]) {
       const developmentOrigin = `${protocol}://localhost:3000`
       assert.strictEqual(
-        hasUrlOrigin(`${developmentOrigin}/assets`, developmentOrigin),
+        matchesUrlOrigin(`${developmentOrigin}/assets`, developmentOrigin),
         true
       )
       for (const value of [
         `${protocol}://localhost:30001/`,
         `${protocol}://localhost:3000@attacker.invalid/`,
       ]) {
-        assert.strictEqual(hasUrlOrigin(value, developmentOrigin), false)
+        assert.strictEqual(matchesUrlOrigin(value, developmentOrigin), false)
       }
     }
   })

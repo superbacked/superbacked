@@ -811,8 +811,12 @@ cp \
   /usr/share/applications/firefox.desktop \
   /usr/local/share/applications/firefox.desktop
 
+# Only the main entry accepts a URL. Drop upstream desktop actions:
+# the bridge does not implement new-window or private-window options.
 sed --in-place \
-  's|^Exec=.*|Exec=/usr/local/bin/clearnet-browser|' \
+  -e '/^\[Desktop Action /,$d' \
+  -e '/^Actions=/d' \
+  -e 's|^Exec=.*|Exec=/usr/local/bin/clearnet-browser %u|' \
   /usr/local/share/applications/firefox.desktop
 
 # Same-name overrides shadow the stock entries including their MIME
@@ -909,6 +913,16 @@ tee /usr/local/bin/clearnet-browser > /dev/null << 'EOF'
 
 set -o errexit
 
+# Never forward browser options or local-file/protocol handlers. The
+# sudo helper repeats this validation because it is callable directly.
+if (( $# > 1 )) || { (( $# == 1 )) && {
+  [[ ! "$1" =~ ^https?://[^/?#[:space:][:cntrl:]]+ ]] ||
+  [[ "$1" =~ [[:space:][:cntrl:]] ]];
+}; }; then
+  printf "%s\n" "Error: expected zero arguments or one HTTP/HTTPS URL" >&2
+  exit 1
+fi
+
 if ! grep --quiet superbacked.browser /proc/cmdline; then
   zenity --info \
     --no-wrap \
@@ -917,7 +931,6 @@ if ! grep --quiet superbacked.browser /proc/cmdline; then
   exit 1
 fi
 
-clearnet_uid="$(id --user clearnet)"
 bridge_socket="/run/clearnet-bridge/waypipe.sock"
 
 # Wayland deliberately has no way for one user’s apps to appear on
@@ -927,7 +940,7 @@ bridge_socket="/run/clearnet-bridge/waypipe.sock"
 # Firefox from seeing the Superbacked app.
 rm --force "${bridge_socket}"
 
-waypipe --oneshot --socket "${bridge_socket}" client &
+waypipe --socket "${bridge_socket}" client &
 
 waypipe_pid=$!
 
@@ -954,21 +967,9 @@ chmod 660 "${bridge_socket}"
 # clearnet cannot read — move somewhere neutral before switching users.
 cd /
 
-# Firefox needs clearnet’s session bus — lingering (enabled at
-# provisioning time) is what provides it. GTK_USE_PORTAL=0 keeps the
-# toolkit from waiting on desktop portals clearnet cannot answer; dark
-# mode is pinned by policy, so nothing is lost. --display pins the name
-# of the private Wayland socket waypipe creates for Firefox (the
-# default is randomized) so the Firefox AppArmor profile can allow that
-# exact path.
+# The helper builds the environment and fixed browser command itself.
 if ! sudo --user clearnet --set-home \
-  /usr/bin/env \
-    DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${clearnet_uid}/bus" \
-    GTK_USE_PORTAL=0 \
-    MOZ_ENABLE_WAYLAND=1 \
-    XDG_RUNTIME_DIR="/run/user/${clearnet_uid}" \
-  /usr/bin/waypipe --oneshot --socket "${bridge_socket}" --display wayland-firefox server -- \
-  /usr/bin/firefox --no-remote; then
+  /usr/local/libexec/superbacked-browser "$@"; then
   zenity --error \
     --no-wrap \
     --text "Browser failed to start" \
@@ -980,11 +981,55 @@ EOF
 
 chmod +x /usr/local/bin/clearnet-browser
 
-# Allow superbacked to start Firefox as clearnet — this exact command
-# line and nothing else (it survives the sudo removal at the end). If
-# the launcher above changes, this line must change with it.
+# The helper runs as clearnet, never root. Bash privileged mode ignores
+# BASH_ENV, exported functions and shell-option startup inputs before
+# the body executes. sudo scrubs loader variables; NOSETENV prevents
+# callers bypassing that filtering. env --ignore-environment gives
+# waypipe and Firefox only the values constructed here.
+mkdir --parents /usr/local/libexec
+tee /usr/local/libexec/superbacked-browser > /dev/null << 'EOF'
+#! /bin/bash -p
+
+set -o errexit
+
+if (( $# > 1 )) || { (( $# == 1 )) && {
+  [[ ! "$1" =~ ^https?://[^/?#[:space:][:cntrl:]]+ ]] ||
+  [[ "$1" =~ [[:space:][:cntrl:]] ]];
+}; }; then
+  printf "%s\n" "Error: expected zero arguments or one HTTP/HTTPS URL" >&2
+  exit 1
+fi
+
+clearnet_uid="$(/usr/bin/id --user)"
+url_args=()
+if (( $# == 1 )); then
+  url_args=(--url "$1")
+fi
+
+# Lingering provides clearnet’s session bus. Disable portals it cannot
+# answer, and pin the private display name allowed by Firefox’s profile.
+cd /
+exec /usr/bin/env --ignore-environment \
+  HOME=/home/clearnet \
+  USER=clearnet \
+  LOGNAME=clearnet \
+  PATH=/usr/bin:/bin \
+  LANG=C.UTF-8 \
+  DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${clearnet_uid}/bus" \
+  GTK_USE_PORTAL=0 \
+  MOZ_ENABLE_WAYLAND=1 \
+  XDG_RUNTIME_DIR="/run/user/${clearnet_uid}" \
+  /usr/bin/waypipe --socket /run/clearnet-bridge/waypipe.sock --display wayland-firefox server -- \
+  /usr/bin/firefox --no-remote "${url_args[@]}"
+EOF
+
+chown root:root /usr/local/libexec/superbacked-browser
+chmod 755 /usr/local/libexec/superbacked-browser
+
+# Arguments are validated by the root-owned helper, not sudo globbing.
 tee /etc/sudoers.d/clearnet-browser > /dev/null << 'EOF'
-superbacked ALL=(clearnet) SETENV: NOPASSWD: /usr/bin/env DBUS_SESSION_BUS_ADDRESS=* GTK_USE_PORTAL=0 MOZ_ENABLE_WAYLAND=1 XDG_RUNTIME_DIR=* /usr/bin/waypipe --oneshot --socket /run/clearnet-bridge/waypipe.sock --display wayland-firefox server -- /usr/bin/firefox --no-remote
+Defaults!/usr/local/libexec/superbacked-browser env_reset
+superbacked ALL=(clearnet) NOPASSWD: NOSETENV: /usr/local/libexec/superbacked-browser
 EOF
 
 chmod 440 /etc/sudoers.d/clearnet-browser
