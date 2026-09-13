@@ -27,6 +27,7 @@ import { attachContextMenu, disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
 import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
+import { hasUrlOrigin } from "@/src/utilities/hasUrlOrigin"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
@@ -341,12 +342,13 @@ cli
         const allowed =
           /^devtools:\/\//.test(details.url) ||
           // #if process.env.ENV === "development"
-          /^(http|ws):\/\/localhost:3000/.test(details.url) ||
+          hasUrlOrigin(details.url, "http://localhost:3000") ||
+          hasUrlOrigin(details.url, "ws://localhost:3000") ||
           // #endif
           // #if process.env.ENV === "production"
           /^file:\/\//.test(details.url) ||
           // #endif
-          /^https:\/\/superbacked\.com/.test(details.url)
+          hasUrlOrigin(details.url, "https://superbacked.com")
         callback({ cancel: !allowed })
       })
       await createWindow()
