@@ -117,7 +117,7 @@ Where `message` contains the JSON-encoded block content (the [legacy scheme](leg
 
 - Cryptographically binds the detached archive to the block content
 - Detects tampering of either the block content or the detached archive
-- Prevents substitution attacks where an attacker replaces the detached archive with different encrypted content
+- Detects substitution attacks where an attacker replaces the detached archive with different encrypted content
 - Complements the GCM tag, which only authenticates the encrypted data, not the block content
 
 **Security characteristics:**
@@ -125,6 +125,8 @@ Where `message` contains the JSON-encoded block content (the [legacy scheme](leg
 - **Algorithm**: HMAC-SHA256
 - **Key**: Separate 256-bit HMAC key derived from the master key
 - **Verification**: Constant-time comparison using `crypto.timingSafeEqual`
+
+Verification follows extraction: the GCM tag and the HMAC authenticate whole streams, so restoration streams decrypted content to disk and both verdicts land only after extraction. A tampered archive is always detected and reported, but its content has already been written — delete the output of a failed restore.
 
 ## Creation workflow
 

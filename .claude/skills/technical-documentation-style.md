@@ -30,6 +30,8 @@ The shared intro (verbatim):
 
 Legacy documents drop the derivation clause — the schemes they specify predate derived secrets — ending the second sentence at “…with succession planning built in.” (byte-identical among the legacy documents, likewise hashable).
 
+`superbacked-os-security.md` is the sanctioned exception to this skeleton: a narrative security-model document with its own anatomy — Threat model, then per-mechanism sections shaped **Intent → Approach → Limits**, then verification, source-of-truth and known-limitations sections. It addresses users as well as developers and security reviewers, and the first-person institutional voice (“we would rather be corrected than trusted”) is allowed there and nowhere else.
+
 There is no registry document — registries live in code. `docs/technical-documentation/README.md` is the architecture overview (the primitive/scheme/format/artifact ladder, the layer map, the versioning-and-cost digest, reference artifacts), kept to one screen and free of per-document enumeration. Frozen values point at their owning modules (`src/shared/kdfProfiles.ts` for KDF profiles and Paranoid mode, `src/utilities/crypto/schemeHeader.ts` for the scheme header, probe blocks and version namespace rules) and discovery is specified per feature under its version declaration section.
 
 ## Code blocks — the frozen-construction rule

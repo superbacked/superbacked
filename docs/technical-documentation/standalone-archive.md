@@ -35,9 +35,11 @@ When you create a standalone archive, the app:
 
 A portable tar archive of the files and folders is encrypted using AES-256-GCM and a key derived from the passphrase (see [Key derivation](#key-derivation)). The construction provides the properties an archive relies on:
 
-- **Authenticated encryption** — a wrong passphrase, a wrong YubiKey or a tampered archive fails to decrypt
+- **Authenticated encryption** — a wrong passphrase, a wrong YubiKey or a tampered archive fails to restore
 - **Indistinguishability** — every byte of the file is ciphertext or random cryptographic metadata, indistinguishable from random data
 - **Portability** — the tar container omits system-specific metadata and preserves file names, sizes and permissions, so archives restore across platforms
+
+Verification follows extraction: AES-256-GCM authenticates the whole stream, so restoration streams decrypted content to disk and the tag verdict lands only at end of stream. A tampered archive is always detected and reported, but its content has already been written — delete the output of a failed restore.
 
 ## Key derivation
 
@@ -111,7 +113,7 @@ Standalone archive files use the following binary structure:
 
 - **Salt**: 16-byte random salt used for Argon2d key derivation
 - **Probe block**: encrypted [scheme header](../../src/utilities/crypto/schemeHeader.ts) — a 12-byte initialization vector, the 8-byte header (encrypted using AES-256-GCM and the probe key) and a 16-byte authentication tag
-- **Initialization vector**: 12-byte random initialization vector for AES-256-GCM standalone archive encryption — unique per archive, so the encryption key never encrypts two archives using the same initialization vector (see `generateIv` in [src/utilities/core/archive.ts](../../src/utilities/core/archive.ts))
+- **Initialization vector**: 12-byte random initialization vector for AES-256-GCM standalone archive encryption — each archive’s fresh salt yields a fresh key that encrypts exactly one message, so a key and initialization vector pair can repeat only with negligible probability (see `generateIv` in [src/utilities/core/archive.ts](../../src/utilities/core/archive.ts))
 - **Encrypted data**: AES-256-GCM-encrypted portable tar archive
 - **Authentication tag**: 16-byte GCM authentication tag
 

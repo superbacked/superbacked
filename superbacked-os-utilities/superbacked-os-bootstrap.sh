@@ -1136,7 +1136,8 @@ EOF
 
 printf "%s\n" "Disabling Bluetooth…"
 
-# Bluetooth has no role on this machine — keyboards and mice are wired.
+# Bluetooth has no role on this machine — keyboards and mice are
+# built-in or wired.
 # A radio is a second way into hardware that handles secrets, so the
 # kernel driver is blocked and the service masked. Unlike networking,
 # hardened browser mode does not bring it back.

@@ -97,7 +97,7 @@ export const computeResponseBoundKey = (
 
 - **Factor combination**: HKDF-Extract is where the two factors meet — the salt is unknowable without the hardware and the input keying material is unknowable without the passphrase
 - **Additive trust model**: The response is only the HKDF salt while the stretched key independently enters as input keying material, so a fully malicious YubiKey returning rigged responses degrades derivation to exactly the single-factor scheme — it can remove the hardware-binding property but can never make the key predictable to anyone who lacks the passphrase
-- **Consumer separation**: The frozen info domain-separates consumers — a block key and an archive key can never coincide even under identical inputs
+- **Consumer separation**: The frozen info domain-separates consumers — two-factor block and archive keys can never coincide even under identical inputs. Single-factor consumer keys are the raw stretched key; their separation comes from per-artifact random salts and the domain key blocks apply on top
 
 ## Probe key
 
