@@ -74,8 +74,10 @@ export const derivePasswordAction = async (
   try {
     // Prompting keeps labels out of shell history and process listings —
     // when the passphrase is piped, the prompt reads from the controlling
-    // terminal, so the argument is only required fully non-interactively
-    let resolvedLabel = label
+    // terminal, so the argument is only required fully non-interactively.
+    // Trimmed like the prompted path below — the label is a determinism
+    // input, so both surfaces must spell one label the same way
+    let resolvedLabel = label?.trim()
     if (resolvedLabel === undefined) {
       try {
         resolvedLabel = (await promptVisible("Label: ")).trim()
