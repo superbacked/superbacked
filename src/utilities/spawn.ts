@@ -5,7 +5,7 @@ interface ExtendedSpawnOptions extends SpawnOptions {
 }
 
 export interface SpawnError extends Error {
-  exitCode: number
+  exitCode: null | number
 }
 
 interface SpawnReturnValue {
@@ -33,8 +33,8 @@ export default async (
     try {
       const spawned = spawn(command, args, otherOptions)
       // Failing to spawn (for example a missing binary) emits “error”, then
-      // “close” with a null exit code — without this listener the null code
-      // reads as success with empty output
+      // “close” with a null exit code — this listener surfaces the
+      // underlying error (ENOENT) instead of the generic rejection below
       spawned.on("error", reject)
       let stdout = ""
       let stderr = ""
@@ -50,8 +50,19 @@ export default async (
       }
       spawned.on("close", () => {
         const exitCode = spawned.exitCode
-        if (exitCode && exitCode !== 0) {
-          const error = new Error(stderr) as SpawnError
+        const signalCode = spawned.signalCode
+        // A child killed by a signal (for example the OOM killer during a
+        // paranoid stretch) closes with a null exit code — success is
+        // exactly exit code 0, so partial output is never mistaken for a
+        // result
+        if (exitCode !== 0) {
+          const error = new Error(
+            stderr !== ""
+              ? stderr
+              : signalCode !== null
+                ? `Process terminated by ${signalCode}`
+                : `Process exited with code ${exitCode}`
+          ) as SpawnError
           error.exitCode = exitCode
           reject(error)
         } else {

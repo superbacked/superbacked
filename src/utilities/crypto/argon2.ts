@@ -44,5 +44,11 @@ export default async (
     ],
     { input: passphrase }
   )
-  return Buffer.from(stdout, "hex")
+  const key = Buffer.from(stdout, "hex")
+  // Node’s hex parser truncates silently at the first invalid character —
+  // a short key must fail here, never derive
+  if (key.length !== 32) {
+    throw new Error("Unexpected argon2 output")
+  }
+  return key
 }
