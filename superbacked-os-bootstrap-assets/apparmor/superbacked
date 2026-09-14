@@ -8,9 +8,9 @@
 # path. This is the app that handles the secrets, so it is the most
 # important boundary: it must never reach the network (the air-gap,
 # enforced a layer below nftables, inside the process that holds the
-# secrets) and it is walled off from the clearnet browser user. It
-# keeps what it genuinely needs — its own files, the camera (block
-# scanner), the user’s home, USB drives and the printer.
+# secrets) and it is walled off from the browser user. It keeps what
+# it genuinely needs — its own files, the camera (block scanner), the
+# user’s home, USB drives and the printer.
 #
 # Electron caveat: the app runs a Chromium sandbox that creates user
 # namespaces and pivots root. The namespace and mount rules below are
@@ -239,16 +239,10 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   /usr/share/applications/{,**} r,
   /usr/share/mime/{,**} r,
 
-  # Link clicks hand off to the desktop’s URL handler: gio launches the
-  # firefox.desktop override, whose Exec is the clearnet-browser
-  # launcher. The launcher runs unconfined (ux — it needs the session
-  # environment): in air-gapped mode it only shows the reboot explainer
-  # (zenity), in hardened browser mode it starts the display bridge,
-  # and Firefox itself re-attaches to its own profile on exec. A
-  # compromised app gains nothing new here — the sudoers browser grant
-  # is uid-scoped and reachable without this rule.
+  # URL hand-offs enter the confined launcher; missing policy fails
+  # closed.
   /usr/lib/@{multiarch}/glib-2.0/gio-launch-desktop ix,
-  /usr/local/bin/clearnet-browser ux,
+  /usr/local/bin/superbacked-browser Px,
 
   # Scratch space and self-introspection Chromium needs.
   owner /tmp/ r,
@@ -271,10 +265,17 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
 
   # Off-limits even though same-user or otherwise reachable: the
   # browser user’s world and any key material.
-  deny /home/clearnet/{,**} mrwklx,
+  deny /home/browser/{,**} mrwklx,
   deny @{HOME}/.gnupg/{,**} mrwkl,
   deny @{HOME}/.ssh/{,**} mrwkl,
   deny @{HOME}/.local/share/keyrings/{,**} mrwkl,
+  # X11 in both forms (the pathname socket under /tmp, which the owner
+  # grant above would otherwise reach, and the abstract one): the app
+  # pins Wayland itself, and Xwayland is one flat trust domain shared
+  # with any other X11 client — the same carve-out the browser profiles
+  # carry.
+  deny /tmp/.X11-unix/{,**} rw,
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/superbacked>

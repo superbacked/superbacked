@@ -43,6 +43,7 @@ if [ ! -d "${src}" ]; then
 fi
 
 sudo cp \
+  "${src}/superbacked-browser" \
   "${src}/firefox" \
   "${src}/superbacked" \
   "${src}/yubico-authenticator" \
@@ -58,12 +59,13 @@ if [ "${mode}" = "complain" ]; then
     -e 's|flags=\(([^)]*)\) \{$|flags=(\1 complain) {|' \
     -e 't' \
     -e 's| \{$| flags=(complain) {|' \
+    /etc/apparmor.d/superbacked-browser \
     /etc/apparmor.d/firefox \
     /etc/apparmor.d/superbacked \
     /etc/apparmor.d/yubico-authenticator
 fi
 
-for profile in firefox superbacked yubico-authenticator; do
+for profile in superbacked-browser firefox superbacked yubico-authenticator; do
   sudo apparmor_parser --replace "/etc/apparmor.d/${profile}"
 done
 

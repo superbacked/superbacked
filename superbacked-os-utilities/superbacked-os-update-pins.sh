@@ -1,9 +1,9 @@
 #! /bin/bash
-# Keeps the pins at the top of superbacked-os-bootstrap.sh current. It
-# queries the same canonical sources the bootstrap installs from,
-# prints each pin next to the latest available version and, when
-# something moved, shows the resulting readonly lines (wheel sha256
-# included) and offers to apply them — declining leaves the file
+# Keeps the pins at the top of superbacked-os-bootstrap-base.sh
+# current. It queries the same canonical sources the base bootstrap
+# installs from, prints each pin next to the latest available version
+# and, when something moved, shows the resulting readonly lines (wheel
+# sha256 included) and offers to apply them — declining leaves the file
 # untouched, so bumps stay deliberate: the review happens at the
 # prompt. (Note apt_snapshot moves the entire Ubuntu package set, not
 # one tool — bump it consciously, typically alongside a release.)
@@ -12,6 +12,7 @@
 #   apt_snapshot          snapshot.ubuntu.com (today’s snapshot, existence-checked)
 #   firefox               packages.mozilla.org apt index
 #   trezor                PyPI simple index (wheel sha256 from its URL fragment)
+#   trezor_udev_rules     data.trezor.io (sha256 computed from the current file)
 #   yubico_authenticator  developers.yubico.com release listing
 #   yubikey_manager       PyPI simple index (wheel sha256 from its URL fragment)
 #   yubikey_prov          GitHub release feed (script sha256 computed from its content)
@@ -28,7 +29,7 @@ set -o pipefail
 bold=$(tput bold 2> /dev/null || true)
 normal=$(tput sgr0 2> /dev/null || true)
 
-bootstrap="$(dirname "${0}")/superbacked-os-bootstrap.sh"
+bootstrap="$(dirname "${0}")/superbacked-os-bootstrap-base.sh"
 
 if [ ! -f "${bootstrap}" ]; then
   printf "%s\n" "Error: ${bootstrap} not found" >&2
@@ -120,6 +121,20 @@ trezor_latest="$(pypi_latest trezor trezor)" || trezor_latest=""
 report trezor_version "$(pin trezor_version)" "${trezor_latest% *}" \
   "readonly trezor_sha256=\"${trezor_latest#* }\"
 readonly trezor_version=\"${trezor_latest% *}\"
+"
+
+# trezor_udev_rules — the upstream file has no versions, so its sha256
+# is the pin: a changed file shows up as a moved pin to review, and the
+# base bootstrap refuses any content that does not match.
+trezor_udev_rules_latest="$(
+  curl --fail --location --proto '=https' --silent \
+    https://data.trezor.io/udev/51-trezor.rules \
+    | shasum -a 256 \
+    | awk '{ print $1 }'
+)" || trezor_udev_rules_latest=""
+report trezor_udev_rules_sha256 \
+  "$(pin trezor_udev_rules_sha256)" "${trezor_udev_rules_latest}" \
+  "readonly trezor_udev_rules_sha256=\"${trezor_udev_rules_latest}\"
 "
 
 # yubico_authenticator — highest -linux.tar.gz in Yubico’s release

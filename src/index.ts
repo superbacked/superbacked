@@ -29,6 +29,7 @@ import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"
+import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
@@ -38,6 +39,16 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 // in packaged builds only, so development keeps surfacing them
 if (app.isPackaged) {
   process.noDeprecation = true
+}
+
+// Superbacked OS is Wayland-only and every bundled app pins Wayland: the
+// desktop entry sets ELECTRON_OZONE_PLATFORM_HINT, but a terminal launch
+// inherits the session’s DISPLAY and Chromium would reach for Xwayland,
+// whose clients share one flat trust domain — so the pin is applied from
+// inside as well and holds on every launch path (elsewhere the platform
+// stays Chromium’s choice, as X11-only desktops must keep working)
+if (isSuperbackedOs()) {
+  app.commandLine.appendSwitch("ozone-platform", "wayland")
 }
 
 app.setName("Superbacked")

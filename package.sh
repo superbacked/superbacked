@@ -10,7 +10,7 @@ normal=$(tput sgr0)
 # Parse command-line options
 build_app=""
 build_os=""
-clear_cache=false
+clear_cache=""
 no_cache=false
 partial=false
 
@@ -19,12 +19,12 @@ function show_help() {
 Usage: package.sh [options]
 
 Options:
-  --app          Build app only
-  --os           Build Superbacked OS only
-  --all          Build and package everything without prompts
-  --no-cache     Build Superbacked OS without the persistent apt cache
-  --clear-cache  Clear the persistent apt cache before building Superbacked OS
-  -h, --help     Show this help message
+  --app                         Build app only
+  --os                          Build Superbacked OS only
+  --all                         Build and package everything without prompts
+  --no-cache                    Build Superbacked OS without the persistent build cache
+  --clear-cache <apt|base|all>  Clear apt archives, the debug base layer or both before building Superbacked OS
+  -h, --help                    Show this help message
 
 If no options are provided, the script will prompt for each step.
 EOF
@@ -52,8 +52,15 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --clear-cache)
-      clear_cache=true
-      shift
+      clear_cache="${2:-}"
+      case "${clear_cache}" in
+        apt|base|all) ;;
+        *)
+          printf "%s\n" "Error: --clear-cache expects apt, base or all (got “${clear_cache}”)" >&2
+          exit 1
+          ;;
+      esac
+      shift 2
       ;;
     --no-cache)
       no_cache=true
@@ -122,7 +129,7 @@ fi
 # --clear-cache rides the OS build’s Colima lifecycle rather than
 # spinning the VM up on its own — declining the build above would
 # silently skip the requested clear, so fail loudly instead
-if [ "${clear_cache}" = true ] && [ "${build_os}" != true ]; then
+if [ -n "${clear_cache}" ] && [ "${build_os}" != true ]; then
   echo "Error: --clear-cache requires building Superbacked OS" >&2
   exit 1
 fi
@@ -165,12 +172,6 @@ if [ "${build_os}" = true ]; then
     --vm-type vz \
     --vz-rosetta
 
-  if [ "${clear_cache}" = true ]; then
-    printf "%s\n" "Clearing apt cache…"
-
-    docker volume rm --force superbacked-apt-cache > /dev/null
-  fi
-
   printf "%s\n" "Building Superbacked OS Docker image…"
 
   # The container runs the baked copies of the scripts under docker/,
@@ -180,6 +181,24 @@ if [ "${build_os}" = true ]; then
     --tag superbacked-os-docker:24.04 \
     docker/
 
+  # The cache volume lives on the Colima VM disk, out of the host’s
+  # reach, so its subtrees are removed from inside a throwaway build
+  # container; all drops the volume itself. The build script recreates
+  # whatever is missing.
+  if [ -n "${clear_cache}" ]; then
+    printf "%s\n" "Clearing build cache (${clear_cache})…"
+
+    if [ "${clear_cache}" = all ]; then
+      docker volume rm --force superbacked-build-cache > /dev/null
+    else
+      docker run \
+        --rm \
+        --volume superbacked-build-cache:/cache \
+        superbacked-os-docker:24.04 \
+        rm --force --recursive "/cache/${clear_cache}"
+    fi
+  fi
+
   printf "%s\n" "Creating live Superbacked OS image…"
 
   # Provisioning and live conversion happen in one pass: the bootstrap
@@ -188,17 +207,22 @@ if [ "${build_os}" = true ]; then
   # image is written straight to its distribution name
   # (<product>-<arch>-<component>-<version>).
   # BUILD_VARIANT=debug (exported on the host) builds the debug variant
-  # — app profiles log denials (complain) instead of enforcing and
-  # superbacked keeps sudo for on-device profile iteration — the
-  # container does not inherit host environment, so it is forwarded
-  # explicitly here, then into the chroot by the build script.
+  # — app profiles log denials (complain) instead of enforcing,
+  # superbacked keeps sudo for on-device profile iteration, the
+  # squashfs uses fast zstd compression and the base bootstrap’s result
+  # is reused from the cache — the container does not inherit host
+  # environment, so it is forwarded explicitly here, then into the
+  # chroot by the build script.
   #
   # apt archives and indexes persist in a named volume on the Colima VM
   # disk (surviving colima stop), so interrupted or repeated builds only
   # download missing packages — see the /cache mounts in
   # docker/create-superbacked-os-live-image.sh. Integrity is unaffected:
-  # apt verifies cached files against the pinned snapshot hashes.
-  cache_volume=(--volume superbacked-apt-cache:/cache)
+  # apt verifies cached files against the pinned snapshot hashes. The
+  # same volume holds the debug base layer (see “base layer” there),
+  # keyed by the base bootstrap’s text, so a debug rebuild after an
+  # app or hardening change skips the package installs entirely.
+  cache_volume=(--volume superbacked-build-cache:/cache)
   if [ "${no_cache}" = true ]; then
     cache_volume=()
   fi

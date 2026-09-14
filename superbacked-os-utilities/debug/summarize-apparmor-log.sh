@@ -32,7 +32,7 @@ awk '
     line = grab("profile")
     if (line == "") line = grab("label")
 
-    keys = "operation class bus interface member name family sock_type addr requested_mask requested denied_mask denied"
+    keys = "operation class capname bus interface member name family sock_type addr requested_mask requested denied_mask denied"
     split(keys, fields, " ")
     for (i in fields) {
       value = grab(fields[i])

@@ -1,32 +1,41 @@
 #! /bin/bash
 # Creates the distributed Superbacked OS live image (EFI + squashfs)
-# from a vanilla Ubuntu Desktop source image (EFI + ext4 root). The
-# bootstrap, running in a chroot of the source image overlay, authors
-# the entire root filesystem — packages, users, hardening, the
-# Superbacked app and its AppArmor profiles (see
-# superbacked-os-utilities/superbacked-os-bootstrap.sh); this
-# script assembles and sanitizes the artifact around it. The live root
-# filesystem is copied to RAM at boot: the USB drive can be unplugged
-# as soon as the login screen appears, and amnesia is physical — the OS
-# only ever exists in RAM.
+# from a vanilla Ubuntu Desktop source image (EFI + ext4 root). Two
+# bootstrap scripts, running in a chroot of the source image overlay,
+# author the entire root filesystem: the base bootstrap installs the
+# pinned software (see
+# superbacked-os-utilities/superbacked-os-bootstrap-base.sh) and the
+# main bootstrap layers users, hardening, the Superbacked app and its
+# AppArmor profiles on top (see
+# superbacked-os-utilities/superbacked-os-bootstrap-main.sh); this
+# script assembles and sanitizes the artifact around them. The live
+# root filesystem is copied to RAM at boot: the USB drive can be
+# unplugged as soon as the login screen appears, and amnesia is
+# physical — the OS only ever exists in RAM.
 #
-# Image creation is online: the bootstrap resolves packages against a
-# pinned Ubuntu archive snapshot (same timestamp, same packages) and
-# verifies every other download against pinned keys and fingerprints.
+# Image creation is online: the base bootstrap resolves packages
+# against a pinned Ubuntu archive snapshot (same timestamp, same
+# packages) and verifies every other download against pinned keys,
+# fingerprints and hashes.
 #
 # The source image is never modified — it is attached read-only and all
 # changes below land in a tmpfs overlay that only the squashfs sees.
+# Debug builds with /cache present additionally keep the base
+# bootstrap’s result as an overlay layer under /cache/base, keyed by
+# that script’s text and the source image identity, so a rebuild that
+# changes only the main bootstrap or the app skips the package work
+# entirely (see “base layer” below).
 #
 # Usage (inside superbacked-os-docker container, with /dist holding the
 # app build and /superbacked-os-bootstrap-assets plus
 # /superbacked-os-utilities mounted from the repository; set
 # BUILD_VARIANT=debug to build the debug variant, whose app profiles
-# log denials (complain) instead of enforcing and which keeps sudo for
-# on-device profile iteration):
+# log denials (complain) instead of enforcing, which keeps sudo for
+# on-device profile iteration and which reuses the cached base layer):
 # /root/create-superbacked-os-live-image.sh \
 #   /superbacked-os/superbacked-os-amd64-24.04.4.img \
-#   /dist/superbacked-os-amd64-live-1.13.0.img \
-#   1.13.0
+#   /dist/superbacked-os-amd64-live-2.0.0.img \
+#   2.0.0
 #
 # Writes the live image (and its .sha256sums) to the output path.
 
@@ -70,7 +79,12 @@ function cleanup()
   losetup --detach-all
 }
 
-trap cleanup ERR INT
+# errexit ends the script after the ERR handler returns; a trapped
+# signal only runs its handler and resumes the script, so the INT
+# handler exits explicitly — otherwise an interrupt that lands between
+# commands continues the build on an unmounted tree.
+trap cleanup ERR
+trap 'cleanup; exit 130' INT
 
 printf "%s\n" "Starting live image assembly…"
 
@@ -88,13 +102,41 @@ printf "%s\n" "Mounting root partition in RAM overlay…"
 mkdir --parents /mnt/lower /mnt/root /mnt/scratch
 
 mount --read-only /dev/loop0p2 /mnt/lower
+
+# Base layer: debug builds with the persistent cache keep the base
+# bootstrap’s upper directory as an extra read-only lower layer. The
+# key covers that script (every pin lives in it) and the source image
+# identity, so any input that could change the result changes the
+# key; the main bootstrap and the app never enter it. Release builds
+# always run the base bootstrap — the debug path is additive and the
+# shipped image never depends on cache state. The layer is a verbatim
+# overlay upper (whiteouts as character devices, opaque markers as
+# trusted.* xattrs), which is exactly what overlayfs expects of a
+# lower layer.
+base_layer=""
+if [ -d /cache ] && [ "${BUILD_VARIANT:-}" = "debug" ]; then
+  base_key="$(
+    {
+      cat /superbacked-os-utilities/superbacked-os-bootstrap-base.sh
+      basename "${source_image}"
+      stat --format=%s "${source_image}"
+    } | sha256sum | cut --characters 1-16
+  )"
+  base_layer="/cache/base/${base_key}"
+fi
+
+lowerdir="/mnt/lower"
+if [ -n "${base_layer}" ] && [ -d "${base_layer}" ]; then
+  lowerdir="${base_layer}:/mnt/lower"
+fi
+
 # The upper layer absorbs everything the bootstrap does — apt indexes,
 # downloaded debs, upgraded files — so it needs a generous cap (tmpfs
 # allocates lazily; unused headroom costs nothing).
 mount --options size=8g --types tmpfs tmpfs /mnt/scratch
 mkdir --parents /mnt/scratch/upper /mnt/scratch/work
 mount \
-  --options lowerdir=/mnt/lower,upperdir=/mnt/scratch/upper,workdir=/mnt/scratch/work \
+  --options "lowerdir=${lowerdir},upperdir=/mnt/scratch/upper,workdir=/mnt/scratch/work" \
   --types overlay \
   overlay /mnt/root
 
@@ -153,31 +195,86 @@ cp /etc/resolv.conf /mnt/root/etc/resolv.conf
 printf '%s\n' '#!/bin/sh' 'exit 101' > /mnt/root/usr/sbin/policy-rc.d
 chmod +x /mnt/root/usr/sbin/policy-rc.d
 
+# By default apt runs dpkg on a private pty in its own session, so a
+# Ctrl+C reaches apt but never dpkg, and apt only stops between dpkg
+# calls — the whole configure phase is one call, so an interrupt during
+# it does nothing until the upgrade completes. On a live system that
+# protects the package database; here an interrupted build discards
+# the entire overlay, so dpkg shares the real terminal and dies with
+# everything else. dpkg itself ignores SIGINT while a maintainer script
+# runs, counts the killed script as one error and carries on to the
+# next package (fifty errors by default), so each Ctrl+C would stop one
+# postinst — aborting after the first error ends the run at once. A
+# genuine maintainer-script failure fails the build under errexit
+# either way; this only stops the log at the first one. (Removed in
+# the purge below, so the image keeps apt’s and dpkg’s defaults;
+# term.log, which the pty exists to capture, is purged there anyway.)
+printf '%s\n' \
+  'Dpkg::Options:: "--abort-after=1";' \
+  'Dpkg::Use-Pty "false";' \
+  > /mnt/root/etc/apt/apt.conf.d/99superbacked-build-interrupt
+
 # update-grub is meaningless during provisioning — the live image’s
 # GRUB configuration is written further down and the rootfs /boot is
 # excluded from the squashfs — and it would fail anyway: grub-probe
 # cannot resolve the overlay root to a device. Kernel and memtest
 # maintainer scripts call it regardless, so divert it to true for the
-# duration (restored in the purge below).
+# duration (restored in the purge below). This scaffolding is written
+# before the base bootstrap, so a cached base layer carries it too and
+# every step here must tolerate finding its own result already in
+# place: dpkg-divert leaves a matching diversion alone, and the symlink
+# is forced.
 chroot /mnt/root dpkg-divert --local --rename --add /usr/sbin/update-grub
-ln --symbolic /usr/bin/true /mnt/root/usr/sbin/update-grub
+ln --force --symbolic /usr/bin/true /mnt/root/usr/sbin/update-grub
 
 cp \
-  /superbacked-os-utilities/superbacked-os-bootstrap.sh \
-  /mnt/root/root/superbacked-os-bootstrap.sh
-
-printf "%s\n" "Running bootstrap in chroot…"
+  /superbacked-os-utilities/superbacked-os-bootstrap-base.sh \
+  /superbacked-os-utilities/superbacked-os-bootstrap-main.sh \
+  /mnt/root/root/
 
 # --ignore-environment keeps container variables (and Docker’s PATH)
-# from leaking into the image; BUILD_VARIANT passes through explicitly.
-chroot /mnt/root /usr/bin/env --ignore-environment \
-  BUILD_VARIANT="${BUILD_VARIANT:-}" \
-  DEBIAN_FRONTEND=noninteractive \
-  HOME=/root \
-  LC_ALL=C.UTF-8 \
-  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-  TERM="${TERM:-dumb}" \
-  bash /root/superbacked-os-bootstrap.sh "${version}"
+# from leaking into the image; BUILD_VARIANT passes through explicitly
+# (the base bootstrap ignores it — its result is variant-independent,
+# which is what makes the layer shareable).
+run_in_chroot() {
+  chroot /mnt/root /usr/bin/env --ignore-environment \
+    BUILD_VARIANT="${BUILD_VARIANT:-}" \
+    DEBIAN_FRONTEND=noninteractive \
+    HOME=/root \
+    LC_ALL=C.UTF-8 \
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    TERM="${TERM:-dumb}" \
+    "$@"
+}
+
+if [ -n "${base_layer}" ] && [ -d "${base_layer}" ]; then
+  printf "%s\n" "Skipping base bootstrap (cached as ${base_key})…"
+else
+  printf "%s\n" "Running base bootstrap in chroot…"
+
+  run_in_chroot bash /root/superbacked-os-bootstrap-base.sh
+
+  # The upper directory now holds exactly the base bootstrap’s delta
+  # (the apt cache bind mounts sit on the merged tree, not in it).
+  # Copied as a whole (--archive keeps the overlay xattrs and whiteout
+  # device nodes, as root in this privileged container) into a staging
+  # name renamed only on success, so an interrupted copy is never
+  # mistaken for a layer. One layer is kept: an older key can only be
+  # stale.
+  if [ -n "${base_layer}" ]; then
+    printf "%s\n" "Saving base layer ${base_key}…"
+
+    sync
+    rm --force --recursive /cache/base
+    mkdir --parents "${base_layer}.partial"
+    cp --archive /mnt/scratch/upper/. "${base_layer}.partial/"
+    mv "${base_layer}.partial" "${base_layer}"
+  fi
+fi
+
+printf "%s\n" "Running main bootstrap in chroot…"
+
+run_in_chroot bash /root/superbacked-os-bootstrap-main.sh "${version}"
 
 # live-boot provides the initramfs plumbing that finds
 # /live/filesystem.squashfs on the boot medium, copies it to RAM
@@ -276,14 +373,17 @@ printf "%s\n" "Purging source image artifacts…"
 # rest is dead weight.
 # Everything regenerates on demand at boot, in the RAM overlay.
 
-# Provisioning scaffolding: the service-start guard, the update-grub
-# diversion, the bootstrap script copy, root’s download-verification
-# and shell state, and the container’s resolver (the stock symlink
-# into systemd-resolved is restored).
+# Provisioning scaffolding: the service-start guard, the apt interrupt
+# setting, the update-grub diversion, the bootstrap script copies,
+# root’s download-verification and shell state, and the container’s
+# resolver (the stock symlink into systemd-resolved is restored).
 rm --force /mnt/root/usr/sbin/policy-rc.d
+rm --force /mnt/root/etc/apt/apt.conf.d/99superbacked-build-interrupt
 rm --force /mnt/root/usr/sbin/update-grub
 chroot /mnt/root dpkg-divert --local --rename --remove /usr/sbin/update-grub
-rm --force /mnt/root/root/superbacked-os-bootstrap.sh
+rm --force \
+  /mnt/root/root/superbacked-os-bootstrap-base.sh \
+  /mnt/root/root/superbacked-os-bootstrap-main.sh
 rm --force --recursive \
   /mnt/root/root/.bash_history \
   /mnt/root/root/.cache \
@@ -362,14 +462,21 @@ umount --recursive /mnt/root/run
 printf "%s\n" "Creating squashfs (this takes a while)…"
 
 # zstd level 19 compresses close to xz but decompresses much faster —
-# every file read at runtime pays the decompression cost. /boot is
-# excluded: the kernel and initramfs live on the boot partition and the
-# live system never reads its own /boot. mksquashfs has no long-form
-# options, and ordering is semantic where not alphabetical:
-# -Xcompression-level qualifies the preceding -comp, and -e must follow
-# -wildcards to be interpreted as a pattern.
+# every file read at runtime pays the decompression cost. Debug images
+# use level 3 instead: it compresses several times faster for an image
+# a few percent larger, and debug builds are iterated, not shipped.
+# /boot is excluded: the kernel and initramfs live on the boot
+# partition and the live system never reads its own /boot. mksquashfs
+# has no long-form options, and ordering is semantic where not
+# alphabetical: -Xcompression-level qualifies the preceding -comp, and
+# -e must follow -wildcards to be interpreted as a pattern.
+compression_level=19
+if [ "${BUILD_VARIANT:-}" = "debug" ]; then
+  compression_level=3
+fi
+
 mksquashfs /mnt/root /tmp/filesystem.squashfs \
-  -b 1M -comp zstd -Xcompression-level 19 \
+  -b 1M -comp zstd -Xcompression-level "${compression_level}" \
   -wildcards -e 'boot/*'
 
 umount /mnt/root /mnt/scratch /mnt/lower
@@ -437,7 +544,10 @@ mv /tmp/filesystem.squashfs /mnt/boot/live/
 # boot=live hands root mounting to live-boot. init_on_free=1 makes the
 # kernel zero memory the moment it is freed, so secrets do not linger
 # in RAM after the app releases them — a cold-boot attack recovers
-# nothing.
+# nothing. (IPv6 is switched off by sysctl in the main bootstrap, not
+# here: ipv6.disable=1 would delete the address family outright, and
+# ipp-usb — the only path from the app to a USB printer — breaks
+# without it.)
 #
 # toram copies the squashfs to RAM, so the USB drive can be unplugged
 # as soon as the login screen appears — which also makes mid-session

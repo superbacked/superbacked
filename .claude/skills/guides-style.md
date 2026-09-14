@@ -25,7 +25,7 @@ The implementation-is-ground-truth rule, shared vocabulary and typography lint r
 
 - Transcripts match the implementation’s output verbatim — warnings, prompts, confirmations and messages included. Regenerate when CLI strings change; capture on real hardware where output depends on it (disks, partitions).
 - Commands the user types are prefixed `$ `; copyable commands sit flush-left in fenced `console` blocks, never indented inside lists.
-- The `$ ` prefix is for transcripts — blocks interleaving typed commands with captured output. Command-only blocks (the verification checklists in `superbacked-os-security.md`) carry no prompts and no output, so they paste into a terminal whole, with expected results stated in prose — better than baked transcripts where outputs legitimately vary (debug vs release labels).
+- Every command in a guide block carries the `$ ` prefix, with a blank line between commands and any captured output shown beneath the command that produced it — command-only blocks included. The one exception is the verification checklists in `superbacked-os-security.md`, which carry no prompts and no output so they paste into a terminal whole, with expected results stated in prose — better than baked transcripts where outputs legitimately vary (debug vs release labels).
 - Illustrative values (hashes, keys, addresses) need no disclaimer, but must be internally consistent where a reader can check (a shown zpub must derive the shown addresses).
 - Example labels reflect the feature’s intended use — `github` for a derived password, `hotwallet` for a derived wallet — never a use the feature’s own warnings argue against (`savings`).
 

@@ -1,25 +1,28 @@
 #! /bin/bash
-# Turns the vanilla Ubuntu Desktop 24.04 (amd64) source image into the
-# complete Superbacked OS root filesystem — packages, hardening, the
-# Superbacked app and its AppArmor profiles. Runs as root inside a
-# chroot of the source image overlay, invoked by
-# docker/create-superbacked-os-live-image.sh at packaging time.
+# Authors everything Superbacked OS adds on top of the pinned software
+# that superbacked-os-bootstrap-base.sh installed just before — GNOME
+# configuration, users, hardening, the Superbacked app and its AppArmor
+# profiles. Runs as root inside a chroot of the source image overlay,
+# invoked by docker/create-superbacked-os-live-image.sh at packaging
+# time, after the base bootstrap (or its cached layer) is in place.
 #
-# Contract with the caller: root, working DNS (the caller installs the
-# container’s resolv.conf), /dev /dev/pts /proc /sys /run mounted, the
-# app build and repository assets bind mounted at /run/dist and
+# Contract with the caller: root, the base bootstrap’s result present,
+# /dev /dev/pts /proc /sys /run mounted, the app build and repository
+# assets bind mounted at /run/dist and
 # /run/superbacked-os-bootstrap-assets, and a policy-rc.d that keeps
 # maintainer scripts from starting services. No systemd, dbus or logind
 # is running — everything below is plain filesystem writes, offline
-# systemctl symlinks, and apt/curl over the network. Each build starts
-# from a pristine overlay, so nothing here guards against re-runs.
-# Exporting BUILD_VARIANT=debug builds the debug variant — app
-# profiles log denials (complain) instead of enforcing and superbacked
-# keeps sudo for on-device profile iteration (see “Disabling sudo”
-# below).
+# systemctl symlinks and one local apt install (the app deb). Nothing
+# here downloads: every upstream fetch lives in the base bootstrap, so
+# its cached layer is the only network-dependent stage. Each build
+# starts from a pristine overlay above the base layer, so nothing here
+# guards against re-runs. Exporting BUILD_VARIANT=debug builds the
+# debug variant — app profiles log denials (complain) instead of
+# enforcing and superbacked keeps sudo for on-device profile iteration
+# (see “Disabling sudo” below).
 #
 # Usage (inside the chroot):
-# bash superbacked-os-bootstrap.sh 1.13.0
+# bash superbacked-os-bootstrap-main.sh 2.0.0
 
 set -o errexit
 set -o pipefail
@@ -27,302 +30,33 @@ set -o pipefail
 version="${1}"
 
 if [ -z "${version}" ]; then
-  printf "%s\n" "Error: usage: superbacked-os-bootstrap.sh version" >&2
+  printf "%s\n" "Error: usage: superbacked-os-bootstrap-main.sh version" >&2
   exit 1
 fi
 
 export DEBIAN_FRONTEND=noninteractive
 
-printf "%s\n" "Starting bootstrap…"
-
-# Version pins, grouped so a release bump is one edit. The Ubuntu
-# archive is pinned wholesale by snapshot timestamp — every package it
-# provides resolves against that instant, so the same timestamp always
-# yields the same packages. Firefox and Yubico Authenticator come
-# from repositories without snapshots and are pinned by version
-# instead: when an upstream drops a pinned version, the build fails
-# loudly and the pin is bumped deliberately. The PyPI tools are pinned
-# by version and by the sha256 of their wheel, verified before
-# installation (bump both together after checking the “Download files”
-# hashes on pypi.org) — their transitive dependencies still resolve at
-# install time. yubikey-prov.sh is pinned by release tag and by the
-# sha256 of the script, verified before installation (bump both
-# together — superbacked-os-update-pins.sh computes the hash).
-readonly apt_snapshot="20260908T000000Z"
-readonly firefox_version="155.0.1"
-readonly trezor_sha256="1acd67664bdc1cf389e719c91a09e6069688afa05959715955d5c1c54a2fefde"
-readonly trezor_version="0.20.2"
-readonly yubico_authenticator_version="7.4.1"
-readonly yubikey_manager_sha256="19a1173106b104bea37722e61ce748fb2d39c87a02880c1964461837ddaa7fba"
-readonly yubikey_manager_version="5.9.2"
-readonly yubikey_prov_sha256="a64ccafcb7526c1435655499a5cc9d854f49b4165906784c89cc19c56dc4c606"
-readonly yubikey_prov_version="1.1.0"
+printf "%s\n" "Starting main bootstrap…"
 
 printf "%s\n" "Writing release marker…"
 
 # Identifies the running system as Superbacked OS to the Superbacked app
-# (which recommends provisioning YubiKey secrets here) — the marker gates
-# recommendations only, not a security boundary, so a plain file is enough
+# (which recommends provisioning YubiKey secrets here) — the marker
+# gates recommendations only, not a security boundary, so a plain file
+# is enough
 tee /etc/superbacked-os-release > /dev/null << EOF
 VERSION=${version}
 EOF
-
-printf "%s\n" "Configuring apt sources…"
-
-# Replaces the installer’s mirror configuration outright so nothing
-# keeps resolving against a moving archive. universe carries six
-# dependencies (exfatprogs, libfuse2, pcscd, pipx, scdaemon and
-# waypipe among them); everything else is in main.
-tee /etc/apt/sources.list.d/ubuntu.sources > /dev/null << EOF
-Types: deb
-URIs: https://snapshot.ubuntu.com/ubuntu/${apt_snapshot}
-Suites: noble noble-updates noble-security
-Components: main universe
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-EOF
-
-# Nothing may ever pull snapd back in as a dependency — Superbacked OS
-# ships no snaps (snapd is purged below).
-tee /etc/apt/preferences.d/superbacked-snapd > /dev/null << 'EOF'
-Package: snapd
-Pin: release *
-Pin-Priority: -1
-EOF
-
-printf "%s\n" "Purging extraneous packages…"
-
-# Removed before the upgrade so apt never spends time upgrading — or
-# running a postinst for — a package about to leave. Most are obvious
-# removals from the vanilla desktop; two are deliberate hardening:
-#
-# - snapd: Superbacked OS ships no snaps — Firefox is a deb confined
-#   by AppArmor instead of snap interfaces (see
-#   superbacked-os-bootstrap-assets/). The pin above keeps it from
-#   returning; its leftover directories are wiped below.
-# - xserver-xorg*: a session X server runs one flat trust domain where
-#   any client can log every keystroke and read every window, so one
-#   selection at the (publicly passworded) login screen would flip the
-#   machine out of window isolation. Ubuntu ships it only as a Wayland
-#   fallback, and xserver-xorg-legacy adds a setuid-root binary. Xwayland
-#   stays (ubuntu-session depends on it) but is a rootless, unprivileged
-#   client that never starts with every app pinned to Wayland.
-#
-# Build tools and curl are NOT here — later steps need them, so they
-# leave at the end.
-apt remove --purge --yes \
-  apport \
-  cloud-init \
-  gnome-initial-setup \
-  memtest86+ \
-  network-manager-config-connectivity-ubuntu \
-  snapd \
-  ubuntu-advantage-desktop-daemon \
-  ubuntu-advantage-tools \
-  ubuntu-pro-client \
-  ubuntu-pro-client-l10n \
-  unattended-upgrades \
-  update-manager \
-  update-manager-core \
-  update-notifier \
-  update-notifier-common \
-  whoopsie \
-  xserver-xorg \
-  xserver-xorg-core \
-  xserver-xorg-legacy
-
-rm --force --recursive \
-  /home/*/snap \
-  /root/snap \
-  /snap \
-  /var/lib/snapd \
-  /var/snap
-
-# Purge the dependencies those removals just orphaned as well, so the
-# upgrade never touches them either. Safe this early: it can only remove
-# what the late autoremove would remove anyway.
-apt autoremove --purge --yes
-
-printf "%s\n" "Updating Ubuntu…"
-
-apt update
-apt upgrade --yes
-
-printf "%s\n" "Installing dependencies…"
-
-# Build tools (build-essential, libpcsclite-dev, python3-dev,
-# zlib1g-dev) compile the wallet and YubiKey tools installed just
-# below — all are removed at the end of provisioning. curl and gnupg
-# download and verify software, dconf-cli compiles the system dconf
-# database (see “Configuring GNOME” below), exfatprogs formats exFAT
-# USB drives, language packs complete the English locale, libfuse2
-# runs AppImages, pcscd and scdaemon talk to
-# smartcards and YubiKeys, python3-pip downloads the pinned PyPI
-# wheels just below, totem plays video with gstreamer1.0-libav
-# decoding it (H.264 including the 4:2:2 profile, plus AAC — the
-# minimal install ships no video decoder), waypipe puts the browser on
-# screen, wl-clipboard copies derived passwords to the clipboard
-# (Wayland lets only a focused surface set the selection, and the
-# command-line interface is windowless) and zenity shows error
-# dialogs. (Firefox comes from its own repository — see the install
-# section below.)
-packages=(
-  build-essential
-  curl
-  dconf-cli
-  exfatprogs
-  gnupg
-  gstreamer1.0-libav
-  language-pack-en
-  # French is commented out but kept as a working example of how to add
-  # a language — the app keeps its half in src/i18n.ts.
-  # language-pack-fr
-  language-pack-gnome-en
-  # language-pack-gnome-fr
-  libfuse2
-  libpcsclite-dev
-  pcscd
-  pipx
-  python3-dev
-  python3-pip
-  scdaemon
-  totem
-  waypipe
-  wl-clipboard
-  zenity
-  zlib1g-dev
-)
-
-apt install --yes "${packages[@]}"
-
-# live-boot provides the initramfs plumbing the distributed live image
-# boots with (see docker/create-superbacked-os-live-image.sh, which
-# regenerates the initramfs right after this script finishes).
-# Recommends are skipped: they add only documentation and live-tools,
-# whose service would run at every boot for nothing.
-apt install --no-install-recommends --yes live-boot
-
-# Wallet and YubiKey command-line tools, installed into
-# /home/superbacked/.local/bin as the superbacked user (pipx refuses to
-# run as root). PyPI has no snapshots, so each tool is pinned by
-# version and by the sha256 of its wheel (see the pins at the top):
-# the wheel is downloaded first, checked, and only then installed from
-# the verified file. Transitive dependencies still resolve at install
-# time — locking those too would take per-tool hash-locked
-# requirements files.
-runuser --user superbacked -- \
-  env HOME=/home/superbacked PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-  pipx ensurepath
-
-# Downloads a pinned wheel, verifies its sha256 and installs it with
-# pipx. Fails loudly on any drift — bump the version and sha256 pins
-# together.
-install_pinned_tool() {
-  local spec="${1}"
-  local version="${2}"
-  local sha256="${3}"
-  local name="${spec%%\[*}"
-  local download_dir="/tmp/pipx-${name}"
-  local wheel
-  local wheel_sha256
-
-  mkdir --parents "${download_dir}"
-
-  python3 -m pip download "${name}==${version}" \
-    --dest "${download_dir}" --no-deps
-
-  wheel="$(find "${download_dir}" -type f)"
-  wheel_sha256="$(sha256sum "${wheel}" | cut --delimiter ' ' --fields 1)"
-
-  if [ "${wheel_sha256}" != "${sha256}" ]; then
-    printf "%s\n" "Error: unexpected sha256 ${wheel_sha256} for ${wheel##*/}" >&2
-    exit 1
-  fi
-
-  runuser --user superbacked -- \
-    env HOME=/home/superbacked PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    pipx install "${spec} @ file://${wheel}"
-}
-
-install_pinned_tool trezor "${trezor_version}" "${trezor_sha256}"
-install_pinned_tool yubikey-manager "${yubikey_manager_version}" "${yubikey_manager_sha256}"
-
-# One-command Trezor initialization and mnemonic recovery with the
-# recommended flags: 256-bit strength (24-word mnemonic) on setup, PIN
-# and passphrase protection on both, BIP39. What varies is prompted
-# with an editable pre-filled default — the label, and on recovery the
-# word count (a restored mnemonic may predate the 24-word
-# recommendation). Word entry itself happens on the device. Goes in
-# .bashrc because GNOME Terminal runs interactive non-login shells,
-# which skip .profile. (Ownership is handed back to superbacked at the
-# end of provisioning.)
-tee --append /home/superbacked/.bashrc > /dev/null << 'EOF'
-
-trezor-setup() {
-  local label
-  read -e -i "My Trezor Safe 7" -p "Label: " label \
-    && trezorctl device setup --backup-type bip39 --label "${label}" --passphrase-protection --pin-protection --strength 256
-}
-
-trezor-recover() {
-  local label words
-  read -e -i "My Trezor Safe 7" -p "Label: " label \
-    && read -e -i "24" -p "Words: " words \
-    && trezorctl device recover --label "${label}" --passphrase-protection --pin-protection --words "${words}"
-}
-EOF
-
-printf "%s\n" "Installing Firefox…"
-
-# Firefox comes from Mozilla’s own apt repository — Ubuntu’s firefox
-# deb is a transitional package that installs the snap. The repository
-# signing key is fetched over HTTPS and its fingerprint checked against
-# the one Mozilla publishes; provisioning stops rather than trust an
-# unexpected key. The pin makes Mozilla’s origin win over Ubuntu’s
-# transitional package for every overlapping name.
-mkdir --parents /etc/apt/keyrings
-
-curl --fail --location --proto '=https' https://packages.mozilla.org/apt/repo-signing-key.gpg \
-  --output /etc/apt/keyrings/packages.mozilla.org.asc
-
-mozilla_fingerprint="$(gpg --quiet --with-colons --show-keys \
-  /etc/apt/keyrings/packages.mozilla.org.asc | awk -F: '/^fpr:/ { print $10; exit }')"
-
-if [ "${mozilla_fingerprint}" != "35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3" ]; then
-  printf "%s\n" "Error: unexpected Mozilla apt signing key ${mozilla_fingerprint}" >&2
-  exit 1
-fi
-
-tee /etc/apt/sources.list.d/mozilla.sources > /dev/null << 'EOF'
-Types: deb
-URIs: https://packages.mozilla.org/apt
-Suites: mozilla
-Components: main
-Signed-By: /etc/apt/keyrings/packages.mozilla.org.asc
-EOF
-
-tee /etc/apt/preferences.d/superbacked-mozilla > /dev/null << 'EOF'
-Package: *
-Pin: origin packages.mozilla.org
-Pin-Priority: 1000
-EOF
-
-apt update
-
-# The glob tolerates Mozilla’s ~buildN version suffix; if the pinned
-# version has left the repository (rapid release moves every four
-# weeks), apt fails loudly here — bump firefox_version deliberately.
-apt install --yes "firefox=${firefox_version}*"
 
 printf "%s\n" "Configuring GNOME…"
 
 # A quiet, dark desktop: black background, floating bottom dock
 # limited to pinned apps and mounted drives, no icons on the desktop,
-# no location services or telemetry, USB media never mounts itself, new
-# USB devices are rejected while the screen is locked, and the terminal
-# is white text on black. Written as a system dconf database (the
-# gsettings tool needs a session bus, which a chroot does not have);
-# the profile makes every session read it, and dconf update compiles it
-# offline.
+# no location services or telemetry, USB media never mounts itself, and
+# the terminal is white text on black. Written as a system dconf
+# database (the gsettings tool needs a session bus, which a chroot does
+# not have); the profile makes every session read it, and dconf update
+# compiles it offline.
 mkdir --parents /etc/dconf/db/local.d /etc/dconf/profile
 
 tee /etc/dconf/profile/user > /dev/null << 'EOF'
@@ -359,8 +93,6 @@ remember-app-usage=false
 remember-recent-files=false
 report-technical-problems=false
 send-software-usage-stats=false
-usb-protection=true
-usb-protection-level='lockscreen'
 
 [org/gnome/mutter]
 center-new-windows=true
@@ -495,15 +227,11 @@ EOF
 
 printf "%s\n" "Configuring udev rules…"
 
-# Let regular users talk to Trezor hardware — the official rules
-# uaccess-tag its usb and hidraw device nodes (wallet operations and
-# FIDO alike). YubiKey needs nothing here: systemd’s fido_id tags the
-# FIDO interface of every vendor’s key, and the Superbacked deb
-# installed below ships a vendor-wide hidraw rule for the OTP
-# (challenge-response) interface.
-curl --fail --location --proto '=https' https://data.trezor.io/udev/51-trezor.rules \
-  --output /etc/udev/rules.d/51-trezor.rules
-
+# Hardware access rules are upstream’s (the Trezor rules installed by
+# superbacked-os-bootstrap-base.sh, the YubiKey rule shipped by
+# the Superbacked deb below); the rules here only shape what the
+# desktop shows.
+#
 # Internal disks are invisible to the desktop: USB drives are the only
 # user-facing storage on Superbacked OS, and offering to mount internal
 # disks with one click would invite the persistence and exfiltration
@@ -523,76 +251,18 @@ tee /etc/udev/rules.d/99-superbacked-ignore-boot-partition.rules > /dev/null << 
 SUBSYSTEM=="block", ENV{ID_FS_TYPE}=="ext4", ENV{ID_FS_LABEL}=="SUPERBACKED", ENV{UDISKS_IGNORE}="1"
 EOF
 
-printf "%s\n" "Configuring yubikey-prov.sh…"
-
-# Helper script that provisions YubiKeys — pinned by release tag with
-# its sha256 verified before use, failing loudly on any drift. (Home
-# folder ownership is handed back to superbacked at the end of
-# provisioning.)
-mkdir --parents /home/superbacked/.local/bin/
-
-curl --fail --location --proto '=https' "https://raw.githubusercontent.com/sunknudsen/yubikey-prov/v${yubikey_prov_version}/yubikey-prov.sh" \
-  --output /home/superbacked/.local/bin/yubikey-prov.sh
-
-printf "%s  %s\n" "${yubikey_prov_sha256}" /home/superbacked/.local/bin/yubikey-prov.sh \
-  | sha256sum --check
-
-chmod +x /home/superbacked/.local/bin/yubikey-prov.sh
-
-printf "%s\n" "Installing Yubico Authenticator…"
-
-# Yubico Authenticator manages the two-factor codes stored on a YubiKey.
-# It reads them straight off the key over USB, so it works fully offline.
-# Yubico ships each release as a signed download (the Snap Store
-# version is abandoned) — the version is pinned by
-# yubico_authenticator_version at the top of this script, and the
-# signature is checked before anything is installed: if a release is
-# ever signed by an unexpected key, provisioning stops rather than
-# install it. Yubico occasionally changes signers; when that happens,
-# update the fingerprint below after checking
-# https://developers.yubico.com/Software_Projects/Software_Signing.html.
-yubico_authenticator_url="https://developers.yubico.com/yubioath-flutter/Releases/yubico-authenticator-${yubico_authenticator_version}-linux.tar.gz"
-
-curl --fail --location --proto '=https' --silent \
-  "https://keys.openpgp.org/vks/v1/by-fingerprint/20EE325B86A81BCBD3E56798F04367096FBA95E8" \
-  | gpg --import
-
-curl --fail --location --proto '=https' "${yubico_authenticator_url}" \
-  --output /tmp/yubico-authenticator.tar.gz
-curl --fail --location --proto '=https' "${yubico_authenticator_url}.sig" \
-  --output /tmp/yubico-authenticator.tar.gz.sig
-
-gpg --verify \
-  /tmp/yubico-authenticator.tar.gz.sig \
-  /tmp/yubico-authenticator.tar.gz
-
-# The folder inside the archive is named after the version, which is not
-# known ahead of time — extract to a fixed path so the launcher below
-# always finds the app.
-mkdir --parents /opt/yubico-authenticator
-tar --extract --gzip --strip-components 1 \
-  --file /tmp/yubico-authenticator.tar.gz \
-  --directory /opt/yubico-authenticator
-
-rm /tmp/yubico-authenticator.tar.gz /tmp/yubico-authenticator.tar.gz.sig
-
-# Pinned to Wayland so authentication codes are never drawn through X11,
-# where other apps could observe them. The entry is named after the app
-# id (com.yubico.yubioath) so GNOME pairs the running window with its
-# icon.
-mkdir --parents /usr/local/share/applications
-
-tee /usr/local/share/applications/com.yubico.yubioath.desktop > /dev/null << 'EOF'
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Yubico Authenticator
-Exec=env GDK_BACKEND=wayland /opt/yubico-authenticator/authenticator
-Icon=/opt/yubico-authenticator/linux_support/com.yubico.yubioath.png
-StartupWMClass=com.yubico.yubioath
-StartupNotify=true
-Terminal=false
-Categories=Utility;Security;
+# WebAuthn in the hardened browser: FIDO security keys are the one
+# device the browser user may reach. Seat ACLs (uaccess) only ever
+# cover the logged-in primary user, and the browser user has no seat,
+# so the FIDO hidraw node is additionally group-owned by browser.
+# systemd’s fido_id tags exactly the FIDO interface (usage page F1D0)
+# of every vendor’s key; a YubiKey’s OTP interface, which the
+# Superbacked app drives for challenge-response, is a separate hidraw
+# node that stays out of the browser user’s reach. Read the match off a
+# plugged-in key with udevadm info --query=property --name=/dev/hidrawN
+# (look for ID_FIDO_TOKEN=1) and dry-run with udevadm test.
+tee /etc/udev/rules.d/99-superbacked-browser-fido.rules > /dev/null << 'EOF'
+SUBSYSTEM=="hidraw", ENV{ID_FIDO_TOKEN}=="1", GROUP="browser", MODE="0660"
 EOF
 
 printf "%s\n" "Installing Superbacked app…"
@@ -613,7 +283,9 @@ printf "%s\n" "Installing Superbacked app…"
 # YubiKey hidraw udev rule that opens the OTP (challenge-response)
 # interface to seat users — here and on stock Ubuntu installs alike,
 # complementing systemd’s fido_id (FIDO interfaces) and the Trezor
-# rules installed under “Configuring udev rules…” above.
+# rules installed by superbacked-os-bootstrap-base.sh. The deb’s
+# dependencies are already present from the base layer, so this is the
+# one apt operation of this script and needs no network.
 apt install --no-install-recommends --yes \
   "/run/dist/superbacked-x64-${version}.deb"
 
@@ -637,6 +309,9 @@ printf "%s\n" "Installing AppArmor profiles…"
 # unconfined (they exist only to grant userns) and two profiles cannot
 # share an attachment path.
 cp \
+  /run/superbacked-os-bootstrap-assets/apparmor/superbacked-browser \
+  /etc/apparmor.d/superbacked-browser
+cp \
   /run/superbacked-os-bootstrap-assets/apparmor/firefox \
   /etc/apparmor.d/firefox
 cp \
@@ -659,6 +334,7 @@ if [ "${BUILD_VARIANT:-}" = "debug" ]; then
     -e 's|flags=\(([^)]*)\) \{$|flags=(\1 complain) {|' \
     -e 't' \
     -e 's| \{$| flags=(complain) {|' \
+    /etc/apparmor.d/superbacked-browser \
     /etc/apparmor.d/firefox \
     /etc/apparmor.d/superbacked \
     /etc/apparmor.d/yubico-authenticator
@@ -666,7 +342,7 @@ fi
 
 # Compile without loading — catches profile syntax errors at build time
 # instead of at the first boot.
-for profile in firefox superbacked yubico-authenticator; do
+for profile in superbacked-browser firefox superbacked yubico-authenticator; do
   apparmor_parser --skip-kernel-load "/etc/apparmor.d/${profile}"
 done
 
@@ -695,42 +371,43 @@ tee /etc/systemd/system/apparmor.service.d/superbacked-live.conf > /dev/null << 
 ConditionPathExists=
 EOF
 
-printf "%s\n" "Configuring clearnet user…"
+printf "%s\n" "Configuring browser user…"
 
-# Firefox runs as a separate user, clearnet — the only identity allowed
-# to reach the internet in hardened browser mode (the “hardened browser”
-# boot entry). It has no shell and no sudo rights; lingering keeps its
-# user manager (session bus, XDG_RUNTIME_DIR) available without a
-# graphical login.
-useradd --create-home --shell /usr/sbin/nologin clearnet
+# Firefox runs as a separate user named browser — the only identity
+# allowed to reach the internet in hardened browser mode (the “hardened
+# browser” boot entry). It has no shell and no sudo rights; lingering
+# keeps its user manager (session bus, XDG_RUNTIME_DIR) available
+# without a graphical login.
+useradd --create-home --shell /usr/sbin/nologin browser
 
-# superbacked must be in the clearnet group to hand the browser bridge
-# socket (created below) over to clearnet — files can only be re-grouped
-# to a group their owner belongs to.
-usermod --append --groups clearnet superbacked
+# superbacked must be in the browser group to hand the browser bridge
+# socket (created below) over to that user — files can only be
+# re-grouped to a group their owner belongs to.
+usermod --append --groups browser superbacked
 
 # That membership is for the socket handover and the shared Downloads
-# folder (2770), not for browsing clearnet’s home — which useradd left
-# group-traversable (750), letting superbacked enumerate it and enter
-# world-readable corners like .config. superbacked reaches Downloads
-# through the bind mount at its own home, and path resolution through a
-# mountpoint never walks /home/clearnet, so the home closes completely.
-chmod 700 /home/clearnet
+# folder (2770), not for browsing the browser user’s home — which
+# useradd left group-traversable (750), letting superbacked enumerate
+# it and enter world-readable corners like .config. superbacked reaches
+# Downloads through the bind mount at its own home, and path resolution
+# through a mountpoint never walks /home/browser, so the home closes
+# completely.
+chmod 700 /home/browser
 
 # What loginctl enable-linger records — logind is not running in the
 # chroot, but all it does is create this marker.
 mkdir --parents /var/lib/systemd/linger
-touch /var/lib/systemd/linger/clearnet
+touch /var/lib/systemd/linger/browser
 
-# clearnet has no desktop session, so the desktop portal service Firefox
-# consults at startup can never answer — every launch would stall for
-# ~25 seconds waiting for it. Masking the service for clearnet makes
-# those calls fail instantly, so Firefox starts right away.
-# superbacked’s own portals are untouched. (Ownership is handed to
-# clearnet at the end of provisioning.)
-mkdir --parents /home/clearnet/.config/systemd/user
+# The browser user has no desktop session, so the desktop portal
+# service Firefox consults at startup can never answer — every launch
+# would stall for ~25 seconds waiting for it. Masking the service for
+# that user makes those calls fail instantly, so Firefox starts right
+# away. superbacked’s own portals are untouched. (Ownership is handed
+# to the browser user at the end of provisioning.)
+mkdir --parents /home/browser/.config/systemd/user
 ln --force --symbolic /dev/null \
-  /home/clearnet/.config/systemd/user/xdg-desktop-portal.service
+  /home/browser/.config/systemd/user/xdg-desktop-portal.service
 
 printf "%s\n" "Configuring Firefox policies…"
 
@@ -776,11 +453,11 @@ printf "%s\n" "Configuring Firefox policies…"
 #     one alone).
 #   Downloads — saved straight to the dedicated downloads folder, no
 #     picker dialogs.
-#   Dark mode — pinned; Firefox runs as clearnet and cannot see the
-#     desktop’s dark-mode setting.
-#   Desktop portals — disabled; clearnet has no desktop session to answer
-#     portal calls, so they could only ever hang (see “Configuring
-#     clearnet user” above).
+#   Dark mode — pinned; Firefox runs as the browser user and cannot see
+#     the desktop’s dark-mode setting.
+#   Desktop portals — disabled; the browser user has no desktop session
+#     to answer portal calls, so they could only ever hang (see
+#     “Configuring browser user” above).
 mkdir --parents /etc/firefox/policies
 
 cp /run/superbacked-os-bootstrap-assets/firefox-policies.json \
@@ -795,8 +472,8 @@ printf "%s\n" "Overriding stock launchers…"
 
 # Replace the stock launcher with a same-name entry in a
 # higher-priority directory, so the familiar icon does the right thing:
-#   Firefox → starts through the clearnet wrapper (hardened browser
-#             mode only)
+#   Firefox → starts through the superbacked-browser wrapper (hardened
+#             browser mode only)
 # The Exec assertion fails loudly if Mozilla ever reshapes its desktop
 # file — better a broken build than a dock icon that bypasses the
 # wrapper.
@@ -816,7 +493,7 @@ cp \
 sed --in-place \
   -e '/^\[Desktop Action /,$d' \
   -e '/^Actions=/d' \
-  -e 's|^Exec=.*|Exec=/usr/local/bin/clearnet-browser %u|' \
+  -e 's|^Exec=.*|Exec=/usr/local/bin/superbacked-browser %u|' \
   /usr/local/share/applications/firefox.desktop
 
 # Same-name overrides shadow the stock entries including their MIME
@@ -831,27 +508,31 @@ printf "%s\n" "Configuring shared Downloads folder…"
 # Firefox saves downloads here — the one place the confined browser can
 # write outside its own profile (the AppArmor profile and policies.json
 # both point at it). Created now so it exists on every boot; whatever
-# lands in it disappears at reboot. superbacked (via the clearnet
+# lands in it disappears at reboot. superbacked (via the browser
 # group) can read and clear it; no one else can.
-mkdir --parents /home/clearnet/Downloads
-chown clearnet:clearnet /home/clearnet/Downloads
-chmod 2770 /home/clearnet/Downloads
+mkdir --parents /home/browser/Downloads
+chown browser:browser /home/browser/Downloads
+chmod 2770 /home/browser/Downloads
 
 # Show the same folder at superbacked’s ~/Downloads so downloaded files
 # are easy to reach and move to external storage. This is one-way —
 # superbacked gets a view into the browser’s downloads, the browser
-# gains nothing — and nothing in it can be executed in place.
+# gains nothing — and nothing in it can be executed in place. The view
+# is for the user’s own tools (a shell, Files): the files are
+# browser-owned and the confined app’s home grant is owner-scoped, so
+# the app cannot read them directly — a download meant for the app is
+# copied out first.
 mkdir --parents /home/superbacked/Downloads
 
 tee /etc/systemd/system/home-superbacked-Downloads.mount > /dev/null << 'EOF'
 [Unit]
-Description=Shared browser Downloads (clearnet → superbacked)
+Description=Shared browser Downloads (browser user → superbacked)
 # No After=local-fs.target here — it would create an ordering cycle that
 # leaves the mount dead at boot. The default mount dependencies already
 # order it correctly.
 
 [Mount]
-What=/home/clearnet/Downloads
+What=/home/browser/Downloads
 Where=/home/superbacked/Downloads
 Type=none
 # x-gvfs-hide keeps the bind mount out of the file manager sidebar —
@@ -899,140 +580,300 @@ Name=Superbacked toram status
 Exec=/usr/local/bin/superbacked-toram-status
 EOF
 
-printf "%s\n" "Configuring clearnet browser launcher…"
+printf "%s\n" "Configuring hardened browser launcher…"
 
 # Directory for the browser bridge socket — superbacked creates the
-# socket, clearnet connects to it. (The tmpfiles.d file is applied at
-# every boot by systemd-tmpfiles-setup.service.)
-tee /etc/tmpfiles.d/clearnet-bridge.conf > /dev/null << 'EOF'
-d /run/clearnet-bridge 0750 superbacked clearnet -
+# socket, the browser user connects to it. (The tmpfiles.d file is
+# applied at every boot by systemd-tmpfiles-setup.service.)
+tee /etc/tmpfiles.d/browser-bridge.conf > /dev/null << 'EOF'
+d /run/browser-bridge 0750 superbacked browser -
 EOF
 
-tee /usr/local/bin/clearnet-browser > /dev/null << 'EOF'
+# The launcher never connects to the compositor by its public name.
+# Connecting to a Wayland socket needs the same AppArmor permission as
+# replacing it, so a compromised app — which must reach the compositor
+# — could unlink wayland-0 and bind a fake in its place, or bind one
+# under another name and rename it over, and a name-based check cannot
+# tell (the kernel records a socket’s bind-time string, which need not
+# be the path). A hard link references the inode instead, and
+# connect() resolves a path to its inode, so a link made at session
+# start keeps reaching mutter’s original socket whatever later happens
+# to the name. It lives in a directory the app profile grants nothing
+# under, so the app can neither replace nor remove it. This user unit
+# makes the link once the session is up; the launcher fails closed
+# without it. A compositor restart mid-session leaves the link stale
+# until the next login — the safe direction.
+mkdir --parents /usr/local/libexec
+tee /usr/local/libexec/superbacked-browser-compositor > /dev/null << 'EOF'
 #! /bin/bash
 
 set -o errexit
 
-# Never forward browser options or local-file/protocol handlers. The
-# sudo helper repeats this validation because it is callable directly.
-if (( $# > 1 )) || { (( $# == 1 )) && {
-  [[ ! "$1" =~ ^https?://[^/?#[:space:][:cntrl:]]+ ]] ||
-  [[ "$1" =~ [[:space:][:cntrl:]] ]];
-}; }; then
-  printf "%s\n" "Error: expected zero arguments or one HTTP/HTTPS URL" >&2
+# The user manager imports WAYLAND_DISPLAY from the session before
+# graphical-session.target is reached; it must be a plain socket name.
+display="${WAYLAND_DISPLAY:-wayland-0}"
+if [[ ! "${display}" =~ ^wayland-[0-9]+$ ]]; then
+  printf "%s\n" "Error: unsupported Wayland display ${display}" >&2
   exit 1
 fi
 
-if ! grep --quiet superbacked.browser /proc/cmdline; then
-  zenity --info \
+socket="${XDG_RUNTIME_DIR:?}/${display}"
+link_dir="${XDG_RUNTIME_DIR}/superbacked-browser"
+
+for _ in $(seq 100); do
+  if [ -S "${socket}" ]; then
+    break
+  fi
+  sleep 0.1
+done
+
+if [ ! -S "${socket}" ]; then
+  printf "%s\n" "Error: ${socket} is not a socket" >&2
+  exit 1
+fi
+
+mkdir --parents "${link_dir}"
+ln --force "${socket}" "${link_dir}/compositor"
+EOF
+
+chown root:root /usr/local/libexec/superbacked-browser-compositor
+chmod 755 /usr/local/libexec/superbacked-browser-compositor
+
+# Both boot modes need it: the air-gapped notice is a Wayland dialog
+# too. Ordered after the session target so mutter is up; the script
+# still waits for the socket rather than trusting the ordering.
+tee /etc/systemd/user/superbacked-browser-compositor.service > /dev/null << 'EOF'
+[Unit]
+Description=Superbacked OS hardened browser (compositor socket link)
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/libexec/superbacked-browser-compositor
+
+[Install]
+WantedBy=graphical-session.target
+EOF
+
+systemctl --global enable superbacked-browser-compositor.service
+
+tee /usr/local/bin/superbacked-browser > /dev/null << 'EOF'
+#! /bin/bash -p
+
+set -o errexit
+
+# Standard input and output come from the caller — a compromised app
+# could read Firefox’s output back through them — so both are closed
+# off here for everything below. Standard error stays inherited: it is
+# how terminal launches show their errors.
+exec < /dev/null > /dev/null
+
+# Privileged shell mode ignores caller-controlled startup files and
+# functions. Export only explicit session values to child processes;
+# nothing is taken from the caller’s environment.
+uid="$(/usr/bin/env --ignore-environment /usr/bin/id --user)"
+environment=(
+  GDK_BACKEND=wayland
+  GSETTINGS_BACKEND=memory
+  GTK_A11Y=none
+  GTK_USE_PORTAL=0
+  HOME=/home/superbacked
+  LANG=C.UTF-8
+  LOGNAME=superbacked
+  NO_AT_BRIDGE=1
+  PATH=/usr/bin:/bin
+  USER=superbacked
+  "WAYLAND_DISPLAY=/run/user/${uid}/superbacked-browser/compositor"
+  "XDG_CACHE_HOME=/run/user/${uid}/superbacked-browser/cache"
+  "XDG_CONFIG_HOME=/run/user/${uid}/superbacked-browser/config"
+  "XDG_RUNTIME_DIR=/run/user/${uid}"
+)
+run() {
+  /usr/bin/env --ignore-environment "${environment[@]}" "$@"
+}
+
+# The compositor is reached only through the hard link the session
+# unit made (see superbacked-browser-compositor above): never by the
+# public name a compromised app could replace, and never from the
+# caller’s environment. Without the link there is no trusted
+# compositor, so nothing is shown and nothing is bridged.
+if [ ! -S "/run/user/${uid}/superbacked-browser/compositor" ]; then
+  printf "%s\n" "Error: compositor link missing — the session unit did not run" >&2
+  exit 1
+fi
+
+# The launcher inherits superbacked’s home as working directory, which
+# the browser user cannot read — move somewhere neutral before
+# switching users.
+cd /
+
+# Keep this list identical to src/shared/allowedExternalUrls.ts and
+# the other browser script. Match literally, without normalization.
+allowed_urls=(
+  "https://superbacked.com/superbacked-os"
+)
+allowed=false
+if (( $# == 0 )); then
+  allowed=true
+elif (( $# == 1 )); then
+  for allowed_url in "${allowed_urls[@]}"; do
+    if [[ "$1" == "${allowed_url}" ]]; then
+      allowed=true
+      break
+    fi
+  done
+fi
+if [[ "${allowed}" != true ]]; then
+  printf "%s\n" "Error: expected zero arguments or one allowed external URL" >&2
+  exit 1
+fi
+
+if ! run /usr/bin/grep --quiet superbacked.browser /proc/cmdline; then
+  run /usr/bin/zenity --info \
     --no-wrap \
     --text "Superbacked OS is running in air-gapped mode.\nPlease reboot and select “Superbacked OS (hardened browser)” to use browser." \
     --title "Superbacked OS" 2> /dev/null
   exit 1
 fi
 
-bridge_socket="/run/clearnet-bridge/waypipe.sock"
+bridge_socket="/run/browser-bridge/waypipe.sock"
 
 # Wayland deliberately has no way for one user’s apps to appear on
 # another user’s screen, so waypipe bridges the two: one end runs as
-# superbacked and talks to the compositor, the other runs as clearnet
-# and gives Firefox its own private display socket. The compositor keeps
-# Firefox from seeing the Superbacked app.
-rm --force "${bridge_socket}"
+# superbacked and talks to the compositor, the other runs as the
+# browser user and gives Firefox its own private display socket. The
+# compositor keeps Firefox from seeing the Superbacked app. Not
+# oneshot: the server side must create a display socket (see the
+# helper below), and each Wayland connection Firefox opens arrives at
+# this end as its own bridge connection; the listener is killed on exit
+# below.
+run /usr/bin/rm --force "${bridge_socket}"
 
-waypipe --socket "${bridge_socket}" client &
+/usr/bin/env --ignore-environment "${environment[@]}" \
+  /usr/bin/waypipe --socket "${bridge_socket}" client &
 
 waypipe_pid=$!
 
-for _ in $(seq 50); do
+# Keep the PID of waypipe itself and reap it on success or failure.
+cleanup() {
+  kill "${waypipe_pid}" 2> /dev/null || true
+  wait "${waypipe_pid}" 2> /dev/null || true
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
+
+for _ in $(run /usr/bin/seq 50); do
   if [ -S "${bridge_socket}" ]; then
     break
   fi
-  sleep 0.1
+  run /usr/bin/sleep 0.1
 done
 
 if [ ! -S "${bridge_socket}" ]; then
-  kill "${waypipe_pid}" 2> /dev/null || true
-  zenity --error \
+  run /usr/bin/zenity --error \
     --no-wrap \
     --text "Browser bridge failed to start" \
     --title "Superbacked OS" 2> /dev/null
   exit 1
 fi
 
-chgrp clearnet "${bridge_socket}"
-chmod 660 "${bridge_socket}"
-
-# The launcher inherits superbacked’s home as working directory, which
-# clearnet cannot read — move somewhere neutral before switching users.
-cd /
+run /usr/bin/chgrp browser "${bridge_socket}"
+run /usr/bin/chmod 660 "${bridge_socket}"
 
 # The helper builds the environment and fixed browser command itself.
-if ! sudo --user clearnet --set-home \
-  /usr/local/libexec/superbacked-browser "$@"; then
-  zenity --error \
+# A non-zero exit covers both a browser that never started and one
+# that died mid-session (for instance when the bridge breaks), so the
+# dialog states the fact common to both rather than guessing which.
+if ! run /usr/bin/sudo --user browser --set-home \
+  /usr/local/libexec/superbacked-browser-helper "$@"; then
+  run /usr/bin/zenity --error \
     --no-wrap \
-    --text "Browser failed to start" \
+    --text "Browser exited with an error.\nPlease try opening it again." \
     --title "Superbacked OS" 2> /dev/null
 fi
 
-kill "${waypipe_pid}" 2> /dev/null || true
 EOF
 
-chmod +x /usr/local/bin/clearnet-browser
+chmod +x /usr/local/bin/superbacked-browser
 
-# The helper runs as clearnet, never root. Bash privileged mode ignores
-# BASH_ENV, exported functions and shell-option startup inputs before
-# the body executes. sudo scrubs loader variables; NOSETENV prevents
-# callers bypassing that filtering. env --ignore-environment gives
-# waypipe and Firefox only the values constructed here.
-mkdir --parents /usr/local/libexec
-tee /usr/local/libexec/superbacked-browser > /dev/null << 'EOF'
+# The helper runs as the browser user, never root. Bash privileged mode
+# ignores BASH_ENV, exported functions and shell-option startup inputs
+# before the body executes. sudo scrubs loader variables; NOSETENV
+# prevents callers bypassing that filtering. env --ignore-environment
+# gives waypipe and Firefox only the values constructed here.
+tee /usr/local/libexec/superbacked-browser-helper > /dev/null << 'EOF'
 #! /bin/bash -p
 
 set -o errexit
 
-if (( $# > 1 )) || { (( $# == 1 )) && {
-  [[ ! "$1" =~ ^https?://[^/?#[:space:][:cntrl:]]+ ]] ||
-  [[ "$1" =~ [[:space:][:cntrl:]] ]];
-}; }; then
-  printf "%s\n" "Error: expected zero arguments or one HTTP/HTTPS URL" >&2
+# The launcher already refuses air-gapped mode with a notice; the helper
+# is callable directly through sudo, so the mode boundary holds here
+# too rather than resting on the caller.
+if ! /usr/bin/grep --quiet superbacked.browser /proc/cmdline; then
+  printf "%s\n" "Error: hardened browser mode is not active" >&2
   exit 1
 fi
 
-clearnet_uid="$(/usr/bin/id --user)"
+# Keep this list identical to src/shared/allowedExternalUrls.ts and
+# the other browser script. Match literally, without normalization.
+allowed_urls=(
+  "https://superbacked.com/superbacked-os"
+)
+allowed=false
+if (( $# == 0 )); then
+  allowed=true
+elif (( $# == 1 )); then
+  for allowed_url in "${allowed_urls[@]}"; do
+    if [[ "$1" == "${allowed_url}" ]]; then
+      allowed=true
+      break
+    fi
+  done
+fi
+if [[ "${allowed}" != true ]]; then
+  printf "%s\n" "Error: expected zero arguments or one allowed external URL" >&2
+  exit 1
+fi
+
+browser_uid="$(/usr/bin/id --user)"
 url_args=()
 if (( $# == 1 )); then
   url_args=(--url "$1")
 fi
 
-# Lingering provides clearnet’s session bus. Disable portals it cannot
-# answer, and pin the private display name allowed by Firefox’s profile.
+# Lingering provides the browser user’s session bus. Disable portals it
+# cannot answer, and pin the private display name allowed by Firefox’s
+# profile. Not oneshot: in that mode waypipe hands the application a
+# pre-connected WAYLAND_SOCKET and unsets WAYLAND_DISPLAY, and Firefox
+# refuses to start without WAYLAND_DISPLAY or DISPLAY — the display
+# socket mode sets WAYLAND_DISPLAY to the pinned name instead.
 cd /
 exec /usr/bin/env --ignore-environment \
-  HOME=/home/clearnet \
-  USER=clearnet \
-  LOGNAME=clearnet \
+  HOME=/home/browser \
+  USER=browser \
+  LOGNAME=browser \
   PATH=/usr/bin:/bin \
   LANG=C.UTF-8 \
-  DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${clearnet_uid}/bus" \
+  DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${browser_uid}/bus" \
   GTK_USE_PORTAL=0 \
   MOZ_ENABLE_WAYLAND=1 \
-  XDG_RUNTIME_DIR="/run/user/${clearnet_uid}" \
-  /usr/bin/waypipe --socket /run/clearnet-bridge/waypipe.sock --display wayland-firefox server -- \
+  XDG_RUNTIME_DIR="/run/user/${browser_uid}" \
+  /usr/bin/waypipe --socket /run/browser-bridge/waypipe.sock --display wayland-firefox server -- \
   /usr/bin/firefox --no-remote "${url_args[@]}"
 EOF
 
-chown root:root /usr/local/libexec/superbacked-browser
-chmod 755 /usr/local/libexec/superbacked-browser
+chown root:root /usr/local/libexec/superbacked-browser-helper
+chmod 755 /usr/local/libexec/superbacked-browser-helper
 
 # Arguments are validated by the root-owned helper, not sudo globbing.
-tee /etc/sudoers.d/clearnet-browser > /dev/null << 'EOF'
-Defaults!/usr/local/libexec/superbacked-browser env_reset
-superbacked ALL=(clearnet) NOPASSWD: NOSETENV: /usr/local/libexec/superbacked-browser
+tee /etc/sudoers.d/superbacked-browser > /dev/null << 'EOF'
+Defaults!/usr/local/libexec/superbacked-browser-helper env_reset
+superbacked ALL=(browser) NOPASSWD: NOSETENV: /usr/local/libexec/superbacked-browser-helper
 EOF
 
-chmod 440 /etc/sudoers.d/clearnet-browser
+chmod 440 /etc/sudoers.d/superbacked-browser
 
 visudo --check
 
@@ -1046,18 +887,41 @@ tee /etc/systemd/timesyncd.conf > /dev/null << 'EOF'
 NTP=162.159.200.1 162.159.200.123
 EOF
 
+printf "%s\n" "Disabling IPv6…"
+
+# Superbacked OS is IPv4-only by design: with IPv6 off the firewall
+# polices one address family and never has to admit the
+# neighbour-discovery and DHCPv6 traffic IPv6 needs to configure
+# itself. Off by sysctl on every interface, loopback included, so no
+# interface ever carries an IPv6 address and nothing IPv6 reaches the
+# wire. Not ipv6.disable=1 on the kernel command line: that deletes the
+# address family outright, and software written for a normal Linux
+# assumes it exists even when unused — ipp-usb, the only path from the
+# app to a USB printer, stops answering requests without it.
+tee /etc/sysctl.d/99-superbacked-ipv6.conf > /dev/null << 'EOF'
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+EOF
+
 printf "%s\n" "Configuring hardened browser mode firewall…"
 
 # Used only in hardened browser mode — replaces the default
 # rules with exactly three allowances:
-#   clearnet         → web traffic (Firefox; DNS rides inside HTTPS)
+#   browser          → web traffic (Firefox; DNS rides inside HTTPS)
 #   systemd-timesync → time sync, to Cloudflare’s addresses only
 #   root             → DHCP (joining the network)
-# Loopback stays open for everyone except clearnet: cupsd and ipp-usb
-# listen on localhost TCP, and the browser user has no business
+# Loopback stays open for everyone except the browser user: cupsd and
+# ipp-usb listen on localhost TCP, and the browser user has no business
 # reaching root daemons on the trusted side. Firefox loses nothing —
 # its display, session-bus and waypipe-bridge traffic ride unix
-# sockets, which this inet filter never touches.
+# sockets, which this inet filter never touches. The system is
+# IPv4-only (IPv6 is off by sysctl above), and the table says so too:
+# IPv6 is dropped first in both chains, before the loopback accepts,
+# so the allowances below only ever apply to IPv4 and the property
+# does not depend on the absence of a neighbour-discovery or DHCPv6
+# rule. The inet family is kept so the drop is there to be hit if IPv6
+# were ever re-enabled.
 tee /usr/local/sbin/superbacked-browser-firewall.sh > /dev/null << 'EOF'
 #! /bin/bash
 
@@ -1071,6 +935,7 @@ flush ruleset
 table inet filter {
   chain input {
     type filter hook input priority 0; policy drop;
+    meta nfproto ipv6 drop comment "IPv4-only: IPv6 is off by sysctl, dropped here regardless"
     iif lo accept
     ct state established,related accept
     udp sport 67 udp dport 68 accept comment "DHCP replies"
@@ -1080,10 +945,11 @@ table inet filter {
   }
   chain output {
     type filter hook output priority 0; policy drop;
-    meta skuid clearnet oif lo drop comment "no browser path to cupsd/ipp-usb"
+    meta nfproto ipv6 drop comment "IPv4-only: IPv6 is off by sysctl, dropped here regardless"
+    meta skuid browser oif lo drop comment "no browser path to cupsd/ipp-usb"
     oif lo accept
-    meta skuid clearnet tcp dport { 80, 443 } accept
-    meta skuid clearnet udp dport 443 accept comment "QUIC"
+    meta skuid browser tcp dport { 80, 443 } accept
+    meta skuid browser udp dport 443 accept comment "QUIC"
     meta skuid systemd-timesync ip daddr { 162.159.200.1, 162.159.200.123 } udp dport 123 accept comment "NTP (Cloudflare)"
     meta skuid root udp dport { 67, 68 } accept comment "DHCP client"
   }
@@ -1093,7 +959,7 @@ EOF
 
 chmod +x /usr/local/sbin/superbacked-browser-firewall.sh
 
-tee /etc/systemd/system/superbacked-browser.service > /dev/null << 'EOF'
+tee /etc/systemd/system/superbacked-browser-firewall.service > /dev/null << 'EOF'
 [Unit]
 Description=Superbacked OS hardened browser mode (Firefox-only egress)
 ConditionKernelCommandLine=superbacked.browser
@@ -1121,26 +987,14 @@ ExecStartPost=/usr/bin/systemctl start --no-block NetworkManager.service
 WantedBy=multi-user.target
 EOF
 
-systemctl enable superbacked-browser.service
+systemctl enable superbacked-browser-firewall.service
 
-printf "%s\n" "Purging build packages…"
+printf "%s\n" "Purging orphaned packages…"
 
-# The packages needed only while building the image, removed now that
-# they have done their job: build-essential compiled the pinned PyPI
-# wheels, curl downloaded and verified software, and libpcsclite-dev,
-# python3-dev and zlib1g-dev supplied the headers those wheels built
-# against. None are needed in the shipped image (zlib1g-dev used to
-# stay for the AppImage runtime, which dlopens the unversioned libz.so
-# only the dev package ships — the deb-installed app has no such need).
-# Everything else Ubuntu ships that the image will not keep was purged
-# before the upgrade — see “Purging extraneous packages” above.
-apt remove --purge --yes \
-  build-essential \
-  curl \
-  libpcsclite-dev \
-  python3-dev \
-  zlib1g-dev
-
+# Build tools left with superbacked-os-bootstrap-base.sh and the
+# vanilla desktop’s extras before the upgrade (“Purging extraneous
+# packages” there). Nothing above is expected to orphan a package, so
+# this is a guard against future steps, not a cleanup of known ones.
 apt autoremove --purge --yes
 
 printf "%s\n" "Disabling networking…"
@@ -1167,6 +1021,7 @@ flush ruleset
 table inet filter {
   chain input {
     type filter hook input priority 0; policy drop;
+    meta nfproto ipv6 drop comment "IPv4-only: IPv6 is off by sysctl, dropped here regardless"
     iif lo accept
   }
   chain forward {
@@ -1174,6 +1029,7 @@ table inet filter {
   }
   chain output {
     type filter hook output priority 0; policy drop;
+    meta nfproto ipv6 drop comment "IPv4-only: IPv6 is off by sysctl, dropped here regardless"
     oif lo accept
   }
 }
@@ -1184,9 +1040,13 @@ printf "%s\n" "Disabling Bluetooth…"
 # Bluetooth has no role on this machine — keyboards and mice are
 # built-in or wired.
 # A radio is a second way into hardware that handles secrets, so the
-# kernel driver is blocked and the service masked. Unlike networking,
-# hardened browser mode does not bring it back.
+# kernel modules are blocked and the service masked. Unlike networking,
+# hardened browser mode does not bring it back. Blocking the bluetooth
+# core module covers every transport driver, since each depends on it
+# (USB, UART and SDIO controllers alike); btusb is listed as well so a
+# direct load fails on its own name rather than on a dependency.
 tee /etc/modprobe.d/superbacked-bluetooth.conf > /dev/null << 'EOF'
+install bluetooth /bin/false
 install btusb /bin/false
 EOF
 
@@ -1255,7 +1115,7 @@ touch /home/superbacked/.config/gnome-initial-setup-done
 
 # Everything written into the home folders above was written as root —
 # hand them to their owners.
-chown --recursive clearnet:clearnet /home/clearnet
+chown --recursive browser:browser /home/browser
 chown --recursive superbacked:superbacked /home/superbacked
 
-printf "%s\n" "Bootstrap complete"
+printf "%s\n" "Main bootstrap complete"
