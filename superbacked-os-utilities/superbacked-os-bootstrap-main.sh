@@ -881,9 +881,11 @@ chown root:root /usr/local/libexec/superbacked-browser-helper
 chmod 755 /usr/local/libexec/superbacked-browser-helper
 
 # Arguments are validated by the root-owned helper, not sudo globbing.
+# Tag order carries no meaning; it is the order sudo --list prints, so
+# the file and the listing read the same.
 tee /etc/sudoers.d/superbacked-browser > /dev/null << 'EOF'
 Defaults!/usr/local/libexec/superbacked-browser-helper env_reset
-superbacked ALL=(browser) NOPASSWD: NOSETENV: /usr/local/libexec/superbacked-browser-helper
+superbacked ALL=(browser) NOSETENV: NOPASSWD: /usr/local/libexec/superbacked-browser-helper
 EOF
 
 chmod 440 /etc/sudoers.d/superbacked-browser

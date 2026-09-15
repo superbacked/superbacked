@@ -350,7 +350,10 @@ if [ "${full_sudo}" = true ]; then
 else
   expect_failure "primary user has no sudo" bash -c 'id --groups --name | grep --quiet --word-regexp sudo'
   expect_failure "primary user cannot become root" sudo --non-interactive true
-  expect_success "sudo --list shows exactly the browser helper rule" bash -c "sudo --non-interactive --list 2> /dev/null | grep --count 'NOSETENV: ${helper}' | grep --quiet '^1$' && ! sudo --non-interactive --list 2> /dev/null | grep --quiet '(ALL'"
+  # The listing must contain the rule exactly as the bootstrap writes
+  # it (sudo prints tags in its own order, and the file uses that
+  # order) and no other rule at all.
+  expect_success "sudo --list shows exactly the browser helper rule" bash -c "listing=\"\$(sudo --non-interactive --list 2> /dev/null)\" && [ \"\$(printf '%s\n' \"\${listing}\" | grep --count --line-regexp ' *(browser) NOSETENV: NOPASSWD: ${helper}')\" = 1 ] && [ \"\$(printf '%s\n' \"\${listing}\" | grep --count '^ *(')\" = 1 ]"
   expect_failure "sudo refuses env as the browser user" sudo --non-interactive --user browser /usr/bin/env FOO=1 /bin/sh -c true
   expect_failure "sudo refuses --preserve-env" sudo --non-interactive --user browser --preserve-env "${helper}"
   expect_failure "sudo refuses LD_PRELOAD on command line" sudo --non-interactive --user browser LD_PRELOAD=/tmp/x.so "${helper}"
