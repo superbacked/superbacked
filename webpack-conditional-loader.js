@@ -3,7 +3,7 @@ import os from "os"
 const startBlock = /(\/\/|{\/\*) #if ((?:(?! \*\/}).)*)( \*\/})?/
 const endBlock = /(\/\/|{\/\*) #endif( \*\/})?$/
 
-const rule = /process\.env\.[_A-Z0-9]+ === "[_a-z0-9]+"/
+const rule = /process\.env\.([_A-Z0-9]+) === "[_a-z0-9]+"/
 
 const parse = (sourceByLine) => {
   const lines = []
@@ -12,7 +12,18 @@ const parse = (sourceByLine) => {
     let result
     if ((result = startBlock.exec(line))) {
       const startBlockRule = result[2]
-      if (rule.exec(startBlockRule) && eval(startBlockRule) !== true) {
+      const ruleMatch = rule.exec(startBlockRule)
+      // Fail closed — silently stripping a block because a rule cannot be
+      // evaluated could ship a bundle with security-critical lines missing.
+      if (!ruleMatch) {
+        throw new Error(`Unsupported #if rule: ${startBlockRule}`)
+      }
+      if (process.env[ruleMatch[1]] === undefined) {
+        throw new Error(
+          `Cannot evaluate "#if ${startBlockRule}" because ${ruleMatch[1]} is not set`
+        )
+      }
+      if (eval(startBlockRule) !== true) {
         pushLine = false
       }
       continue

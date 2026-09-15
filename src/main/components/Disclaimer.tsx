@@ -1,5 +1,5 @@
 import styled from "@emotion/styled"
-import { Box, Button, Space, Switch, Text } from "@mantine/core"
+import { Anchor, Box, Button, Space, Switch, Text } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { Fragment, FunctionComponent, useState } from "react"
 import { Trans, useTranslation } from "react-i18next"
@@ -34,18 +34,31 @@ const Disclaimer: FunctionComponent = () => {
         <Box px="xl">
           <Text>
             <Trans
-              i18nKey="components.disclaimer.computerProvisioningWarning"
+              i18nKey="components.disclaimer.superbackedOsRecommendation"
               components={{
+                anchor: (
+                  <Anchor
+                    c="inherit"
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      void window.api.invoke.openExternalUrl(
+                        "https://superbacked.com/superbacked-os"
+                      )
+                    }}
+                  />
+                ),
                 bold: <Text fw="bold" variant="signatureGradient" span />,
               }}
             />
           </Text>
           <Space h="lg" />
           <Text>
-            {t("components.disclaimer.limitationOfLiability")}{" "}
-            <Text fw="bold" variant="signatureGradient" span>
-              {t("components.disclaimer.useAtYourOwnRisk")}
-            </Text>
+            <Trans
+              i18nKey="components.disclaimer.limitationOfLiability"
+              components={{
+                bold: <Text fw="bold" variant="signatureGradient" span />,
+              }}
+            />
           </Text>
           <Space h="lg" />
           <form>
@@ -55,7 +68,7 @@ const Disclaimer: FunctionComponent = () => {
               withThumbIndicator={false}
               {...form.getInputProps("accept", { withFocus: false })}
             />
-            <Space h="lg" />
+            <Space h="xl" />
             <Button
               disabled={!form.values.accept}
               fullWidth

@@ -5,9 +5,11 @@ import { useTranslation } from "react-i18next"
 import { TranslationKey } from "@/src/shared/types/i18n"
 
 interface CreateDisclaimerModalProps {
-  backupType: "standard" | "2of3" | "3of5" | "4of7"
+  backupType: "singleBlock" | "2of3" | "3of5" | "4of7"
   detachedArchiveCount?: number
-  hiddenSecretCount?: number
+  secretCount?: number
+  // 1-based positions of YubiKey-protected secrets, in creation order
+  yubikeyProtectedPositions?: number[]
   opened: boolean
   onClose: () => void
   onConfirm: () => void
@@ -16,13 +18,50 @@ interface CreateDisclaimerModalProps {
 const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
   props
 ) => {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
 
-  const totalSecretCount = 1 + (props.hiddenSecretCount ?? 0)
+  const secretCount = props.secretCount ?? 1
   const detachedArchiveCount = props.detachedArchiveCount ?? 0
+  const yubikeyProtectedPositions = props.yubikeyProtectedPositions ?? []
+  const yubikeyProtectedCount = yubikeyProtectedPositions.length
 
   let descriptionKey: TranslationKey
-  if (detachedArchiveCount === 0) {
+  // Drives plural selection — the secret count everywhere, except the
+  // mixed-protection sentences whose plural noun is the protected secrets
+  let descriptionCount = secretCount
+  if (
+    props.backupType === "singleBlock" &&
+    yubikeyProtectedCount > 0 &&
+    yubikeyProtectedCount === secretCount
+  ) {
+    // YubiKey protection applies to single blocks only — with every
+    // secret protected, the requirement reads collectively
+    if (detachedArchiveCount === 0) {
+      descriptionKey =
+        "components.createDisclaimerModal.singleBlockWithYubiKeyDescription"
+    } else if (detachedArchiveCount === 1) {
+      descriptionKey =
+        "components.createDisclaimerModal.singleBlockWithOneDetachedArchiveAndYubiKeyDescription"
+    } else {
+      descriptionKey =
+        "components.createDisclaimerModal.singleBlockWithMultipleDetachedArchivesAndYubiKeyDescription"
+    }
+  } else if (props.backupType === "singleBlock" && yubikeyProtectedCount > 0) {
+    // Some secrets protected, others not — the YubiKey clause names the
+    // protected secrets by position so the universal requirements are not
+    // overstated
+    descriptionCount = yubikeyProtectedCount
+    if (detachedArchiveCount === 0) {
+      descriptionKey =
+        "components.createDisclaimerModal.singleBlockWithSomeYubiKeyDescription"
+    } else if (detachedArchiveCount === 1) {
+      descriptionKey =
+        "components.createDisclaimerModal.singleBlockWithOneDetachedArchiveAndSomeYubiKeyDescription"
+    } else {
+      descriptionKey =
+        "components.createDisclaimerModal.singleBlockWithMultipleDetachedArchivesAndSomeYubiKeyDescription"
+    }
+  } else if (detachedArchiveCount === 0) {
     descriptionKey = `components.createDisclaimerModal.${props.backupType}Description`
   } else if (detachedArchiveCount === 1) {
     descriptionKey = `components.createDisclaimerModal.${props.backupType}WithOneDetachedArchiveDescription`
@@ -36,18 +75,30 @@ const CreateDisclaimerModal: FunctionComponent<CreateDisclaimerModalProps> = (
       onClose={props.onClose}
       opened={props.opened}
       size="sm"
-      title={t("common.important")}
+      title={t(
+        props.backupType === "singleBlock"
+          ? "components.createDisclaimerModal.createBlock"
+          : "components.createDisclaimerModal.createBlockset"
+      )}
       styles={{
         title: {
           fontWeight: "bold",
         },
       }}
     >
-      <Text size="sm">{t(descriptionKey, { count: totalSecretCount })}</Text>
-      <Space h="lg" />
+      <Text size="sm">
+        {t(descriptionKey, {
+          count: descriptionCount,
+          positions: new Intl.ListFormat(i18n.language, {
+            type: "conjunction",
+          }).format(yubikeyProtectedPositions.map(String)),
+          totalCount: secretCount,
+        })}
+      </Text>
+      <Space h="xl" />
       <Group justify="flex-end">
         <Button onClick={props.onConfirm} variant="signatureGradient">
-          {t("common.gotIt")}
+          {t("components.createDisclaimerModal.create")}
         </Button>
       </Group>
     </Modal>

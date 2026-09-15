@@ -2,8 +2,8 @@ import { contextBridge, webUtils } from "electron"
 
 import { IpcEvents, IpcHandlers, IpcSyncHandlers } from "@/src/registerHandlers"
 import { createEventListener } from "@/src/shared/utilities/createEventListener"
-import { invoke } from "@/src/utilities/invoke"
-import { invokeSync } from "@/src/utilities/invokeSync"
+import { invoke } from "@/src/utilities/ipc/invoke"
+import { invokeSync } from "@/src/utilities/ipc/invokeSync"
 
 /**
  * Main window API exposed to renderer process via contextBridge.
@@ -26,12 +26,14 @@ const api: Api = {
   events: {
     systemLocaleChange: createEventListener("systemLocaleChange"),
     menuAbout: createEventListener("menuAbout"),
+    menuSettings: createEventListener("menuSettings"),
     menuTriggeredRoute: createEventListener("menuTriggeredRoute"),
     menuInsert: createEventListener("menuInsert"),
     menuShowSelectionAsQrCode: createEventListener("menuShowSelectionAsQrCode"),
     windowEnteredFullScreen: createEventListener("windowEnteredFullScreen"),
     windowLeftFullScreen: createEventListener("windowLeftFullScreen"),
     appLoading: createEventListener("appLoading"),
+    yubikeyTouchRequired: createEventListener("yubikeyTouchRequired"),
   } satisfies IpcEvents,
   invoke: {
     getDesktopCapturerSources: invoke("getDesktopCapturerSources"),
@@ -41,11 +43,17 @@ const api: Api = {
     disableModes: invoke("disableModes"),
     toggleMaximize: invoke("toggleMaximize"),
     generatePassphrase: invoke("generatePassphrase"),
+    generatePassword: invoke("generatePassword"),
+    computeBip32RootFingerprint: invoke("computeBip32RootFingerprint"),
+    computeBip85Mnemonic: invoke("computeBip85Mnemonic"),
+    scheduleClipboardClear: invoke("scheduleClipboardClear"),
     create: invoke("create"),
+    renderCarrierPdf: invoke("renderCarrierPdf"),
     duplicate: invoke("duplicate"),
     getDefaultPrinter: invoke("getDefaultPrinter"),
     getPrinters: invoke("getPrinters"),
     getPrinterStatus: invoke("getPrinterStatus"),
+    getSupportedPaperSizes: invoke("getSupportedPaperSizes"),
     print: invoke("print"),
     save: invoke("save"),
     restore: invoke("restore"),
@@ -55,6 +63,9 @@ const api: Api = {
     createStandaloneArchive: invoke("createStandaloneArchive"),
     restoreDetachedArchive: invoke("restoreDetachedArchive"),
     restoreStandaloneArchive: invoke("restoreStandaloneArchive"),
+    verifyYubiKeyChallengeResponseSecret: invoke(
+      "verifyYubiKeyChallengeResponseSecret"
+    ),
   } satisfies IpcHandlers,
   invokeSync: {
     getLocale: invokeSync("getLocale"),
@@ -65,9 +76,11 @@ const api: Api = {
     generateMnemonic: invokeSync("generateMnemonic"),
     validateMnemonic: invokeSync("validateMnemonic"),
     getWordlist: invokeSync("getWordlist"),
-    getDataLength: invokeSync("getDataLength"),
+    getPasswordCharacterClasses: invokeSync("getPasswordCharacterClasses"),
+    getBlockUsage: invokeSync("getBlockUsage"),
+    encodeBlockContent: invokeSync("encodeBlockContent"),
     generateMasterKey: invokeSync("generateMasterKey"),
-    deriveKey: invokeSync("deriveKey"),
+    deriveDetachedArchiveFilename: invokeSync("deriveDetachedArchiveFilename"),
     generateToken: invokeSync("generateToken"),
   } satisfies IpcSyncHandlers,
   getPathForFile: (file: File) => {

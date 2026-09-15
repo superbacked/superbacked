@@ -1,7 +1,7 @@
 #! /bin/bash
 # Used to configure Opal-compliant disk as read-only
 
-set -e
+set -o errexit
 
 bold=$(tput bold)
 normal=$(tput sgr0)

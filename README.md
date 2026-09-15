@@ -10,15 +10,11 @@ For high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacke
 
 Learn more about Superbacked and download latest release at [superbacked.com](https://superbacked.com).
 
-## End-user license agreement
+## License
 
-Building Superbacked from source code or using official release is allowed for personal use only.
+Superbacked is released under the [MIT License](LICENSE).
 
-Unauthorized distribution or usage of this software (including its source code) is strictly prohibited.
-
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, COPYRIGHT HOLDERS OR OPERATORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-Copyright (c) Superbacked, Inc. — All rights reserved
+The license covers the code only — the Superbacked name, logo and visual identity are not licensed (see [TRADEMARK.md](TRADEMARK.md)). Forks and redistributions must use their own branding.
 
 ## Contribution guide (macOS)
 

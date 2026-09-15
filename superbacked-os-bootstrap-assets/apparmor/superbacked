@@ -1,0 +1,282 @@
+# Superbacked OS — confined Superbacked app (Electron, installed by the
+# deb to /opt/Superbacked).
+#
+# Installed as /etc/apparmor.d/superbacked, deliberately overwriting
+# the stock profile the deb’s postinst drops at that path — the stock
+# one is unconfined (it exists only to grant userns under Ubuntu 24.04’s
+# restricted-userns policy) and two profiles cannot share an attachment
+# path. This is the app that handles the secrets, so it is the most
+# important boundary: it must never reach the network (the air-gap,
+# enforced a layer below nftables, inside the process that holds the
+# secrets) and it is walled off from the browser user. It keeps what
+# it genuinely needs — its own files, the camera (block scanner), the
+# user’s home, USB drives and the printer.
+#
+# Electron caveat: the app runs a Chromium sandbox that creates user
+# namespaces and pivots root. The namespace and mount rules below are
+# deliberately broad so those mechanics work — the real confinement
+# here is the network denial and the filesystem scope, not the sandbox
+# internals. Tuned on hardware through debug-variant complain harvests
+# and trial enforcement (see superbacked-os-utilities/debug/) —
+# regressions harvest the same way.
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
+  include <abstractions/base>
+  include <abstractions/dbus-session-strict>
+  include <abstractions/dconf>
+  include <abstractions/dri-common>
+  include <abstractions/dri-enumerate>
+  include <abstractions/fonts>
+  include <abstractions/freedesktop.org>
+  include <abstractions/mesa>
+  include <abstractions/wayland>
+
+  # The air-gap, and the whole point of confining this app — expressed
+  # as a whitelist because driverless printing needs one TCP hop:
+  # libcups fetches printer attributes (paper sizes) over IPP from
+  # ipp-usb on localhost. An explicit deny always beats an allow, so
+  # blanket inet denies cannot coexist with a loopback grant — instead
+  # only loopback peers are allowed and every other inet destination is
+  # denied by default. That also meant dropping
+  # abstractions/nameservice, whose broad inet grants the old denies
+  # were overriding (its non-network pieces are re-granted below).
+  # create carries no peer address and needs its own unconditional rule
+  # (the X11 lesson — see firefox). Loopback never reaches the wire,
+  # and nftables blocks egress a layer below either way. UDP, packet
+  # and bluetooth stay denied outright — quiet denies hold even on
+  # complain-mode debug images; non-loopback TCP is default-deny, which
+  # debug images log instead of enforcing. Unix sockets (Wayland,
+  # D-Bus) and netlink (nss interface enumeration) stay.
+  network (create, getattr, getopt, setopt) inet stream,
+  network (create, getattr, getopt, setopt) inet6 stream,
+  network (connect, send, receive) inet stream peer=(ip=127.0.0.1),
+  network (connect, send, receive) inet6 stream peer=(ip=::1),
+  network netlink raw,
+  deny network inet dgram,
+  deny network inet6 dgram,
+  deny network packet,
+  deny network bluetooth,
+  unix,
+
+  # The rest of what abstractions/nameservice provided: user/group and
+  # host lookups (nss), and the avahi-daemon socket mdns resolution
+  # rides on. Its nss shared libraries are covered by base.
+  /etc/gai.conf r,
+  /etc/group r,
+  /etc/host.conf r,
+  /etc/hosts r,
+  /etc/nsswitch.conf r,
+  /etc/passwd r,
+  /etc/protocols r,
+  /etc/services r,
+  @{run}/systemd/resolve/stub-resolv.conf r,
+  @{run}/avahi-daemon/socket rw,
+
+  # Chromium/Electron sandbox: unprivileged user namespaces and the
+  # namespace, mount and signal operations it performs inside them.
+  # Broad by necessity — the sandbox pivots root and bind-mounts within
+  # its own namespace; access to actual files is still governed by the
+  # path rules below.
+  userns,
+  capability sys_admin,
+  capability sys_chroot,
+  capability sys_ptrace,
+  capability dac_override,
+  capability dac_read_search,
+  capability setgid,
+  capability setuid,
+  owner @{PROC}/@{pid}/{uid_map,gid_map,setgroups} w,
+  mount,
+  umount,
+  pivot_root,
+  signal peer=@{profile_name},
+  ptrace peer=@{profile_name},
+
+  # The installed app. Electron re-execs its own binary and bundled
+  # helpers (chrome-sandbox, chrome_crashpad_handler) from
+  # /opt/Superbacked — they inherit this profile (ix), keeping the
+  # whole app confined. Terminal launches attach too: the kernel
+  # resolves the /usr/bin/superbacked command-line entry point (an
+  # update-alternatives symlink chain installed by the deb) to this
+  # attachment path before matching.
+  /opt/Superbacked/ r,
+  /opt/Superbacked/** mrix,
+
+  # Its window on superbacked’s own Wayland session, GPU and shared
+  # memory; the session bus for portals and notifications.
+  owner @{run}/user/[0-9]*/ r,
+  owner @{run}/user/[0-9]*/wayland-[0-9]* rw,
+  owner @{run}/user/[0-9]*/bus rw,
+  # Method calls on that session bus — dbus-session-strict covers only
+  # the bus driver itself. Notifications, portals, and the
+  # FileManager1 ShowItems call behind Electron’s reveal-in-folder all
+  # ride here (denied, they block loudly under enforce while the
+  # filesystem side looks fine).
+  dbus (send, receive) bus=session,
+  owner @{run}/user/[0-9]*/at-spi/bus{,*} rw,
+  owner @{run}/user/[0-9]*/dconf/{,user} rw,
+  /dev/ r,
+  /dev/dri/ r,
+  /dev/dri/* rw,
+  /dev/shm/ r,
+  owner /dev/shm/** rwk,
+  /etc/machine-id r,
+  # GPU stack enumeration (Vulkan ICDs and layers), the audio client
+  # configuration, the GTK settings and the session/VT probe — all
+  # read by Chromium at startup.
+  /etc/gtk-3.0/{,**} r,
+  /etc/vulkan/{,**} r,
+  /usr/share/vulkan/{,**} r,
+  /etc/glvnd/{,**} r,
+  /usr/share/glvnd/{,**} r,
+  /usr/share/X11/xkb/{,**} r,
+  /etc/pulse/{,**} r,
+  owner @{run}/user/[0-9]*/pulse/ r,
+  owner @{run}/user/[0-9]*/pulse/native rw,
+  /usr/share/themes/{,**} r,
+  /sys/devices/virtual/tty/tty0/active r,
+  /sys/devices/pci[0-9]*/**/{boot_vga,class,device,irq,resource,revision,subsystem_device,subsystem_vendor,vendor} r,
+  /sys/devices/pci[0-9]*/**/drm/ r,
+  # Chromium probes mutter’s Xwayland auth cookie even when pinned to
+  # Wayland — denied quietly so enforce-mode logs stay clean (the app
+  # never gets an X connection either way).
+  deny owner @{run}/user/[0-9]*/.mutter-Xwaylandauth.* r,
+  # fontconfig freshens the system cache directory’s permissions while
+  # validating it — denied quietly, the per-user cache under home
+  # serves.
+  deny /var/cache/fontconfig/ w,
+  /run/udev/data/* r,
+  /sys/bus/pci/devices/ r,
+  /sys/devices/**/uevent r,
+  /sys/devices/system/cpu/{,**} r,
+
+  # Camera — the block/QR scanner reads V4L2 directly.
+  /dev/video[0-9]* rw,
+  /dev/media[0-9]* rw,
+  /sys/class/video4linux/ r,
+  /sys/class/video4linux/** r,
+
+  # YubiKey challenge-response over raw hidraw (derived passwords) —
+  # enumeration’s udev data and uevent reads are granted above. DAC
+  # keeps this narrow: only uaccess-tagged nodes (security keys,
+  # hardware wallets) are openable by the seat user.
+  /dev/hidraw* rw,
+  /sys/class/hidraw/ r,
+  /sys/bus/ r,
+  /sys/class/ r,
+  /sys/devices/**/{bcdDevice,bInterfaceNumber,idProduct,idVendor,interface,manufacturer,product,report_descriptor} r,
+
+  # The user’s home — its own config and cache, and the backups and
+  # exports the user reads and writes. Broad, minus the sensitive
+  # corners denied at the end; nothing in home survives a reboot.
+  owner @{HOME}/ rw,
+  owner @{HOME}/** rwk,
+
+  # External USB drives — the persistent storage users export to.
+  /media/ r,
+  /media/*/ r,
+  /media/** rwk,
+
+  # Printing blocks. CUPS job privacy (the cupsd.conf default)
+  # keeps other users’ job names and documents opaque, so allowing the
+  # socket does not let the app read what else was printed. Beyond the
+  # socket, the app shells out to the CUPS utilities (see
+  # src/handlers/print.ts): lp submits jobs, lpstat reads queue state,
+  # lpoptions reads supported page sizes.
+  /{run,var/run}/cups/cups.sock rw,
+  /etc/cups/client.conf r,
+  # Permanent queues keep their PPD here — lpoptions reads it to list
+  # supported paper sizes.
+  /etc/cups/ppd/*.ppd r,
+  /usr/bin/lp{,stat,options} mrix,
+  # Printer discovery: libcups inside those tools finds ipp-usb
+  # printers over mDNS — the system bus socket and its driver handshake
+  # (Hello, AddMatch), Avahi method calls out, service-browser signals
+  # back. (The attribute fetch itself is the loopback TCP grant above.)
+  /{run,var/run}/dbus/system_bus_socket rw,
+  dbus (send) bus=system peer=(name=org.freedesktop.DBus),
+  dbus (send) bus=system peer=(name=org.freedesktop.Avahi),
+  dbus (receive) bus=system interface=org.freedesktop.Avahi*,
+  # Chromium probes BlueZ adapters over the system bus at startup —
+  # bluetooth stays denied by design (see the network rules above), so
+  # the probe is denied quietly.
+  deny dbus (send) bus=system peer=(name=org.bluez),
+
+  # Clipboard on Wayland (see src/utilities/clipboard.ts): wl-copy
+  # writes and clears — forking a daemon that keeps owning the
+  # selection — and wl-paste reads it back for the conditional deferred
+  # clear; both pipe the selection data itself through cat. The
+  # clear-on-death guard is a bundled script under /opt/Superbacked
+  # (executable through the mrix grant above), interpreted by dash
+  # under its mmap-only grant below — the shell itself stays
+  # unexecutable, and each guard script hardcodes its one command.
+  /usr/bin/cat mrix,
+  /usr/bin/wl-copy mrix,
+  /usr/bin/wl-paste mrix,
+
+  # Terminal-launched command-line flows: stty hides passphrase echo,
+  # the bundled guard script restores the saved terminal state should
+  # the process die mid-prompt, and the controlling terminal backs the
+  # prompts and countdowns.
+  /usr/bin/stty mrix,
+  owner /dev/pts/[0-9]* rw,
+
+  # “Show in folder” hand-offs: the app shells out to xdg-open, a shell
+  # script (dash is its interpreter — mmap only, never a direct exec)
+  # that resolves the handler through gio, probing alternatives with
+  # which; the file manager itself is activated over the session bus.
+  /usr/bin/xdg-open mrix,
+  /usr/bin/gio mrix,
+  /usr/bin/which.debianutils mrix,
+  /usr/bin/dash mr,
+  /etc/locale.alias r,
+  /usr/lib/@{multiarch}/gio/modules/{,*} mr,
+  /usr/local/share/applications/{,**} r,
+  /usr/share/applications/{,**} r,
+  /usr/share/mime/{,**} r,
+
+  # URL hand-offs enter the confined launcher; missing policy fails
+  # closed.
+  /usr/lib/@{multiarch}/glib-2.0/gio-launch-desktop ix,
+  /usr/local/bin/superbacked-browser Px,
+
+  # Scratch space and self-introspection Chromium needs.
+  owner /tmp/ r,
+  owner /tmp/** rwk,
+  @{PROC}/ r,
+  @{PROC}/filesystems r,
+  @{PROC}/mounts r,
+  @{PROC}/sys/fs/inotify/max_user_watches r,
+  @{PROC}/version_signature r,
+  @{PROC}/sys/kernel/random/boot_id r,
+  @{PROC}/sys/kernel/yama/ptrace_scope r,
+  @{PROC}/sys/vm/max_map_count r,
+  owner @{PROC}/@{pid}/ r,
+  owner @{PROC}/@{pid}/** rw,
+  # Chromium reads child-process stat for its process metrics — sandbox
+  # children live inside user namespaces whose proc entries read as
+  # root-owned, so owner cannot scope this.
+  @{PROC}/[0-9]*/stat r,
+  /sys/fs/cgroup/** r,
+
+  # Off-limits even though same-user or otherwise reachable: the
+  # browser user’s world and any key material.
+  deny /home/browser/{,**} mrwklx,
+  deny @{HOME}/.gnupg/{,**} mrwkl,
+  deny @{HOME}/.ssh/{,**} mrwkl,
+  deny @{HOME}/.local/share/keyrings/{,**} mrwkl,
+  # X11 in both forms (the pathname socket under /tmp, which the owner
+  # grant above would otherwise reach, and the abstract one): the app
+  # pins Wayland itself, and Xwayland is one flat trust domain shared
+  # with any other X11 client — the same carve-out the browser profiles
+  # carry.
+  deny /tmp/.X11-unix/{,**} rw,
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/superbacked>
+}

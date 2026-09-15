@@ -2,14 +2,14 @@
 Title: How to run Superbacked on factory-reset Mac
 Description: Learn how to run Superbacked on a factory reset Apple silicon Mac running macOS Sequoia or Tahoe
 Publication date: 2026-04-17T12:00:00.000Z
-Pinned: 3
+Pinned: 2
 -->
 
 # How to run Superbacked on factory-reset Mac
 
 ## Overview
 
-> Heads-up: factory resetting Mac erases all data. Back up anything important before proceeding.
+> Heads-up: factory resetting your Mac erases all data. Back up anything important before proceeding.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
