@@ -1,5 +1,13 @@
 import { SpawnOptions, spawn } from "child_process"
 
+// Runs a command to completion and returns its output — the way to
+// call any command whose result the app needs (lp, lpstat, wl-copy…).
+// Two cases use child_process directly and nothing else should:
+// processes that must outlive the call, detached (the clipboard guard
+// in src/utilities/spawnGuard.ts, the browser launcher in
+// src/handlers/openExternalUrl.ts), and the CLI’s terminal-mode
+// switches around a passphrase prompt, which must be synchronous
+// (src/cli/utilities/readPassphrase.ts)
 interface ExtendedSpawnOptions extends SpawnOptions {
   input?: Buffer | string
 }
