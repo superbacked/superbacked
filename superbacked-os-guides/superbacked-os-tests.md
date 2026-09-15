@@ -70,7 +70,7 @@ $ bash capture-apparmor-log.sh | bash summarize-apparmor-log.sh
 $ bash test-confinement.sh
 ```
 
-Expected: an empty harvest — the apps hit no profile boundary in real use — and `0 failed`, including “no leftover waypipe processes”.
+Expected: an empty harvest — the apps hit no profile boundary in real use — and `0 failed`, including “no leftover waypipe processes”. A non-empty harvest is a profile gap. Fixing one is development work described in the Superbacked OS development style skill; the fix ships in the next image.
 
 ### Step 8 (Superbacked OS): reboot on the default “Superbacked OS” entry, reload the profiles and repeat both runners in air-gapped mode
 
@@ -88,7 +88,7 @@ $ bash test-confinement.sh
 $ bash update-apparmor-profiles.sh --enforce
 ```
 
-The second reload clears the runners’ probes from the journal. Now use the apps by hand: open the Superbacked app and Yubico Authenticator and close them, then double-click Firefox in the dock and click the app’s link once each — both must show only the notice that Superbacked OS is running in air-gapped mode. Then harvest:
+The second reload clears the runners’ probes from the journal. Now use the apps by hand: open the Superbacked app and Yubico Authenticator and close them, then double-click Firefox in the dock and click the app’s link once each — both must show only the notice that Superbacked OS is running in air-gapped mode, and dismissing the notice must leave the dock icon ready to click again at once, with no lingering starting spinner. Then harvest:
 
 ```console
 $ bash capture-apparmor-log.sh | bash summarize-apparmor-log.sh
@@ -96,29 +96,13 @@ $ bash capture-apparmor-log.sh | bash summarize-apparmor-log.sh
 
 Expected: `0 failed` from both runners and an empty harvest.
 
-### Step 9 (Superbacked OS, if applicable): fold a non-empty harvest into the profiles
-
-Any line in a harvest taken after a reload is a profile gap or an unexpected access — nothing in it comes from the runners. Edit the profile in the drive’s `apparmor` folder and reload, which clears the journal again:
-
-```console
-$ bash update-apparmor-profiles.sh --enforce
-```
-
-Use the affected app by hand the way the harvest line implies, then harvest again:
-
-```console
-$ bash capture-apparmor-log.sh | bash summarize-apparmor-log.sh
-```
-
-Repeat until the harvest is empty, then copy the change back into `superbacked-os-bootstrap-assets/apparmor/`. For Firefox, `bash test-confinement.sh` is an alternative to the by-hand launch: its launch-window check reports the events itself. Neither runner has a partial mode — there is one way to run each, in full.
-
-### Step 10 (Mac): build a release image and flash it
+### Step 9 (Mac): build a release image and flash it
 
 ```console
 $ npm run package -- --os
 ```
 
-### Step 11 (Superbacked OS): run the hardening checks on the release image, in both boot modes
+### Step 10 (Superbacked OS): run the hardening checks on the release image, in both boot modes
 
 Release images remove `sudo` from the primary user, so `test-confinement.sh` refuses to run and `test-hardening.sh` is the whole procedure. It now also runs the sudo policy checks that debug images cannot — that `superbacked` cannot become root, that the single rule is exactly the browser helper and that every variant of misusing it is refused.
 
@@ -129,7 +113,3 @@ $ bash test-hardening.sh
 ```
 
 Expected: `0 failed` in both modes, with the sudo policy checks passing rather than skipped, both bundled apps labelled `(enforce)`, the printing section passing with the printer plugged in and, in hardened browser mode, the Firefox chain labelled and gone after the window is closed.
-
-### Step 12: keep the evidence
-
-For each run, keep the summary line, the label table from Step 6 and any harvest that was not empty. Together with the image version they record what was verified on which hardware.

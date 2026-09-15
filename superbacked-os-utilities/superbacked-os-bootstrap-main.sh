@@ -694,6 +694,19 @@ run() {
   /usr/bin/env --ignore-environment "${environment[@]}" "$@"
 }
 
+# Dialogs carry the desktop’s activation token. GNOME Shell hands one
+# to whatever a dock click launches and keeps the icon in its
+# “starting” state — spinner on, further clicks ignored — until a
+# window presents that token or the app id the desktop entry names, or
+# a timeout runs out. Firefox’s window matches by app id; a zenity
+# dialog does not, so without the token the air-gapped notice leaves
+# the icon starting for the timeout’s length after it is dismissed.
+# The token is single-use and names nothing but this launch, so it is
+# the one caller variable passed through.
+dialog() {
+  run /usr/bin/env ${XDG_ACTIVATION_TOKEN:+"XDG_ACTIVATION_TOKEN=${XDG_ACTIVATION_TOKEN}"} /usr/bin/zenity "$@"
+}
+
 # The compositor is reached only through the hard link the session
 # unit made (see superbacked-browser-compositor above): never by the
 # public name a compromised app could replace, and never from the
@@ -731,7 +744,7 @@ if [[ "${allowed}" != true ]]; then
 fi
 
 if ! run /usr/bin/grep --quiet superbacked.browser /proc/cmdline; then
-  run /usr/bin/zenity --info \
+  dialog --info \
     --no-wrap \
     --text "Superbacked OS is running in air-gapped mode.\nPlease reboot and select “Superbacked OS (hardened browser)” to use browser." \
     --title "Superbacked OS" 2> /dev/null
@@ -772,7 +785,7 @@ for _ in $(run /usr/bin/seq 50); do
 done
 
 if [ ! -S "${bridge_socket}" ]; then
-  run /usr/bin/zenity --error \
+  dialog --error \
     --no-wrap \
     --text "Browser bridge failed to start" \
     --title "Superbacked OS" 2> /dev/null
@@ -788,7 +801,7 @@ run /usr/bin/chmod 660 "${bridge_socket}"
 # dialog states the fact common to both rather than guessing which.
 if ! run /usr/bin/sudo --user browser --set-home \
   /usr/local/libexec/superbacked-browser-helper "$@"; then
-  run /usr/bin/zenity --error \
+  dialog --error \
     --no-wrap \
     --text "Browser exited with an error.\nPlease try opening it again." \
     --title "Superbacked OS" 2> /dev/null
