@@ -1,7 +1,9 @@
 <!--
 Title: How to verify data persistence is disabled
 Description: Learn how to verify that Superbacked OS persists nothing to disk
+Keywords: superbacked-os, macos, linux, checksum
 Publication date: 2026-01-29T18:12:16.210Z
+Category: Superbacked OS
 Pinned:
 -->
 
@@ -11,15 +13,21 @@ Pinned:
 
 This guide walks through verifying that Superbacked OS persists nothing to disk by comparing partition checksums before and after use.
 
+Superbacked OS runs entirely from memory, so the USB flash drive can be unplugged as soon as the login screen appears — nothing can be written to a drive that is not connected. The comparison below covers what remains: the boot itself and any session during which the drive stays plugged in, by choice or because the computer has too little memory and Superbacked OS runs from the drive instead. To verify a full session, leave the drive plugged in.
+
 ## Guide
 
-> Heads-up: replace `2.0.0-beta.13` with the semver of the release flashed to the USB flash drive.
+> Heads-up: replace `2.0.0-rc.2` with the version of the release flashed to the USB flash drive.
+
+Download `superbacked-os-amd64-live-2.0.0-rc.2.img.sha256sums` from the [release page](https://github.com/superbacked/superbacked/releases) — it lists the expected checksum of each partition.
 
 ### macOS
 
-#### Step 1: compute disk checksum
+#### Step 1: compute partition checksums
 
 > Heads-up: replace `rdisk4` with the disk found using `diskutil list`.
+
+Run following commands.
 
 ```console
 $ diskutil list
@@ -37,23 +45,25 @@ Password:
 Unmount of all volumes on disk4 was successful
 
 $ sudo shasum --algorithm 256 /dev/rdisk4s1 /dev/rdisk4s2
-a72eed3b1ec4df47964238512e58731662361c65b6b9629f4469c90f95bfb664  /dev/rdisk4s1
-9c073fd62ce6a2996eda1656a6d049bae5ac5f6e3051d0b052c434ac0831f355  /dev/rdisk4s2
+73938703162704d002a5e3d3630ab0799d0e153f0b91c3d50b89d667edaa4bc3  /dev/rdisk4s1
+dfa218a4286e8150c25230add2e5746a4efd3f07693fa90c5bd4dc9cd43c3632  /dev/rdisk4s2
 
-$ cat superbacked-os-amd64-live-2.0.0-beta.13.img.sha256sums
-Boot partition: a72eed3b1ec4df47964238512e58731662361c65b6b9629f4469c90f95bfb664
-Root partition: 9c073fd62ce6a2996eda1656a6d049bae5ac5f6e3051d0b052c434ac0831f355
+$ cat superbacked-os-amd64-live-2.0.0-rc.2.img.sha256sums
+Boot partition: 73938703162704d002a5e3d3630ab0799d0e153f0b91c3d50b89d667edaa4bc3
+Root partition: dfa218a4286e8150c25230add2e5746a4efd3f07693fa90c5bd4dc9cd43c3632
 ```
 
-#### Step 2: verify disk checksum after use
+#### Step 2: verify partition checksums after use
 
 Complete step 1 again after using Superbacked OS and verify checksums have not changed.
 
 ### Ubuntu Desktop
 
-#### Step 1: compute disk checksum
+#### Step 1: compute partition checksums
 
 > Heads-up: replace `sdb` with the disk found using `sudo fdisk --list`.
+
+Run following commands.
 
 ```console
 $ sudo fdisk --list
@@ -76,14 +86,14 @@ umount: /dev/sdb1: not mounted.
 umount: /dev/sdb2: not mounted.
 
 $ sudo sha256sum /dev/sdb1 /dev/sdb2
-a72eed3b1ec4df47964238512e58731662361c65b6b9629f4469c90f95bfb664  /dev/sdb1
-9c073fd62ce6a2996eda1656a6d049bae5ac5f6e3051d0b052c434ac0831f355  /dev/sdb2
+73938703162704d002a5e3d3630ab0799d0e153f0b91c3d50b89d667edaa4bc3  /dev/sdb1
+dfa218a4286e8150c25230add2e5746a4efd3f07693fa90c5bd4dc9cd43c3632  /dev/sdb2
 
-$ cat superbacked-os-amd64-live-2.0.0-beta.13.img.sha256sums
-Boot partition: a72eed3b1ec4df47964238512e58731662361c65b6b9629f4469c90f95bfb664
-Root partition: 9c073fd62ce6a2996eda1656a6d049bae5ac5f6e3051d0b052c434ac0831f355
+$ cat superbacked-os-amd64-live-2.0.0-rc.2.img.sha256sums
+Boot partition: 73938703162704d002a5e3d3630ab0799d0e153f0b91c3d50b89d667edaa4bc3
+Root partition: dfa218a4286e8150c25230add2e5746a4efd3f07693fa90c5bd4dc9cd43c3632
 ```
 
-#### Step 2: verify disk checksum after use
+#### Step 2: verify partition checksums after use
 
 Complete step 1 again after using Superbacked OS and verify checksums have not changed.

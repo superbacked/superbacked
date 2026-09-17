@@ -1,7 +1,9 @@
 <!--
 Title: How to derive Bitcoin wallets using command-line interface
-Description: Learn how to derive deterministic Bitcoin wallets from a master passphrase and YubiKey using the Superbacked command-line interface
+Description: Learn how to derive Bitcoin wallets from a master passphrase and YubiKey using the command-line interface
+Keywords: macos, linux, cli, yubikey, bitcoin
 Publication date: 2026-07-29T12:00:00.000Z
+Category: Command-line interface
 Pinned:
 -->
 
@@ -9,63 +11,27 @@ Pinned:
 
 ## Overview
 
-Superbacked can derive deterministic Bitcoin wallets from a master passphrase, a memorized label (for example `hotwallet`) and a YubiKey. The same inputs always derive the same wallet, so nothing needs to be stored or backed up — and the output is a standard BIP39 mnemonic, so recovery is Superbacked-independent: any wallet software can restore it.
+This guide walks through deriving Bitcoin wallets from a memorized label (for example `hotwallet`), a master passphrase and a YubiKey using the command-line interface — the same wallet every time, so there is no mnemonic to store, sync or lose. Wallets are standard BIP39 mnemonics, so recovery is Superbacked-independent: any wallet software can restore them.
 
-> Heads-up: deriving a Bitcoin wallet exposes its private keys to the computer running the command (unlike a signing device, which never releases its seed) and a forgotten label, forgotten passphrase or lost YubiKey secret is unrecoverable. For amounts you are not willing to lose, use a signing device such as a Trezor.
+> Heads-up: deriving a Bitcoin wallet exposes its private keys to the computer running the command (unlike a signing device, which never releases its seed) and a forgotten label, forgotten passphrase or lost YubiKey secret is unrecoverable. **For amounts you are not willing to lose, use a signing device such as a Trezor.**
+
+> Heads-up: a YubiKey provisioned with a challenge-response secret is required — see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md), which also covers backing up the secret.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
 ## Setup guide
 
-The command-line interface is built into the app — download latest release from [superbacked.com/download](https://superbacked.com/download) and optionally [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
-
-### macOS
-
-Drag Superbacked to Applications (opening the downloaded disk image) and add a persistent alias to the app binary (running the following commands once).
-
-```console
-$ echo 'alias superbacked="/Applications/Superbacked.app/Contents/MacOS/Superbacked"' >> "$HOME/.zshrc"
-
-$ source "$HOME/.zshrc"
-```
-
-### Ubuntu Desktop
-
-Install the deb (see [how to run Superbacked on Ubuntu Desktop](https://superbacked.com/guides/how-to-run-superbacked-on-ubuntu-desktop)) — the `superbacked` command is then available in terminal.
-
-### Other Linux systems
-
-> Heads-up: replace `x64` with `arm64` in the following command if applicable — and, when reading this guide on GitHub, the version placeholder with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
-
-Install the AppImage as `superbacked` in `~/.local/bin` (opening a new terminal if `~/.local/bin` did not exist).
-
-```console
-$ install -m 755 "$HOME/Downloads/superbacked-x64-${latestRelease}.AppImage" "$HOME/.local/bin/superbacked"
-```
-
-Allow YubiKey access by running following command and unplugging and plugging YubiKey back in.
-
-```console
-$ sudo tee /etc/udev/rules.d/70-superbacked-yubikey.rules << 'EOF'
-KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1050", TAG+="uaccess"
-EOF
-```
-
-### Superbacked OS
-
-The `superbacked` command is preinstalled.
+The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to-install-superbacked-on-ubuntu-desktop/README.md) and [Superbacked OS](../how-to-run-superbacked-os-on-desktop-or-laptop/README.md), and after the optional terminal step of the [macOS](../how-to-install-superbacked-on-macos/README.md) and [Tails](../how-to-run-superbacked-on-tails/README.md) guides.
 
 ## Usage guide
 
-### Step 1: provision YubiKey
+### Derive wallet
 
-Deriving wallets uses the same HMAC-SHA1 challenge-response credential as derived passwords — see [how to derive passwords](https://superbacked.com/guides/how-to-derive-passwords-using-command-line-interface) for provisioning. Without a backup of the secret or a second YubiKey provisioned with it, the wallet — and the funds it controls — is unrecoverable if the YubiKey is lost.
+> Heads-up: the master passphrase is never verified, so a mistyped passphrase silently derives a different wallet. Use `--confirm-passphrase` when deriving a wallet for the first time — the master passphrase is then prompted twice — and derive the wallet again to confirm the same extended public key before sending bitcoin to it.
 
-### Step 2: derive wallet
+> Heads-up: on macOS, opening the YubiKey may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring).
 
-> Heads-up: no fingerprint or checksum of the master passphrase is ever displayed or stored, so a mistyped passphrase silently derives a different wallet. Use `--confirm-passphrase` when creating a wallet — and verify the extended public key against a previous derivation before funding.
-
-The command is public by default, secret on demand: it prints the wallet’s extended public key (`zpub…`) — the watch-only verification handle — without materializing the mnemonic (the command refuses weak master passphrases, like everywhere else in Superbacked).
+By default, the command prints the wallet’s extended public key (`zpub…`) — enough to set up a watch-only wallet — without revealing the mnemonic (the command refuses weak master passphrases, like everywhere else in Superbacked).
 
 ```console
 $ superbacked derive-bitcoin-wallet
@@ -81,6 +47,8 @@ zpub6rskz9PppDLZKurVF9qhu7bs1TvadsejsGWmsFfQ2aVkKHi3eGiDCQXMEtgHBb1ucSHPMWnbRPoU
 
 Every derivation states the scheme version, the derivation path and the word count (and Paranoid mode, when enabled) — derivation is stateless, so a different word count (`--words 12`) or mode derives a different wallet and these are part of what must be remembered to re-derive the same one (the derivation path is fixed, stated for cross-verification in wallet software).
 
+Use the root `--paranoid` flag to harden key derivation (10× standard cost, requiring at least 1 GiB of memory) — a wallet derived with it can only be re-derived with it.
+
 Use `--addresses` to also print the first receive addresses — importing the same wallet elsewhere must show the same ones.
 
 ```console
@@ -91,7 +59,9 @@ m/84'/0'/0'/0/1 bc1qcjk90ecfvf6pvm6nfspvzhk20p3v9vawxnfwjw
 m/84'/0'/0'/0/2 bc1qv2wjjvr4j6ldkehaph8099dezy033qcshs9k7y
 ```
 
-### Step 3: reveal mnemonic or import into wallet software
+### Reveal mnemonic or import into wallet software
+
+> Heads-up: on Linux, copying to the clipboard under Wayland requires wl-clipboard (`sudo apt install wl-clipboard`) — preinstalled on Superbacked OS. On GNOME, a dock icon may blink when the mnemonic is copied or cleared — cosmetic and expected.
 
 Use `--reveal mnemonic` to copy the BIP39 mnemonic to the clipboard (clearing after 10 seconds, keeping it out of terminal scrollback) — importable into any BIP39 wallet (for example [Electrum](https://electrum.org/)). Confirm the wallet software reports the same extended public key and addresses the command printed.
 

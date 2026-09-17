@@ -1,7 +1,9 @@
 <!--
 Title: How to encrypt files using command-line interface
-Description: Learn how to encrypt files and folders as standalone archives using the Superbacked command-line interface
+Description: Learn how to encrypt files and folders as standalone archives using the command-line interface
+Keywords: macos, linux, cli, yubikey, archive
 Publication date: 2026-07-22T12:00:00.000Z
+Category: Command-line interface
 Pinned:
 -->
 
@@ -9,49 +11,13 @@ Pinned:
 
 ## Overview
 
-Superbacked can encrypt files and folders as standalone archives — portable `.superbacked` files encrypted using AES-256-GCM with a key derived from a passphrase using Argon2d. Archives created using the command-line interface are byte-identical to app-created ones, so they can also be restored by drag and drop in the app.
+This guide walks through encrypting files and folders as standalone archives using the command-line interface — portable `.superbacked` files protected using a passphrase and, optionally, a YubiKey. Archives created using the command-line interface are byte-identical to app-created ones, so they can also be restored by drag and drop in the app.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
 ## Setup guide
 
-The command-line interface is built into the app — download latest release from [superbacked.com/download](https://superbacked.com/download) and optionally [verify integrity of release](https://superbacked.com/guides/how-to-verify-integrity-of-release).
-
-### macOS
-
-Drag Superbacked to Applications (opening the downloaded disk image) and add a persistent alias to the app binary (running the following commands once).
-
-```console
-$ echo 'alias superbacked="/Applications/Superbacked.app/Contents/MacOS/Superbacked"' >> "$HOME/.zshrc"
-
-$ source "$HOME/.zshrc"
-```
-
-### Ubuntu Desktop
-
-Install the deb (see [how to run Superbacked on Ubuntu Desktop](https://superbacked.com/guides/how-to-run-superbacked-on-ubuntu-desktop)) — the `superbacked` command is then available in terminal.
-
-### Other Linux systems
-
-> Heads-up: replace `x64` with `arm64` in the following command if applicable — and, when reading this guide on GitHub, the version placeholder with the [latest release](https://github.com/superbacked/superbacked/releases/latest) semver.
-
-Install the AppImage as `superbacked` in `~/.local/bin` (opening a new terminal if `~/.local/bin` did not exist).
-
-```console
-$ install -m 755 "$HOME/Downloads/superbacked-x64-${latestRelease}.AppImage" "$HOME/.local/bin/superbacked"
-```
-
-When planning to use a YubiKey, allow YubiKey access by running following command and unplugging and plugging YubiKey back in.
-
-```console
-$ sudo tee /etc/udev/rules.d/70-superbacked-yubikey.rules << 'EOF'
-KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1050", TAG+="uaccess"
-EOF
-```
-
-### Superbacked OS
-
-The `superbacked` command is preinstalled.
+The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to-install-superbacked-on-ubuntu-desktop/README.md) and [Superbacked OS](../how-to-run-superbacked-os-on-desktop-or-laptop/README.md), and after the optional terminal step of the [macOS](../how-to-install-superbacked-on-macos/README.md) and [Tails](../how-to-run-superbacked-on-tails/README.md) guides.
 
 ## Usage guide
 
@@ -68,11 +34,13 @@ Confirm passphrase:
 /Users/sun/backup.superbacked
 ```
 
-The archive path is printed on success. Use `--force` to overwrite an existing archive.
+The archive path is printed on success.
 
-Use `--yubikey` to require a provisioned YubiKey as a second factor (see [how to derive passwords](https://superbacked.com/guides/how-to-derive-passwords-using-command-line-interface) for provisioning) — the archive can then only be restored by enabling YubiKey mode again (`--yubikey`, or the app’s “Protected with YubiKey” switch) while holding a YubiKey provisioned with the same secret.
+Use the root `--paranoid` flag to harden key derivation (10× standard cost, requiring at least 1 GiB of memory) — a paranoid archive can only be restored with `--paranoid` (or the app’s “Enable paranoid mode” setting), and without it reports a wrong passphrase.
 
-The root `--paranoid` flag hardens key derivation (requiring at least 1 GiB of memory) — a paranoid archive can only be restored with `--paranoid` (or the app’s “Enable paranoid mode” setting), and without it reports a wrong passphrase.
+Use `--yubikey` to protect the archive with YubiKey (see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md)) — restoring then requires `--yubikey`, or the app’s “Protected with YubiKey” switch, and a connected YubiKey provisioned with the same challenge-response secret.
+
+Use `--force` to overwrite an existing archive.
 
 ### Step 2: restore standalone archive
 
@@ -86,4 +54,4 @@ Passphrase:
 /Users/sun/restored
 ```
 
-The destination path is printed on success. Standalone archives can also be restored by dragging and dropping them in the app — for archives created with `--yubikey`, enable the “Protected with YubiKey” switch and hold the YubiKey.
+The destination path is printed on success. Standalone archives can also be restored by dragging and dropping them in the app — for archives created with `--yubikey`, enable the “Protected with YubiKey” switch with a YubiKey provisioned with the same challenge-response secret connected.
