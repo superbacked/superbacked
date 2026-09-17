@@ -83,11 +83,27 @@ const fixSingleQuotes = (text: string): string =>
 const fixAll = (text: string): string =>
   fixSingleQuotes(fixOxfordComma(fixEllipsis(fixDoubleQuotes(text))))
 
+// Regions whose punctuation is machine-matched, not copy: inline code
+// (backtick runs of any length, per CommonMark — a double-backtick span can
+// itself contain a backtick), URLs and HTML tags
+const protectedRegions = /(`+)(?:(?!\1)[\s\S])*?\1|https?:\/\/[^\s)]+|<[^>]+>/g
+
 const cleanContent = (text: string): string =>
-  text
-    .replace(/`[^`]*`/g, "")
-    .replace(/https?:\/\/[^\s)]+/g, "")
-    .replace(/<[^>]+>/g, "")
+  text.replace(protectedRegions, "")
+
+// Applies fixes to the copy while leaving protected regions byte-identical —
+// fixing the whole line would corrupt code spans and URLs
+const fixContent = (text: string): string => {
+  let result = ""
+  let lastIndex = 0
+  for (const match of text.matchAll(protectedRegions)) {
+    const index = match.index ?? 0
+    result += fixAll(text.slice(lastIndex, index))
+    result += match[0]
+    lastIndex = index + match[0].length
+  }
+  return result + fixAll(text.slice(lastIndex))
+}
 
 const hasTypographyIssue = (text: string): boolean =>
   hasOxfordComma(text) ||
@@ -455,13 +471,17 @@ const typographyContentRule: Rule.RuleModule = {
         }
 
         const raw = node.expression.value
-        if (hasTypographyIssue(raw) === false) return
+        const cleaned = cleanContent(raw)
+        if (hasTypographyIssue(cleaned) === false) return
 
         context.report({
           node,
-          messageId: getMessageId(raw),
+          messageId: getMessageId(cleaned),
           fix(fixer) {
-            return fixer.replaceText(node, JSON.stringify(fixAll(raw)) + ";")
+            return fixer.replaceText(
+              node,
+              JSON.stringify(fixContent(raw)) + ";"
+            )
           },
         })
       },

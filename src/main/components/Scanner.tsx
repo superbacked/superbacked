@@ -112,7 +112,7 @@ const GuideContainer = styled.div`
 `
 
 const Guide = styled.div`
-  height: 75%;
+  height: ${(2 / 3) * 100}%;
   aspect-ratio: 1;
   border-radius: 4px;
   box-shadow: 0 0 0 100vh rgba(0, 0, 0, 0.25);
@@ -170,7 +170,7 @@ class NoDeviceError extends Error {
 }
 
 /**
- * Scanner component for detecting QR codes using camera or screen capture or optional dropzone
+ * Scanner component for detecting QR codes using camera or screen recording or optional dropzone
  *
  * @param handleCode callback function that handles detected codes
  * @param autoBeep automatically play confirmation sound when code is detected, defaults to `true`
@@ -205,6 +205,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     return null
   }
   const sourceRef = useRef<null | Source>(getInitialSource())
+  // Whether the scanner was streaming when settings were opened — closing
+  // settings without selecting anything resumes only what was already running
+  const wasStreamingRef = useRef(false)
   const [showSourceSettings, setShowSourceSettings] = useState(false)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
@@ -493,6 +496,30 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     }
   }, [capture])
 
+  // Selecting a device or source is an explicit intent to scan (unlike
+  // merely closing settings) — persist it, close settings and start streaming
+  const submitDevice = useCallback(
+    (deviceId: string) => {
+      updateSource({ id: deviceId, type: "device" })
+      window.api.invokeSync.setConfig("scannerDevice", deviceId)
+      window.api.invokeSync.unsetConfig("scannerSource")
+      setShowSourceSettings(false)
+      start()
+    },
+    [updateSource, start]
+  )
+
+  const submitSource = useCallback(
+    (sourceId: string) => {
+      updateSource({ id: sourceId, type: "source" })
+      window.api.invokeSync.unsetConfig("scannerDevice")
+      window.api.invokeSync.setConfig("scannerSource", sourceId)
+      setShowSourceSettings(false)
+      start()
+    },
+    [updateSource, start]
+  )
+
   const updateSources = async (): Promise<CustomDesktopCapturerSource[]> => {
     const result = await window.api.invoke.getDesktopCapturerSources()
     if (result.success === false) {
@@ -507,13 +534,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     // See https://www.electronjs.org/docs/latest/api/desktop-capturer#caveats
     const sourceId = sortedSources[0]?.id
     if (window.api.platform === "linux" && sourceId) {
-      updateSource({
-        id: sourceId,
-        type: "source" as const,
-      })
-      window.api.invokeSync.setConfig("scannerSource", sourceId)
-      setShowSourceSettings(false)
-      start()
+      submitSource(sourceId)
     }
     return sortedSources
   }
@@ -586,23 +607,15 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             maxDropdownHeight={240}
             placeholder={`${t("components.scanner.selectDevice")}…`}
             value={source?.type === "device" ? source.id : null}
-            onChange={(value) => {
-              if (value) {
-                updateSource({
-                  id: value,
-                  type: "device" as const,
-                })
-                window.api.invokeSync.setConfig("scannerDevice", value)
-                window.api.invokeSync.unsetConfig("scannerSource")
-                setShowSourceSettings(false)
-                start()
-              }
-            }}
             onDropdownClose={() => setDeviceDropdownOpened(false)}
             onDropdownOpen={async () => {
               await updateDevices()
               setDeviceDropdownOpened(true)
             }}
+            // onOptionSubmit rather than onChange — onChange does not fire
+            // when the clicked option is already selected, and clicking the
+            // current device must still close settings and start streaming
+            onOptionSubmit={submitDevice}
           />
           <Space h="lg" />
           <Select
@@ -620,18 +633,6 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
               </Group>
             )}
             value={source?.type === "source" ? source.id : null}
-            onChange={(value) => {
-              if (value) {
-                updateSource({
-                  id: value,
-                  type: "source" as const,
-                })
-                window.api.invokeSync.unsetConfig("scannerDevice")
-                window.api.invokeSync.setConfig("scannerSource", value)
-                setShowSourceSettings(false)
-                start()
-              }
-            }}
             onDropdownClose={() => setSourceDropdownOpened(false)}
             onDropdownOpen={async () => {
               await updateSources()
@@ -640,6 +641,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
                 setSourceDropdownOpened(true)
               }
             }}
+            // onOptionSubmit rather than onChange — onChange does not fire
+            // when the clicked option is already selected, and clicking the
+            // current source must still close settings and start streaming
+            onOptionSubmit={submitSource}
           />
         </Container>
         <TopRightContainer>
@@ -657,7 +662,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             variant="transparent"
             onClick={() => {
               setShowSourceSettings(false)
-              start()
+              if (wasStreamingRef.current) {
+                start()
+              }
             }}
           >
             <IconX size={16} />
@@ -706,7 +713,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           <Fragment>
             <CenterContainer>
               <Button size="sm" onClick={start} variant="signatureTextGradient">
-                {t("components.scanner.useCameraOrScreenCapture")}
+                {t("components.scanner.useCameraOrScreenRecording")}
               </Button>
             </CenterContainer>
           </Fragment>
@@ -723,7 +730,11 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         imageDataUrl !== null ? (
           <Image src={imageDataUrl} />
         ) : null}
-        {props.badge && error === null ? (
+        {/* The badge retires once a code is captured, like the other
+          discovery hints — a capture always sets imageDataUrl (camera and
+          dropzone alike) and clear() resets it, so the next-block badge
+          reappears when a blockset restart clears the scanner */}
+        {props.badge && error === null && imageDataUrl === null ? (
           <ActionBadge color="dark">{props.badge}</ActionBadge>
         ) : null}
         <TopRightContainer>
@@ -740,6 +751,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             }}
             variant="transparent"
             onClick={() => {
+              wasStreamingRef.current = isStreaming
               setShowSourceSettings(true)
               stop()
             }}
@@ -750,6 +762,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         <ErrorModal
           error={error}
           onClose={() => {
+            // Closing settings after a capture error must not retry capture
+            // automatically, which would loop back into the same error
+            wasStreamingRef.current = false
             setError(null)
             setShowSourceSettings(true)
           }}

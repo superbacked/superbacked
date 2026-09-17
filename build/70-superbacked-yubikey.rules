@@ -1,0 +1,8 @@
+# Superbacked — YubiKey challenge-response over raw hidraw.
+#
+# systemd’s fido_id only uaccess-tags the FIDO interface of a YubiKey;
+# the OTP interface challenge-response runs over gets no tag on stock
+# Ubuntu (libu2f-udev has been an empty transitional package since
+# 22.04). Vendor-wide match covers every YubiKey configuration,
+# including FIDO-disabled composites no upstream per-PID list includes.
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1050", TAG+="uaccess"

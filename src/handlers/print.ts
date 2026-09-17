@@ -1,5 +1,6 @@
 import { getMainWindow } from "@/src/index"
-import { getSenderWindow } from "@/src/utilities/handleContext"
+import { PaperSize } from "@/src/shared/types/print"
+import { getSenderWindow } from "@/src/utilities/ipc/handleContext"
 import spawn from "@/src/utilities/spawn"
 
 export interface Printer {
@@ -44,8 +45,21 @@ export const getDefaultPrinter = async (): Promise<null | Printer> => {
   return null
 }
 
-export const getPrinterPageSizes = async (printer: string): Promise<string> => {
-  const { stdout } = await spawn("lpoptions", ["-p", printer, "-l"])
+export const getPrinterPageSizes = async (
+  printer: string,
+  timeout = 3000
+): Promise<string> => {
+  // Timeboxed — CUPS can block indefinitely resolving a queue whose
+  // device is asleep or unreachable, which would otherwise leave the
+  // print modal’s paper select disabled forever with no feedback. The
+  // default stays short because the select is grayed while this runs:
+  // healthy queues answer in milliseconds, and a cut-off slow one
+  // degrades to the all-sizes fallback with print-time validation as
+  // the safety net. A killed lpoptions yields no PageSize line, so the
+  // timeout surfaces as the error below and callers fall back
+  const { stdout } = await spawn("lpoptions", ["-p", printer, "-l"], {
+    timeout,
+  })
   const lines = stdout.split("\n")
   const pageSizeLine = lines.find((line) =>
     line.startsWith("PageSize/Media Size:")
@@ -54,6 +68,36 @@ export const getPrinterPageSizes = async (printer: string): Promise<string> => {
     throw new Error("Could not determine printer page sizes")
   }
   return pageSizeLine.replace("PageSize/Media Size:", "").trim()
+}
+
+// For each paper size: the named CUPS page size, and the custom media fallback
+// used when the printer supports custom sizes but not the named one.
+const paperSizeMedia: Record<PaperSize, { named: string; custom: string }> = {
+  letter: { named: "Letter", custom: "Custom.8.5x11in" },
+  statement: { named: "Statement", custom: "Custom.5.5x8.5in" },
+}
+
+// Printer’s supported page sizes, with the default marker stripped
+const getPageSizes = async (
+  printer: string,
+  timeout?: number
+): Promise<string[]> => {
+  return (await getPrinterPageSizes(printer, timeout))
+    .split(/\s+/)
+    .map((pageSize) => pageSize.replace(/^\*/, ""))
+}
+
+// Paper sizes the printer can produce, given its supported page sizes
+export const getSupportedPaperSizes = async (
+  printer: string
+): Promise<PaperSize[]> => {
+  const pageSizes = await getPageSizes(printer)
+  const supportsCustomPageSize = pageSizes.includes("Custom.WIDTHxHEIGHT")
+  return (Object.keys(paperSizeMedia) as PaperSize[]).filter(
+    (paperSize) =>
+      supportsCustomPageSize ||
+      pageSizes.includes(paperSizeMedia[paperSize].named)
+  )
 }
 
 /**
@@ -65,11 +109,10 @@ export const getPrinterPageSizes = async (printer: string): Promise<string> => {
 export const print = async (
   printer: string,
   data: string,
-  copies: number
+  copies: number,
+  paperSize: PaperSize = "letter",
+  heavyweight = false
 ): Promise<string> => {
-  const pageSizes = await getPrinterPageSizes(printer)
-  const printersSupportsCustomPageSize =
-    pageSizes.indexOf("Custom.WIDTHxHEIGHT") !== -1
   const execaArguments: string[] = [
     "-d",
     printer,
@@ -78,21 +121,24 @@ export const print = async (
     "-o",
     "Duplex=None",
     "-o",
-    "MediaType=stationery-heavyweight",
-    "-o",
     "Quality=High",
-    "-o",
-    "fit-to-page",
   ]
-  if (printer === "Brother_HL_L2460DW") {
-    // Handle recommended printer
-    execaArguments.push(...["-o", "media=Custom.102x152mm"])
-  } else if (printersSupportsCustomPageSize === true) {
-    // Handle printers that support custom page size
-    execaArguments.push(...["-o", "media=Custom.4x6in"])
+  // Prefer the named page size, fall back to a custom size, else fail.
+  // Print time gets a generous timeout: the user has already committed,
+  // and a USB printer waking from sleep can take several seconds to
+  // answer — the modal’s short default would misreport it as failed
+  const pageSizes = await getPageSizes(printer, 15000)
+  const { named, custom } = paperSizeMedia[paperSize]
+  if (pageSizes.includes(named)) {
+    execaArguments.push(...["-o", `media=${named}`])
+  } else if (pageSizes.includes("Custom.WIDTHxHEIGHT")) {
+    execaArguments.push(...["-o", `media=${custom}`])
   } else {
-    // Default to A6 page size
-    execaArguments.push(...["-o", "media=A6"])
+    throw new Error(`Printer does not support ${named} or custom page sizes`)
+  }
+  if (heavyweight) {
+    // Heavy / synthetic stock (cardstock, TerraSlate, index cards)
+    execaArguments.push(...["-o", "MediaType=stationery-heavyweight"])
   }
   const { stdout } = await spawn("lp", execaArguments, {
     input: Buffer.from(data, "base64"),
