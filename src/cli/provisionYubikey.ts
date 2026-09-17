@@ -161,8 +161,8 @@ export const provisionYubikeyAction = async (options: {
       // would strand a provisioned slot whose secret was never displayed
       await confirmYes(
         bold(
-          "The generated secret will be displayed only once and cannot be recovered from the YubiKey.\n" +
-            "Please be ready to back it up — a backup is the only way to recover from a lost or broken YubiKey, so it must not depend on this YubiKey."
+          "The generated secret is displayed once and cannot be read back from the YubiKey.\n" +
+            "Use a blockset or block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on this secret is unrecoverable if the YubiKey is lost or broken."
         ) + "\nDo you wish to continue (yes or no)? ",
         "Provisioning with a generated secret requires interactive confirmation"
       )
