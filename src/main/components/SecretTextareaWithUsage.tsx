@@ -74,7 +74,7 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
   const theme = useMantineTheme()
   const textRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const prevousSelectionRef = useRef<SelectionWithElement>(null)
+  const previousSelectionRef = useRef<SelectionWithElement>(null)
   const [popoverOpened, setPopoverOpened] = useState(false)
   const [currentSelection, setCurrentSelection] =
     useState<SelectionWithElement>(() => captureSelection())
@@ -163,10 +163,10 @@ const SecretTextareaWithUsage: FunctionComponent<SecretTextareaProps> = (
     if (document.activeElement === textareaRef.current) {
       const newSelection = captureSelection()
       if (
-        prevousSelectionRef.current?.start !== newSelection.start ||
-        prevousSelectionRef.current?.end !== newSelection.end
+        previousSelectionRef.current?.start !== newSelection.start ||
+        previousSelectionRef.current?.end !== newSelection.end
       ) {
-        prevousSelectionRef.current = newSelection
+        previousSelectionRef.current = newSelection
         setCurrentSelection(newSelection)
       }
     }
