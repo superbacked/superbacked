@@ -1,7 +1,7 @@
 #! /bin/sh
 # Used to create Superbacked OS images using macOS
 
-set -e
+set -o errexit
 set -o pipefail
 
 bold=$(tput bold)
@@ -42,25 +42,5 @@ if [ "${answer}" = "y" ]; then
 else
   exit 0
 fi
-
-printf "%s\n" "Starting Colima…"
-
-colima start \
-  --profile superbacked \
-  --cpu 2 \
-  --disk 20 \
-  --memory 4
-
-printf "%s\n" "Optimizing image…"
-
-docker run \
-  --interactive \
-  --privileged \
-  --rm \
-  --tty \
-  --volume ${directory}/superbacked-os:/superbacked-os \
-  superbacked-os-docker:24.04 \
-  /root/optimize-image.sh \
-  ${name}.img
 
 printf "%s\n" "Done"

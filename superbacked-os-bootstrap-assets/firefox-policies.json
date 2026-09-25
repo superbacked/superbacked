@@ -1,0 +1,173 @@
+{
+  "policies": {
+    "AIControls": {
+      "Default": {
+        "Value": "blocked",
+        "Locked": true
+      }
+    },
+    "AppAutoUpdate": false,
+    "AutofillAddressEnabled": false,
+    "AutofillCreditCardEnabled": false,
+    "BrowserDataBackup": {
+      "AllowBackup": false,
+      "AllowRestore": false
+    },
+    "CaptivePortal": false,
+    "DisableAppUpdate": true,
+    "DisableFirefoxAccounts": true,
+    "DisableFirefoxStudies": true,
+    "DisablePocket": true,
+    "DisableTelemetry": true,
+    "DNSOverHTTPS": {
+      "Enabled": true,
+      "Fallback": false,
+      "ProviderURL": "https://dns.quad9.net/dns-query",
+      "Locked": true
+    },
+    "DontCheckDefaultBrowser": true,
+    "DownloadDirectory": "/home/browser/Downloads",
+    "EnableTrackingProtection": {
+      "Category": "strict",
+      "Value": true,
+      "Locked": true
+    },
+    "FirefoxHome": {
+      "Highlights": false,
+      "Pocket": false,
+      "Search": true,
+      "SponsoredPocket": false,
+      "SponsoredTopSites": false,
+      "TopSites": false,
+      "Weather": false,
+      "Locked": true
+    },
+    "FirefoxSuggest": {
+      "ImproveSuggest": false,
+      "SponsoredSuggestions": false,
+      "WebSuggestions": false,
+      "Locked": true
+    },
+    "HttpsOnlyMode": "force_enabled",
+    "OfferToSaveLogins": false,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "PasswordManagerEnabled": false,
+    "Permissions": {
+      "Camera": {
+        "BlockNewRequests": true,
+        "Locked": true
+      },
+      "Microphone": {
+        "BlockNewRequests": true,
+        "Locked": true
+      }
+    },
+    "Preferences": {
+      "browser.ml.enable": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.newtabpage.activity-stream.widgets.enabled": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.theme.content-theme": {
+        "Status": "locked",
+        "Value": 0
+      },
+      "browser.theme.toolbar-theme": {
+        "Status": "locked",
+        "Value": 0
+      },
+      "browser.urlbar.quickactions.enabled": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.urlbar.quicksuggest.enabled": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.urlbar.showSearchSuggestionsFirst": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.urlbar.suggest.engines": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.urlbar.suggest.quickactions": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.urlbar.suggest.topsites": {
+        "Status": "locked",
+        "Value": false
+      },
+      "browser.urlbar.suggest.trending": {
+        "Status": "locked",
+        "Value": false
+      },
+      "layout.css.prefers-color-scheme.content-override": {
+        "Status": "locked",
+        "Value": 0
+      },
+      "media.peerconnection.enabled": {
+        "Status": "locked",
+        "Value": false
+      },
+      "network.trr.bootstrapAddr": {
+        "Status": "locked",
+        "Value": "9.9.9.9"
+      },
+      "signon.autofillForms": {
+        "Status": "locked",
+        "Value": false
+      },
+      "signon.firefoxRelay.feature": {
+        "Status": "locked",
+        "Value": "disabled"
+      },
+      "signon.generation.enabled": {
+        "Status": "locked",
+        "Value": false
+      },
+      "widget.use-xdg-desktop-portal.file-picker": {
+        "Status": "locked",
+        "Value": 0
+      },
+      "widget.use-xdg-desktop-portal.location": {
+        "Status": "locked",
+        "Value": 0
+      },
+      "widget.use-xdg-desktop-portal.mime-handler": {
+        "Status": "locked",
+        "Value": 0
+      },
+      "widget.use-xdg-desktop-portal.open-uri": {
+        "Status": "locked",
+        "Value": 0
+      },
+      "widget.use-xdg-desktop-portal.settings": {
+        "Status": "locked",
+        "Value": 0
+      }
+    },
+    "PrivateBrowsingModeAvailability": 2,
+    "PromptForDownloadLocation": false,
+    "SearchEngines": {
+      "Default": "DuckDuckGo"
+    },
+    "SearchSuggestEnabled": false,
+    "SkipTermsOfUse": true,
+    "UserMessaging": {
+      "ExtensionRecommendations": false,
+      "FeatureRecommendations": false,
+      "FirefoxLabs": false,
+      "MoreFromMozilla": false,
+      "SkipOnboarding": true,
+      "UrlbarInterventions": false,
+      "Locked": true
+    }
+  }
+}

@@ -1,0 +1,179 @@
+# Browser launch stays confined from the desktop hand-off through sudo
+# and waypipe. No transition falls back to unconfined execution.
+abi <abi/4.0>,
+
+include <tunables/global>
+
+profile superbacked-browser /usr/local/bin/superbacked-browser {
+  include <abstractions/base>
+  include <abstractions/dri-common>
+  include <abstractions/dri-enumerate>
+  include <abstractions/fonts>
+  include <abstractions/mesa>
+  include <abstractions/nameservice>
+  include <abstractions/vulkan>
+  include <abstractions/wayland>
+
+  # The shell cannot read caller-written startup files or backup data.
+  /usr/local/bin/superbacked-browser r,
+  /{,usr/}bin/bash mr,
+  /usr/bin/{chgrp,chmod,env,grep,id,rm,seq,sleep,waypipe,zenity} mrix,
+  /usr/bin/sudo Px -> superbacked-browser-sudo,
+  @{PROC}/cmdline r,
+  owner @{PROC}/@{pid}/{fd/,mountinfo,status} r,
+  /etc/locale.alias r,
+  # Terminal launches (the documented verification path and the debug
+  # loop) print through the inherited standard error; the shell’s own
+  # probe for a controlling terminal is denied quietly to keep enforce
+  # logs clean, and desktop launches have no terminal at all.
+  deny /dev/tty rw,
+  deny owner /dev/pts/[0-9]* rw,
+
+  # Only the fixed bridge socket and the launcher’s own runtime
+  # directory, which holds the session unit’s hard link to the
+  # compositor socket (the launcher connects through that link, never
+  # through the public wayland-0 name) and fontconfig’s cache, whose
+  # lock files are linked while written.
+  /run/browser-bridge/ r,
+  owner /run/browser-bridge/waypipe.sock rw,
+  owner /run/user/[0-9]*/ r,
+  owner /run/user/[0-9]*/superbacked-browser/{,**} rwkl,
+  # Nothing here needs the session bus or dconf (portals, accessibility
+  # and the settings backend are switched off in the environment), yet
+  # GLib still probes both — denied quietly to keep enforce logs clean.
+  deny owner /run/user/[0-9]*/bus rw,
+  deny owner /run/user/[0-9]*/dconf/{,user} rw,
+  unix,
+  signal (receive) peer=superbacked-browser-sudo,
+
+  # Zenity renders the offline-mode and failure messages via Wayland.
+  /etc/gtk-{3,4}.0/{,**} r,
+  /usr/share/{glib-2.0/schemas,gtk-3.0,gtk-4.0,icons,mime,pixmaps,themes,zenity}/{,**} r,
+  /usr/share/X11/xkb/{,**} r,
+  # GLib sizes its thread pools from the CPU and NUMA topology.
+  /sys/devices/system/{cpu,node}/{,**} r,
+  owner /dev/shm/{wayland,waypipe,zenity}-* rw,
+  # fontconfig tries to chmod the system cache directory — root-owned,
+  # so DAC refuses it anyway; the deny keeps enforce logs clean.
+  deny /var/cache/fontconfig/ w,
+
+  # Override broad desktop abstraction grants. No Internet, arbitrary
+  # home files, temporary scripts or legacy X11 connections.
+  deny network inet,
+  deny network inet6,
+  deny /home/{,**} mrwklx,
+  deny /tmp/{,**} mrwklx,
+  deny /media/{,**} mrwklx,
+  deny /mnt/{,**} mrwklx,
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
+}
+
+# This named transition applies only to sudo invoked by the launcher;
+# it does not attach to administrators’ ordinary sudo commands.
+profile superbacked-browser-sudo {
+  include <abstractions/base>
+  include <abstractions/nameservice>
+
+  # sudo alone may switch identity and read its policy and PAM
+  # configuration.
+  capability audit_write,
+  capability chown,
+  capability dac_override,
+  capability fowner,
+  capability setgid,
+  capability setuid,
+  # sudo restores the command’s resource limits from PID 1’s defaults
+  # (pam_limits and its own rlimit handling).
+  capability sys_resource,
+  @{PROC}/1/limits r,
+  # sudo relays the signals it receives (a terminal’s Ctrl+C, the
+  # launcher exiting) to the helper, which runs as another user.
+  capability kill,
+  /usr/bin/sudo mr,
+  /usr/libexec/sudo/{,**} mr,
+  /usr/lib/@{multiarch}/security/{,**} mr,
+  /etc/{environment,group,login.defs,nsswitch.conf,passwd,sudo.conf,sudoers} r,
+  /etc/{pam.d,security,sudoers.d}/{,**} r,
+  /etc/sudo_logsrvd.conf r,
+  # NOPASSWD skips only authentication; pam_unix’s account stage still
+  # checks expiry in the shadow file, which root reads directly (the
+  # unix_chkpwd fallback is only for unprivileged callers).
+  /etc/shadow r,
+  # sudo probes seccomp support for its intercept feature, unused here.
+  deny @{PROC}/sys/kernel/seccomp/actions_avail r,
+  /run/sudo/{,**} rwk,
+  /var/lib/sudo/{,**} rwk,
+  /var/log/{btmp,lastlog,wtmp} rwk,
+  owner @{PROC}/@{pid}/{fd/,loginuid,sessionid,stat,status} r,
+  /proc/sys/kernel/{cap_last_cap,ngroups_max} r,
+  /etc/locale.conf r,
+  # sudo locks the terminal devices and utmp while it records the
+  # session (use_pty).
+  /dev/tty rwk,
+  owner /dev/pts/[0-9]* rw,
+  /dev/ptmx rwk,
+  /dev/pts/ptmx rw,
+  /dev/pts/ r,
+  /run/{systemd/journal/dev-log,systemd/journal/socket} rw,
+  /run/utmp rwk,
+  unix,
+  network netlink raw,
+  signal (send, receive) peer=superbacked-browser,
+  signal (send, receive) peer=firefox,
+  signal (send, receive) peer=superbacked-browser-helper,
+
+  # sudo restricts the target user; the helper checks its exact URL
+  # list.
+  /usr/local/libexec/superbacked-browser-helper Px,
+  deny network inet,
+  deny network inet6,
+  deny /home/{,**} mrwklx,
+  deny /tmp/{,**} mrwklx,
+  # Abstract sockets bypass file permissions; the X11 one is the only
+  # display path this chain must never take (Wayland-only OS).
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
+}
+
+profile superbacked-browser-helper /usr/local/libexec/superbacked-browser-helper {
+  include <abstractions/base>
+  include <abstractions/dri-common>
+  include <abstractions/dri-enumerate>
+  include <abstractions/mesa>
+  include <abstractions/nameservice>
+  include <abstractions/vulkan>
+
+  /usr/local/libexec/superbacked-browser-helper r,
+  /{,usr/}bin/bash mr,
+  /usr/bin/{env,grep,id,waypipe} mrix,
+  @{PROC}/cmdline r,
+  # Both installation paths enter the existing confined Firefox profile.
+  /usr/bin/firefox rPx -> firefox,
+  /usr/lib/firefox/firefox{,-bin} rPx -> firefox,
+  owner @{PROC}/@{pid}/{fd/,mountinfo,status} r,
+  # waypipe sizes its thread pool from the CPU and NUMA topology.
+  /sys/devices/system/{cpu,node}/{,**} r,
+  # Terminal launches: errors travel through the inherited standard
+  # error; the shell’s probe for the pseudo-terminal sudo allocated
+  # (use_pty) is denied quietly to keep enforce logs clean.
+  deny /dev/tty rw,
+  deny owner /dev/pts/[0-9]* rw,
+  /run/browser-bridge/ r,
+  /run/browser-bridge/waypipe.sock rw,
+  owner /run/user/[0-9]*/ r,
+  owner /run/user/[0-9]*/wayland-firefox{,.lock} rwk,
+  owner /dev/shm/waypipe-* rw,
+  unix,
+  signal (receive) peer=superbacked-browser-sudo,
+  signal (send, receive) peer=firefox,
+
+  # Only Firefox gains web access and access to its own home on exec.
+  deny network inet,
+  deny network inet6,
+  deny /home/{,**} mrwklx,
+  deny /tmp/{,**} mrwklx,
+  deny /media/{,**} mrwklx,
+  deny /mnt/{,**} mrwklx,
+  # Abstract sockets bypass file permissions; the X11 one is the only
+  # display path this chain must never take (Wayland-only OS).
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
+}

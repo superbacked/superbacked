@@ -2,6 +2,7 @@
   "menu": {
     "superbacked": {
       "about": "À propos de",
+      "settings": "Réglages…",
       "hide": "Masquer",
       "quit": "Quitter"
     },
@@ -23,8 +24,9 @@
       "selectAll": "Sélectionner tout"
     },
     "insert": {
+      "bip39Mnemonic": "Mnémonique BIP39",
+      "bip39Passphrase": "Phrase de passe BIP39",
       "insert": "Insertion",
-      "mnemonic": "Mnémonique BIP39",
       "passphrase": "Phrase de passe EFF",
       "scanQrCode": "Scanner le code QR"
     },
@@ -45,20 +47,35 @@
       "copyright": "Copyright",
       "allRightsReserved": "Tous droits réservés"
     },
+    "settings": {
+      "settings": "Réglages",
+      "clearClipboardAfter": "Effacer le presse-papiers après",
+      "seconds": "secondes",
+      "paranoidMode": "Activer le mode paranoïaque",
+      "paranoidModeDescription": "Les blocs et archives autonomes sont créés avec une dérivation de clé renforcée (coût 10× supérieur au standard). Leur restauration nécessite le mode paranoïaque et au moins 1 Go de mémoire libre, et prend plusieurs secondes par tentative."
+    },
+    "addSecretDisclaimerModal": {
+      "add": "Ajouter",
+      "addSecret": "Ajouter un secret",
+      "description": "Les secrets additionnels utilisent des phrases de passe distinctes et sont dissimulés dans l’espace de bloc inutilisé."
+    },
     "createStandaloneArchiveModal": {
       "createStandaloneArchive": "Créer une archive autonome",
-
       "filename": "Nom de fichier",
       "typeFilename": "Taper le nom de fichier…",
-      "createArchive": "Créer"
+      "createArchive": "Créer",
+      "restoringRequiresYubiKey": "La restauration de l’archive nécessite une YubiKey provisionnée avec le même secret défi-réponse"
     },
     "createDisclaimerModal": {
-      "standardDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
-      "standardDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets",
-      "standardWithOneDetachedArchiveDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
-      "standardWithOneDetachedArchiveDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
-      "standardWithMultipleDetachedArchivesDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
-      "standardWithMultipleDetachedArchivesDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et les archives détachées",
+      "create": "Créer",
+      "createBlock": "Créer un bloc",
+      "createBlockset": "Créer un ensemble de blocs",
+      "singleBlockDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
+      "singleBlockDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets",
+      "singleBlockWithOneDetachedArchiveDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
+      "singleBlockWithOneDetachedArchiveDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
+      "singleBlockWithMultipleDetachedArchivesDescription_one": "Le bloc et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
+      "singleBlockWithMultipleDetachedArchivesDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et les archives détachées",
       "2of3Description_one": "2 des 3 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
       "2of3Description_other": "2 des 3 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets",
       "2of3WithOneDetachedArchiveDescription_one": "2 des 3 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
@@ -76,12 +93,23 @@
       "4of7WithOneDetachedArchiveDescription_one": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et l’archive détachée",
       "4of7WithOneDetachedArchiveDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée",
       "4of7WithMultipleDetachedArchivesDescription_one": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret et les archives détachées",
-      "4of7WithMultipleDetachedArchivesDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées"
+      "4of7WithMultipleDetachedArchivesDescription_other": "4 des 7 blocs de l’ensemble de blocs et les phrases de passe sont requis pour restaurer les secrets et les archives détachées",
+      "singleBlockWithYubiKeyDescription_one": "Le bloc, la phrase de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer le secret",
+      "singleBlockWithYubiKeyDescription_other": "Le bloc, les phrases de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer les secrets",
+      "singleBlockWithOneDetachedArchiveAndYubiKeyDescription_one": "Le bloc, la phrase de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer le secret et l’archive détachée",
+      "singleBlockWithOneDetachedArchiveAndYubiKeyDescription_other": "Le bloc, les phrases de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer les secrets et l’archive détachée",
+      "singleBlockWithMultipleDetachedArchivesAndYubiKeyDescription_one": "Le bloc, la phrase de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer le secret et les archives détachées",
+      "singleBlockWithMultipleDetachedArchivesAndYubiKeyDescription_other": "Le bloc, les phrases de passe et une YubiKey provisionnée avec le même secret défi-réponse sont requis pour restaurer les secrets et les archives détachées",
+      "singleBlockWithSomeYubiKeyDescription_one": "Le bloc et les phrases de passe sont requis pour restaurer les secrets — la restauration du secret {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "singleBlockWithSomeYubiKeyDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets — la restauration des secrets {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "singleBlockWithOneDetachedArchiveAndSomeYubiKeyDescription_one": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée — la restauration du secret {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "singleBlockWithOneDetachedArchiveAndSomeYubiKeyDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et l’archive détachée — la restauration des secrets {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "singleBlockWithMultipleDetachedArchivesAndSomeYubiKeyDescription_one": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et les archives détachées — la restauration du secret {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse",
+      "singleBlockWithMultipleDetachedArchivesAndSomeYubiKeyDescription_other": "Le bloc et les phrases de passe sont requis pour restaurer les secrets et les archives détachées — la restauration des secrets {{positions}} sur {{totalCount}} nécessite également une YubiKey provisionnée avec le même secret défi-réponse"
     },
     "disclaimer": {
-      "computerProvisioningWarning": "<bold>Ne pas</bold> utiliser Superbacked sur un ordinateur qui n’est pas spécifiquement provisionné pour la gestion de secret (pas de persistance de données ou de connectivité réseau) à moins que le secret soit déjà présent sur l’ordinateur.",
-      "limitationOfLiability": "Superbacked, Inc., ainsi que ses actionnaires, employés et opérateurs, et les contributeurs et mainteneurs de son code source, ne peuvent être tenus responsables des secrets perdus ou volés.",
-      "useAtYourOwnRisk": "UTILISER À VOS PROPRES RISQUES.",
+      "superbackedOsRecommendation": "Pour les secrets à enjeux élevés, utiliser <anchor><bold>Superbacked OS</bold></anchor> — un système d’exploitation durci qui fonctionne hors ligne et ne persiste rien sur le disque.",
+      "limitationOfLiability": "Superbacked, Inc. — ainsi que ses actionnaires, employés et opérateurs et les contributeurs et mainteneurs du code source de cette application — ne peut être tenue responsable des secrets perdus ou volés. <bold>UTILISER À VOS PROPRES RISQUES.</bold>",
       "agree": "J’accepte les termes ci-dessus et les risques sous-jacents",
       "useSuperbacked": "Utiliser Superbacked"
     },
@@ -90,8 +118,9 @@
     },
     "featureDescriptionModal": {
       "learnMore": "En savoir plus",
-      "detachedArchiveDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les blocs et sont restaurées à l’aide de blocs et de phrases de passe fournissant une authentification multi-facteurs.",
-      "standaloneArchiveDescription": "Les archives autonomes chiffrent les fichiers et dossiers à l’aide de phrases de passe uniquement et sont restaurées sans blocs fournissant une authentification à facteur unique."
+      "detachedArchiveBlockDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les blocs et sont restaurées à l’aide de blocs, de phrases de passe et optionnellement d’une YubiKey.",
+      "detachedArchiveBlocksetDescription": "Les archives détachées chiffrent les fichiers et dossiers à l’aide de clés maîtresses intégrées dans les ensembles de blocs et sont restaurées à l’aide d’un seuil de blocs et de phrases de passe.",
+      "standaloneArchiveDescription": "Les archives autonomes chiffrent les fichiers et dossiers à l’aide de phrases de passe et optionnellement d’une YubiKey et sont restaurées sans blocs."
     },
     "fileManager": {
       "addToBlock": "Ajouter au bloc",
@@ -105,43 +134,54 @@
       "couldNotHandleDroppedFiles": "Impossible de traiter les fichiers déposés",
       "couldNotCreateStandaloneArchive": "Impossible de créer l’archive autonome",
       "couldNotRestoreStandaloneArchive": "Impossible de restaurer l’archive autonome",
+      "archiveRequiresNewerVersion": "L’archive nécessite une version plus récente de Superbacked",
+      "wrongPassphraseOrCorruptedArchive": "Phrase de passe erronée ou archive corrompue",
+      "wrongPassphraseYubiKeyOrCorruptedArchive": "Phrase de passe erronée, mauvaise YubiKey ou mauvais slot, ou archive corrompue",
       "standaloneArchiveCreated": "Archive autonome créée",
       "standaloneArchiveRestored": "Archive autonome restaurée"
-    },
-    "hiddenSecretDisclaimerModal": {
-      "description": "Les secrets cachés utilisent des phrases de passe distinctes et sont dissimulés dans l’espace de bloc inutilisé."
     },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Force de la phrase de passe",
       "estimatedAttackTime": "Temps estimé d’attaque",
+      "entropy": "{{bits, number}} bits",
+      "entropyEstimate": "~{{bits, number}} bits",
+      "attackTimeScenarioMillion": "<bold>{{slow}}</bold> avec un budget d’attaque d’un million de dollars",
+      "attackTimeScenarioBillion": "<bold>{{fast}}</bold> avec un budget d’attaque d’un milliard de dollars",
+      "attackTimeScenarios": "<bold>{{slow}}</bold> avec un budget d’attaque d’un million de dollars ou <bold>{{fast}}</bold> avec un budget d’attaque d’un milliard de dollars",
       "zxcvbn": {
         "ltSecond": "moins d’une seconde",
-        "second": "{{base}} seconde",
-        "seconds": "{{base}} secondes",
-        "minute": "{{base}} minute",
-        "minutes": "{{base}} minutes",
-        "hour": "{{base}} heure",
-        "hours": "{{base}} heures",
-        "day": "{{base}} jour",
-        "days": "{{base}} jours",
-        "month": "{{base}} mois",
-        "months": "{{base}} mois",
-        "year": "{{base}} année",
-        "years": "{{base}} années",
-        "centuries": "siècles"
+        "second": "{{base, number}} seconde",
+        "seconds": "{{base, number}} secondes",
+        "minute": "{{base, number}} minute",
+        "minutes": "{{base, number}} minutes",
+        "hour": "{{base, number}} heure",
+        "hours": "{{base, number}} heures",
+        "day": "{{base, number}} jour",
+        "days": "{{base, number}} jours",
+        "month": "{{base, number}} mois",
+        "months": "{{base, number}} mois",
+        "year": "{{base, number}} année",
+        "years": "{{base, number}} années",
+        "centuries": "siècles",
+        "millionYears_one": "{{count, number}} million d’années",
+        "millionYears_other": "{{count, number}} millions d’années",
+        "billionYears_one": "{{count, number}} milliard d’années",
+        "billionYears_other": "{{count, number}} milliards d’années",
+        "overTrillionYears": "plus de mille milliards d’années"
       }
     },
     "passphraseModal": {
-      "enterPassphrase": "Entrer la phrase de passe",
+      "unlockBlock": "Déverrouiller le bloc",
       "unlock": "Déverrouiller"
     },
     "restoreStandaloneArchiveModal": {
       "restoreStandaloneArchive": "Restaurer une archive autonome",
-      "restore": "Restaurer"
+      "restore": "Restaurer",
+      "yubiKeyProtected": "Protégée avec une YubiKey"
     },
     "scanner": {
       "loading": "Chargement",
-      "useCameraOrScreenCapture": "Utiliser la caméra ou la capture d’écran",
+      "useCameraOrScreenRecording": "Utiliser la caméra ou l’enregistrement de l’écran",
       "pleaseAllowCameraAccess": "Veuillez autoriser l’accès à la caméra",
       "pleaseConnectCamera": "Veuillez connecter la caméra",
       "cameraDoesNotMeetMinimumRequirementOf720p": "La caméra ne répond pas à l’exigence minimale de 720p",
@@ -153,11 +193,16 @@
       "source": "Source",
       "selectSource": "Sélectionner la source"
     },
-    "secretTextareaWithLength": {
-      "secretLength": "Longueur du secret",
-      "lengthRemaining": "Longueur restante",
-      "validBip39Mnemonic_one": "mnémonique valide",
-      "validBip39Mnemonic_other": "mnémoniques valides",
+    "secretTextareaWithUsage": {
+      "blockCapacity": "Capacité du bloc",
+      "blocksetCapacity": "Capacité de l’ensemble de blocs",
+      "spaceRemaining": "Espace restant",
+      "bip39Mnemonic_one": "mnémonique",
+      "bip39Mnemonic_other": "mnémoniques",
+      "bip39Passphrase_one": "phrase de passe",
+      "bip39Passphrase_other": "phrases de passe",
+      "challengeResponseSecret_one": "secret défi-réponse",
+      "challengeResponseSecret_other": "secrets défi-réponse",
       "totpUri_one": "URI",
       "totpUri_other": "URIs",
       "found_one": "trouvé",
@@ -185,18 +230,31 @@
     }
   },
   "common": {
+    "back": "Retour",
     "cancel": "Annuler",
-    "copied": "Copié",
+    "copiedToClipboard_one": "Copié dans le presse-papiers, effacement dans {{count}} seconde…",
+    "copiedToClipboard_other": "Copié dans le presse-papiers, effacement dans {{count}} secondes…",
     "copy": "Copier",
     "done": "Terminer",
-    "gotIt": "J’ai compris",
-    "important": "Important",
     "next": "Suivant",
     "show": "Afficher",
     "passphrase": "Phrase de passe",
     "passphraseRequired": "Phrase de passe requise",
     "passphraseTooWeak": "Phrase de passe trop faible",
-    "typePassphrase": "Taper la phrase de passe…"
+    "typePassphrase": "Taper la phrase de passe…",
+    "slot1": "Slot 1",
+    "slot2": "Slot 2",
+    "touchYubiKey": "Toucher la YubiKey…",
+    "protectWithYubiKey": "Protéger avec une YubiKey",
+    "protectedWithYubiKey": "Protégé avec une YubiKey",
+    "couldNotCommunicateWithYubiKey": "Impossible de communiquer avec la YubiKey",
+    "noYubiKeyDetected": "Aucune YubiKey détectée",
+    "multipleYubiKeysDetected": "Plusieurs YubiKey détectées — n’en garder qu’une seule connectée",
+    "yubiKeyConfigurationLocked": "Configuration YubiKey protégée par un code de verrouillage",
+    "yubiKeyOtpInterfaceDisabled": "YubiKey détectée mais interface OTP désactivée",
+    "yubiKeyOtpNotSupported": "YubiKey non compatible avec le défi-réponse OTP (séries Bio et Security Key)",
+    "yubiKeySlotNotProvisioned": "Slot YubiKey non provisionné pour le défi-réponse",
+    "yubiKeyTouchTimedOut": "YubiKey non touchée à temps"
   },
   "routes": {
     "create": {
@@ -205,7 +263,7 @@
       "secretRequired": "Secret requis",
       "secretTooLong": "Secret trop long",
       "detachedArchive": "Archive détachée",
-      "dragAndDropFileToProvisionDetachedArchive": "Glisser et déposer un fichier pour provisionner une archive détachée",
+      "dragAndDropFileToProvisionDetachedArchive": "Glisser-déposer un fichier pour provisionner une archive détachée",
       "passphraseUsed": "Phrase de passe utilisée",
       "passphraseTooSimilar": "Phrase de passe trop similaire",
       "label": "Étiquette (facultatif)",
@@ -215,17 +273,17 @@
       "selectBackupType": "Sélectionner le type de sauvegarde…",
       "backupTypeRequired": "Type de sauvegarde requis",
       "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Glisser-déposer un fichier pour créer ou restaurer une archive autonome",
-      "dragAndDropFilesToAddToDetachedArchive": "Glisser et déposer des fichiers pour ajouter à l’archive détachée",
-      "standard": "Bloc unique",
-      "standardDescription": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
+      "singleBlock": "Bloc unique",
+      "singleBlockDescription": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
       "2of3": "Ensemble de blocs (seuil 2 sur 3)",
       "2of3Description": "2 des 3 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
       "3of5": "Ensemble de blocs (seuil 3 sur 5)",
       "3of5Description": "3 des 5 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
       "4of7": "Ensemble de blocs (seuil 4 sur 7)",
       "4of7Description": "4 des 7 blocs de l’ensemble de blocs et la phrase de passe sont requis pour restaurer le secret",
-      "addHiddenSecret": "Ajouter un secret caché",
-      "removeHiddenSecret": "Supprimer le secret caché",
+      "addSecret": "Ajouter un secret",
+      "removeSecret": "Supprimer le secret",
+      "secretActions": "Actions sur les secrets",
       "createBlock": "Créer le bloc",
       "createBlockAndDetachedArchive_one": "Créer le bloc et l’archive détachée",
       "createBlockAndDetachedArchive_other": "Créer le bloc et les archives détachées",
@@ -240,11 +298,23 @@
       "detachedArchiveCreated_other": "Archives détachées créées",
       "print": "Imprimer",
       "pleaseConnectPrinter": "Veuillez connecter l’imprimante",
-      "pleaseSelectPrinter": "Veuillez sélectionner l’imprimante",
+      "printerCommunicationFailed": "Impossible de communiquer avec l’imprimante (elle sort peut-être de veille), veuillez réessayer",
+      "printerDoesNotSupportPaperSize": "Cette imprimante ne prend pas en charge le format de papier sélectionné",
       "printer": "Imprimante",
       "selectPrinter": "Sélectionner l’imprimante",
+      "selectPaper": "Sélectionner le papier",
+      "customScale": "Échelle personnalisée",
       "printingBlock": "Impression du bloc",
       "printingBlockset": "Impression de l’ensemble de blocs",
+      "paper": "Papier",
+      "paperLetter": "Letter (8,5 × 11 pouces)",
+      "paperStatement": "Statement (5,5 × 8,5 pouces)",
+      "heavyweight": "Papier épais",
+      "scale": "Échelle",
+      "determineScale": "Déterminer l’échelle",
+      "width": "Largeur",
+      "determineScalePrint": "Insérez du papier {{paper}} ordinaire dans {{printer}} et appuyez sur Imprimer.",
+      "determineScaleMeasure": "Mesurez la largeur en millimètres entre les repères de coupe horizontaux, saisissez-la et appuyez sur Terminer.",
       "save": "Enregistrer",
       "blockSaved": "Bloc enregistré",
       "blocksetSaved": "Ensemble de blocs enregistré"
@@ -253,14 +323,31 @@
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
     "restore": {
-      "scanOrDragAndDropBlock": "Scanner ou déposer le bloc",
-      "scanOrDragAndDropNextBlock": "Scanner or déposer le bloc suivant",
-      "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
-      "dragAndDropArchiveToRestore": "Glisser et déposer {{filename}} pour restaurer l’archive",
-      "restoringDetachedArchive": "Restauration de l’archive détachée",
+      "bip32RootFingerprint": "Empreinte racine BIP32",
+      "bip39Mnemonic": "Mnémonique BIP39",
+      "bip39Passphrase": "Phrase de passe BIP39",
+      "bip85Mnemonic": "Mnémonique BIP85",
+      "blockRequiresNewerVersion": "Le bloc nécessite une version plus récente de Superbacked",
       "couldNotRestoreDetachedArchive": "Impossible de restaurer l’archive détachée",
+      "couldNotUnlockBlock": "Impossible de déverrouiller le bloc",
+      "couldNotUnlockBlockYubiKey": "Impossible de déverrouiller le bloc — phrase de passe, YubiKey ou slot erroné",
+      "deriveBip85Mnemonic": "Dériver la mnémonique BIP85",
+      "detachedArchiveRequiresNewerVersion": "L’archive détachée nécessite une version plus récente de Superbacked",
       "detachedArchiveRestored": "Archive détachée restaurée",
-      "showSecret": "Afficher le secret"
+      "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
+      "index": "Index",
+      "notProvisionedOnYubiKey": "Non provisionné sur la YubiKey connectée",
+      "provisionedInSlot": "Provisionné dans le slot {{slot}}",
+      "restoringDetachedArchive": "Restauration de l’archive détachée",
+      "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
+      "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
+      "showAsQrCode": "Afficher en code QR",
+      "showSecret": "Afficher le secret",
+      "token": "Jeton",
+      "totp": "TOTP",
+      "verify": "Vérifier",
+      "words": "Mots",
+      "yubikeyChallengeResponseSecret": "Secret défi-réponse YubiKey"
     }
   }
 }

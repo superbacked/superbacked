@@ -9,8 +9,9 @@ normal=$(tput sgr0)
 
 # Parse command-line options
 build_app=""
-package_bootstrap_assets=""
 build_os=""
+clear_cache=""
+no_cache=false
 partial=false
 
 function show_help() {
@@ -18,11 +19,12 @@ function show_help() {
 Usage: package.sh [options]
 
 Options:
-  --app               Build app only
-  --bootstrap-assets  Package Superbacked OS bootstrap assets only
-  --os                Build Superbacked OS only
-  --all               Build and package everything without prompts
-  -h, --help          Show this help message
+  --app                         Build app only
+  --os                          Build Superbacked OS only
+  --all                         Build and package everything without prompts
+  --no-cache                    Build Superbacked OS without the persistent build cache
+  --clear-cache <apt|base|all>  Clear apt archives, the debug base layer or both before building Superbacked OS
+  -h, --help                    Show this help message
 
 If no options are provided, the script will prompt for each step.
 EOF
@@ -39,11 +41,6 @@ while [[ $# -gt 0 ]]; do
       partial=true
       shift
       ;;
-    --bootstrap-assets)
-      package_bootstrap_assets=true
-      partial=true
-      shift
-      ;;
     --os)
       build_os=true
       partial=true
@@ -51,8 +48,22 @@ while [[ $# -gt 0 ]]; do
       ;;
     --all)
       build_app=true
-      package_bootstrap_assets=true
       build_os=true
+      shift
+      ;;
+    --clear-cache)
+      clear_cache="${2:-}"
+      case "${clear_cache}" in
+        apt|base|all) ;;
+        *)
+          printf "%s\n" "Error: --clear-cache expects apt, base or all (got “${clear_cache}”)" >&2
+          exit 1
+          ;;
+      esac
+      shift 2
+      ;;
+    --no-cache)
+      no_cache=true
       shift
       ;;
     *)
@@ -61,6 +72,13 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Fail loudly on a misspelled build variant rather than silently
+# building a release image.
+if [ -n "${BUILD_VARIANT:-}" ] && [ "${BUILD_VARIANT}" != "debug" ]; then
+  printf "%s\n" "Error: unknown BUILD_VARIANT “${BUILD_VARIANT}” (expected debug)" >&2
+  exit 1
+fi
 
 version=$(node --eval 'console.log(require("./package.json").version)')
 
@@ -82,102 +100,21 @@ if [ "${build_app}" = true ]; then
 
   npm run lint
 
+  npm test
+
   npm run build
 
   for file in dist/*.AppImage; do
     mv "${file}" "$(echo "${file}" | sed 's/x86_64/x64/')"
   done
-fi
 
-# Prompt to package bootstrap assets if not specified
-if [ "${partial}" != true ] && [ -z "${package_bootstrap_assets}" ]; then
-  printf "${bold}%s${normal}" "Do you wish to package Superbacked OS bootstrap assets (y or n)? "
-  read -r answer
-  if [ "${answer}" = "y" ]; then
-    package_bootstrap_assets=true
-  fi
-fi
-
-if [ "${package_bootstrap_assets}" = true ]; then
-  printf "%s\n" "Packaging Superbacked OS bootstrap assets (amd64)…"
-
-  asset_folder="dist/superbacked-os-bootstrap-assets"
-
-  rm -rf "${asset_folder}"
-
-  mkdir -p "${asset_folder}/etc/apparmor.d"
-  mkdir -p "${asset_folder}/home/superbacked/.config/autostart"
-  mkdir -p "${asset_folder}/home/superbacked/.local/share/applications"
-  mkdir -p "${asset_folder}/home/superbacked/.local/superbacked"
-  mkdir -p "${asset_folder}/home/superbacked/Desktop"
-
-  cp \
-    superbacked-os-bootstrap-assets/superbacked.profile \
-    "${asset_folder}/etc/apparmor.d/superbacked.profile"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked-autostart.desktop \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.desktop"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked-autostart.sh \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.sh"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked.desktop \
-    "${asset_folder}/home/superbacked/.local/share/applications/superbacked.desktop"
-  cp \
-    "dist/superbacked-x64-${version}.AppImage" \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-  cp \
-    dist/.icon-icns/icon.icns \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.icns"
-  cp \
-    superbacked-os-bootstrap-assets/superbacked.desktop \
-    "${asset_folder}/home/superbacked/Desktop/superbacked.desktop"
-
-  chmod +x \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.desktop"
-  chmod +x \
-    "${asset_folder}/home/superbacked/.config/autostart/superbacked-autostart.sh"
-  chmod +x \
-    "${asset_folder}/home/superbacked/.local/share/applications/superbacked.desktop"
-  chmod +x \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-  chmod +x \
-    "${asset_folder}/home/superbacked/Desktop/superbacked.desktop"
-
-  tar --create \
-    --directory "${asset_folder}" \
-    --file "dist/superbacked-os-amd64-bootstrap-assets-${version}.tar.gz" \
-    --gzip \
-    .
-
-  printf "%s\n" "Packaging Superbacked OS bootstrap assets (arm64-raspi)…"
-
-  cp \
-    "dist/superbacked-arm64-${version}.AppImage" \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-
-  chmod +x \
-    "${asset_folder}/home/superbacked/.local/superbacked/superbacked.AppImage"
-
-  tar --create \
-    --directory "${asset_folder}" \
-    --file "dist/superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz" \
-    --gzip \
-    .
-
-  rm -rf "${asset_folder}"
-
-  printf "%s\n" "Preparing Superbacked OS bootstrap script (amd64)…"
-
-  sed "s|__VERSION__|${version}|g" \
-    superbacked-os-utilities/superbacked-os-amd64-bootstrap.sh \
-    > "dist/superbacked-os-amd64-bootstrap-${version}.sh"
-
-  printf "%s\n" "Preparing Superbacked OS bootstrap script (arm64-raspi)…"
-
-  sed "s|__VERSION__|${version}|g" \
-    superbacked-os-utilities/superbacked-os-arm64-raspi-bootstrap.sh \
-    > "dist/superbacked-os-arm64-raspi-bootstrap-${version}.sh"
+  # deb names its x64 artifact amd64 (the arm64 name already matches)
+  for file in dist/*.deb; do
+    renamed="$(echo "${file}" | sed 's/amd64/x64/')"
+    if [ "${file}" != "${renamed}" ]; then
+      mv "${file}" "${renamed}"
+    fi
+  done
 fi
 
 # Prompt to build OS if not specified
@@ -189,6 +126,14 @@ if [ "${partial}" != true ] && [ -z "${build_os}" ]; then
   fi
 fi
 
+# --clear-cache rides the OS build’s Colima lifecycle rather than
+# spinning the VM up on its own — declining the build above would
+# silently skip the requested clear, so fail loudly instead
+if [ -n "${clear_cache}" ] && [ "${build_os}" != true ]; then
+  echo "Error: --clear-cache requires building Superbacked OS" >&2
+  exit 1
+fi
+
 if [ "${build_os}" = true ]; then
   printf "%s\n" "Purging Superbacked OS images…"
 
@@ -196,73 +141,138 @@ if [ "${build_os}" = true ]; then
 
   printf "%s\n" "Starting Colima…"
 
+  # Memory is load-bearing: the build stacks a tmpfs overlay (apt
+  # upgrade, Firefox — every byte the overlay holds is RAM)
+  # on top of mksquashfs’ zstd-19 working set — 4 GB OOMs, and 8 GB is
+  # a thin margin: pressure shows up as Rosetta-translated subprocesses
+  # sporadically dying with empty output and nothing in dmesg — Rosetta
+  # allocation failures are silent there; retry, or bump memory if it
+  # becomes frequent. (Colima only applies a changed memory value on a
+  # fresh start: colima stop --profile superbacked first when changing
+  # it.)
+  #
+  # Colima profiles are not independent: every profile rides one shared
+  # user-v2 usernet daemon, so starting or stopping another profile can
+  # kill a running build’s network mid-bootstrap (lima-vm/lima#3020
+  # class) — avoid profile churn while a build is running.
+  #
+  # The active docker context is just as shared: starting any profile
+  # repoints it, and colima start on an already-running profile does
+  # not point it back, which would land the build in another profile’s
+  # VM (wrong CPU and memory, foreign volumes). Every docker invocation
+  # below therefore pins the superbacked profile’s socket instead of
+  # trusting the context (colima itself ignores DOCKER_HOST).
+  export DOCKER_HOST="unix://${HOME}/.colima/superbacked/docker.sock"
+
   colima start \
-    --profile superbacked \
-    --cpu 2 \
+    --cpu 4 \
     --disk 20 \
-    --memory 4
+    --memory 8 \
+    --profile superbacked \
+    --vm-type vz \
+    --vz-rosetta
 
-  printf "%s\n" "Building Superbacked OS (amd64)…"
+  printf "%s\n" "Building Superbacked OS Docker image…"
 
-  cp \
-    superbacked-os/superbacked-os-amd64-24.04.4.img \
-    dist/superbacked-os-amd64-${version}.img
+  # The container runs the baked copies of the scripts under docker/,
+  # not the repository files — rebuild every time so the baked copies
+  # can never go stale (a cache hit when nothing changed).
+  docker build \
+    --tag superbacked-os-docker:24.04 \
+    docker/
 
+  # The cache volume lives on the Colima VM disk, out of the host’s
+  # reach, so its subtrees are removed from inside a throwaway build
+  # container; all drops the volume itself. The build script recreates
+  # whatever is missing.
+  if [ -n "${clear_cache}" ]; then
+    printf "%s\n" "Clearing build cache (${clear_cache})…"
+
+    if [ "${clear_cache}" = all ]; then
+      docker volume rm --force superbacked-build-cache > /dev/null
+    else
+      docker run \
+        --rm \
+        --volume superbacked-build-cache:/cache \
+        superbacked-os-docker:24.04 \
+        rm --force --recursive "/cache/${clear_cache}"
+    fi
+  fi
+
+  printf "%s\n" "Creating live Superbacked OS image…"
+
+  # Provisioning and live conversion happen in one pass: the bootstrap
+  # runs in a chroot of the vanilla source image (read-only input,
+  # network required for the snapshot-pinned packages) and the live
+  # image is written straight to its distribution name
+  # (<product>-<arch>-<component>-<version>).
+  # BUILD_VARIANT=debug (exported on the host) builds the debug variant
+  # — app profiles log denials (complain) instead of enforcing,
+  # superbacked keeps sudo for on-device profile iteration, the
+  # squashfs uses fast zstd compression and the base bootstrap’s result
+  # is reused from the cache — the container does not inherit host
+  # environment, so it is forwarded explicitly here, then into the
+  # chroot by the build script.
+  #
+  # apt archives and indexes persist in a named volume on the Colima VM
+  # disk (surviving colima stop), so interrupted or repeated builds only
+  # download missing packages — see the /cache mounts in
+  # docker/create-superbacked-os-live-image.sh. Integrity is unaffected:
+  # apt verifies cached files against the pinned snapshot hashes. The
+  # same volume holds the debug base layer (see “base layer” there),
+  # keyed by the base bootstrap’s text, so a debug rebuild after an
+  # app or hardening change skips the package installs entirely.
+  cache_volume=(--volume superbacked-build-cache:/cache)
+  if [ "${no_cache}" = true ]; then
+    cache_volume=()
+  fi
   docker run \
+    --env BUILD_VARIANT="${BUILD_VARIANT:-}" \
     --interactive \
     --privileged \
     --rm \
     --tty \
+    "${cache_volume[@]}" \
     --volume $(pwd)/dist:/dist \
+    --volume $(pwd)/superbacked-os:/superbacked-os:ro \
+    --volume $(pwd)/superbacked-os-bootstrap-assets:/superbacked-os-bootstrap-assets:ro \
+    --volume $(pwd)/superbacked-os-utilities:/superbacked-os-utilities:ro \
     superbacked-os-docker:24.04 \
-    /root/provision-superbacked-os.sh \
-    superbacked-os-amd64-${version}.img \
-    superbacked-os-amd64-bootstrap-assets-${version}.tar.gz \
-    > /dev/null
+    /root/create-superbacked-os-live-image.sh \
+    /superbacked-os/superbacked-os-amd64-24.04.4.img \
+    /dist/superbacked-os-amd64-live-${version}.img \
+    ${version}
 
-  printf "%s\n" "Compressing Superbacked OS (amd64)…"
+  printf "%s\n" "Splitting live Superbacked OS image into parts…"
 
-  xz -1 --threads 4 dist/superbacked-os-amd64-${version}.img
-
-  cat dist/superbacked-os-amd64-${version}.img.xz | split \
-    -b 2147483647B - dist/superbacked-os-amd64-${version}.img.xz.part
+  # GitHub release assets are capped at 2 GiB — ship the raw image in
+  # parts (cat them back together before flashing).
+  cat dist/superbacked-os-amd64-live-${version}.img | split \
+    -b 2147483647B - dist/superbacked-os-amd64-live-${version}.img.part
 
   number=1
-  for file in dist/superbacked-os-amd64-${version}.img.xz.part*; do
-    mv "${file}" "dist/superbacked-os-amd64-${version}.img.xz.part${number}"
+  for file in dist/superbacked-os-amd64-live-${version}.img.part*; do
+    mv "${file}" "dist/superbacked-os-amd64-live-${version}.img.part${number}"
     number=$((number + 1))
   done
 
-  printf "%s\n" "Building Superbacked OS (arm64-raspi)…"
-
-  cp \
-    superbacked-os/superbacked-os-arm64-raspi-24.04.4.img \
-    dist/superbacked-os-arm64-raspi-${version}.img
-
-  docker run \
-    --interactive \
-    --privileged \
-    --rm \
-    --tty \
-    --volume $(pwd)/dist:/dist \
-    superbacked-os-docker:24.04 \
-    /root/provision-superbacked-os.sh \
-    superbacked-os-arm64-raspi-${version}.img \
-    superbacked-os-arm64-raspi-bootstrap-assets-${version}.tar.gz \
-    > /dev/null
-
-  printf "%s\n" "Compressing Superbacked OS (arm64-raspi)…"
-
-  xz -1 --threads 4 dist/superbacked-os-arm64-raspi-${version}.img
-
-  cat dist/superbacked-os-arm64-raspi-${version}.img.xz | split \
-    -b 2147483647B - dist/superbacked-os-arm64-raspi-${version}.img.xz.part
-
-  number=1
-  for file in dist/superbacked-os-arm64-raspi-${version}.img.xz.part*; do
-    mv "${file}" "dist/superbacked-os-arm64-raspi-${version}.img.xz.part${number}"
-    number=$((number + 1))
-  done
+  # Compression disabled while evaluating whether xz still earns its
+  # build time on the live image — the squashfs payload is already
+  # compressed, so xz mostly removes partition slack and ESP zeros.
+  # Uncomment to restore compressed, split release artifacts (and
+  # remove the raw part splitting above):
+  # printf "%s\n" "Compressing Superbacked OS…"
+  #
+  # xz -1 --threads 4 dist/superbacked-os-amd64-live-${version}.img
+  #
+  # cat dist/superbacked-os-amd64-live-${version}.img.xz | split \
+  #   -b 2147483647B - dist/superbacked-os-amd64-live-${version}.img.xz.part
+  #
+  # number=1
+  # for file in dist/superbacked-os-amd64-live-${version}.img.xz.part*; do
+  #   mv "${file}" "dist/superbacked-os-amd64-live-${version}.img.xz.part${number}"
+  #   number=$((number + 1))
+  # done
 
   printf "%s\n" "Stopping Colima…"
 

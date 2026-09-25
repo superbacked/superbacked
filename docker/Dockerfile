@@ -1,16 +1,15 @@
-# Run `docker build --tag superbacked-os-docker:24.04 .` to build image
+# Superbacked OS build container — built as superbacked-os-docker:24.04
+# by package.sh at every OS build
 
 FROM ubuntu:24.04
 
 USER root
 
 RUN apt update
-RUN apt install --yes bc parted xorriso zerofree
+RUN apt install --yes parted squashfs-tools xorriso
 
-COPY optimize-image.sh /root/optimize-image.sh
-COPY provision-ubuntu-desktop-for-raspberry-pi-image.sh /root/provision-ubuntu-desktop-for-raspberry-pi-image.sh
+COPY create-superbacked-os-live-image.sh /root/create-superbacked-os-live-image.sh
 COPY provision-ubuntu-desktop-iso.sh /root/provision-ubuntu-desktop-iso.sh
-COPY provision-superbacked-os.sh /root/provision-superbacked-os.sh
 
 ENV HOME=/root
 

@@ -1,0 +1,6 @@
+#! /bin/sh
+# Clear-on-death guard (see src/utilities/spawnGuard.ts) — blocks until the
+# pipe held by the owning process closes, then clears the clipboard the
+# wl-copy daemon would otherwise keep serving
+read -r _ || true
+exec wl-copy --clear

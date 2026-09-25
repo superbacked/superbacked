@@ -1,13 +1,14 @@
-import encodeQR from "qr"
+import encodeQR, { ErrorCorrection } from "qr"
 import { FunctionComponent, useMemo } from "react"
 
-interface QRCodeProps {
+interface QrCodeProps {
+  ecc: ErrorCorrection
   value: string
 }
 
-const QRCode: FunctionComponent<QRCodeProps> = (props) => {
+const QrCode: FunctionComponent<QrCodeProps> = (props) => {
   const { path, size } = useMemo(() => {
-    const raw = encodeQR(props.value, "raw", { ecc: "low" })
+    const raw = encodeQR(props.value, "raw", { ecc: props.ecc })
     const qrSize = raw.length
     let qrPath = ""
     for (let y = 0; y < qrSize; y++) {
@@ -18,7 +19,7 @@ const QRCode: FunctionComponent<QRCodeProps> = (props) => {
       }
     }
     return { path: qrPath, size: qrSize }
-  }, [props.value])
+  }, [props.ecc, props.value])
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} xmlns="http://www.w3.org/2000/svg">
@@ -27,4 +28,4 @@ const QRCode: FunctionComponent<QRCodeProps> = (props) => {
   )
 }
 
-export default QRCode
+export default QrCode

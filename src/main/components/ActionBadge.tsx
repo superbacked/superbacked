@@ -23,9 +23,16 @@ const ActionBadge: FunctionComponent<ActionBadgeProps> = (props) => {
   return (
     <ActionBadgeContainer>
       <Badge
-        c="dark.4"
-        color={props.color ?? "dark"}
+        color={props.color ?? "dark.7"}
         size="sm"
+        styles={{
+          label: {
+            backgroundImage: "var(--sb-gradient)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+          },
+        }}
         sx={{ overflow: "visible" }}
       >
         {props.children}

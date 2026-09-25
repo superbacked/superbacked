@@ -1,7 +1,7 @@
 #! /bin/bash
 # Used to provision Ubuntu Desktop ISO
 
-set -e
+set -o errexit
 
 if [ -z "$1" ] || [ "$1" = "--help" ]; then
   printf "%s\n" "Usage: provision-ubuntu-desktop-image.sh /path/to/ubuntu-24.04.4-desktop-amd64.iso"
@@ -28,7 +28,6 @@ docker run \
   --rm \
   --tty \
   --volume ${iso_dir}:/isos \
-  --volume $(pwd)/superbacked-os-utilities:/superbacked-os-utilities \
   --volume $(pwd)/ubuntu-desktop-utilities:/ubuntu-desktop-utilities \
   superbacked-os-docker:24.04 \
   /root/provision-ubuntu-desktop-iso.sh ${iso}

@@ -10,9 +10,10 @@ import {
 
 import { t } from "i18next"
 
-import { locales, resources } from "@/src/i18n"
-import { locale, setLocale } from "@/src/index"
-import { sendEvent } from "@/src/utilities/sendEvent"
+// Commented out with the language menu below — see src/i18n.ts.
+// import { locales, resources } from "@/src/i18n"
+// import { locale, setLocale } from "@/src/index"
+import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
 if (process.platform === "darwin") {
   systemPreferences.setUserDefault(
@@ -34,18 +35,21 @@ const enabledModes: Set<Mode> = new Set()
 export const setMenu = () => {
   const runningMacOS = process.platform === "darwin"
   const debuggingModeEnabled = app.isPackaged === false || app.inspect === true
-  const chooseLanguageSubmenu: MenuItemConstructorOptions[] = []
-  for (const chooseLanguageSubmenuLocale of locales) {
-    chooseLanguageSubmenu.push({
-      label: resources[chooseLanguageSubmenuLocale].label,
-      type: "checkbox",
-      checked: chooseLanguageSubmenuLocale === locale ? true : false,
-      async click() {
-        await setLocale(chooseLanguageSubmenuLocale)
-        setMenu()
-      },
-    })
-  }
+  // The language menu is commented out while English is the only locale —
+  // restore this block, the imports above and the menu item below to
+  // re-enable it (see src/i18n.ts for the kept example language).
+  // const chooseLanguageSubmenu: MenuItemConstructorOptions[] = []
+  // for (const chooseLanguageSubmenuLocale of locales) {
+  //   chooseLanguageSubmenu.push({
+  //     label: resources[chooseLanguageSubmenuLocale].label,
+  //     type: "checkbox",
+  //     checked: chooseLanguageSubmenuLocale === locale ? true : false,
+  //     async click() {
+  //       await setLocale(chooseLanguageSubmenuLocale)
+  //       setMenu()
+  //     },
+  //   })
+  // }
   const template: MenuItemConstructorOptions[] = [
     {
       label: app.getName(),
@@ -59,22 +63,28 @@ export const setMenu = () => {
             }
           },
         },
+        { type: "separator" },
+        // About, separator, Settings — the macOS app menu convention
+        {
+          label: t("menu.superbacked.settings"),
+          accelerator: "CommandOrControl+,",
+          async click() {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              sendEvent(focusedWindow, "menuSettings")
+            }
+          },
+        },
         { type: "separator", visible: runningMacOS },
         {
           visible: runningMacOS,
+          role: "hide",
           label: `${t("menu.superbacked.hide")} ${app.getName()}`,
-          accelerator: "Command+H",
-          click() {
-            app.hide()
-          },
         },
         { type: "separator" },
         {
+          role: "quit",
           label: `${t("menu.superbacked.quit")} ${app.getName()}`,
-          accelerator: runningMacOS ? "Command+Q" : "Ctrl+Q",
-          click() {
-            app.quit()
-          },
         },
       ],
     },
@@ -134,49 +144,37 @@ export const setMenu = () => {
     },
     {
       label: t("menu.edit.edit"),
+      // Roles route through the native responder chain (macOS
+      // performSelector), so the shortcuts work wherever focus sits —
+      // text fields, static selections, dialogs — where a custom click
+      // through webContents.getFocusedWebContents() silently missed
+      // during accelerator dispatch. Roles supply the platform-correct
+      // accelerators; translated labels override the built-in ones.
       submenu: [
         {
+          role: "undo",
           label: t("menu.edit.undo"),
-          accelerator: runningMacOS ? "Command+Z" : "Ctrl+Z",
-          click() {
-            webContents.getFocusedWebContents()?.undo()
-          },
         },
         {
+          role: "redo",
           label: t("menu.edit.redo"),
-          accelerator: runningMacOS ? "Shift+Command+Z" : "Shift+Ctrl+Z",
-          click() {
-            webContents.getFocusedWebContents()?.redo()
-          },
         },
         { type: "separator" },
         {
+          role: "cut",
           label: t("menu.edit.cut"),
-          accelerator: runningMacOS ? "Command+X" : "Ctrl+X",
-          click() {
-            webContents.getFocusedWebContents()?.cut()
-          },
         },
         {
+          role: "copy",
           label: t("menu.edit.copy"),
-          accelerator: runningMacOS ? "Command+C" : "Ctrl+C",
-          click() {
-            webContents.getFocusedWebContents()?.copy()
-          },
         },
         {
+          role: "paste",
           label: t("menu.edit.paste"),
-          accelerator: runningMacOS ? "Command+V" : "Ctrl+V",
-          click() {
-            webContents.getFocusedWebContents()?.paste()
-          },
         },
         {
+          role: "selectAll",
           label: t("menu.edit.selectAll"),
-          accelerator: runningMacOS ? "Command+A" : "Ctrl+A",
-          click() {
-            webContents.getFocusedWebContents()?.selectAll()
-          },
         },
       ],
     },
@@ -185,7 +183,7 @@ export const setMenu = () => {
       submenu: [
         {
           enabled: enabledModes.has("insert"),
-          label: t("menu.insert.mnemonic"),
+          label: t("menu.insert.bip39Mnemonic"),
           accelerator: runningMacOS ? "Shift+Command+M" : "Shift+Ctrl+M",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
@@ -196,8 +194,19 @@ export const setMenu = () => {
         },
         {
           enabled: enabledModes.has("insert"),
-          label: t("menu.insert.passphrase"),
+          label: t("menu.insert.bip39Passphrase"),
           accelerator: runningMacOS ? "Shift+Command+P" : "Shift+Ctrl+P",
+          click() {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              sendEvent(focusedWindow, "menuInsert", "password")
+            }
+          },
+        },
+        {
+          enabled: enabledModes.has("insert"),
+          label: t("menu.insert.passphrase"),
+          accelerator: runningMacOS ? "Shift+Command+E" : "Shift+Ctrl+E",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
@@ -221,11 +230,11 @@ export const setMenu = () => {
     {
       label: t("menu.view.view"),
       submenu: [
-        {
-          label: t("menu.view.chooseLanguage"),
-          submenu: chooseLanguageSubmenu,
-        },
-        { type: "separator" },
+        // {
+        //   label: t("menu.view.chooseLanguage"),
+        //   submenu: chooseLanguageSubmenu,
+        // },
+        // { type: "separator" },
         {
           enabled: enabledModes.has("select"),
           label: t("menu.view.showSelectionAsQrCode"),
@@ -302,4 +311,45 @@ export const disableModes = (modes: Mode[]) => {
   if (changed === true) {
     setMenu()
   }
+}
+
+// Right-click menu for editable fields — a subset of the Edit menu
+// (cut, copy, paste, select all) with the same roles and labels, no new
+// capability (undo/redo, Insert and the selection applets deliberately
+// stay out, and static text shows no menu — the Edit menu and its
+// shortcuts still cover copying a revealed secret). Electron ships no
+// default context menu, so without this right-click does nothing. Built
+// at popup time, so labels follow the active language and enabled
+// states follow the target through editFlags
+export const attachContextMenu = (window: BrowserWindow) => {
+  window.webContents.on("context-menu", (_event, params) => {
+    const template: MenuItemConstructorOptions[] = []
+    if (params.isEditable === true) {
+      template.push(
+        {
+          role: "cut",
+          label: t("menu.edit.cut"),
+          enabled: params.editFlags.canCut,
+        },
+        {
+          role: "copy",
+          label: t("menu.edit.copy"),
+          enabled: params.editFlags.canCopy,
+        },
+        {
+          role: "paste",
+          label: t("menu.edit.paste"),
+          enabled: params.editFlags.canPaste,
+        },
+        {
+          role: "selectAll",
+          label: t("menu.edit.selectAll"),
+          enabled: params.editFlags.canSelectAll,
+        }
+      )
+    }
+    if (template.length > 0) {
+      Menu.buildFromTemplate(template).popup({ window })
+    }
+  })
 }
