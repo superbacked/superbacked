@@ -38,7 +38,7 @@ The archive path is printed on success.
 
 Use the root `--paranoid` flag to harden key derivation (10× standard cost, requiring at least 1 GiB of memory) — a paranoid archive can only be restored with `--paranoid` (or the app’s “Enable paranoid mode” setting), and without it reports a wrong passphrase.
 
-Use `--yubikey` to protect the archive with YubiKey (see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md)) — restoring then requires `--yubikey`, or the app’s “Protected with YubiKey” switch, and a connected YubiKey provisioned with the same challenge-response secret.
+Use `--yubikey` to protect the archive with YubiKey (see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md)) — restoring then requires `--yubikey` (or the app’s “Protected with YubiKey” switch) and a connected YubiKey provisioned with the same challenge-response secret.
 
 Use `--force` to overwrite an existing archive.
 

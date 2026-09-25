@@ -17,7 +17,7 @@ The implementation-is-ground-truth rule, shared vocabulary and typography lint r
 ## Guide anatomy
 
 - One directory per guide, content in `README.md`, images in `assets/`.
-- HTML comment frontmatter: `Title`, `Description`, `Keywords` (optional, comma-separated, lowercase, searchable only — broadest context first: platform such as `macos`, `linux` or `superbacked-os`, then surface such as `app` or `cli`, then specifics such as `yubikey`; every command-line guide carries `cli`), `Publication date` (ISO 8601), `Category` (optional index category label — `Superbacked app`, `Superbacked OS`, `Command-line interface` or `Releases`; the website orders categories), `Pinned` (rank within the category, or empty).
+- HTML comment frontmatter: `Title`, `Description`, `Keywords` (optional, comma-separated, lowercase, searchable only — broadest context first: platform such as `macos`, `linux` or `superbacked-os`, then surface such as `app` or `cli`, then specifics such as `yubikey`; every command-line guide carries `cli`), `Publication date` (ISO 8601), `Category` (optional index category label — `Superbacked app`, `Superbacked OS`, `Command-line interface` or `Releases`; the website orders categories), `Pinned` (rank within the category or empty).
 - Sections: `## Overview`, then `## Setup guide` / `## Usage guide` (or a single `## Guide`), with `### Step N: …` headings — `(optional)` or `(if applicable)` qualifiers in the heading.
 - Warnings are `> Heads-up:` blockquotes, placed immediately before the step or command they qualify.
 
