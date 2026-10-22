@@ -78,6 +78,12 @@ const App = () => {
           dark: {
             "--mantine-color-body": "var(--mantine-color-dark-9)",
             "--mantine-color-dark-filled-hover": "var(--mantine-color-dark-8)",
+            // Primary text is set here, never as a color override on Text or
+            // Title in theme.components — Highlight wraps content in a nested
+            // Text whose override would clobber c="dimmed" on the parent.
+            // Overrides that should match body text reference
+            // var(--mantine-color-text); only gradient definitions and
+            // deliberate accents reference the gradient stops directly.
             "--mantine-color-text": "var(--mantine-color-gradient-0)",
           },
           light: {},

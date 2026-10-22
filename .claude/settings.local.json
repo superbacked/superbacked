@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "/home/claude/superbacked-op",
+      "/home/claude/superbacked-website"
+    ]
+  }
+}

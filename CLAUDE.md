@@ -1,20 +1,15 @@
 # Claude Code instructions
 
-Read and apply all instructions in `.github/copilot-instructions.md` before starting any task.
-
-## Skills
-
-This project has skills that capture detailed conventions. Use them:
-
-- `/guides-style` — guide anatomy, console transcripts, placeholders and versions, copy, shared setup boilerplate
-- `/superbacked-os-development-style` — Superbacked OS build conventions: shell house style, file-purpose boundaries, version pinning, AppArmor, user-facing copy
-- `/technical-documentation-style` — technical documentation anatomy, frozen-construction rule, source pointers, vocabulary, prose mechanics
-
 ## Environment boundaries
 
 - Edit files using Edit/Write tools so changes surface as reviewable diffs — never rewrite files via sed, node or perl scripts
-- Never run builds, tests, lint or packaging in this container — `npm test` fails and ESLint hangs here (ask developer to run them on host and report output); `npm run typecheck` works and is the in-container verification
-- Ask before invoking node, npm, perl or python3
+- Verify changes using `npm run format:check`, `npm run typecheck` and `npm run lint`, in that order (each layer assumes the previous one passes — unparseable code fails everything, type errors make type-aware lint rules noisy) — never `npm run format`, which rewrites unrelated drift across the repo
+- Run all three against the whole repo (each finishes in seconds) — report findings in files you changed as yours to fix and pre-existing findings elsewhere separately, never fold unrelated fixes into the change; `npm run lint -- <paths>` is fine while iterating on a few files
+- Before reporting done, re-read the sections of this file that govern the files touched and state in the final message which rules were checked and any deliberate deviation — self-assessment is a reporting obligation, not a memory
+- `npm run lint` needs the Linux resolver binding, which host installs do not ship — when lint fails with “Cannot find native binding”, ask developer to run `node node_modules/unrs-resolver/postinstall.js` in this container (fetches the binding into `node_modules/@unrs/`, needed again after every host reinstall) and never run it or download the binding yourself
+- Never run `npm install`, `npm rebuild`, `npm update` or `npx` in this container — `node_modules` is host-owned and npm runs with scripts ignored here
+- Never run tests, builds or packaging in this container — `npm test` is slow on container resources, builds and packaging need the Electron binary and Colima (ask developer to run them on host and report output)
+- Ask before invoking node, npm, perl or python3 for anything beyond verification
 - `chmod +x` shell scripts after creating or editing them
 
 ## Core rules
@@ -23,3 +18,36 @@ This project has skills that capture detailed conventions. Use them:
 - Mirror every `src/locales/en.json` change in `fr.json` (same keys, translated) in the same pass
 - Describe UX and interaction changes and get approval before implementing — mechanical fixes can proceed
 - Small visual glitches are product-quality issues, not “just cosmetic”
+
+## Skills
+
+- Editing `docs/guides/`: use `/guides`
+- Editing `docs/technical-documentation/`: use `/technical-documentation`
+
+## Language
+
+- Avoid articles such as “a” or “the” when writing in English and avoid using commas before conjunctions such as “and” unless articles are necessary for clarity or readability but always include them for other languages
+- Use em dash (—) when separating clauses or when providing explanatory information
+- Use sentence case for headings, list labels and titles
+- Use typographically correct curly apostrophe (’) for possessions and curly quotes (“”) for quoted words or sentences
+- Use typographically correct ellipsis (…) for omissions and trailing thoughts
+
+## JavaScript and TypeScript
+
+- Avoid object property shorthand and prefer explicit `key: value` syntax (use `{ recoveryAllowedOn: recoveryAllowedOn }` instead of `{ recoveryAllowedOn }`)
+- Avoid using `!` operator for negation and prefer explicit comparisons (use `value === null` instead of `!value`, `value !== null` instead of `value`, `booleanValue === false` instead of `!booleanValue`, `booleanValue === true` instead of `booleanValue`)
+- Sort component props alphabetically
+- Sort src/locales components, handlers and common child translation keys alphabetically
+- Sort src/locales translation keys in order they appear in components
+- Use `@src` imports rather than relative imports
+- Use `import` over `import type` for all imports
+- When variable type is null or another type and defaults to null, use type `null | AnotherType` (example: `let session: null | http2.ClientHttp2Session = null`)
+
+## Bash and shell scripts
+
+- Prefer single-line commands when line length doesn’t significantly exceed 80 characters
+- Use `${variable}` syntax when variable is concatenated with other characters (example: `${port}:127.0.0.1`)
+- Use `${variable}` syntax when variable is enclosed in quotes
+- Use and sort long-form flags or options for utilities when applicable
+- Operator scripts (run by hand) accept `--help` only (no `-h`), checked before any other argument handling, print usage starting with `Usage: <script> …` (mirroring the contract header’s `Usage:` line) to stdout and exit 0; a missing required argument prints `Error: <name> is required` to stderr and exits 1 without printing usage; an unknown option prints `Error: Unknown option: <option>` to stderr and exits 1; error paths never exit 0
+- Internal scripts (invoked only by another script or container) have no `--help` — their contract header ending with a literal `Usage:` line is the documentation — and validate arguments using same error shape as operator scripts
