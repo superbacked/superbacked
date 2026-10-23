@@ -39,7 +39,7 @@ export const decrypt = async (
 ): Promise<Buffer> => {
   const key = await kdf(passphrase, salt.toString("base64"))
   let headerStart = 0
-  let header: string | null = null
+  let header: null | string = null
   while (headerStart < headers.length) {
     for (let headerEnd = headers.length; headerEnd > headerStart; headerEnd--) {
       try {

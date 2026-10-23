@@ -17,7 +17,7 @@ export type VerifyYubiKeyChallengeResponseSecretResult =
   | { success: false; error: string; yubikeyErrorCode?: YubiKeyErrorCode }
   // slot null — connected YubiKey has no slot provisioned with the
   // secret (unprovisioned slots included)
-  | { success: true; slot: Slot | null }
+  | { success: true; slot: null | Slot }
 
 /**
  * Verify which slot of the connected YubiKey is provisioned with a

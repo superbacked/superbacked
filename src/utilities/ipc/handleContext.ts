@@ -14,17 +14,17 @@ export const runWithHandleContext = <T>(
   return storage.run(context, fn)
 }
 
-export const getSenderWindow = (): BrowserWindow | null => {
+export const getSenderWindow = (): null | BrowserWindow => {
   const context = storage.getStore()
-  if (!context) {
+  if (context === undefined) {
     return null
   }
   return BrowserWindow.fromWebContents(context.event.sender)
 }
 
-export const getSenderWebContents = (): WebContents | null => {
+export const getSenderWebContents = (): null | WebContents => {
   const context = storage.getStore()
-  if (!context) {
+  if (context === undefined) {
     return null
   }
   return context.event.sender
