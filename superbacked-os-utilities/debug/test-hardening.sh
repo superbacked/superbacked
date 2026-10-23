@@ -20,6 +20,11 @@
 
 set -o pipefail
 
+if [ "$1" = "--help" ]; then
+  printf "%s\n" "Usage: bash test-hardening.sh"
+  exit 0
+fi
+
 if [ $# -gt 0 ]; then
   printf "%s\n" "Error: this script takes no options — there is one way to run it, in full" >&2
   exit 1

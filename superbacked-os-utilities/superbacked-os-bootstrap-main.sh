@@ -30,7 +30,7 @@ set -o pipefail
 version="${1}"
 
 if [ -z "${version}" ]; then
-  printf "%s\n" "Error: usage: superbacked-os-bootstrap-main.sh version" >&2
+  printf "%s\n" "Error: version is required" >&2
   exit 1
 fi
 

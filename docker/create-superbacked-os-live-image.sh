@@ -319,7 +319,7 @@ if [ -d /cache ]; then
   # neither wiped by image hygiene nor shipped in the image.
   # Deliberately no apt autoclean: its downloadability judgement
   # inside the chroot deletes the whole cache rather than just
-  # superseded snapshots — package.sh --clear-cache is the growth
+  # superseded snapshots — package.sh os --clear-cache is the growth
   # valve instead.
   rm --force /mnt/root/etc/apt/apt.conf.d/99superbacked-apt-cache
   umount /mnt/root/var/lib/apt/lists
@@ -372,6 +372,9 @@ printf "%s\n" "Purging source image artifacts…"
 # installer machine and the build container — purged for privacy; the
 # rest is dead weight.
 # Everything regenerates on demand at boot, in the RAM overlay.
+# This purge is a gate on the artifact, not an OS-authoring step: it
+# stays immediately before mksquashfs so nothing can land after it, and
+# never moves into a bootstrap.
 
 # Provisioning scaffolding: the service-start guard, the apt interrupt
 # setting, the update-grub diversion, the bootstrap script copies,

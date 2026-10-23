@@ -14,6 +14,30 @@
 set -o errexit
 set -o pipefail
 
+if [ "$1" = "--help" ]; then
+  printf "%s\n" \
+    "Usage: bash summarize-apparmor-log.sh denials.txt" \
+    "       bash capture-apparmor-log.sh superbacked | bash summarize-apparmor-log.sh"
+  exit 0
+fi
+
+if [ $# -gt 1 ]; then
+  printf "%s\n" "Error: Unknown option: ${2}" >&2
+  exit 1
+fi
+
+if [ -n "${1:-}" ] && [ ! -f "${1}" ]; then
+  printf "%s\n" "Error: ${1} not found" >&2
+  exit 1
+fi
+
+if [ -z "${1:-}" ] && [ -t 0 ]; then
+  printf "%s\n" "Error: capture is required — pass a file or pipe one in" >&2
+  exit 1
+fi
+
+input="${1:-/dev/stdin}"
+
 awk '
   # Returns key="value" (or key=value for unquoted values like
   # addr=none) from the whole line, or nothing — the leading space
@@ -40,4 +64,4 @@ awk '
     }
     print line
   }
-' "${@}" | sort | uniq -c | sort -rn
+' "${input}" | sort | uniq -c | sort -rn

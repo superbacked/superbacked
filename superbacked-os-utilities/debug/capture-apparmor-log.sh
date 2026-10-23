@@ -14,6 +14,14 @@
 #
 # Usage: bash capture-apparmor-log.sh [profile] > denials.txt
 
+set -o errexit
+set -o pipefail
+
+if [ "$1" = "--help" ]; then
+  printf "%s\n" "Usage: bash capture-apparmor-log.sh [profile] > denials.txt"
+  exit 0
+fi
+
 profile="${1:-}"
 
 if [ "$(journalctl -b -k | grep -c "callbacks suppressed")" -gt 0 ]; then

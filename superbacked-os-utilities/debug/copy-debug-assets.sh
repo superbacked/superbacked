@@ -15,10 +15,20 @@
 set -o errexit
 set -o pipefail
 
-volume="${1}"
+if [ "$1" = "--help" ]; then
+  printf "%s\n" "Usage: bash copy-debug-assets.sh \"/Volumes/SAMSUNG DUO\""
+  exit 0
+fi
 
-if [ -z "${volume}" ] || [ ! -d "${volume}" ]; then
-  printf "%s\n" "Error: usage: copy-debug-assets.sh /Volumes/<drive>" >&2
+volume="${1:-}"
+
+if [ -z "${volume}" ]; then
+  printf "%s\n" "Error: volume is required" >&2
+  exit 1
+fi
+
+if [ ! -d "${volume}" ]; then
+  printf "%s\n" "Error: ${volume} not found" >&2
   exit 1
 fi
 

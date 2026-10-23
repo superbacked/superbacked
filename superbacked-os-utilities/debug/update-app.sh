@@ -14,10 +14,15 @@
 set -o errexit
 set -o pipefail
 
+if [ "$1" = "--help" ]; then
+  printf "%s\n" "Usage: bash update-app.sh /path/to/superbacked.deb"
+  exit 0
+fi
+
 deb="${1:-}"
 
 if [ -z "${deb}" ]; then
-  printf "%s\n" "Error: pass the deb to install as first argument" >&2
+  printf "%s\n" "Error: deb is required" >&2
   exit 1
 fi
 

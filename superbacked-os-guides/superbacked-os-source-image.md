@@ -1,6 +1,6 @@
 # Superbacked OS source image guide
 
-> Heads-up: the source image is a **vanilla** Ubuntu Desktop install — all Superbacked provisioning happens later, in a chroot of this image at packaging time (`package.sh --os`, which needs network for the snapshot-pinned packages). The installed system is never logged into or booted beyond the installer, so the capture stays deterministic and free of session state.
+> Heads-up: the source image is a **vanilla** Ubuntu Desktop install — all Superbacked provisioning happens later, in a chroot of this image at packaging time (`package.sh os`, which needs network for the snapshot-pinned packages). The installed system is never logged into or booted beyond the installer, so the capture stays deterministic and free of session state.
 
 ### Step 1 (Mac): download `ubuntu-24.04.4-desktop-amd64.iso`, `SHA256SUMS` and `SHA256SUMS.gpg` from [Ubuntu 24.04 LTS releases](https://releases.ubuntu.com/24.04/) to same folder
 

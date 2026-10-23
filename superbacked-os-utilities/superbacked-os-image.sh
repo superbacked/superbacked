@@ -7,9 +7,14 @@ set -o pipefail
 bold=$(tput bold)
 normal=$(tput sgr0)
 
-if [ -z "$1" ] || [ "$1" = "--help" ]; then
+if [ "$1" = "--help" ]; then
   printf "%s\n" "Usage: superbacked-os-image.sh name"
   exit 0
+fi
+
+if [ -z "$1" ]; then
+  printf "%s\n" "Error: name is required" >&2
+  exit 1
 fi
 
 directory=$(pwd)

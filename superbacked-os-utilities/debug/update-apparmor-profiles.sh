@@ -24,9 +24,17 @@ src=""
 
 while [ $# -gt 0 ]; do
   case "${1}" in
+    --help)
+      printf "%s\n" "Usage: bash update-apparmor-profiles.sh [--enforce] [/path/to/apparmor]"
+      exit 0
+      ;;
     --enforce)
       mode="enforce"
       shift
+      ;;
+    -*)
+      printf "%s\n" "Error: Unknown option: ${1}" >&2
+      exit 1
       ;;
     *)
       src="${1}"

@@ -4,53 +4,52 @@
 set -o errexit
 set -o pipefail
 
-bold=$(tput bold)
-normal=$(tput sgr0)
-
-# Parse command-line options
-build_app=""
-build_os=""
-clear_cache=""
-no_cache=false
-partial=false
-
 function show_help() {
   cat << EOF
-Usage: package.sh [options]
+Usage: package.sh [command] [options]
 
-Options:
-  --app                         Build app only
-  --os                          Build Superbacked OS only
-  --all                         Build and package everything without prompts
-  --no-cache                    Build Superbacked OS without the persistent build cache
-  --clear-cache <apt|base|all>  Clear apt archives, the debug base layer or both before building Superbacked OS
-  -h, --help                    Show this help message
+Commands:
+  app                           Build app only
+  os                            Build Superbacked OS only
 
-If no options are provided, the script will prompt for each step.
+Options (os only):
+  --no-cache                    Build without the persistent build cache
+  --clear-cache <apt|base|all>  Clear apt archives, the debug base layer or both before building
+
+Without a command, package.sh builds app and Superbacked OS, then signs
+release — the production run.
 EOF
   exit 0
 }
 
+if [ "${1:-}" = "--help" ]; then
+  show_help
+fi
+
+# Parse command-line arguments
+command=""
+clear_cache=""
+no_cache=false
+
+case "${1:-}" in
+  app|os)
+    command="${1}"
+    shift
+    ;;
+  ""|--*) ;;
+  *)
+    echo "Error: Unknown command: ${1}" >&2
+    exit 1
+    ;;
+esac
+
 while [[ $# -gt 0 ]]; do
+  # Only os takes options — app and the production run reject them all
+  if [ "${command}" != "os" ]; then
+    echo "Error: Unknown option: ${1}" >&2
+    exit 1
+  fi
   case "${1}" in
-    -h|--help)
-      show_help
-      ;;
-    --app)
-      build_app=true
-      partial=true
-      shift
-      ;;
-    --os)
-      build_os=true
-      partial=true
-      shift
-      ;;
-    --all)
-      build_app=true
-      build_os=true
-      shift
-      ;;
     --clear-cache)
       clear_cache="${2:-}"
       case "${clear_cache}" in
@@ -80,16 +79,36 @@ if [ -n "${BUILD_VARIANT:-}" ] && [ "${BUILD_VARIANT}" != "debug" ]; then
   exit 1
 fi
 
-version=$(node --eval 'console.log(require("./package.json").version)')
+build_app=false
+build_os=false
+sign_release=false
 
-# Prompt to build app if not specified
-if [ "${partial}" != true ] && [ -z "${build_app}" ]; then
-  printf "${bold}%s${normal}" "Do you wish to build app (y or n)? "
-  read -r answer
-  if [ "${answer}" = "y" ]; then
+case "${command}" in
+  app)
     build_app=true
-  fi
-fi
+    ;;
+  os)
+    build_os=true
+    ;;
+  "")
+    # The production run signs whatever it builds, so refuse the
+    # development switches rather than sign a debug image or an
+    # unnotarized app — use app or os commands for those.
+    if [ -n "${BUILD_VARIANT:-}" ]; then
+      echo "Error: BUILD_VARIANT is only valid with app or os commands" >&2
+      exit 1
+    fi
+    if [ -n "${SKIP_NOTARIZATION:-}" ]; then
+      echo "Error: SKIP_NOTARIZATION is only valid with app or os commands" >&2
+      exit 1
+    fi
+    build_app=true
+    build_os=true
+    sign_release=true
+    ;;
+esac
+
+version=$(node --eval 'console.log(require("./package.json").version)')
 
 if [ "${build_app}" = true ]; then
   printf "%s\n" "Purging dist folder…"
@@ -115,23 +134,6 @@ if [ "${build_app}" = true ]; then
       mv "${file}" "${renamed}"
     fi
   done
-fi
-
-# Prompt to build OS if not specified
-if [ "${partial}" != true ] && [ -z "${build_os}" ]; then
-  printf "${bold}%s${normal}" "Do you wish to build Superbacked OS (y or n)? "
-  read -r answer
-  if [ "${answer}" = "y" ]; then
-    build_os=true
-  fi
-fi
-
-# --clear-cache rides the OS build’s Colima lifecycle rather than
-# spinning the VM up on its own — declining the build above would
-# silently skip the requested clear, so fail loudly instead
-if [ -n "${clear_cache}" ] && [ "${build_os}" != true ]; then
-  echo "Error: --clear-cache requires building Superbacked OS" >&2
-  exit 1
 fi
 
 if [ "${build_os}" = true ]; then
@@ -176,7 +178,8 @@ if [ "${build_os}" = true ]; then
 
   # The container runs the baked copies of the scripts under docker/,
   # not the repository files — rebuild every time so the baked copies
-  # can never go stale (a cache hit when nothing changed).
+  # can never go stale (a cache hit when nothing changed). The cache
+  # clear reuses it as its throwaway container.
   docker build \
     --tag superbacked-os-docker:24.04 \
     docker/
@@ -279,7 +282,7 @@ if [ "${build_os}" = true ]; then
   colima stop --profile superbacked
 fi
 
-if [ "${partial}" != true ]; then
+if [ "${sign_release}" = true ]; then
   code dist/superbacked-${version}-release-notes.txt
 
   printf "%s" "Edit release notes, insert YubiKey and press enter to sign release… "
