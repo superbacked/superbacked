@@ -14,7 +14,7 @@
 set -o errexit
 set -o pipefail
 
-if [ "$1" = "--help" ]; then
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ]; then
   printf "%s\n" \
     "Usage: bash summarize-apparmor-log.sh denials.txt" \
     "       bash capture-apparmor-log.sh superbacked | bash summarize-apparmor-log.sh"

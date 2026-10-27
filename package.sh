@@ -22,21 +22,25 @@ EOF
   exit 0
 }
 
-if [ "${1:-}" = "--help" ]; then
-  show_help
-fi
+# Only os takes options — app and the production run reject them all
+os_only() {
+  if [ "${command}" != "os" ]; then
+    echo "Error: Unknown option: ${1}" >&2
+    exit 1
+  fi
+}
 
 # Parse command-line arguments
 command=""
 clear_cache=""
 no_cache=false
 
-case "${1:-}" in
+case "${1}" in
   app|os)
     command="${1}"
     shift
     ;;
-  ""|--*) ;;
+  ""|-*) ;;
   *)
     echo "Error: Unknown command: ${1}" >&2
     exit 1
@@ -44,14 +48,17 @@ case "${1:-}" in
 esac
 
 while [[ $# -gt 0 ]]; do
-  # Only os takes options — app and the production run reject them all
-  if [ "${command}" != "os" ]; then
-    echo "Error: Unknown option: ${1}" >&2
-    exit 1
-  fi
   case "${1}" in
+    -h|--help)
+      show_help
+      ;;
     --clear-cache)
-      clear_cache="${2:-}"
+      os_only "${1}"
+      if [ -z "${2}" ]; then
+        echo "Error: --clear-cache requires apt, base or all" >&2
+        exit 1
+      fi
+      clear_cache="${2}"
       case "${clear_cache}" in
         apt|base|all) ;;
         *)
@@ -62,6 +69,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --no-cache)
+      os_only "${1}"
       no_cache=true
       shift
       ;;
@@ -93,13 +101,15 @@ case "${command}" in
   "")
     # The production run signs whatever it builds, so refuse the
     # development switches rather than sign a debug image or an
-    # unnotarized app — use app or os commands for those.
+    # unnotarized app — use the os command for a debug image and the
+    # app command for an unnotarized app (each switch is read by that
+    # build alone and ignored by the other).
     if [ -n "${BUILD_VARIANT:-}" ]; then
-      echo "Error: BUILD_VARIANT is only valid with app or os commands" >&2
+      echo "Error: BUILD_VARIANT is only valid with the os command" >&2
       exit 1
     fi
     if [ -n "${SKIP_NOTARIZATION:-}" ]; then
-      echo "Error: SKIP_NOTARIZATION is only valid with app or os commands" >&2
+      echo "Error: SKIP_NOTARIZATION is only valid with the app command" >&2
       exit 1
     fi
     build_app=true

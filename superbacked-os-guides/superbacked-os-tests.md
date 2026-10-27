@@ -9,7 +9,9 @@ Two runners live in `superbacked-os-utilities/debug/` and print one `PASS`, `FAI
 > Heads-up: the first debug build runs the base bootstrap in full and saves it as a cached layer; later debug builds reuse the layer unless the base bootstrap changed, so an app or hardening change rebuilds in minutes.
 
 ```console
-$ BUILD_VARIANT=debug npm run package -- --all
+$ npm run package -- app
+
+$ BUILD_VARIANT=debug npm run package -- os
 ```
 
 ### Step 2 (Mac): flash `dist/superbacked-os-amd64-live-<semver>.img` to a USB flash drive as described in [How to run Superbacked OS on desktop or laptop](../docs/guides/how-to-run-superbacked-os-on-desktop-or-laptop/README.md)
@@ -99,7 +101,7 @@ Expected: `0 failed` from both runners and an empty harvest.
 ### Step 9 (Mac): build a release image and flash it
 
 ```console
-$ npm run package -- --os
+$ npm run package -- os
 ```
 
 ### Step 10 (Superbacked OS): run the hardening checks on the release image, in both boot modes

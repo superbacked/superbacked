@@ -24,7 +24,7 @@ src=""
 
 while [ $# -gt 0 ]; do
   case "${1}" in
-    --help)
+    -h|--help)
       printf "%s\n" "Usage: bash update-apparmor-profiles.sh [--enforce] [/path/to/apparmor]"
       exit 0
       ;;

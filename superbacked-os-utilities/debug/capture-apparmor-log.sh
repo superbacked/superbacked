@@ -17,7 +17,7 @@
 set -o errexit
 set -o pipefail
 
-if [ "$1" = "--help" ]; then
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ]; then
   printf "%s\n" "Usage: bash capture-apparmor-log.sh [profile] > denials.txt"
   exit 0
 fi

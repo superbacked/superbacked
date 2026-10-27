@@ -15,12 +15,28 @@
 set -o errexit
 set -o pipefail
 
-if [ "$1" = "--help" ]; then
-  printf "%s\n" "Usage: bash copy-debug-assets.sh \"/Volumes/SAMSUNG DUO\""
-  exit 0
-fi
+volume=""
 
-volume="${1:-}"
+while [ $# -gt 0 ]; do
+  case "${1}" in
+    -h|--help)
+      printf "%s\n" "Usage: bash copy-debug-assets.sh \"/Volumes/SAMSUNG DUO\""
+      exit 0
+      ;;
+    -*)
+      printf "%s\n" "Error: Unknown option: ${1}" >&2
+      exit 1
+      ;;
+    *)
+      if [ -n "${volume}" ]; then
+        printf "%s\n" "Error: Unexpected argument: ${1}" >&2
+        exit 1
+      fi
+      volume="${1}"
+      shift
+      ;;
+  esac
+done
 
 if [ -z "${volume}" ]; then
   printf "%s\n" "Error: volume is required" >&2

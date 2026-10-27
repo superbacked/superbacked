@@ -6,7 +6,7 @@ set -o errexit
 bold=$(tput bold)
 normal=$(tput sgr0)
 
-if [ "$1" = "--help" ]; then
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ]; then
   printf "%s\n" "Usage: superbacked-os-configure-opal.sh"
   exit 0
 fi

@@ -7,7 +7,7 @@ set -o pipefail
 bold=$(tput bold)
 normal=$(tput sgr0)
 
-if [ "$1" = "--help" ]; then
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ]; then
   printf "%s\n" "Usage: superbacked-os-image.sh name"
   exit 0
 fi

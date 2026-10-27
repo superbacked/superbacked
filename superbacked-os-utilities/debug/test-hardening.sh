@@ -20,7 +20,7 @@
 
 set -o pipefail
 
-if [ "$1" = "--help" ]; then
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ]; then
   printf "%s\n" "Usage: bash test-hardening.sh"
   exit 0
 fi

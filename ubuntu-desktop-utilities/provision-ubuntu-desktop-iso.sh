@@ -3,7 +3,7 @@
 
 set -o errexit
 
-if [ "$1" = "--help" ]; then
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ]; then
   printf "%s\n" "Usage: provision-ubuntu-desktop-iso.sh /path/to/ubuntu-24.04.4-desktop-amd64.iso"
   exit 0
 fi
