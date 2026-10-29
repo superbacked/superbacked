@@ -26,11 +26,14 @@
 
 ## Language
 
-- Avoid articles such as “a” or “the” when writing in English and avoid using commas before conjunctions such as “and” unless articles are necessary for clarity or readability but always include them for other languages
-- Use em dash (—) when separating clauses or when providing explanatory information
+- Locale strings and CLI output drop articles such as “a” or “the” in English unless clarity needs them (“Block and passphrase required to restore secret”) — French keeps them and documentation keeps them in both languages
 - Use sentence case for headings, list labels and titles
-- Use typographically correct curly apostrophe (’) for possessions and curly quotes (“”) for quoted words or sentences
-- Use typographically correct ellipsis (…) for omissions and trailing thoughts
+
+## Typography
+
+- Prose, user-facing copy, code comments and console messages use curly quotes (“ ” ’), an ellipsis (…) and an em dash (—) to separate clauses or add explanation — straight quotes (`'` and `"`) and three dots (`...`) belong inside code only
+- Avoid a comma before “and” or “or” unless clarity needs it — the linter flags one when the sentence already has a comma, which catches an Oxford comma and a comma joining clauses after a parenthetical alike (a sentence ends at “. ”, “! ”, “? ”, “: ”, “… ” or “ — ” and parentheses count as sentences of their own)
+- Rules come from the `@sunknudsen/typography` package, whose ESLint plugin the linter runs on JSX copy, locale JSON and markdown — comments and console messages are not linted, so follow the rules by hand there
 
 ## JavaScript and TypeScript
 

@@ -1,12 +1,11 @@
 import { fixupConfigRules } from "@eslint/compat"
 import { FlatCompat } from "@eslint/eslintrc"
 import js from "@eslint/js"
+import { configs as typographyConfigs } from "@sunknudsen/typography/eslint"
 import tsParser from "@typescript-eslint/parser"
 import { defineConfig, globalIgnores } from "eslint/config"
 import prettier from "eslint-config-prettier/flat"
 import globals from "globals"
-
-import { configs as typographyConfigs } from "./eslint/typography"
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
