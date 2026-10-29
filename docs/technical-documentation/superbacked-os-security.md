@@ -110,7 +110,7 @@ Rather than enumerate every rule here, this document defers to the [profiles the
 
 **Intent:** preserve the signed boot chain so Secure Boot continues to work on end-user hardware.
 
-**Approach:** the image ships the distribution’s signed shim and GRUB verbatim from the source image’s EFI system partition; only the GRUB configuration is rewritten, to point at the live boot partition and to pin the exact kernel captured at build time. Every release is signed, and you can verify a download before flashing it — see [How to verify integrity of release](../guides/how-to-verify-integrity-of-release/README.md).
+**Approach:** the image ships the distribution’s signed shim and GRUB verbatim from the source image’s EFI system partition; only the GRUB configuration is rewritten, to point at the live boot partition and to pin the exact kernel captured at build time. Booting the drive leaves no trace in the host’s firmware: shim’s fallback loader, which registers an “ubuntu” boot entry in NVRAM whenever shim boots from the removable path without GRUB beside it, is removed along with the CSV it reads while GRUB is placed beside shim so it loads directly (search `fallback loader` in the image script). Every release is signed, and you can verify a download before flashing it — see [How to verify integrity of release](../guides/how-to-verify-integrity-of-release/README.md).
 
 **Limits:** this inherits the distribution’s signing trust; it is not a measured-boot or attestation scheme.
 

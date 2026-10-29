@@ -603,6 +603,39 @@ set prefix=(\$root)/boot/grub
 configfile \$prefix/grub.cfg
 EOF
 
+printf "%s\n" "Removing shim’s fallback loader…"
+
+# Firmware boots a stick with no boot entry through the removable path,
+# EFI/BOOT/BOOTX64.EFI, which is shim. Shim loads grubx64.efi from its
+# own directory and, finding none there (the source install keeps it
+# under EFI/ubuntu), runs the fallback loader beside it, which reads
+# EFI/ubuntu/BOOTX64.CSV, registers an “ubuntu” boot entry for this
+# partition in the host’s firmware NVRAM and boots through it —
+# self-repair for installed systems, a trace on every host for a live
+# medium, and one more entry per image as each build’s partition has a
+# new identifier. GRUB is placed beside shim so it loads directly, with
+# the stub in both places the signed GRUB may look for it (its own
+# directory or EFI/ubuntu), and the fallback loader and the CSV it reads
+# are removed so nothing on the stick can write to NVRAM. Secure Boot is
+# unaffected: the binaries are the signed ones from the source image,
+# only their placement changes. The checks fail the build if the source
+# image’s layout drifts.
+if [ ! -f /mnt/esp/EFI/BOOT/BOOTX64.EFI ] || [ ! -f /mnt/esp/EFI/ubuntu/grubx64.efi ]; then
+  printf "%s\n" "Error: EFI system partition layout differs from expected (EFI/BOOT/BOOTX64.EFI and EFI/ubuntu/grubx64.efi)" >&2
+  cleanup
+  exit 1
+fi
+
+cp /mnt/esp/EFI/ubuntu/grubx64.efi /mnt/esp/EFI/BOOT/grubx64.efi
+cp /mnt/esp/EFI/ubuntu/grub.cfg /mnt/esp/EFI/BOOT/grub.cfg
+rm --force /mnt/esp/EFI/BOOT/fbx64.efi /mnt/esp/EFI/ubuntu/BOOTX64.CSV
+
+if [ -n "$(find /mnt/esp -iname 'fbx64.efi' -o -iname 'BOOT*.CSV')" ]; then
+  printf "%s\n" "Error: fallback loader files remain on the EFI system partition" >&2
+  cleanup
+  exit 1
+fi
+
 umount /mnt/boot /mnt/esp
 
 printf "%s\n" "Calculating SHA256 checksums…"
