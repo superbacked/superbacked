@@ -124,6 +124,49 @@ EOF
 
 dconf update
 
+printf "%s\n" "Patching desktop icons…"
+
+# With a second display connected, a file saved to ~/Desktop appears on
+# it rather than on the panel: DING aims a new icon at the primary
+# screen’s origin, a point under the top bar that no grid claims, and
+# falls back to the first grid with room — the external one (Ubuntu bug
+# 2039547, upstream issue 268, present in the pinned package and fixed
+# upstream later). The target is moved inside the panel’s grid by its
+# top bar and dock margins, the fix users of the pinned release apply
+# by hand, and the fallback’s distance, which compared x against the
+# vertical centre, measures y, so it picks the nearest grid rather than
+# a wrong one. The assertions fail the build if the package drifts.
+ding_app=/usr/share/gnome-shell/extensions/ding@rastersoft.com/app
+
+for anchor in "x = this\._primaryScreen\.x;" "y = this\._primaryScreen\.y;"; do
+  if [ "$(grep --count "${anchor}" "${ding_app}/desktopManager.js")" != "1" ]; then
+    printf "%s\n" "Error: DING placement anchor not found exactly once in ${ding_app}/desktopManager.js" >&2
+    exit 1
+  fi
+done
+
+sed --in-place \
+  -e 's/x = this\._primaryScreen\.x;/x = this._primaryScreen.x + this._primaryScreen.marginLeft;/' \
+  -e 's/y = this\._primaryScreen\.y;/y = this._primaryScreen.y + this._primaryScreen.marginTop;/' \
+  "${ding_app}/desktopManager.js"
+
+if [ "$(grep --count "this\._primaryScreen\.marginTop;" "${ding_app}/desktopManager.js")" != "1" ]; then
+  printf "%s\n" "Error: DING placement patch failed to apply to ${ding_app}/desktopManager.js" >&2
+  exit 1
+fi
+
+if [ "$(grep --count "Math\.pow(x - (this\._y" "${ding_app}/desktopGrid.js")" != "1" ]; then
+  printf "%s\n" "Error: DING distance anchor not found exactly once in ${ding_app}/desktopGrid.js" >&2
+  exit 1
+fi
+
+sed --in-place 's/Math\.pow(x - (this\._y/Math.pow(y - (this._y/' "${ding_app}/desktopGrid.js"
+
+if [ "$(grep --count "Math\.pow(y - (this\._y" "${ding_app}/desktopGrid.js")" != "1" ]; then
+  printf "%s\n" "Error: DING distance patch failed to apply to ${ding_app}/desktopGrid.js" >&2
+  exit 1
+fi
+
 printf "%s\n" "Patching ubuntu-dock…"
 
 # DING’s desktop helper flashes into the dock’s running-apps slot at
@@ -1146,6 +1189,42 @@ else
   printf "%s\n" "Disabling sudo…"
 
   deluser superbacked sudo
+fi
+
+# Demos are recorded through the HDMI port into a 16:9 capture device
+# (RODECaster Video S) while the 16:10 desktop stays native: OBS
+# captures the panel through the PipeWire portal, places it pixel for
+# pixel in the middle of a 4K canvas (no scaling anywhere on the laptop,
+# the crop and scale are decided in the edit) and projects that full
+# screen on the HDMI display, which GNOME keeps as an extended screen.
+# Debug only — a release image ships no software it does not need, and
+# OBS runs unconfined. The snapshot sources and the apt cache are still
+# mounted here, so the install is pinned like everything else and its
+# debs persist across builds. The rig comes up ready: the display layout
+# harvested on hardware (panel native and primary, RODE_RCV at 4K30, the
+# most the switcher takes, at scale 1 so the projector window maps onto
+# the signal) and the OBS profile and scene (4K canvas at 30 frames to
+# match the link, panel capture at 1:1, projector on the HDMI display,
+# no audio) are seeded into the primary user’s configuration, handed
+# over with the rest of the home folder below. The dock lists only
+# windows on its own monitor, so OBS, parked on the HDMI display, never
+# shows in the dock of the captured panel… written as a second dconf
+# keyfile, merged with the release one by dconf update.
+if [ "${BUILD_VARIANT:-}" = "debug" ]; then
+  printf "%s\n" "Installing OBS Studio (BUILD_VARIANT=debug)…"
+
+  apt install --yes obs-studio
+
+  mkdir --parents /home/superbacked/.config
+  cp /run/superbacked-os-bootstrap-assets/debug/monitors.xml /home/superbacked/.config/monitors.xml
+  cp --recursive /run/superbacked-os-bootstrap-assets/debug/obs-studio /home/superbacked/.config/obs-studio
+
+  tee /etc/dconf/db/local.d/10-superbacked-debug > /dev/null << 'EOF'
+[org/gnome/shell/extensions/dash-to-dock]
+isolate-monitors=true
+EOF
+
+  dconf update
 fi
 
 printf "%s\n" "Finishing provisioning…"
