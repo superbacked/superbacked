@@ -448,7 +448,8 @@ printf "%s\n" "Purging build packages…"
 # only the dev package ships — the deb-installed app has no such need).
 # Removed here rather than at the very end of provisioning so a cached
 # base layer never carries them either — the main bootstrap downloads
-# nothing and compiles nothing.
+# nothing and compiles nothing for a release image (the debug variant
+# installs OBS Studio there, from the same snapshot).
 apt remove --purge --yes \
   build-essential \
   curl \
