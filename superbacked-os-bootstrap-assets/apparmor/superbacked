@@ -137,6 +137,11 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   /etc/pulse/{,**} r,
   owner @{run}/user/[0-9]*/pulse/ r,
   owner @{run}/user/[0-9]*/pulse/native rw,
+  # The PipeWire client configuration, read when the scanner captures a
+  # window: GNOME’s screencast portal hands the app the stream as a
+  # PipeWire file descriptor, so the socket itself is never opened
+  # (the Firefox profile denies it on purpose).
+  /usr/share/pipewire/{,**} r,
   /usr/share/themes/{,**} r,
   /sys/devices/virtual/tty/tty0/active r,
   /sys/devices/pci[0-9]*/**/{boot_vga,class,device,irq,resource,revision,subsystem_device,subsystem_vendor,vendor} r,

@@ -64,7 +64,7 @@ Reload the profiles first — this clears the journal, so the harvest below hold
 $ bash update-apparmor-profiles.sh --enforce
 ```
 
-Open the Superbacked app and Yubico Authenticator and close them. Click the Superbacked OS link in the Superbacked app’s disclaimer — it must open the browser; this is the only check that the app’s own call enters the confined chain, since the runners enter it through the desktop entry. With a FIDO security key plugged in, use it in Firefox where the page asks for it, then close Firefox. Then harvest before running anything else, and confirm cleanup:
+Open the Superbacked app and Yubico Authenticator and close them. Click the Superbacked OS link in the Superbacked app’s disclaimer — it must open the browser; this is the only check that the app’s own call enters the confined chain, since the runners enter it through the desktop entry. With a FIDO security key plugged in, use it in Firefox where the page asks for it. In the Superbacked app’s scanner, choose a source and pick the Firefox window in GNOME’s picker — the window must stream in the scanner. Then close Firefox. Then harvest before running anything else, and confirm cleanup:
 
 ```console
 $ bash capture-apparmor-log.sh | bash summarize-apparmor-log.sh

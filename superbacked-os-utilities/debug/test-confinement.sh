@@ -427,6 +427,7 @@ else
   skip "ALSA probe (no /dev/snd/controlC0)"
 fi
 expect_failure "Firefox profile denies the pipewire socket" in_profile firefox bash -c "exec 3<> ${runtime_dir}/pipewire-0"
+expect_success "Superbacked app profile may read the PipeWire client configuration (window capture)" in_profile superbacked bash -c 'exec 3< /usr/share/pipewire/client.conf'
 # The Firefox profile’s CUPS socket denial is not probed: no client the
 # profile may exec can open a unix socket, so any probe would be refused
 # at exec time and prove nothing about the socket rule.
