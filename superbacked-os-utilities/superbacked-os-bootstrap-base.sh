@@ -81,9 +81,17 @@ printf "%s\n" "Starting base bootstrap…"
 # together — superbacked-os-update-pins.sh computes the hash). The
 # Trezor udev rules have no versions, so their sha256 is the pin: an
 # upstream edit fails the build until reviewed and re-pinned
-# (superbacked-os-update-pins.sh computes that hash too).
-readonly apt_snapshot="20260908T000000Z"
-readonly firefox_version="155.0.1"
+# (superbacked-os-update-pins.sh computes that hash too). The three
+# Firefox files published by the hardened Firefox guide (the policies,
+# the install script and the merge tool) have no versions either, so
+# their sha256 is the pin the same way; firefox_guide_ref is the branch
+# they are fetched from.
+readonly apt_snapshot="20261027T000000Z"
+readonly firefox_guide_ref="main"
+readonly firefox_merge_policies_sha256="db16b6da879caa79a754c0ea2ffb1849e219d129a98cc88c94c59dce941f88fd"
+readonly firefox_policies_script_sha256="a86d506f61444d5a994cad2b746c30ff89a2f17da8680694a315eea5762091f6"
+readonly firefox_policies_sha256="0c35f8d4609a613acd76f27c7f2e5b440fb8fc4c606df71f1cd2196cdc878532"
+readonly firefox_version="158.0.1"
 readonly trezor_sha256="1acd67664bdc1cf389e719c91a09e6069688afa05959715955d5c1c54a2fefde"
 readonly trezor_udev_rules_sha256="f3b39b4537da6260a7b63af07710aedfab1fe87d8eeff0975d176b9b908b9d6e"
 readonly trezor_version="0.20.2"
@@ -275,6 +283,35 @@ apt update
 # version has left the repository (rapid release moves every four
 # weeks), apt fails loudly here — bump firefox_version deliberately.
 apt install --yes "firefox=${firefox_version}*"
+
+printf "%s\n" "Installing Firefox policies…"
+
+# Firefox follows the hardened Firefox guide (how-to-harden-firefox in
+# https://github.com/sunknudsen/guides), which hardens Firefox with
+# enterprise policies alone. The guide publishes three files:
+# firefox-policies.json holds the policies as a flat object,
+# firefox-policies.sh installs them wrapped the way
+# /etc/firefox/policies/policies.json expects and merge-policies.py
+# layers a deployment’s own policies over the guide’s. Each is pinned
+# by sha256, so an upstream edit fails the build until reviewed and
+# re-pinned — the merge tool and the install script run as root later,
+# so their pins are what make running downloaded code acceptable here.
+# Nothing is installed yet: the main bootstrap merges the OS-specific
+# policies over the guide’s and installs the result (see “Configuring
+# Firefox policies” in superbacked-os-bootstrap-main.sh), so the three
+# files are kept under /usr/share/firefox-policies for that step.
+mkdir --parents /usr/share/firefox-policies
+
+for file in firefox-policies.json firefox-policies.sh utilities/merge-policies.py; do
+  curl --fail --location --proto '=https' "https://raw.githubusercontent.com/sunknudsen/guides/refs/heads/${firefox_guide_ref}/how-to-harden-firefox/${file}" \
+    --output "/usr/share/firefox-policies/${file##*/}"
+done
+
+printf "%s  %s\n" \
+  "${firefox_policies_sha256}" /usr/share/firefox-policies/firefox-policies.json \
+  "${firefox_policies_script_sha256}" /usr/share/firefox-policies/firefox-policies.sh \
+  "${firefox_merge_policies_sha256}" /usr/share/firefox-policies/merge-policies.py \
+  | sha256sum --check
 
 printf "%s\n" "Installing Trezor tools…"
 

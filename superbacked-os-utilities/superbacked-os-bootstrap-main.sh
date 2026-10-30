@@ -411,62 +411,67 @@ ln --force --symbolic /dev/null \
 
 printf "%s\n" "Configuring Firefox policies…"
 
-# Firefox is configured through an enterprise policy, locked so nothing
-# can be changed from inside the browser (the deb reads
-# /etc/firefox/policies/policies.json natively). Its confinement lives
-# in an AppArmor profile installed at image creation time (see
+# Firefox follows the hardened Firefox guide, whose files the base
+# bootstrap fetches and pins (see “Installing Firefox policies” there):
+# the guide hardens Firefox with enterprise policies alone, carried by
+# its firefox-policies.json. On top of that file, firefox-policies.json
+# in the bootstrap assets adds what this OS needs beyond a persistent
+# Mac, locked so nothing can be changed from inside the browser; the two
+# are merged below and installed as /etc/firefox/policies/policies.json,
+# the one file the deb reads. The browser’s confinement lives in an
+# AppArmor profile installed at image creation time (see
 # superbacked-os-bootstrap-assets/apparmor/firefox): no camera, no
 # microphone, no X11, no printing, no USB media, no home folders beyond
-# its own profile and Downloads. Official policy keys are used wherever
-# one exists; the Preferences block pins only settings that have none.
-# The JSON keys are alphabetical; by intent:
+# its own profile and Downloads. The asset holds official policy keys
+# wherever one exists; its Preferences block pins only settings that
+# have none (the guide itself never uses Preferences, so nothing in it
+# collides with the guide). Its JSON keys are alphabetical; by intent:
 #
-#   Privacy — no Firefox accounts, Pocket, studies or telemetry, and no
-#     first-run welcome or post-update pages (the amnesic profile would
-#     show them every boot).
+#   Updates — off entirely: the image is frozen, versions are decided
+#     at image creation time by apt.
+#   Captive portals — detection off: the firewall lets only the browser
+#     out, so there is no portal to detect and nothing to probe for.
 #   Devices — camera and microphone requests are blocked and locked, so
 #     no site can prompt for them (the AppArmor profile denies the
 #     hardware outright; this stops the request reaching that layer).
-#   Updates — off entirely: the image is frozen, versions are decided
-#     at image creation time by apt.
 #   History — Firefox always runs in private browsing; nothing is
 #     remembered between sessions.
-#   Network — DNS goes exclusively through Quad9’s encrypted resolver,
-#     never the system resolver (the pinned address bootstraps it);
-#     HTTPS is required, tracking protection is strict, WebRTC is off.
-#   Passwords — Firefox never saves, autofills or suggests credentials,
-#     addresses or payment methods; Firefox Relay and profile
-#     backup/restore are off.
-#   Search — DuckDuckGo by default; address bar recommendations, search
-#     suggestions and trending searches are off.
-#   New tab — a blank page: no recommendations, shortcuts, sponsored
-#     content or widgets. The FirefoxHome policy locks the sections
-#     (and their sub-prefs with them); widgets.enabled is the one pref
-#     the widgets need — every widget’s render is unconditionally gated
-#     behind it (verified in the newtab source: rollout levers are
-#     ANDed after it, and locked prefs resist experiment writes), so
-#     there is no per-widget enumeration to chase across Firefox
-#     releases.
-#   AI — everything blocked through the official AIControls policy;
-#     browser.ml.enable is also pinned off so the on-device inference
-#     engine itself can never start (the policy deliberately leaves that
-#     one alone).
+#   WebRTC — off: the guide leaves it on (no policy reaches it without
+#     Preferences) for calls this browser cannot make (no camera,
+#     microphone or speaker).
 #   Downloads — saved straight to the dedicated downloads folder, no
 #     picker dialogs.
+#   Terms of use — accepted on the browser’s behalf; the amnesic
+#     profile would otherwise ask every boot.
 #   Dark mode — pinned; Firefox runs as the browser user and cannot see
 #     the desktop’s dark-mode setting.
 #   Desktop portals — disabled; the browser user has no desktop session
 #     to answer portal calls, so they could only ever hang (see
 #     “Configuring browser user” above).
-mkdir --parents /etc/firefox/policies
-
-cp /run/superbacked-os-bootstrap-assets/firefox-policies.json \
-  /etc/firefox/policies/policies.json
-
-# Validate the policy is well-formed JSON — a stray comma would
+# Validate the asset is well-formed JSON — a stray comma would
 # otherwise surface only when Firefox silently ignores the policy at
 # runtime.
-python3 -m json.tool /etc/firefox/policies/policies.json > /dev/null
+python3 -m json.tool /run/superbacked-os-bootstrap-assets/firefox-policies.json > /dev/null
+
+# Merge the OS-specific policies over the guide’s with the guide’s own
+# merge tool, then install the result with the guide’s own install
+# script, both kept pinned by the base bootstrap (see “Installing
+# Firefox policies” there). No key may be set by both: the guide’s file
+# carries only hardening every deployment wants, so an overlap means one
+# side changed and the other needs a look rather than a silent override
+# — the tool fails on one unless told otherwise, and it is never told
+# otherwise here. The install script wraps the merged policies the way
+# the deb expects and writes /etc/firefox/policies/policies.json.
+firefox_policies="$(mktemp --directory)"
+
+python3 /usr/share/firefox-policies/merge-policies.py \
+  --base /usr/share/firefox-policies/firefox-policies.json \
+  --output "${firefox_policies}/policies.json" \
+  /run/superbacked-os-bootstrap-assets/firefox-policies.json
+
+sh /usr/share/firefox-policies/firefox-policies.sh install "${firefox_policies}/policies.json"
+
+rm --recursive "${firefox_policies}"
 
 printf "%s\n" "Overriding stock launchers…"
 
@@ -891,6 +896,29 @@ EOF
 chmod 440 /etc/sudoers.d/superbacked-browser
 
 visudo --check
+
+printf "%s\n" "Configuring DNS over HTTPS bootstrap…"
+
+# Firefox sends every lookup to Quad9 over HTTPS (the guide’s
+# DNSOverHTTPS policy, no fallback) but must first learn the address of
+# dns.quad9.net itself, which it resolves through the system resolver —
+# and the firewall below gives the browser user no path to one (no port
+# 53, no loopback to the resolved stub). The provider’s address is
+# therefore pinned in /etc/hosts, which glibc consults before any
+# resolver, so that one bootstrap lookup never touches the network.
+# Firefox’s own answer (network.trr.bootstrapAddr) would need the
+# Preferences policy; this lives beside the firewall that creates the
+# need. The entry is checked against the guide’s provider, so a change
+# of provider fails the build here instead of shipping a browser that
+# cannot resolve anything.
+doh_host="$(python3 -I -c 'import json, sys, urllib.parse; print(urllib.parse.urlsplit(json.load(open(sys.argv[1]))["DNSOverHTTPS"]["ProviderURL"]).hostname)' /usr/share/firefox-policies/firefox-policies.json)"
+if [ "${doh_host}" != "dns.quad9.net" ]; then
+  printf "%s\n" "Error: guide’s DNS over HTTPS provider is ${doh_host}, update the /etc/hosts entry" >&2
+  exit 1
+fi
+tee --append /etc/hosts > /dev/null << 'EOF'
+9.9.9.9 dns.quad9.net
+EOF
 
 printf "%s\n" "Configuring NTP…"
 

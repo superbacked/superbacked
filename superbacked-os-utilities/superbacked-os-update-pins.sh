@@ -11,6 +11,9 @@
 # Sources queried:
 #   apt_snapshot          snapshot.ubuntu.com (today’s snapshot, existence-checked)
 #   firefox               packages.mozilla.org apt index
+#   firefox_merge_policies github.com/sunknudsen/guides (how-to-harden-firefox, branch firefox_guide_ref, sha256 computed from the current file)
+#   firefox_policies      github.com/sunknudsen/guides (how-to-harden-firefox, branch firefox_guide_ref, sha256 computed from the current file)
+#   firefox_policies_script github.com/sunknudsen/guides (how-to-harden-firefox, branch firefox_guide_ref, sha256 computed from the current file)
 #   trezor                PyPI simple index (wheel sha256 from its URL fragment)
 #   trezor_udev_rules     data.trezor.io (sha256 computed from the current file)
 #   yubico_authenticator  developers.yubico.com release listing
@@ -115,6 +118,27 @@ firefox_latest="$(
 report firefox_version "$(pin firefox_version)" "${firefox_latest}" \
   "readonly firefox_version=\"${firefox_latest}\"
 "
+
+# firefox_merge_policies, firefox_policies_script, firefox_policies —
+# the guide’s files have no versions, so their sha256 is the pin, like
+# the Trezor udev rules: a changed file shows up as a moved pin to
+# review, and the base bootstrap refuses any content that does not
+# match. They are read from the branch the bootstrap pins as
+# firefox_guide_ref.
+firefox_guide_ref="$(pin firefox_guide_ref)"
+for firefox_pair in merge_policies:utilities/merge-policies.py policies_script:firefox-policies.sh policies:firefox-policies.json; do
+  firefox_pin="firefox_${firefox_pair%%:*}_sha256"
+  firefox_file="${firefox_pair#*:}"
+  firefox_file_latest="$(
+    curl --fail --location --proto '=https' --silent \
+      "https://raw.githubusercontent.com/sunknudsen/guides/refs/heads/${firefox_guide_ref}/how-to-harden-firefox/${firefox_file}" \
+      | shasum -a 256 \
+      | awk '{ print $1 }'
+  )" || firefox_file_latest=""
+  report "${firefox_pin}" "$(pin "${firefox_pin}")" "${firefox_file_latest}" \
+    "readonly ${firefox_pin}=\"${firefox_file_latest}\"
+"
+done
 
 # trezor — version and wheel sha256 move together.
 trezor_latest="$(pypi_latest trezor trezor)" || trezor_latest=""
