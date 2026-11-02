@@ -21,7 +21,7 @@ The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to
 
 ## Usage guide
 
-### Step 1: create standalone archive
+### Create standalone archive
 
 > Heads-up: a forgotten passphrase — and the standalone archive content it encrypts — is unrecoverable.
 
@@ -42,9 +42,9 @@ Use `--yubikey` to protect the archive with YubiKey (see [how to provision YubiK
 
 Use `--force` to overwrite an existing archive.
 
-### Step 2: restore standalone archive
+### Restore standalone archive
 
-Restore the standalone archive to an existing directory.
+Restore a standalone archive to an existing directory.
 
 ```console
 $ mkdir restored
