@@ -87,13 +87,4 @@ autoinstall:
         type: mount
   timezone: America/Toronto
   updates: security
-  late-commands:
-    - curtin in-target --target=/target -- mkdir --parents /home/superbacked/.local/bin
-    - cp /cdrom/superbacked-os-amd64-bootstrap.sh /target/home/superbacked/.local/bin/superbacked-os-bootstrap.sh
-    - curtin in-target --target=/target -- chmod +x /home/superbacked/.local/bin/superbacked-os-bootstrap.sh
-    - curtin in-target --target=/target -- mkdir --parents /home/superbacked/.config/systemd/user/graphical-session.target.wants
-    - cp /cdrom/superbacked-os-bootstrap.service /target/home/superbacked/.config/systemd/user/superbacked-os-bootstrap.service
-    - curtin in-target --target=/target -- ln --symbolic /home/superbacked/.config/systemd/user/superbacked-os-bootstrap.service /home/superbacked/.config/systemd/user/graphical-session.target.wants/superbacked-os-bootstrap.service
-    - curtin in-target --target=/target -- touch /home/superbacked/.config/gnome-initial-setup-done
-    - chown --recursive 1000:1000 /target/home/superbacked
   version: 1

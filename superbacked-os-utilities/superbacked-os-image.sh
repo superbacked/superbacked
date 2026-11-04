@@ -1,15 +1,20 @@
 #! /bin/sh
 # Used to create Superbacked OS images using macOS
 
-set -e
+set -o errexit
 set -o pipefail
 
 bold=$(tput bold)
 normal=$(tput sgr0)
 
-if [ -z "$1" ] || [ "$1" = "--help" ]; then
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ]; then
   printf "%s\n" "Usage: superbacked-os-image.sh name"
   exit 0
+fi
+
+if [ -z "$1" ]; then
+  printf "%s\n" "Error: name is required" >&2
+  exit 1
 fi
 
 directory=$(pwd)
@@ -42,25 +47,5 @@ if [ "${answer}" = "y" ]; then
 else
   exit 0
 fi
-
-printf "%s\n" "Starting Colima…"
-
-colima start \
-  --profile superbacked \
-  --cpu 2 \
-  --disk 20 \
-  --memory 4
-
-printf "%s\n" "Optimizing image…"
-
-docker run \
-  --interactive \
-  --privileged \
-  --rm \
-  --tty \
-  --volume ${directory}/superbacked-os:/superbacked-os \
-  superbacked-os-docker:24.04 \
-  /root/optimize-image.sh \
-  ${name}.img
 
 printf "%s\n" "Done"

@@ -4,7 +4,7 @@ import { Data } from "@/src/handlers/create"
 import { Locale } from "@/src/i18n"
 import { createEventListener } from "@/src/shared/utilities/createEventListener"
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
-import { invokeSync } from "@/src/utilities/invokeSync"
+import { invokeSync } from "@/src/utilities/ipc/invokeSync"
 
 /**
  * Block window API exposed to renderer process via contextBridge.

@@ -2,7 +2,7 @@ import styled from "@emotion/styled"
 import { Modal } from "@mantine/core"
 import { FunctionComponent } from "react"
 
-import QRCode from "@/src/block/components/QRCode"
+import QrCode from "@/src/block/components/QrCode"
 
 const size = 330
 
@@ -30,7 +30,9 @@ const QrCodeModal: FunctionComponent<QrCodeModalProps> = (props) => {
       withCloseButton={false}
     >
       <ModalContainer>
-        <QRCode value={props.value} />
+        {/* Deliberately independent of qrCodeEcc — selection QR codes are
+            displayed on screen, not printed or saved as files */}
+        <QrCode ecc="low" value={props.value} />
       </ModalContainer>
     </Modal>
   )

@@ -1,0 +1,253 @@
+# Superbacked OS — confined Firefox (Mozilla apt deb).
+#
+# Installed as /etc/apparmor.d/firefox, deliberately overwriting
+# Ubuntu’s stock file of that name: the stock profile is
+# flags=(unconfined) and exists only to grant userns under
+# kernel.apparmor_restrict_unprivileged_userns=1, and two profiles
+# cannot share an attachment path.
+#
+# Firefox only ever runs as the no-shell browser user, on a private
+# waypipe Wayland display. This profile is the third layer: user
+# separation isolates it from superbacked’s session and files, nftables
+# limits egress to web ports for uid browser, and the rules below
+# remove what the snap’s disconnected interfaces used to remove —
+# camera, audio capture, X11, printing, USB media, other homes — while
+# keeping FIDO security keys reachable (the snap kept u2f-devices
+# connected), which a udev rule makes group-accessible to the browser
+# user since it holds no seat.
+
+abi <abi/4.0>,
+
+include <tunables/global>
+
+profile firefox /usr/lib/firefox/firefox{,-bin} {
+  include <abstractions/base>
+  include <abstractions/dbus-session-strict>
+  include <abstractions/dconf>
+  include <abstractions/dri-common>
+  include <abstractions/dri-enumerate>
+  include <abstractions/fonts>
+  include <abstractions/freedesktop.org>
+  include <abstractions/mesa>
+  include <abstractions/nameservice>
+  include <abstractions/ssl_certs>
+  include <abstractions/vulkan>
+  include <abstractions/wayland>
+
+  # The confined browser bridge and sudo monitor supervise this process.
+  signal (send, receive) peer=superbacked-browser-sudo,
+  signal (send, receive) peer=superbacked-browser-helper,
+  # Unconfined senders are root and the browser user’s own manager —
+  # DAC already keeps other users out — so an administrator can end a
+  # stuck browser. Window closes never involve a signal.
+  signal (receive) peer=unconfined,
+
+  # Content-process sandbox: unprivileged user namespaces, plus the
+  # capabilities Firefox exercises inside those namespaces (AppArmor
+  # still mediates capability use in a user namespace). Without userns
+  # the sandbox fails closed and Firefox refuses to start content
+  # processes.
+  userns,
+  capability sys_admin,
+  capability sys_chroot,
+  owner @{PROC}/@{pid}/{uid_map,gid_map,setgroups} w,
+
+  # The only egress identity on the machine — nftables does the real
+  # limiting (ports 80/443/QUIC for uid browser).
+  network inet stream,
+  network inet dgram,
+  network inet6 stream,
+  network inet6 dgram,
+  network netlink raw,
+
+  # AF_UNIX for Mozilla IPC socketpairs and the session bus, with the
+  # abstract X11 socket carved out (Wayland-only OS; the path-based X
+  # socket is denied below). The carve-out is scoped by operation: bind
+  # and connect know their address, so the match is exact — an
+  # address-conditioned deny with no operation list also matches socket
+  # create, which has no address yet, silently swallowing every AF_UNIX
+  # socket (Wayland, D-Bus — and deny implies quiet, so nothing logs).
+  unix,
+  deny unix bind addr="@/tmp/.X11-unix/*",
+  deny unix (connect, send, receive) peer=(addr="@/tmp/.X11-unix/*"),
+
+  # Own installation (libxul, omni.ja, dependentlibs.list,
+  # distribution files).
+  /usr/lib/firefox/ r,
+  /usr/lib/firefox/** r,
+  /usr/lib/firefox/**.so mr,
+  /usr/lib/firefox/{firefox,firefox-bin} mrix,
+  # gfxtest is Firefox 155’s GPU probe; glxtest and vaapitest are its
+  # predecessors, kept so an older pinned Firefox still starts.
+  /usr/lib/firefox/{plugin-container,gfxtest,glxtest,vaapitest} mrix,
+  # No crash reports, no self-updates (versions are decided by apt at
+  # image creation time; policies.json disables updates too), no
+  # telemetry uploads. crashhelper is Firefox 153’s out-of-process
+  # crash handler — same family, same denial; if a trial enforce shows
+  # Firefox treating its absence as fatal, flip it to mrix.
+  deny /usr/lib/firefox/{crashhelper,crashreporter,minidump-analyzer,pingsender,updater} x,
+  # Firefox maps the crash binaries at startup even when their exec is
+  # denied — read/map keeps that probe from failing; execute stays
+  # denied above.
+  /usr/lib/firefox/{crashhelper,crashreporter} mr,
+
+  # Enterprise policy.
+  /etc/firefox/ r,
+  /etc/firefox/** r,
+
+  # The browser user’s profile, cache, and the single blessed download
+  # folder (policies.json pins DownloadDirectory to it; superbacked
+  # reads it through a bind mount).
+  owner /home/browser/ r,
+  owner /home/browser/.mozilla/ rw,
+  owner /home/browser/.mozilla/** rwk,
+  # Firefox follows XDG now and creates fresh profiles under
+  # .config/mozilla — which on this amnesic OS is every profile, since
+  # nothing survives to trigger the legacy .mozilla lookup (kept above
+  # regardless).
+  owner /home/browser/.config/ rw,
+  owner /home/browser/.config/mozilla/ rw,
+  owner /home/browser/.config/mozilla/** rwk,
+  owner /home/browser/.cache/ rw,
+  owner /home/browser/.cache/mozilla/ rw,
+  owner /home/browser/.cache/mozilla/** rwk,
+  # Mesa’s shader cache for the software rasterizer (the browser user
+  # has no render node); the mesa abstraction predates its marker file.
+  owner /home/browser/.cache/mesa_shader_cache/{,**} rwk,
+  owner /home/browser/Downloads/ rw,
+  owner /home/browser/Downloads/** rw,
+  # Everything else under any home is out of bounds — including
+  # superbacked’s (defense in depth; file permissions already forbid
+  # it) and any key material that could ever appear in the browser
+  # user’s own home.
+  deny /home/superbacked/{,**} mrwklx,
+  deny /home/browser/.gnupg/{,**} mrwkl,
+  deny /home/browser/.ssh/{,**} mrwkl,
+
+  # waypipe’s private Wayland display in the browser user’s
+  # XDG_RUNTIME_DIR. wayland-firefox is the name the
+  # superbacked-browser-helper script pins via --display; the wildcard
+  # also covers waypipe’s unpinned default (wayland-<8 random
+  # alphanumerics>, which the wayland abstraction’s wayland-[0-9]* glob
+  # does not match).
+  owner @{run}/user/[0-9]*/ r,
+  owner @{run}/user/[0-9]*/wayland-firefox rw,
+  owner @{run}/user/[0-9]*/wayland-* rw,
+  # Session bus socket path (dbus-session-strict mediates the bus
+  # itself).
+  owner @{run}/user/[0-9]*/bus rw,
+  # Media threads ask rtkit for realtime scheduling over the system
+  # bus; the properties read answers from rtkit’s unique name, which a
+  # peer name rule cannot match — hence the interface-scoped rule.
+  /{run,var/run}/dbus/system_bus_socket rw,
+  dbus (send) bus=system peer=(name=org.freedesktop.DBus),
+  dbus (send) bus=system peer=(name=org.freedesktop.RealtimeKit1),
+  dbus (send) bus=system interface=org.freedesktop.DBus.Properties member=Get*,
+  dbus (receive) bus=system interface=org.freedesktop.DBus.Properties member=PropertiesChanged,
+  owner @{run}/user/[0-9]*/dconf/{,user} rw,
+  # No audio in either direction. PipeWire carries playback and capture
+  # over one socket, so allowing playback would also expose the
+  # microphone — and this browser must never hear the room where
+  # blocks are handled (the snap disconnected audio-record for the
+  # same reason). Playback is sacrificed deliberately: it almost
+  # certainly never worked anyway, since the browser user has no login
+  # seat and logind grants its user instance no /dev/snd ACLs. Raw ALSA
+  # is denied alongside the socket.
+  deny @{run}/user/[0-9]*/pipewire-0 rw,
+  deny /dev/snd/{,**} rw,
+  deny owner @{run}/user/[0-9]*/pulse/{,**} rw,
+  deny owner /home/browser/.config/pulse/{,**} rw,
+
+  # Shared memory for Mozilla IPC and Wayland wl_shm buffers (modern
+  # Firefox mostly uses memfd, which AppArmor does not path-mediate;
+  # these cover the /dev/shm fallbacks).
+  owner /dev/shm/org.mozilla.ipc.* rw,
+  owner /dev/shm/wayland.mozilla.ipc.* rw,
+  owner /dev/shm/mozilla-ipc-* rw,
+
+  # Keyboard layouts (Wayland clients compile keymaps themselves) and
+  # GTK/GSettings plumbing.
+  /usr/share/X11/xkb/{,**} r,
+  /usr/share/glib-2.0/schemas/gschemas.compiled r,
+  /etc/gtk-3.0/{,**} r,
+  /usr/share/gtk-3.0/{,**} r,
+  /usr/share/themes/{,**} r,
+  /etc/mime.types r,
+  /etc/pulse/{,**} r,
+
+  # Process introspection Firefox does on itself and its children
+  # (same-label signal/ptrace is implicitly allowed; nothing else is).
+  @{PROC}/ r,
+  @{PROC}/cpuinfo r,
+  @{PROC}/meminfo r,
+  @{PROC}/pressure/memory r,
+  @{PROC}/sys/kernel/yama/ptrace_scope r,
+  # The parent reads its content processes’ identity — same-owner, but
+  # @{pid} resolves to the accessing task’s own pid under AppArmor 4,
+  # so this needs its own rule.
+  owner @{PROC}/[0-9]*/cmdline r,
+  owner @{PROC}/@{pid}/cgroup r,
+  owner @{PROC}/@{pid}/environ r,
+  owner @{PROC}/@{pid}/fd/ r,
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/mounts r,
+  owner @{PROC}/@{pid}/oom_score_adj rw,
+  owner @{PROC}/@{pid}/smaps r,
+  owner @{PROC}/@{pid}/smaps_rollup r,
+  owner @{PROC}/@{pid}/stat r,
+  owner @{PROC}/@{pid}/statm r,
+  owner @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/task/ r,
+  owner @{PROC}/@{pid}/task/*/comm rw,
+  owner @{PROC}/@{pid}/task/*/stat r,
+  /sys/devices/system/cpu/{,**} r,
+  /sys/devices/system/node/ r,
+  /sys/bus/pci/devices/ r,
+  /sys/devices/pci[0-9]*/{,**/} r,
+  # The GPU probe identifies the adapter by its PCI identifiers.
+  /sys/devices/pci[0-9]*/**/{class,device,subsystem_device,subsystem_vendor,uevent,vendor} r,
+  # GPU driver workaround lists key on the machine model.
+  /sys/devices/virtual/dmi/id/{product_name,product_sku} r,
+  /dev/ r,
+  /dev/shm/ r,
+
+  # Temp files (the browser user owns nothing else in /tmp; downloads
+  # never land here — the policy pins DownloadDirectory).
+  owner /tmp/ r,
+  owner /tmp/** rwk,
+
+  # WebAuthn: FIDO security keys stay usable — same breadth as the
+  # snap’s connected u2f-devices interface plus the two directory reads
+  # snapd’s base template grants every snap: libudev lists /sys/class/
+  # and /sys/bus/ to find the hidraw subsystem before it descends into
+  # it, and without them enumeration finds no key at all (found by
+  # harvest, not by reasoning). The grant is path-wide, but DAC narrows
+  # it to the FIDO node: only that node is group-owned by browser
+  # (99-superbacked-browser-fido.rules); a YubiKey’s OTP node stays
+  # with the seat user and the Superbacked app.
+  /dev/hidraw* rw,
+  /sys/bus/ r,
+  /sys/class/ r,
+  /sys/class/hidraw/ r,
+  /sys/devices/**/hidraw*/uevent r,
+  /run/udev/data/* r,
+
+  # What the snap interface hardening used to remove, restated as
+  # explicit denials (also silences audit noise from probing):
+  deny /dev/video[0-9]* mrwkl,                    # camera
+  deny /media/{,**} mrwklx,                       # removable-media
+  deny /mnt/{,**} mrwklx,
+  deny /tmp/.X11-unix/{,**} rw,                   # x11 (path socket)
+  deny /run/cups/{,**} rw,                        # cups-control
+  deny /run/avahi-daemon/{,**} rw,                # avahi-observe
+  deny /etc/shadow r,
+  deny /etc/sudoers r,
+  deny /etc/sudoers.d/{,**} r,
+  deny capability sys_ptrace,
+  # fontconfig tries to chmod the system cache directory — root-owned,
+  # so DAC refuses it anyway; the deny keeps enforce logs clean.
+  deny /var/cache/fontconfig/ w,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/firefox>
+}

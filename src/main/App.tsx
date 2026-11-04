@@ -12,7 +12,7 @@ import {
 import { MantineEmotionProvider, emotionTransform } from "@mantine/emotion"
 import { Notifications, notifications } from "@mantine/notifications"
 import { Fragment, useEffect } from "react"
-import { MemoryRouter, Route, Routes } from "react-router-dom"
+import { MemoryRouter, Route, Routes } from "react-router"
 
 import { emotionCache } from "@/emotion-cache"
 import { setLocale } from "@/src/i18n"
@@ -22,6 +22,7 @@ import MenuEvents, {
   MenuEventsContextConsumer,
 } from "@/src/main/components/MenuEvents"
 import SelectionAsQrCode from "@/src/main/components/SelectionAsQrCode"
+import Settings from "@/src/main/components/Settings"
 import TitleBar from "@/src/main/components/TitleBar"
 import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
@@ -77,6 +78,12 @@ const App = () => {
           dark: {
             "--mantine-color-body": "var(--mantine-color-dark-9)",
             "--mantine-color-dark-filled-hover": "var(--mantine-color-dark-8)",
+            // Primary text is set here, never as a color override on Text or
+            // Title in theme.components — Highlight wraps content in a nested
+            // Text whose override would clobber c="dimmed" on the parent.
+            // Overrides that should match body text reference
+            // var(--mantine-color-text); only gradient definitions and
+            // deliberate accents reference the gradient stops directly.
             "--mantine-color-text": "var(--mantine-color-gradient-0)",
           },
           light: {},
@@ -144,6 +151,16 @@ const App = () => {
               // prop routes through --ai-color which is variant-dependent
               // and not consistently picked up by the SVG.
               styles: {
+                root: {
+                  // Mirrors the Button default variant, so icon buttons and
+                  // buttons read as one family
+                  "&[data-variant='default']": {
+                    backgroundColor: "var(--mantine-color-dark-7)",
+                    borderColor: "var(--sb-border)",
+                    borderWidth: 2,
+                    color: "var(--mantine-color-text)",
+                  },
+                },
                 icon: {
                   color: "var(--mantine-color-text)",
                 },
@@ -269,6 +286,40 @@ const App = () => {
                 },
               },
             },
+            NumberInput: {
+              // The increment and decrement controls keep a quiet
+              // surface in every state — the app never brightens
+              // hovered or pressed controls (same treatment as
+              // SegmentedControl labels below)
+              styles: {
+                control: {
+                  "&:hover": {
+                    backgroundColor: "transparent",
+                  },
+                  "&:active": {
+                    backgroundColor: "transparent",
+                  },
+                },
+              },
+            },
+            Menu: {
+              // Same surface as Popover and Combobox dropdowns — and the
+              // same hover as Combobox options, whose dark-mode hover
+              // (dark-7) disappears against the dark-7 dropdown
+              styles: {
+                dropdown: {
+                  backgroundColor: "var(--mantine-color-dark-7)",
+                  borderColor: "var(--sb-border)",
+                  borderWidth: 2,
+                  boxShadow: "var(--sb-overlay-shadow)",
+                },
+                item: {
+                  color: "var(--mantine-color-text)",
+                  borderRadius: "var(--mantine-radius-sm)",
+                  "--menu-item-hover": "var(--mantine-color-dark-7)",
+                },
+              },
+            },
             Modal: {
               defaultProps: {
                 padding: "lg",
@@ -294,8 +345,15 @@ const App = () => {
             },
             Notification: {
               styles: {
+                // Toasts hug their message instead of stretching to the
+                // container (whose width only caps wrapping — see
+                // containerWidth below); auto left margin keeps them
+                // pinned to the container’s right edge
                 root: {
                   "&::before": { display: "none" },
+                  marginLeft: "auto",
+                  maxWidth: "100%",
+                  width: "fit-content",
                 },
                 title: {
                   color: "var(--mantine-color-text)",
@@ -322,6 +380,20 @@ const App = () => {
                   backgroundColor: "var(--mantine-color-dark-7)",
                   borderColor: "var(--sb-border)",
                   borderWidth: 2,
+                },
+              },
+            },
+            SegmentedControl: {
+              // Labels stay body-text colored in every state — the app
+              // never dims resting labels nor brightens hovered ones, and
+              // selection is carried by the indicator
+              styles: {
+                label: {
+                  color: "var(--mantine-color-text)",
+                  "--sc-label-color": "var(--mantine-color-text)",
+                  "&:hover": {
+                    color: "var(--mantine-color-text)",
+                  },
                 },
               },
             },
@@ -449,6 +521,7 @@ const App = () => {
                     </Routes>
                     <SelectionAsQrCode />
                     <About />
+                    <Settings />
                   </Fragment>
                 )
               }}
@@ -456,7 +529,11 @@ const App = () => {
           </MenuEvents>
         </MemoryRouter>
         <Disclaimer />
-        <Notifications containerWidth={400} />
+        {/* The width is a wrap ceiling, not a toast width — toasts fit
+            their content (see the Notification theme entry), and 500
+            keeps the clipboard-clearing message on one line in both
+            locales */}
+        <Notifications containerWidth={500} />
       </MantineProvider>
     </MantineEmotionProvider>
   )

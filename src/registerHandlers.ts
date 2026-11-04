@@ -1,16 +1,18 @@
 import { app } from "electron"
 
-import { getDataLength } from "blockcrypt"
-
-import { deriveKey, generateMasterKey } from "@/src/handlers/archiveCore"
+import {
+  deriveDetachedArchiveFilename,
+  generateMasterKey,
+} from "@/src/handlers/archive"
 import chooseDirectory from "@/src/handlers/chooseDirectory"
-import create from "@/src/handlers/create"
+import create, { Secret, renderCarrierPdf } from "@/src/handlers/create"
 import {
   createDetachedArchive,
   restoreDetachedArchive,
 } from "@/src/handlers/detachedArchive"
 import duplicate from "@/src/handlers/duplicate"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
+import generatePassword from "@/src/handlers/generatePassword"
 import getDesktopCapturerSources from "@/src/handlers/getDesktopCapturerSources"
 import openExternalUrl from "@/src/handlers/openExternalUrl"
 import openPath from "@/src/handlers/openPath"
@@ -18,34 +20,43 @@ import {
   getDefaultPrinter,
   getPrinterStatus,
   getPrinters,
+  getSupportedPaperSizes,
   print,
 } from "@/src/handlers/print"
 import restore, { restoreReset } from "@/src/handlers/restore"
 import save from "@/src/handlers/save"
+import scheduleClipboardClear from "@/src/handlers/scheduleClipboardClear"
 import {
   createStandaloneArchive,
   restoreStandaloneArchive,
 } from "@/src/handlers/standaloneArchive"
 import toggleMaximize from "@/src/handlers/toggleMaximize"
+import { verifyYubiKeyChallengeResponseSecret } from "@/src/handlers/yubikeyChallengeResponseSecret"
 import { Locale } from "@/src/i18n"
 import { locale } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import {
-  generateMnemonic,
-  validateMnemonic,
-  wordlist,
-} from "@/src/utilities/bip39"
-import {
   get as getConfig,
   set as setConfig,
   unset as unsetConfig,
 } from "@/src/utilities/config"
-import { handle } from "@/src/utilities/handle"
-import { handleSync } from "@/src/utilities/handleSync"
-import { generateToken } from "@/src/utilities/totp"
+import { encodeBlockContent, getBlockUsage } from "@/src/utilities/core/block"
+import { computeBip32RootFingerprint } from "@/src/utilities/crypto/bip32"
+import {
+  generateMnemonic,
+  validateMnemonic,
+  wordlist,
+} from "@/src/utilities/crypto/bip39"
+import { computeBip85Mnemonic } from "@/src/utilities/crypto/bip85"
+import { characterClasses } from "@/src/utilities/crypto/derivedPassword"
+import { generateToken } from "@/src/utilities/crypto/totp"
+import { handle } from "@/src/utilities/ipc/handle"
+import { handleSync } from "@/src/utilities/ipc/handleSync"
+import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
+import { Slot } from "@/src/utilities/yubikey/otp"
 
-type InsertType = "mnemonic" | "passphrase" | "scanQrCode"
+type InsertType = "mnemonic" | "passphrase" | "password" | "scanQrCode"
 
 // Helper type for event listener registration
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,12 +68,14 @@ type EventListener<TCallback extends (...args: any[]) => void> = (
 export interface IpcEvents {
   systemLocaleChange: EventListener<(locale: Locale) => void>
   menuAbout: EventListener<() => void>
+  menuSettings: EventListener<() => void>
   menuTriggeredRoute: EventListener<(to: string) => void>
   menuInsert: EventListener<(type: InsertType) => void>
   menuShowSelectionAsQrCode: EventListener<() => void>
   windowEnteredFullScreen: EventListener<() => void>
   windowLeftFullScreen: EventListener<() => void>
   appLoading: EventListener<(visible: boolean, dialog?: TranslationKey) => void>
+  yubikeyTouchRequired: EventListener<() => void>
 }
 
 // Async handler map
@@ -74,20 +87,80 @@ const asyncHandlers = {
   disableModes,
   toggleMaximize,
   generatePassphrase,
-  create,
+  generatePassword,
+  computeBip32RootFingerprint,
+  computeBip85Mnemonic,
+  scheduleClipboardClear,
+  renderCarrierPdf,
   duplicate,
   getDefaultPrinter,
   getPrinters,
   getPrinterStatus,
+  getSupportedPaperSizes,
   print,
   save,
-  restore,
   restoreReset,
   chooseDirectory,
   createDetachedArchive,
   restoreDetachedArchive,
-  createStandaloneArchive,
-  restoreStandaloneArchive,
+  // Wrapped so the renderer-facing surface stays serializable — the touch
+  // notice is injected here (windows), while the command-line interface
+  // calls the handlers directly with its own (stderr). Paranoid mode is
+  // injected here too, read from config at call time so the Settings
+  // toggle applies immediately — the renderer never chooses a KDF cost
+  create: (
+    secrets: Secret[],
+    label?: string,
+    shamir?: boolean,
+    numberOfShares?: number,
+    threshold?: number
+  ) =>
+    shamir === true && numberOfShares !== undefined && threshold !== undefined
+      ? create(
+          secrets,
+          label,
+          getConfig("kdfProfile") === "paranoid",
+          true,
+          numberOfShares,
+          threshold
+        )
+      : create(secrets, label, getConfig("kdfProfile") === "paranoid", false),
+  restore: (
+    passphrase: string,
+    payload: Parameters<typeof restore>[1],
+    slot?: Slot
+  ) =>
+    restore(passphrase, payload, getConfig("kdfProfile") === "paranoid", slot),
+  createStandaloneArchive: (
+    filePaths: string[],
+    archivePath: string,
+    passphrase: string,
+    slot?: Slot
+  ) =>
+    createStandaloneArchive(
+      filePaths,
+      archivePath,
+      passphrase,
+      getConfig("kdfProfile") === "paranoid",
+      slot,
+      broadcastYubiKeyTouchRequired
+    ),
+  restoreStandaloneArchive: (
+    filePath: string,
+    outputDir: string,
+    passphrase: string,
+    slot?: Slot
+  ) =>
+    restoreStandaloneArchive(
+      filePath,
+      outputDir,
+      passphrase,
+      getConfig("kdfProfile") === "paranoid",
+      slot,
+      broadcastYubiKeyTouchRequired
+    ),
+  verifyYubiKeyChallengeResponseSecret: (secret: string) =>
+    verifyYubiKeyChallengeResponseSecret(secret, broadcastYubiKeyTouchRequired),
 } as const
 
 // Derive interface from handler map
@@ -118,9 +191,11 @@ const syncHandlers = {
   generateMnemonic,
   validateMnemonic,
   getWordlist: () => wordlist,
-  getDataLength,
+  getPasswordCharacterClasses: () => characterClasses,
+  getBlockUsage,
+  encodeBlockContent,
   generateMasterKey,
-  deriveKey,
+  deriveDetachedArchiveFilename,
   generateToken,
 } as const
 
@@ -136,7 +211,7 @@ export const registerSyncHandlers = () => {
     ][]
   ).forEach(([name, handler]) => {
     handleSync(name, (...args: never[]) => {
-      // @ts-expect-error - TypeScript can't properly type handler union
+      // @ts-expect-error - TypeScript can’t properly type handler union
       return handler(...args)
     })
   })

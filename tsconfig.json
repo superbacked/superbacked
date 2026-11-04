@@ -2,7 +2,6 @@
   "compilerOptions": {
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
@@ -11,7 +10,6 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noFallthroughCasesInSwitch": true,
-    "noImplicitAny": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
@@ -22,12 +20,11 @@
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "strict": true,
-    "strictNullChecks": true,
     "sourceMap": true,
+    "strict": true,
     "target": "ES2022",
     "useDefineForClassFields": true
   },
-  "include": ["*.ts", "scripts/**/*", "src/**/*"],
-  "exclude": [".webpack", "dist", "node_modules"]
+  "exclude": [".webpack", "dist", "node_modules"],
+  "include": ["*.ts", "scripts/**/*", "src/**/*", "tests/**/*"]
 }

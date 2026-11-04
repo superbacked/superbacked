@@ -1,18 +1,22 @@
 import styled from "@emotion/styled"
 import {
+  Box,
   Button,
+  Group,
   Mark,
+  NumberInput,
   Popover,
-  PopoverProps,
   RingProgress,
+  SegmentedControl,
   Space,
   Text,
   rgba,
   useMantineTheme,
 } from "@mantine/core"
 import { FileWithPath } from "@mantine/dropzone"
-import { useDisclosure } from "@mantine/hooks"
+import { useDisclosure, useTimeout } from "@mantine/hooks"
 import { notifications } from "@mantine/notifications"
+import { IconQrcode } from "@tabler/icons-react"
 import {
   Fragment,
   FunctionComponent,
@@ -22,22 +26,29 @@ import {
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 
-import { Payload } from "@/src/handlers/create"
+import { LegacyPayload, Payload } from "@/src/handlers/create"
+import { DetachedArchive } from "@/src/handlers/detachedArchive"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import Dropzone from "@/src/main/components/Dropzone"
 import ErrorModal, { ErrorState } from "@/src/main/components/ErrorModal"
 import Loading from "@/src/main/components/Loading"
 import PassphraseModal from "@/src/main/components/PassphraseModal"
+import QrCodeModal from "@/src/main/components/QrCodeModal"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
+import { copySecretText } from "@/src/main/utilities/clipboard"
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   Bip39MnemonicResult,
+  Bip39PassphraseResult,
   TotpUriResult,
+  YubiKeyChallengeResponseSecretResult,
   extract,
 } from "@/src/main/utilities/regexp"
 import { TranslationKey } from "@/src/shared/types/i18n"
+import { yubikeyErrorMessage } from "@/src/shared/utilities/yubikeyErrorMessage"
+import type { Slot } from "@/src/utilities/yubikey/otp"
 
 const Container = styled.div`
   position: absolute;
@@ -55,27 +66,54 @@ const Container = styled.div`
 `
 
 interface SmartPopoverProps {
-  dropdown: ReactNode
+  // A function receives close, letting dropdown buttons dismiss the
+  // popover before acting (for example before opening a modal)
+  dropdown: ReactNode | ((controls: { close: () => void }) => ReactNode)
+  // Interactive dropdowns accept the pointer and stay open while
+  // hovered, so buttons inside are clickable — closing is delayed just
+  // long enough to cross the gap between target and dropdown
+  interactive?: boolean
   target: ReactNode
-  width: PopoverProps["width"]
 }
 
 const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
   const theme = useMantineTheme()
   const [opened, { close, open }] = useDisclosure(false)
+  const { clear: cancelClose, start: scheduleClose } = useTimeout(close, 120)
+  const openAndStay = () => {
+    cancelClose()
+    open()
+  }
+  const closeNow = () => {
+    cancelClose()
+    close()
+  }
+  const leave = () => {
+    if (props.interactive === true) {
+      scheduleClose()
+    } else {
+      close()
+    }
+  }
   return (
-    <Popover opened={opened} position="bottom" width={props.width} withArrow>
+    // No width — the dropdown fits its content; every applet bounds its
+    // own width (the word grid wraps into fixed columns, fingerprint and
+    // token lines are short)
+    <Popover opened={opened} position="bottom" withArrow>
       <Popover.Target>
         <Mark
-          onMouseEnter={open}
-          onMouseLeave={close}
+          onMouseEnter={openAndStay}
+          onMouseLeave={leave}
           sx={{
             backgroundColor: rgba(theme.colors.pink[8], 0.35),
+            // Layout-neutral rounding — wrapped highlights round only
+            // their true start and end (box-decoration-break: slice)
+            borderRadius: "var(--mantine-radius-sm)",
             color: "var(--mantine-color-gradient-0)",
             cursor: "default",
             overflowWrap: "anywhere",
             whiteSpace: "pre-wrap",
-            transition: "background-color 0.15s",
+            transition: "background-color 100ms ease",
             "&:hover": {
               backgroundColor: rgba(theme.colors.pink[8], 0.7),
             },
@@ -84,43 +122,484 @@ const SmartPopover: FunctionComponent<SmartPopoverProps> = (props) => {
           {props.target}
         </Mark>
       </Popover.Target>
-      <Popover.Dropdown sx={{ pointerEvents: "none" }}>
+      <Popover.Dropdown
+        onMouseEnter={props.interactive === true ? openAndStay : undefined}
+        onMouseLeave={props.interactive === true ? leave : undefined}
+        sx={{
+          pointerEvents: props.interactive === true ? "auto" : "none",
+        }}
+      >
         <Text size="sm" span ta="center">
-          {props.dropdown}
+          {typeof props.dropdown === "function"
+            ? props.dropdown({ close: closeNow })
+            : props.dropdown}
         </Text>
       </Popover.Dropdown>
     </Popover>
   )
 }
 
+// Both applet grids share the same rhythm — xs between columns, tight
+// rows — so the popovers read as one family
+const appletGridGap = {
+  columnGap: "var(--mantine-spacing-xs)",
+  rowGap: "2px",
+}
+
+interface MnemonicWordGridProps {
+  words: string[]
+}
+
+// Six columns per row, so 12- and 24-word mnemonics form clean 2- and
+// 4-row grids. Numbers align down each column, and equal fixed-width
+// columns (13ch fits the longest wordlist words after their numbers)
+// keep every slot in place as words change — toggling between the
+// BIP39 and BIP85 views or iterating the child index never shifts the
+// grid
+const MnemonicWordGrid: FunctionComponent<MnemonicWordGridProps> = (props) => {
+  const nodes: ReactNode[] = []
+  for (const [index, word] of props.words.entries()) {
+    nodes.push(
+      <Text
+        key={`dropdown-node-${nodes.length}`}
+        sx={{ whiteSpace: "nowrap" }}
+        ta="left"
+      >
+        {/* Numbers right-align on a fixed width (accounting style), so
+            single and double digits line up down each column */}
+        <Text
+          c="dark.4"
+          span
+          sx={{
+            display: "inline-block",
+            minWidth: "3ch",
+            textAlign: "right",
+          }}
+        >
+          {index + 1}.
+        </Text>{" "}
+        {word}
+      </Text>
+    )
+  }
+  return (
+    <Box
+      sx={{
+        ...appletGridGap,
+        display: "grid",
+        gridTemplateColumns: "repeat(6, 13ch)",
+        justifyContent: "center",
+      }}
+    >
+      {nodes}
+    </Box>
+  )
+}
+
 interface Bip39MnemonicAppletProps {
+  mnemonic: string
+  onCopy: () => void
+  onShowAsQrCode: (value: string) => void
   words: Bip39MnemonicResult["properties"]["words"]
 }
 
 const Bip39MnemonicApplet: FunctionComponent<Bip39MnemonicAppletProps> = (
   props
 ) => {
-  const nodes: ReactNode[] = []
-  for (const [index, word] of props.words.entries()) {
-    nodes.push(
-      <Fragment key={`dropdown-node-${nodes.length}`}>
-        <Text sx={{ display: "inline-block" }}>
-          <Text c="dark.4" span>
-            {index + 1}.{" "}
+  const { t } = useTranslation()
+  const [view, setView] = useState<"mnemonic" | "bip85">("mnemonic")
+  const [childWords, setChildWords] = useState<"12" | "24">("24")
+  const [childIndex, setChildIndex] = useState<number | string>(0)
+  const [childMnemonic, setChildMnemonic] = useState<null | string>(null)
+  // Derives live as inputs change (same compute-and-cancel pattern as
+  // the fingerprint applet) — derivation is deterministic and fast, so a
+  // Derive button would only add a step. Children derive without a BIP39
+  // passphrase (empty by convention). State resets when the popover
+  // closes (the dropdown unmounts), so derived children never linger
+  useEffect(() => {
+    if (view !== "bip85" || typeof childIndex !== "number") {
+      return
+    }
+    let cancelled = false
+    const compute = async () => {
+      const computed = await window.api.invoke.computeBip85Mnemonic(
+        props.mnemonic,
+        "",
+        childWords === "12" ? 12 : 24,
+        childIndex
+      )
+      if (cancelled === false) {
+        setChildMnemonic(computed)
+      }
+    }
+    void compute()
+    return () => {
+      cancelled = true
+    }
+  }, [childIndex, childWords, props.mnemonic, view])
+  if (view === "bip85") {
+    return (
+      <Fragment>
+        {/* Same title treatment and lg gap as the passphrase-strength and
+            block-capacity popovers, so popovers read as one family */}
+        <Text fw="bold" ta="center" variant="signatureGradient">
+          {t("routes.restore.bip85Mnemonic")}
+        </Text>
+        <Space h="lg" />
+        {/* Word count and index share a line — dark labels next to their
+            controls, centered like the rest of the applet */}
+        <Box
+          sx={{
+            ...appletGridGap,
+            alignItems: "center",
+            display: "grid",
+            gridTemplateColumns: "repeat(4, max-content)",
+            justifyContent: "center",
+          }}
+        >
+          {/* The BIP39 application's own parameter names ({words} and
+              {index} in the spec path), so labels match the standard */}
+          <Text c="dark.4" ta="left">
+            {t("routes.restore.words")}:
           </Text>
-          {word}
-        </Text>{" "}
+          <SegmentedControl
+            data={[
+              { label: "12", value: "12" },
+              { label: "24", value: "24" },
+            ]}
+            onChange={(value) => {
+              setChildWords(value as "12" | "24")
+            }}
+            size="xs"
+            value={childWords}
+          />
+          <Text c="dark.4" ta="left">
+            {t("routes.restore.index")}:
+          </Text>
+          <NumberInput
+            allowDecimal={false}
+            allowNegative={false}
+            hideControls
+            max={2147483647}
+            min={0}
+            onChange={(value) => {
+              setChildIndex(value)
+              // Cleared at the event site (the effect only computes) — a
+              // cleared index has no derivation to show
+              if (typeof value !== "number") {
+                setChildMnemonic(null)
+              }
+            }}
+            size="xs"
+            value={childIndex}
+            w={80}
+          />
+        </Box>
+        <Space h="xl" />
+        {/* Empty slots while a cleared index has no derivation to show —
+            numbers keep their places instead of the grid vanishing */}
+        <MnemonicWordGrid
+          words={
+            childMnemonic === null
+              ? Array.from({ length: childWords === "12" ? 12 : 24 }, () => "")
+              : childMnemonic.split(" ")
+          }
+        />
+        <Space h="xl" />
+        <Group justify="center">
+          <Button.Group>
+            <Button
+              disabled={childMnemonic === null}
+              onClick={async () => {
+                if (childMnemonic !== null) {
+                  await copySecretText(childMnemonic)
+                }
+              }}
+              size="xs"
+              variant="default"
+            >
+              {t("common.copy")}
+            </Button>
+            <Button
+              disabled={childMnemonic === null}
+              onClick={() => {
+                if (childMnemonic !== null) {
+                  props.onShowAsQrCode(childMnemonic)
+                }
+              }}
+              rightSection={<IconQrcode size={14} />}
+              size="xs"
+              variant="default"
+            >
+              {t("routes.restore.showAsQrCode")}
+            </Button>
+          </Button.Group>
+        </Group>
       </Fragment>
     )
   }
-  return nodes
+  return (
+    <Fragment>
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
+        {t("routes.restore.bip39Mnemonic")}
+      </Text>
+      <Space h="lg" />
+      <MnemonicWordGrid words={props.words} />
+      <Space h="xl" />
+      <Group justify="center">
+        <Button.Group>
+          <Button onClick={props.onCopy} size="xs" variant="default">
+            {t("common.copy")}
+          </Button>
+          {/* Between copy and QR like verify on the YubiKey applet —
+              applet-specific actions sit in the middle, show as QR code
+              closes the group */}
+          <Button
+            onClick={() => {
+              setView("bip85")
+            }}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.deriveBip85Mnemonic")}
+          </Button>
+          <Button
+            onClick={() => {
+              props.onShowAsQrCode(props.mnemonic)
+            }}
+            rightSection={<IconQrcode size={14} />}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.showAsQrCode")}
+          </Button>
+        </Button.Group>
+      </Group>
+    </Fragment>
+  )
+}
+
+interface Bip39PassphraseAppletProps {
+  mnemonics: string[]
+  onCopy: () => void
+  onShowAsQrCode: () => void
+  passphrase: Bip39PassphraseResult["properties"]["passphrase"]
+}
+
+// The fingerprint a signing device and wallet (for example Trezor
+// connected to Electrum) display for the wallet this mnemonic and
+// passphrase unlock — the master node’s identity, so no derivation path
+// enters or is shown (see src/utilities/crypto/bip32.ts). One section
+// per mnemonic in the secret, each identified by its abbreviated words,
+// so multiple mnemonics stay unambiguous
+const Bip39PassphraseApplet: FunctionComponent<Bip39PassphraseAppletProps> = (
+  props
+) => {
+  const { t } = useTranslation()
+  const [fingerprints, setFingerprints] = useState<null | string[]>(null)
+  useEffect(() => {
+    let cancelled = false
+    const compute = async () => {
+      const computed: string[] = []
+      for (const mnemonic of props.mnemonics) {
+        computed.push(
+          await window.api.invoke.computeBip32RootFingerprint(
+            mnemonic,
+            props.passphrase
+          )
+        )
+      }
+      if (cancelled === false) {
+        setFingerprints(computed)
+      }
+    }
+    void compute()
+    return () => {
+      cancelled = true
+    }
+  }, [props.mnemonics, props.passphrase])
+  const abbreviate = (mnemonic: string) => {
+    const words = mnemonic.split(" ")
+    return `${words[0]}…${words[words.length - 1]}`
+  }
+  return (
+    <Fragment>
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
+        {t("routes.restore.bip39Passphrase")}
+      </Text>
+      <Space h="lg" />
+      {props.mnemonics.map((mnemonic, index) => (
+        <Fragment key={mnemonic}>
+          {index > 0 ? <Space h="xs" /> : null}
+          {/* Text labels align left (numbers align right, text does
+              not); the grid column gives values a shared left edge —
+              same max-content column treatment as the word grid */}
+          <Box
+            sx={{
+              ...appletGridGap,
+              display: "grid",
+              gridTemplateColumns: "repeat(2, max-content)",
+            }}
+          >
+            <Text c="dark.4" ta="left">
+              {t("routes.restore.bip39Mnemonic")}:
+            </Text>
+            <Text ta="left">{abbreviate(mnemonic)}</Text>
+            <Text c="dark.4" ta="left">
+              {t("routes.restore.bip32RootFingerprint")}:
+            </Text>
+            <Text ta="left">
+              {fingerprints === null ? "…" : fingerprints[index]}
+            </Text>
+          </Box>
+        </Fragment>
+      ))}
+      <Space h="xl" />
+      <Group justify="center">
+        <Button.Group>
+          <Button onClick={props.onCopy} size="xs" variant="default">
+            {t("common.copy")}
+          </Button>
+          <Button
+            onClick={props.onShowAsQrCode}
+            rightSection={<IconQrcode size={14} />}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.showAsQrCode")}
+          </Button>
+        </Button.Group>
+      </Group>
+    </Fragment>
+  )
+}
+
+interface YubiKeyChallengeResponseSecretAppletProps {
+  onCopy: () => void
+  onShowAsQrCode: () => void
+  secret: YubiKeyChallengeResponseSecretResult["properties"]["secret"]
+}
+
+// A slot secret can never be read back from a YubiKey, so verification
+// challenges the connected key and compares its response against the
+// one the extracted secret predicts (see
+// src/handlers/yubikeyChallengeResponseSecret.ts) — the honest answer to “is
+// this backup the secret my key uses”
+const YubiKeyChallengeResponseSecretApplet: FunctionComponent<
+  YubiKeyChallengeResponseSecretAppletProps
+> = (props) => {
+  const { t } = useTranslation()
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [touchAwaited, setTouchAwaited] = useState(false)
+  const [verification, setVerification] = useState<
+    | null
+    | { outcome: "match"; slot: Slot }
+    | { outcome: "noMatch" }
+    | { outcome: "error"; message: TranslationKey }
+  >(null)
+  useEffect(() => {
+    return window.api.events.yubikeyTouchRequired(() => {
+      setTouchAwaited(true)
+    })
+  }, [])
+  const verify = async () => {
+    setIsVerifying(true)
+    setTouchAwaited(false)
+    setVerification(null)
+    const result = await window.api.invoke.verifyYubiKeyChallengeResponseSecret(
+      props.secret
+    )
+    setIsVerifying(false)
+    setTouchAwaited(false)
+    if (result.success === false) {
+      setVerification({
+        outcome: "error",
+        message:
+          result.yubikeyErrorCode !== undefined
+            ? yubikeyErrorMessage(result.yubikeyErrorCode)
+            : "common.couldNotCommunicateWithYubiKey",
+      })
+    } else if (result.slot === null) {
+      setVerification({ outcome: "noMatch" })
+    } else {
+      setVerification({ outcome: "match", slot: result.slot })
+    }
+  }
+  return (
+    <Fragment>
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
+        {t("routes.restore.yubikeyChallengeResponseSecret")}
+      </Text>
+      <Space h="lg" />
+      <Group justify="center">
+        <Button.Group>
+          <Button onClick={props.onCopy} size="xs" variant="default">
+            {t("common.copy")}
+          </Button>
+          <Button
+            disabled={isVerifying}
+            loading={isVerifying}
+            onClick={() => {
+              void verify()
+            }}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.verify")}
+          </Button>
+          <Button
+            onClick={props.onShowAsQrCode}
+            rightSection={<IconQrcode size={14} />}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.showAsQrCode")}
+          </Button>
+        </Button.Group>
+      </Group>
+      {isVerifying === true && touchAwaited === true ? (
+        <Fragment>
+          <Space h="md" />
+          <Text size="sm" ta="center">
+            {t("common.touchYubiKey")}
+          </Text>
+        </Fragment>
+      ) : null}
+      {verification !== null ? (
+        <Fragment>
+          <Space h="md" />
+          <Text
+            c={verification.outcome === "match" ? undefined : "red"}
+            size="sm"
+            ta="center"
+          >
+            {verification.outcome === "match"
+              ? t("routes.restore.provisionedInSlot", {
+                  slot: verification.slot,
+                })
+              : verification.outcome === "noMatch"
+                ? t("routes.restore.notProvisionedOnYubiKey")
+                : t(verification.message)}
+          </Text>
+        </Fragment>
+      ) : null}
+    </Fragment>
+  )
 }
 
 interface TotpAppletProps {
+  onShowAsQrCode: () => void
   secret: TotpUriResult["properties"]["secret"]
 }
 
 const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
+  const { t } = useTranslation()
   const getTimeRemaining = () => {
     const now = new Date()
     const seconds = now.getSeconds()
@@ -147,25 +626,74 @@ const TotpApplet: FunctionComponent<TotpAppletProps> = (props) => {
   }, [props.secret])
   return (
     <Fragment>
-      {token}{" "}
-      <RingProgress
-        sections={[
-          { value: timeRemaining, color: "dark.4" },
-          { value: 100 - timeRemaining, color: "pink" },
-        ]}
-        size={18}
-        thickness={2}
-        roundCaps
+      {/* Same title treatment and lg gap as the passphrase-strength and
+          block-capacity popovers, so popovers read as one family */}
+      <Text fw="bold" ta="center" variant="signatureGradient">
+        {t("routes.restore.totp")}
+      </Text>
+      <Space h="lg" />
+      <Box
         sx={{
-          display: "inline-block",
-          verticalAlign: "text-top",
+          ...appletGridGap,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, max-content)",
         }}
-      />
+      >
+        <Text c="dark.4" ta="left">
+          {t("routes.restore.token")}:
+        </Text>
+        <Text ta="left">
+          {token}{" "}
+          <RingProgress
+            sections={[
+              { value: timeRemaining, color: "dark.4" },
+              { value: 100 - timeRemaining, color: "pink" },
+            ]}
+            size={18}
+            thickness={2}
+            roundCaps
+            sx={{
+              display: "inline-block",
+              verticalAlign: "text-top",
+            }}
+          />
+        </Text>
+      </Box>
+      <Space h="xl" />
+      <Group justify="center">
+        <Button.Group>
+          {/* Copies the current token (the value pasted into a login) —
+              the handler lives here, next to the token state, rather
+              than at the call site like the other applets. The QR
+              deliberately differs from the copy: it shows the full
+              otpauth URI (what phone authenticators scan to enroll),
+              never the short-lived token */}
+          <Button
+            onClick={async () => {
+              await copySecretText(token)
+            }}
+            size="xs"
+            variant="default"
+          >
+            {t("common.copy")}
+          </Button>
+          <Button
+            onClick={props.onShowAsQrCode}
+            rightSection={<IconQrcode size={14} />}
+            size="xs"
+            variant="default"
+          >
+            {t("routes.restore.showAsQrCode")}
+          </Button>
+        </Button.Group>
+      </Group>
     </Fragment>
   )
 }
 
-export type HandlePayload = (payload: Payload) => Promise<boolean>
+export type HandlePayload = (
+  payload: Payload | LegacyPayload
+) => Promise<boolean>
 
 interface RestoreProps {
   exportMode?: boolean
@@ -177,6 +705,9 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const { t } = useTranslation()
   const scannerRef = useRef<ScannerRef>(null)
   const passphraseRef = useRef<string>("")
+  // Slot for YubiKey-protected blocks — persists alongside the passphrase
+  // so scanning further blocks reuses it without re-prompting
+  const yubikeySlotRef = useRef<Slot | undefined>(undefined)
   const codeRef = useRef<string>(null)
   const scannedCodesRef = useRef<Set<string>>(new Set())
   const [showPassphraseModal, setShowPassphraseModal] = useState(false)
@@ -187,22 +718,21 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
   const [showScanNextBlockBadge, setShowScanNextBlockBadge] = useState(false)
   const [secret, setSecret] = useState<null | string>(null)
   const [showSecret, setShowSecret] = useState(false)
-  const [detachedArchiveEncryptionKey, setDetachedArchiveEncryptionKey] =
-    useState<null | string>(null)
-  const [detachedArchiveHmacKey, setDetachedArchiveHmacKey] = useState<
-    null | string
-  >(null)
-  const [detachedArchiveFilename, setDetachedArchiveFilename] = useState<
-    null | string
-  >(null)
-  const [detachedArchiveBlockContent, setDetachedArchiveBlockContent] =
-    useState<null | string>(null)
+  // Closing only flips showQrCodeModal — the value survives so the QR
+  // stays stable while the modal fades out (same pattern as
+  // SelectionAsQrCode)
+  const [qrCodeValue, setQrCodeValue] = useState<null | string>(null)
+  const [showQrCodeModal, setShowQrCodeModal] = useState(false)
+  // Present when the restored block pairs with a detached archive — held
+  // opaquely and handed back verbatim (see src/handlers/detachedArchive.ts)
+  const [detachedArchive, setDetachedArchive] =
+    useState<null | DetachedArchive>(null)
   const [isRestoringDetachedArchive, setIsRestoringDetachedArchive] =
     useState(false)
-  const [error, setError] =
-    useState<null | ErrorState<"routes.restore.couldNotRestoreDetachedArchive">>(
-      null
-    )
+  const [error, setError] = useState<null | ErrorState<
+    | "routes.restore.couldNotRestoreDetachedArchive"
+    | "routes.restore.detachedArchiveRequiresNewerVersion"
+  >>(null)
   useEffect(() => {
     return () => {
       window.api.invoke.restoreReset()
@@ -224,10 +754,12 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       }
       return
     }
-    let payload: Payload
+    let payload: Payload | LegacyPayload
     try {
       payload = JSON.parse(code)
-      if (!payload.salt || !payload.iv || !payload.headers || !payload.data) {
+      // Legacy payloads carry iv and headers as well — salt and data are
+      // what every payload shares
+      if (!payload.salt || !payload.data) {
         // Payload not Superbacked-compatible
         return
       }
@@ -242,11 +774,19 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
     }
     const result = await window.api.invoke.restore(
       passphraseRef.current,
-      payload
+      payload,
+      yubikeySlotRef.current
     )
     setIsUnlocking(false)
     if (result.success === false) {
-      if (result.error.match(/shares did not combine to a valid secret/i)) {
+      if (result.yubikeyErrorCode !== undefined) {
+        scannerRef.current?.stop()
+        setShowScanNextBlockBadge(false)
+        setPassphraseError(yubikeyErrorMessage(result.yubikeyErrorCode))
+        setShowPassphraseModal(true)
+      } else if (
+        result.error.match(/shares did not combine to a valid secret/i)
+      ) {
         notifications.show({
           id: "scanOrDragAndDropNextBlock",
           message: t("routes.restore.scanOrDragAndDropNextBlock"),
@@ -262,7 +802,13 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       } else {
         scannerRef.current?.stop()
         setShowScanNextBlockBadge(false)
-        setPassphraseError("routes.restore.couldNotUnlockBlock")
+        setPassphraseError(
+          result.unsupportedVersion === true
+            ? "routes.restore.blockRequiresNewerVersion"
+            : yubikeySlotRef.current === undefined
+              ? "routes.restore.couldNotUnlockBlock"
+              : "routes.restore.couldNotUnlockBlockYubiKey"
+        )
         setShowPassphraseModal(true)
       }
     } else if (result.success === true) {
@@ -271,81 +817,122 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
       scannerRef.current?.stop()
       scannedCodesRef.current.clear()
 
-      // Parse secret
-      const message = result.message
-      let extractedSecret = message
-      let extractedMasterKey: null | string = null
-      try {
-        const parsed = JSON.parse(extractedSecret)
-        if (parsed && typeof parsed.secret === "string") {
-          extractedSecret = parsed.secret
-          if (typeof parsed.masterKey === "string") {
-            extractedMasterKey = parsed.masterKey
-          }
-        }
-      } catch {
-        // Not JSON, use as-is
-      }
+      setSecret(result.message)
 
-      setSecret(extractedSecret)
-
-      // If masterKey exists, derive archive encryption key, HMAC key and filename
-      if (extractedMasterKey) {
-        const encryptionKey = window.api.invokeSync.deriveKey(
-          extractedMasterKey,
-          "encryption-key-v1"
-        )
-        setDetachedArchiveEncryptionKey(encryptionKey)
-        const derivedHmacKey = window.api.invokeSync.deriveKey(
-          extractedMasterKey,
-          "hmac-v1"
-        )
-        setDetachedArchiveHmacKey(derivedHmacKey)
-        const derivedFilename = window.api.invokeSync.deriveKey(
-          extractedMasterKey,
-          "filename-v1",
-          16,
-          "hex"
-        )
-        setDetachedArchiveFilename(derivedFilename)
-        setDetachedArchiveBlockContent(message)
+      if (result.detachedArchive) {
+        setDetachedArchive(result.detachedArchive)
       }
     }
   }
   if (secret) {
     if (showSecret === true) {
       const nodes: ReactNode[] = []
+      // Mnemonics gate passphrase extraction and feed the fingerprint
+      // applet — collected over the whole secret, as the mnemonic
+      // usually sits on another line than the passphrase, and deduped so
+      // a repeated mnemonic yields one fingerprint section (which also
+      // makes the mnemonic a safe React key)
+      const bip39Mnemonics = Array.from(
+        new Set(
+          extract(secret)
+            .filter((result) => result.type === "bip39Mnemonic")
+            .map((result) => result.string)
+        )
+      )
       const lines = secret.split(/\n/)
       for (const line of lines) {
         if (line === "") {
           nodes.push(<Space key={`node-${nodes.length}`} h="lg" />)
         } else {
           const lineNodes: ReactNode[] = []
-          const results = extract(line)
+          const results = extract(line, bip39Mnemonics.length > 0)
           let startIndex = 0
           if (results.length === 0) {
             lineNodes.push(line)
           } else {
             for (const result of results) {
               lineNodes.push(line.substring(startIndex, result.start))
-              if (result.type === "validBip39Mnemonic") {
+              if (result.type === "bip39Mnemonic") {
                 lineNodes.push(
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}
-                    dropdown={
-                      <Bip39MnemonicApplet words={result.properties.words} />
-                    }
+                    dropdown={(controls) => (
+                      <Bip39MnemonicApplet
+                        mnemonic={result.string}
+                        onCopy={async () => {
+                          await copySecretText(result.string)
+                        }}
+                        onShowAsQrCode={(value) => {
+                          controls.close()
+                          setQrCodeValue(value)
+                          setShowQrCodeModal(true)
+                        }}
+                        words={result.properties.words}
+                      />
+                    )}
+                    interactive
                     target={line.substring(result.start, result.end)}
-                    width="440px"
+                  />
+                )
+              } else if (result.type === "bip39Passphrase") {
+                lineNodes.push(
+                  <SmartPopover
+                    key={`line-node-${lineNodes.length}`}
+                    dropdown={(controls) => (
+                      <Bip39PassphraseApplet
+                        mnemonics={bip39Mnemonics}
+                        onCopy={async () => {
+                          await copySecretText(result.properties.passphrase)
+                        }}
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.properties.passphrase)
+                          setShowQrCodeModal(true)
+                        }}
+                        passphrase={result.properties.passphrase}
+                      />
+                    )}
+                    interactive
+                    target={line.substring(result.start, result.end)}
                   />
                 )
               } else if (result.type === "totpUri") {
                 lineNodes.push(
                   <SmartPopover
                     key={`line-node-${lineNodes.length}`}
-                    dropdown={<TotpApplet secret={result.properties.secret} />}
+                    dropdown={(controls) => (
+                      <TotpApplet
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.string)
+                          setShowQrCodeModal(true)
+                        }}
+                        secret={result.properties.secret}
+                      />
+                    )}
+                    interactive
                     target={line.substring(result.start, result.end)}
-                    width="120px"
+                  />
+                )
+              } else if (result.type === "yubikeyChallengeResponseSecret") {
+                lineNodes.push(
+                  <SmartPopover
+                    key={`line-node-${lineNodes.length}`}
+                    dropdown={(controls) => (
+                      <YubiKeyChallengeResponseSecretApplet
+                        onCopy={async () => {
+                          await copySecretText(result.properties.secret)
+                        }}
+                        onShowAsQrCode={() => {
+                          controls.close()
+                          setQrCodeValue(result.properties.secret)
+                          setShowQrCodeModal(true)
+                        }}
+                        secret={result.properties.secret}
+                      />
+                    )}
+                    interactive
+                    target={line.substring(result.start, result.end)}
                   />
                 )
               }
@@ -374,11 +961,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               <Button
                 variant="default"
                 onClick={async () => {
-                  await navigator.clipboard.writeText(secret)
-                  notifications.show({
-                    id: "copy",
-                    message: t("common.copied"),
-                  })
+                  await copySecretText(secret)
                 }}
               >
                 {t("common.copy")}
@@ -393,24 +976,24 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               </Button>
             </Button.Group>
           </Container>
+          <QrCodeModal
+            onClose={() => setShowQrCodeModal(false)}
+            opened={showQrCodeModal === true && qrCodeValue !== null}
+            value={qrCodeValue ?? ""}
+          />
         </Fragment>
       )
     } else {
       return (
         <Fragment>
-          {detachedArchiveFilename ? (
+          {detachedArchive ? (
             <Fragment>
               <Dropzone
                 onDrop={async (files: FileWithPath[]) => {
                   const file = files[0]
-                  if (
-                    file &&
-                    detachedArchiveEncryptionKey &&
-                    detachedArchiveHmacKey &&
-                    detachedArchiveBlockContent
-                  ) {
+                  if (file) {
                     const filename = file.name.replace(/\.superbacked$/, "")
-                    if (filename === detachedArchiveFilename) {
+                    if (filename === detachedArchive.filename) {
                       const filePath = window.api.getPathForFile(file)
                       const saveDialogReturnValue =
                         await window.api.invoke.chooseDirectory(
@@ -431,14 +1014,14 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                           await window.api.invoke.restoreDetachedArchive(
                             filePath,
                             outputDir,
-                            detachedArchiveEncryptionKey,
-                            detachedArchiveHmacKey,
-                            detachedArchiveBlockContent
+                            detachedArchive.blockContent
                           )
                         if (result.success === false && result.error) {
                           setError({
                             message:
-                              "routes.restore.couldNotRestoreDetachedArchive",
+                              result.unsupportedVersion === true
+                                ? "routes.restore.detachedArchiveRequiresNewerVersion"
+                                : "routes.restore.couldNotRestoreDetachedArchive",
                           })
                         } else if (result.success) {
                           showNotificationWithButton({
@@ -465,7 +1048,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               />
               <ActionBadge color="dark">
                 {t("routes.restore.dragAndDropArchiveToRestore", {
-                  filename: `${detachedArchiveFilename}.superbacked`,
+                  filename: `${detachedArchive.filename}.superbacked`,
                 })}
               </ActionBadge>
             </Fragment>
@@ -475,11 +1058,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               <Button
                 variant="default"
                 onClick={async () => {
-                  await navigator.clipboard.writeText(secret)
-                  notifications.show({
-                    id: "copy",
-                    message: t("common.copied"),
-                  })
+                  await copySecretText(secret)
                 }}
               >
                 {t("common.copy")}
@@ -541,6 +1120,7 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           opened={showPassphraseModal}
           onClose={() => {
             passphraseRef.current = ""
+            yubikeySlotRef.current = undefined
             scannerRef.current?.clear()
             if (scannerRef.current?.isUsingCamera()) {
               scannerRef.current?.start()
@@ -551,8 +1131,14 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
           onReset={() => {
             setPassphraseError(null)
           }}
-          onSubmit={async (passphrase) => {
+          onSubmit={async (passphrase, options) => {
             passphraseRef.current = passphrase
+            yubikeySlotRef.current =
+              options.yubikey === true
+                ? options.slot === "1"
+                  ? 1
+                  : 2
+                : undefined
             setPassphraseError(null)
             setIsUnlocking(true)
             await compute()

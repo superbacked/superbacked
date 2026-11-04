@@ -13,8 +13,7 @@ type TranslationPaths = Paths<Translation>
 
 // For plural keys (_one, _other), also include the base key without suffix
 type WithPluralBase<T extends string> =
-  | T
-  | (T extends `${infer Base}_${"one" | "other"}` ? Base : never)
+  T | (T extends `${infer Base}_${"one" | "other"}` ? Base : never)
 
 // TranslationKey includes both full keys and base keys for plurals
 export type TranslationKey = WithPluralBase<TranslationPaths>

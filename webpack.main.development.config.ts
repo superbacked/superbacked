@@ -7,6 +7,11 @@ import { rules } from "./webpack.rules"
 
 const config: Configuration = {
   entry: "./src/index.ts",
+  // node-hid is a native module — it loads its prebuilt binary relative to
+  // its own location in node_modules and cannot be bundled
+  externals: {
+    "node-hid": "commonjs node-hid",
+  },
   mode: "development",
   module: {
     rules: rules,

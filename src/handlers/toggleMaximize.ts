@@ -1,5 +1,5 @@
 import { getMainWindow } from "@/src/index"
-import { getSenderWindow } from "@/src/utilities/handleContext"
+import { getSenderWindow } from "@/src/utilities/ipc/handleContext"
 
 export default function toggleMaximize(): void {
   const window = getSenderWindow() ?? getMainWindow()

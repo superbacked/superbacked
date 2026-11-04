@@ -2,27 +2,20 @@ import { changeLanguage, use as i18nextUse } from "i18next"
 import { initReactI18next } from "react-i18next"
 
 import en from "@/src/locales/en.json"
-import fr from "@/src/locales/fr.json"
-import pt from "@/src/locales/pt.json"
-import sv from "@/src/locales/sv.json"
+// French is commented out but kept as a working example of how to add
+// a language: restore its import and resource entry below, then
+// uncomment the “Choose app language” menu in menu.ts.
+// import fr from "@/src/locales/fr.json"
 
 export const resources = {
   en: {
     label: "English",
     translation: en,
   },
-  fr: {
-    label: "Français",
-    translation: fr satisfies typeof en,
-  },
-  pt: {
-    label: "Português",
-    translation: pt satisfies typeof en,
-  },
-  sv: {
-    label: "Svenska",
-    translation: sv satisfies typeof en,
-  },
+  // fr: {
+  //   label: "Français",
+  //   translation: fr satisfies typeof en,
+  // },
 }
 
 export type Locale = keyof typeof resources

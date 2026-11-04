@@ -1,12 +1,11 @@
 import { fixupConfigRules } from "@eslint/compat"
 import { FlatCompat } from "@eslint/eslintrc"
 import js from "@eslint/js"
+import { configs as typographyConfigs } from "@sunknudsen/typography/eslint"
 import tsParser from "@typescript-eslint/parser"
 import { defineConfig, globalIgnores } from "eslint/config"
 import prettier from "eslint-config-prettier/flat"
 import globals from "globals"
-
-import { configs as typographyConfigs } from "./eslint/typography"
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
@@ -132,7 +131,17 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-non-null-assertion": "warn",
       "@typescript-eslint/prefer-nullish-coalescing": "warn",
       "@typescript-eslint/prefer-optional-chain": "warn",
-      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-floating-promises": [
+        "error",
+        {
+          // node:test registers tests with top-level calls whose returned
+          // promises the test runner itself awaits
+          allowForKnownSafeCalls: [
+            { from: "package", name: "suite", package: "node:test" },
+            { from: "package", name: "test", package: "node:test" },
+          ],
+        },
+      ],
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-misused-promises": [
         "error",

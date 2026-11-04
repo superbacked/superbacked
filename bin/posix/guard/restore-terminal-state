@@ -1,0 +1,6 @@
+#! /bin/sh
+# Restore-on-death guard (see src/utilities/spawnGuard.ts) — blocks until the
+# pipe held by the owning process closes, then restores the saved
+# terminal state ($1), re-enabling echo after a hidden prompt dies
+read -r _ || true
+exec stty "$1" < /dev/tty
