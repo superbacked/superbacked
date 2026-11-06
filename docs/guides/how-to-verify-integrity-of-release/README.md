@@ -23,7 +23,7 @@ Download `SHA256SUMS` and `SHA256SUMS.asc` from the [release page](https://githu
 $ ls
 SHA256SUMS
 SHA256SUMS.asc
-superbacked-arm64-2.0.0-rc.2.dmg
+superbacked-arm64-2.0.0.dmg
 ```
 
 ### Step 2 (optional): verify integrity of `SHA256SUMS` using GnuPG
@@ -44,7 +44,7 @@ gpg:               imported: 1
 
 $ gpg --verify --with-fingerprint SHA256SUMS.asc
 gpg: assuming signed data in 'SHA256SUMS'
-gpg: Signature made Thu 17 Sep 14:25:22 2026 EDT
+gpg: Signature made Wed  4 Nov 09:42:35 2026 EST
 gpg:                using EDDSA key 9C7887E1B5FCBCE2DFED0E1C02C43AD072D57783
 gpg: Good signature from "Sun Knudsen <hello@sunknudsen.com>" [unknown]
 gpg: WARNING: This key is not certified with a trusted signature!
@@ -63,7 +63,7 @@ Run following command.
 
 ```console
 $ shasum --algorithm 256 --check --ignore-missing SHA256SUMS
-./superbacked-arm64-2.0.0-rc.2.dmg: OK
+./superbacked-arm64-2.0.0.dmg: OK
 ```
 
 Verify the output shows `OK` for the downloaded release.
