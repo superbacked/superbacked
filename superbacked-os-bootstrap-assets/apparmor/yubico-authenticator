@@ -85,6 +85,43 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   owner @{HOME}/.local/share/com.yubico*/{,**} rwk,
   owner @{HOME}/.cache/com.yubico*/{,**} rwk,
 
+  # QR import by drag and drop — GNOME Shell saves Print Screen captures
+  # here. Folder name follows the English locale the bootstrap pins.
+  owner @{HOME}/Pictures/Screenshots/ r,
+  owner @{HOME}/Pictures/Screenshots/*.png r,
+
+  # “Scan QR code”: the bundled helper grabs the screen over X11 first
+  # and falls back to gnome-screenshot only when that grab fails
+  # outright — the X11 wall above is what makes the fallback reachable
+  # (with Xwayland in reach the grab would return a black frame and the
+  # fallback would never run). Ubuntu ships no gnome-screenshot; the
+  # stand-in superbacked-os-bootstrap-main.sh installs answers through
+  # the desktop ScreenCast portal, as the Superbacked app’s scanner
+  # does — GNOME’s picker hands over one window per scan, never a
+  # monitor, nothing is remembered — and stays under this profile (ix)
+  # on the system Python, whose standard library and GLib bindings
+  # the abstraction covers. The frame comes off PipeWire through
+  # GStreamer, loading its four plugins from a directory of their own
+  # into a registry of its own under the runtime directory (the
+  # system-wide scan would open the cameras through the video4linux
+  # plugin and cache a registry in home): the plugin directory, that
+  # registry (written through a temp file beside it), PipeWire’s
+  # client configuration and the helper’s temp file under /tmp,
+  # already granted. The stream arrives as a descriptor the portal
+  # connected, so the PipeWire socket itself is never opened — as in
+  # the Superbacked profile, and on purpose: a direct client of the
+  # same user is unrestricted and can read the streams other apps are
+  # being shown. The plugin libraries themselves resolve under
+  # /usr/lib, which the base abstraction covers.
+  include <abstractions/python>
+  /usr/local/bin/gnome-screenshot rix,
+  /usr/bin/python3.[0-9]* mr,
+  # GLib reads the program name off the process’s own command line
+  owner @{PROC}/@{pid}/cmdline r,
+  /usr/local/lib/gnome-screenshot/gstreamer-1.0/ r,
+  owner @{run}/user/[0-9]*/gnome-screenshot-registry.bin{,.tmp*} rw,
+  /usr/share/pipewire/{,**} r,
+
   # GTK embedder (Flutter Linux shell) on superbacked’s Wayland
   # socket, its platform theme and audio (libcanberra event sounds
   # cache per-machine state in home and read the pulse cookie).

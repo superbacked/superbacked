@@ -1,0 +1,307 @@
+#! /usr/bin/python3 -I
+# Superbacked OS — gnome-screenshot stand-in for Yubico Authenticator’s
+# “Scan QR code”. The bundled helper captures the screen over X11
+# first (walled off by the AppArmor profile on this Wayland-only OS),
+# then runs `gnome-screenshot -f <file>` — which Ubuntu no longer
+# ships. This stand-in answers that call through the desktop
+# ScreenCast portal, the same path the Superbacked app’s scanner
+# takes: GNOME opens its picker for the user to hand over one window
+# (windows only, as the scanner asks — never a whole monitor), one
+# frame is pulled from the resulting PipeWire stream, written to
+# <file> as PNG and the session is closed. Nothing is
+# remembered between scans — the picker appears every time and no
+# permission is stored. Nothing else of gnome-screenshot’s interface
+# is implemented — the helper passes exactly -f. Installed as
+# /usr/local/bin/gnome-screenshot by superbacked-os-bootstrap-main.sh
+# and run under the yubico-authenticator AppArmor profile.
+#
+# Runs with -I (isolated mode) so the helper’s Python environment —
+# a bundled interpreter with its own paths — cannot leak into this one.
+#
+# Usage: gnome-screenshot -f <file>
+
+import os
+import secrets
+import stat
+import sys
+
+import gi
+
+gi.require_version("Gio", "2.0")
+gi.require_version("GLib", "2.0")
+gi.require_version("Gst", "1.0")
+from gi.repository import Gio, GLib, Gst  # noqa: E402
+
+portal_name = "org.freedesktop.portal.Desktop"
+portal_path = "/org/freedesktop/portal/desktop"
+screencast_interface = "org.freedesktop.portal.ScreenCast"
+request_interface = "org.freedesktop.portal.Request"
+session_interface = "org.freedesktop.portal.Session"
+
+# Exactly the four plugins the pipeline uses, laid out by
+# superbacked-os-bootstrap-main.sh
+plugin_directory = "/usr/local/lib/gnome-screenshot/gstreamer-1.0"
+
+# Source types, cursor modes and persist modes as the portal defines
+# them
+window_source = 2
+hidden_cursor = 1
+no_persist = 0
+
+# The picker waits on the user — long enough to find the window, short
+# enough that an abandoned picker does not pin the helper forever (the
+# request is closed through the portal when the wait runs out)
+picker_timeout_seconds = 120
+# A frame from a live stream arrives within a second — anything longer
+# means the stream never started
+frame_timeout_seconds = 10
+
+
+def fail(message):
+    print(f"Error: {message}", file=sys.stderr)
+    sys.exit(1)
+
+
+def parse_arguments(arguments):
+    filename = None
+    index = 0
+    while index < len(arguments):
+        argument = arguments[index]
+        if argument == "-f":
+            if index + 1 >= len(arguments):
+                fail("-f requires <file>")
+            filename = arguments[index + 1]
+            index += 2
+        elif argument.startswith("-"):
+            fail(f"Unknown option: {argument}")
+        else:
+            fail(f"Unexpected argument: {argument}")
+    if filename is None:
+        fail("-f is required")
+    return filename
+
+
+class Portal:
+    def __init__(self):
+        self.bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        self.sender = self.bus.get_unique_name()[1:].replace(".", "_")
+
+    def token(self):
+        return secrets.token_hex(16)
+
+    # One portal request: the portal names the request object after
+    # the caller’s unique bus name and a token the caller picks, so
+    # the Response signal can be subscribed to before the call is
+    # made — no race with a fast answer
+    def request(self, method, arguments, options):
+        token = self.token()
+        request_path = f"{portal_path}/request/{self.sender}/{token}"
+        options = dict(options)
+        options["handle_token"] = GLib.Variant("s", token)
+        loop = GLib.MainLoop()
+        response = {}
+        timed_out = {}
+
+        def on_response(
+            _bus, _sender, _path, _interface, _signal, parameters, *_
+        ):
+            response["code"], response["results"] = parameters.unpack()
+            loop.quit()
+
+        def on_timeout(*_):
+            timed_out["yes"] = True
+            try:
+                self.bus.call_sync(
+                    portal_name,
+                    request_path,
+                    request_interface,
+                    "Close",
+                    None,
+                    None,
+                    Gio.DBusCallFlags.NONE,
+                    -1,
+                    None,
+                )
+            except GLib.Error:
+                # Request already gone — nothing left to dismiss
+                pass
+            loop.quit()
+            return GLib.SOURCE_REMOVE
+
+        subscription = self.bus.signal_subscribe(
+            portal_name,
+            request_interface,
+            "Response",
+            request_path,
+            None,
+            Gio.DBusSignalFlags.NONE,
+            on_response,
+        )
+        self.bus.call_sync(
+            portal_name,
+            portal_path,
+            screencast_interface,
+            method,
+            GLib.Variant.new_tuple(*arguments, GLib.Variant("a{sv}", options)),
+            None,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None,
+        )
+        timeout = GLib.timeout_add_seconds(picker_timeout_seconds, on_timeout)
+        loop.run()
+        if "yes" not in timed_out:
+            GLib.source_remove(timeout)
+        self.bus.signal_unsubscribe(subscription)
+        if "code" not in response:
+            fail("Screen capture timed out")
+        if response["code"] == 1:
+            fail("Screen capture cancelled")
+        if response["code"] != 0:
+            fail(f"Screen capture failed (portal response {response['code']})")
+        return response["results"]
+
+    # The stream is reached through a PipeWire connection the portal
+    # opens on the caller’s behalf and passes back as a file descriptor
+    def open_pipewire_remote(self, session):
+        reply, fd_list = self.bus.call_with_unix_fd_list_sync(
+            portal_name,
+            portal_path,
+            screencast_interface,
+            "OpenPipeWireRemote",
+            GLib.Variant.new_tuple(
+                GLib.Variant("o", session), GLib.Variant("a{sv}", {})
+            ),
+            None,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            None,
+            None,
+        )
+        return fd_list.get(reply.unpack()[0])
+
+    def close_session(self, session):
+        try:
+            self.bus.call_sync(
+                portal_name,
+                session,
+                session_interface,
+                "Close",
+                None,
+                None,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                None,
+            )
+        except GLib.Error:
+            # Session already gone — nothing left to close
+            pass
+
+
+# The helper created the output file before calling. It is opened
+# without following a symlink put in its place since, and anything but
+# a plain file of this user with no other name is refused — the
+# descriptor goes to the sink, so the path is never resolved again
+def open_output(filename):
+    try:
+        output = os.open(
+            filename, os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC
+        )
+    except OSError as error:
+        fail(f"Cannot open {filename} ({error.strerror})")
+    status = os.fstat(output)
+    if not stat.S_ISREG(status.st_mode):
+        fail(f"{filename} is not a regular file")
+    if status.st_nlink != 1:
+        fail(f"{filename} has more than one name")
+    if status.st_uid != os.geteuid():
+        fail(f"{filename} belongs to another user")
+    return output
+
+
+# One frame off the stream: the PNG encoder in snapshot mode ends the
+# pipeline after its first picture
+def capture_frame(fd, node_id, output):
+    runtime_directory = os.environ.get("XDG_RUNTIME_DIR")
+    if runtime_directory is None:
+        fail("XDG_RUNTIME_DIR is not set")
+    # GStreamer reads its environment at initialization. Plugins come
+    # from the four-plugin directory alone and the registry describing
+    # them lives in the runtime directory, built in this process:
+    # registering every plugin on the system would run the scanner
+    # helper, write a cache in home and — through the video4linux
+    # plugin — open the cameras. The video converter leans on ORC, a
+    # just-in-time compiler that writes machine code into a file under
+    # the runtime directory and maps it executable — a
+    # write-plus-execute file the AppArmor profile should never have
+    # to grant; ORC’s plain C fallback does the same work without
+    # generating code, and one frame does not need the speed
+    os.environ["GST_PLUGIN_SYSTEM_PATH_1_0"] = plugin_directory
+    os.environ["GST_REGISTRY_1_0"] = (
+        f"{runtime_directory}/gnome-screenshot-registry.bin"
+    )
+    os.environ["GST_REGISTRY_FORK"] = "no"
+    os.environ["ORC_CODE"] = "backup"
+    Gst.init(None)
+    try:
+        pipeline = Gst.parse_launch(
+            "pipewiresrc name=source ! videoconvert ! pngenc snapshot=true"
+            " ! fdsink name=sink"
+        )
+    except GLib.Error as error:
+        fail(f"Screen capture failed ({error.message})")
+    source = pipeline.get_by_name("source")
+    source.set_property("fd", fd)
+    source.set_property("path", str(node_id))
+    pipeline.get_by_name("sink").set_property("fd", output)
+    pipeline.set_state(Gst.State.PLAYING)
+    message = pipeline.get_bus().timed_pop_filtered(
+        frame_timeout_seconds * Gst.SECOND,
+        Gst.MessageType.EOS | Gst.MessageType.ERROR,
+    )
+    pipeline.set_state(Gst.State.NULL)
+    if message is None:
+        fail("Screen capture timed out waiting for a frame")
+    if message.type == Gst.MessageType.ERROR:
+        error, _debug = message.parse_error()
+        fail(f"Screen capture failed ({error.message})")
+
+
+def main():
+    filename = parse_arguments(sys.argv[1:])
+    output = open_output(filename)
+    portal = Portal()
+    results = portal.request(
+        "CreateSession",
+        [],
+        {"session_handle_token": GLib.Variant("s", portal.token())},
+    )
+    session = results.get("session_handle")
+    if session is None:
+        fail("Screen capture failed (portal returned no session)")
+    try:
+        portal.request(
+            "SelectSources",
+            [GLib.Variant("o", session)],
+            {
+                "types": GLib.Variant("u", window_source),
+                "multiple": GLib.Variant("b", False),
+                "cursor_mode": GLib.Variant("u", hidden_cursor),
+                "persist_mode": GLib.Variant("u", no_persist),
+            },
+        )
+        # The picker opens here
+        results = portal.request(
+            "Start", [GLib.Variant("o", session), GLib.Variant("s", "")], {}
+        )
+        streams = results.get("streams", [])
+        if len(streams) == 0:
+            fail("Screen capture failed (portal returned no stream)")
+        node_id = streams[0][0]
+        capture_frame(portal.open_pipewire_remote(session), node_id, output)
+    finally:
+        portal.close_session(session)
+
+
+if __name__ == "__main__":
+    main()

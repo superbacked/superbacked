@@ -334,8 +334,8 @@ apt install --no-install-recommends --yes \
 
 # The deb’s stock desktop entry launches the app without a display
 # backend pin — shadow it with a same-name entry in the higher-priority
-# directory that pins Wayland (the same mechanism “Overriding stock
-# launchers” below uses for Firefox).
+# directory that pins Wayland (the same mechanism “Overriding Firefox
+# launcher” below uses).
 mkdir --parents /usr/local/share/applications
 
 cp \
@@ -455,7 +455,7 @@ ln --force --symbolic /dev/null \
 printf "%s\n" "Configuring Firefox policies…"
 
 # Firefox follows the hardened Firefox guide, whose files the base
-# bootstrap fetches and pins (see “Installing Firefox policies” there):
+# bootstrap fetches and pins (see “Fetching Firefox policies” there):
 # the guide hardens Firefox with enterprise policies alone, carried by
 # its firefox-policies.json. On top of that file, firefox-policies.json
 # in the bootstrap assets adds what this OS needs beyond a persistent
@@ -516,15 +516,14 @@ sh /usr/share/firefox-policies/firefox-policies.sh install "${firefox_policies}/
 
 rm --recursive "${firefox_policies}"
 
-printf "%s\n" "Overriding stock launchers…"
+printf "%s\n" "Overriding Firefox launcher…"
 
 # Replace the stock launcher with a same-name entry in a
-# higher-priority directory, so the familiar icon does the right thing:
-#   Firefox → starts through the superbacked-browser wrapper (hardened
-#             browser mode only)
-# The Exec assertion fails loudly if Mozilla ever reshapes its desktop
-# file — better a broken build than a dock icon that bypasses the
-# wrapper.
+# higher-priority directory, so the familiar icon does the right thing
+# — Firefox starts through the superbacked-browser wrapper (hardened
+# browser mode only). The Exec assertion fails loudly if Mozilla ever
+# reshapes its desktop file — better a broken build than a dock icon
+# that bypasses the wrapper.
 if ! grep --quiet '^Exec=firefox' /usr/share/applications/firefox.desktop; then
   printf "%s\n" "Error: unexpected Exec lines in firefox.desktop" >&2
   exit 1
@@ -594,39 +593,42 @@ EOF
 
 systemctl enable home-superbacked-Downloads.mount
 
-printf "%s\n" "Configuring toram status…"
+printf "%s\n" "Configuring Yubico Authenticator QR code scanning…"
 
-# live-boot copies Superbacked OS to memory (toram) when there is
-# enough of it and silently falls back to running from the USB flash
-# drive when there is not — and users can also remove toram on purpose
-# at the GRUB menu to run tethered from the drive (documented in the
-# run guide). The desktop looks identical either way, and unplugging
-# the drive while running from it crashes the session. This warning,
-# shown at login only when running from the drive, states that fact
-# without guessing why — it is the only signal a user gets. When the OS
-# is in memory no dialog appears and the drive can simply be unplugged,
-# as documented. Exits quietly on non-live boots (the source system).
-tee /usr/local/bin/superbacked-toram-status > /dev/null << 'EOF'
-#! /bin/bash
+# Yubico Authenticator’s “Scan QR code” captures the screen over
+# X11 first — walled off by its AppArmor profile on this Wayland-only
+# OS — and then runs gnome-screenshot, which Ubuntu stopped shipping
+# when GNOME folded screenshots into the Shell. A stand-in answers
+# that call through the desktop ScreenCast portal, as the Superbacked
+# app’s scanner does: GNOME’s picker hands over one window per scan,
+# never a monitor, and nothing is remembered. It runs on the system
+# Python with its GLib and GStreamer bindings and the GStreamer
+# PipeWire plugin, all part of the stock desktop. Installed under
+# /usr/local/bin, where the helper’s PATH lookup finds it; the profile
+# grants its execution.
+cp \
+  /run/superbacked-os-bootstrap-assets/gnome-screenshot \
+  /usr/local/bin/gnome-screenshot
+chmod 755 /usr/local/bin/gnome-screenshot
 
-medium_fstype="$(findmnt --noheadings --output FSTYPE /run/live/medium 2> /dev/null)"
-
-if [ -n "${medium_fstype}" ] && [ "${medium_fstype}" != "tmpfs" ]; then
-  zenity --warning \
-    --no-wrap \
-    --text "Superbacked OS is running directly from the USB flash drive.\nThe drive needs to stay plugged in for the session to keep running." \
-    --title "Superbacked OS" 2> /dev/null
-fi
-EOF
-
-chmod +x /usr/local/bin/superbacked-toram-status
-
-tee /etc/xdg/autostart/superbacked-toram-status.desktop > /dev/null << 'EOF'
-[Desktop Entry]
-Type=Application
-Name=Superbacked toram status
-Exec=/usr/local/bin/superbacked-toram-status
-EOF
+# The stand-in’s GStreamer pipeline needs four plugins. Loaded from the
+# system plugin directory, GStreamer would register every plugin
+# installed — the video4linux one opens the cameras as it does — so the
+# stand-in points GStreamer at this directory instead, holding only
+# what the pipeline uses: core elements (fdsink), video conversion,
+# PNG encoding and PipeWire. The image is x64 only (see the Superbacked
+# deb above), hence the fixed multiarch path.
+mkdir --parents /usr/local/lib/gnome-screenshot/gstreamer-1.0
+for plugin in coreelements videoconvertscale png pipewire; do
+  plugin_path="/usr/lib/x86_64-linux-gnu/gstreamer-1.0/libgst${plugin}.so"
+  if [ ! -f "${plugin_path}" ]; then
+    printf "%s\n" "Error: GStreamer plugin ${plugin_path} not found" >&2
+    exit 1
+  fi
+  ln --force --symbolic \
+    "${plugin_path}" \
+    "/usr/local/lib/gnome-screenshot/gstreamer-1.0/libgst${plugin}.so"
+done
 
 printf "%s\n" "Configuring hardened browser launcher…"
 
@@ -1160,6 +1162,40 @@ WantedBy=multi-user.target
 EOF
 
 systemctl enable superbacked-airgap.service
+
+printf "%s\n" "Configuring toram status…"
+
+# live-boot copies Superbacked OS to memory (toram) when there is
+# enough of it and silently falls back to running from the USB flash
+# drive when there is not — and users can also remove toram on purpose
+# at the GRUB menu to run tethered from the drive (documented in the
+# run guide). The desktop looks identical either way, and unplugging
+# the drive while running from it crashes the session. This warning,
+# shown at login only when running from the drive, states that fact
+# without guessing why — it is the only signal a user gets. When the OS
+# is in memory no dialog appears and the drive can simply be unplugged,
+# as documented. Exits quietly on non-live boots (the source system).
+tee /usr/local/bin/superbacked-toram-status > /dev/null << 'EOF'
+#! /bin/bash
+
+medium_fstype="$(findmnt --noheadings --output FSTYPE /run/live/medium 2> /dev/null)"
+
+if [ -n "${medium_fstype}" ] && [ "${medium_fstype}" != "tmpfs" ]; then
+  zenity --warning \
+    --no-wrap \
+    --text "Superbacked OS is running directly from the USB flash drive.\nThe drive needs to stay plugged in for the session to keep running." \
+    --title "Superbacked OS" 2> /dev/null
+fi
+EOF
+
+chmod +x /usr/local/bin/superbacked-toram-status
+
+tee /etc/xdg/autostart/superbacked-toram-status.desktop > /dev/null << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Superbacked toram status
+Exec=/usr/local/bin/superbacked-toram-status
+EOF
 
 printf "%s\n" "Configuring fstab…"
 

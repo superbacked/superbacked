@@ -147,9 +147,23 @@ if [ "${build_app}" = true ]; then
 fi
 
 if [ "${build_os}" = true ]; then
-  printf "%s\n" "Purging Superbacked OS images…"
+  # Debug images carry a -debug suffix so building one variant never
+  # overwrites the other — the purge and split below are scoped to the
+  # variant being built, so dist holds at most one image per variant.
+  # The production run cannot sign a leftover debug image: it builds
+  # the app first, which purges dist entirely.
+  image="superbacked-os-amd64-live-${version}"
+  if [ "${BUILD_VARIANT:-}" = "debug" ]; then
+    image="${image}-debug"
+  fi
 
-  find ./dist -type f \( -name "*.img*" \) -delete
+  printf "%s\n" "Purging Superbacked OS images (${BUILD_VARIANT:-release})…"
+
+  if [ "${BUILD_VARIANT:-}" = "debug" ]; then
+    find ./dist -type f -name "*-debug.img*" -delete
+  else
+    find ./dist -type f -name "*.img*" ! -name "*-debug.img*" -delete
+  fi
 
   printf "%s\n" "Starting Colima…"
 
@@ -218,7 +232,8 @@ if [ "${build_os}" = true ]; then
   # runs in a chroot of the vanilla source image (read-only input,
   # network required for the snapshot-pinned packages) and the live
   # image is written straight to its distribution name
-  # (<product>-<arch>-<component>-<version>).
+  # (<product>-<arch>-<component>-<version>, plus -debug for the debug
+  # variant).
   # BUILD_VARIANT=debug (exported on the host) builds the debug variant
   # — app profiles log denials (complain) instead of enforcing,
   # superbacked keeps sudo for on-device profile iteration, the
@@ -253,19 +268,19 @@ if [ "${build_os}" = true ]; then
     superbacked-os-docker:24.04 \
     /root/create-superbacked-os-live-image.sh \
     /superbacked-os/superbacked-os-amd64-24.04.4.img \
-    /dist/superbacked-os-amd64-live-${version}.img \
+    /dist/${image}.img \
     ${version}
 
   printf "%s\n" "Splitting live Superbacked OS image into parts…"
 
   # GitHub release assets are capped at 2 GiB — ship the raw image in
   # parts (cat them back together before flashing).
-  cat dist/superbacked-os-amd64-live-${version}.img | split \
-    -b 2147483647B - dist/superbacked-os-amd64-live-${version}.img.part
+  cat dist/${image}.img | split \
+    -b 2147483647B - dist/${image}.img.part
 
   number=1
-  for file in dist/superbacked-os-amd64-live-${version}.img.part*; do
-    mv "${file}" "dist/superbacked-os-amd64-live-${version}.img.part${number}"
+  for file in dist/${image}.img.part*; do
+    mv "${file}" "dist/${image}.img.part${number}"
     number=$((number + 1))
   done
 
@@ -276,14 +291,14 @@ if [ "${build_os}" = true ]; then
   # remove the raw part splitting above):
   # printf "%s\n" "Compressing Superbacked OS…"
   #
-  # xz -1 --threads 4 dist/superbacked-os-amd64-live-${version}.img
+  # xz -1 --threads 4 dist/${image}.img
   #
-  # cat dist/superbacked-os-amd64-live-${version}.img.xz | split \
-  #   -b 2147483647B - dist/superbacked-os-amd64-live-${version}.img.xz.part
+  # cat dist/${image}.img.xz | split \
+  #   -b 2147483647B - dist/${image}.img.xz.part
   #
   # number=1
-  # for file in dist/superbacked-os-amd64-live-${version}.img.xz.part*; do
-  #   mv "${file}" "dist/superbacked-os-amd64-live-${version}.img.xz.part${number}"
+  # for file in dist/${image}.img.xz.part*; do
+  #   mv "${file}" "dist/${image}.img.xz.part${number}"
   #   number=$((number + 1))
   # done
 
