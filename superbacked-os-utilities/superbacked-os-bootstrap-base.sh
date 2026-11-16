@@ -284,7 +284,7 @@ apt update
 # weeks), apt fails loudly here — bump firefox_version deliberately.
 apt install --yes "firefox=${firefox_version}*"
 
-printf "%s\n" "Installing Firefox policies…"
+printf "%s\n" "Fetching Firefox policies…"
 
 # Firefox follows the hardened Firefox guide (how-to-harden-firefox in
 # https://github.com/sunknudsen/guides), which hardens Firefox with
@@ -396,7 +396,9 @@ rm /tmp/yubico-authenticator.tar.gz /tmp/yubico-authenticator.tar.gz.sig
 # Pinned to Wayland so authentication codes are never drawn through X11,
 # where other apps could observe them. The entry is named after the app
 # id (com.yubico.yubioath) so GNOME pairs the running window with its
-# icon.
+# icon. The app’s QR code scanning needs a helper this OS adds — see
+# “Configuring Yubico Authenticator QR code scanning” in
+# superbacked-os-bootstrap-main.sh.
 mkdir --parents /usr/local/share/applications
 
 tee /usr/local/share/applications/com.yubico.yubioath.desktop > /dev/null << 'EOF'

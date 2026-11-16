@@ -63,7 +63,8 @@ mkdir -p "${volume}/debug"
 cp -X "${repository}"/superbacked-os-utilities/debug/*.sh "${volume}/debug/"
 
 # Newest by modification time — the deb name carries the version, and
-# several may sit in dist/ after a version bump.
+# several may sit in dist/ after a version bump. The copy and the sync
+# below are where the run spends its seconds.
 deb="$(ls -t "${repository}"/dist/superbacked-x64-*.deb 2> /dev/null | head -n 1 || true)"
 if [ -n "${deb}" ]; then
   printf "%s\n" "Copying ${deb##*/}…"
@@ -75,6 +76,4 @@ fi
 
 sync
 
-printf "%s\n" "Copied to ${volume}:"
-ls -1 "${volume}/apparmor" "${volume}/debug" | sed 's/^/  /'
 printf "%s\n" "Eject before unplugging: diskutil eject \"${volume}\""
