@@ -86,12 +86,12 @@ printf "%s\n" "Starting base bootstrap…"
 # the install script and the merge tool) have no versions either, so
 # their sha256 is the pin the same way; firefox_guide_ref is the branch
 # they are fetched from.
-readonly apt_snapshot="20261027T000000Z"
+readonly apt_snapshot="20261116T000000Z"
 readonly firefox_guide_ref="main"
 readonly firefox_merge_policies_sha256="db16b6da879caa79a754c0ea2ffb1849e219d129a98cc88c94c59dce941f88fd"
-readonly firefox_policies_script_sha256="a86d506f61444d5a994cad2b746c30ff89a2f17da8680694a315eea5762091f6"
+readonly firefox_policies_script_sha256="6edc806929898c14a47810d151f5bfd8a1d8b59a152851e2b60be91702b8c5e8"
 readonly firefox_policies_sha256="0c35f8d4609a613acd76f27c7f2e5b440fb8fc4c606df71f1cd2196cdc878532"
-readonly firefox_version="158.0.1"
+readonly firefox_version="160.0"
 readonly trezor_sha256="1acd67664bdc1cf389e719c91a09e6069688afa05959715955d5c1c54a2fefde"
 readonly trezor_udev_rules_sha256="f3b39b4537da6260a7b63af07710aedfab1fe87d8eeff0975d176b9b908b9d6e"
 readonly trezor_version="0.20.2"
