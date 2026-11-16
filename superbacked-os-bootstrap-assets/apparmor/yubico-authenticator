@@ -85,6 +85,14 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   owner @{HOME}/.local/share/com.yubico*/{,**} rwk,
   owner @{HOME}/.cache/com.yubico*/{,**} rwk,
 
+  # QR import by drag and drop — GNOME Shell saves Print Screen captures
+  # here, the only screen capture path on this Wayland-only OS (the
+  # bundled helper’s own “Scan QR code” needs X11 or gnome-screenshot
+  # and is dead by design). Folder name follows the English locale the
+  # bootstrap pins.
+  owner @{HOME}/Pictures/Screenshots/ r,
+  owner @{HOME}/Pictures/Screenshots/*.png r,
+
   # GTK embedder (Flutter Linux shell) on superbacked’s Wayland
   # socket, its platform theme and audio (libcanberra event sounds
   # cache per-machine state in home and read the pulse cookie).
