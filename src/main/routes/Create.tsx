@@ -1256,6 +1256,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             }}
           />
           <form
+            noValidate
             onSubmit={(event) => {
               // Wrapped at event time: both handlers reach the passphrase
               // input through a ref, which render must not read

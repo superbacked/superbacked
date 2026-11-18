@@ -181,6 +181,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
         <YubiKeyTouchPrompt />
       ) : (
         <form
+          noValidate
           onSubmit={(event) => {
             // Wrapped at event time: handleSubmit reaches the passphrase
             // input through a ref, which render must not read

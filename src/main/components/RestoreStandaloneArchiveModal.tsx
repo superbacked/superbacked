@@ -124,7 +124,7 @@ const RestoreStandaloneArchiveModal: FunctionComponent<
       {touchAwaited === true && props.isUnlocking === true ? (
         <YubiKeyTouchPrompt />
       ) : (
-        <form onSubmit={form.onSubmit(handleRestore)}>
+        <form noValidate onSubmit={form.onSubmit(handleRestore)}>
           <PasswordInput
             data-autofocus
             disabled={props.isUnlocking}
