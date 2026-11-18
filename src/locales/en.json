@@ -168,7 +168,8 @@
         "billionYears_one": "{{count, number}} billion years",
         "billionYears_other": "{{count, number}} billion years",
         "overTrillionYears": "over a trillion years"
-      }
+      },
+      "weakPassphraseAllowed": "Weak passphrase allowed"
     },
     "passphraseModal": {
       "unlockBlock": "Unlock block",
@@ -207,6 +208,12 @@
       "totpUri_other": "URIs",
       "found_one": "found",
       "found_other": "found"
+    },
+    "weakPassphraseDisclaimerModal": {
+      "weakPassphrase": "Weak passphrase",
+      "weakPassphraseWarning": "Weak passphrase is easier to brute-force — do not use this passphrase to protect high-stake secret.",
+      "useWeakPassphrase": "Use weak passphrase",
+      "edit": "Edit"
     }
   },
   "handlers": {

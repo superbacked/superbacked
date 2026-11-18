@@ -3,20 +3,15 @@ import { dirname, resolve } from "path"
 
 import { program as cli } from "commander"
 
+import { CancelledError } from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
+import { gatePassphrase } from "@/src/cli/utilities/passphraseGate"
 import readPassphrase from "@/src/cli/utilities/readPassphrase"
 import { red } from "@/src/cli/utilities/style"
 import {
   createStandaloneArchive,
   restoreStandaloneArchive,
 } from "@/src/handlers/standaloneArchive"
-import {
-  paranoidKdfProfile,
-  standardKdfProfile,
-} from "@/src/shared/kdfProfiles"
-import zxcvbn, {
-  minimumPassphraseStrength,
-} from "@/src/shared/utilities/zxcvbn"
 import { Slot, YubiKeyError } from "@/src/utilities/yubikey/otp"
 
 // Command actions (the CLI surface is declared in index.ts). Both call the
@@ -50,6 +45,7 @@ const resultError = (result: {
 export const createStandaloneArchiveAction = async (
   paths: string[],
   options: {
+    allowWeakPassphrase?: boolean
     force?: boolean
     output: string
     slot: "1" | "2"
@@ -86,17 +82,14 @@ export const createStandaloneArchiveAction = async (
     // The memorized passphrase stays the knowledge factor even with
     // --yubikey (a leaked slot secret leaves its strength as the only
     // remaining wall — see the derived key security model), so the
-    // strength gate applies regardless — priced at the profile the
-    // archive will stretch under
+    // strength gate and its override apply regardless — priced at the
+    // profile the archive will stretch under
     const paranoid = cli.opts().paranoid === true
-    if (
-      zxcvbn(
-        passphrase,
-        paranoid === true ? paranoidKdfProfile : standardKdfProfile
-      ).strength < minimumPassphraseStrength
-    ) {
-      throw new Error("Passphrase too weak")
-    }
+    await gatePassphrase(passphrase, {
+      allowWeak: options.allowWeakPassphrase === true,
+      paranoid: paranoid,
+      subject: "Passphrase",
+    })
     const result = await createStandaloneArchive(
       filePaths,
       archivePath,
@@ -111,7 +104,13 @@ export const createStandaloneArchiveAction = async (
     process.stdout.write(`${archivePath}\n`)
     process.exit(0)
   } catch (error) {
-    console.error(red(errorText(error, "Could not create standalone archive")))
+    if (error instanceof CancelledError) {
+      console.error(error.message)
+    } else {
+      console.error(
+        red(errorText(error, "Could not create standalone archive"))
+      )
+    }
     process.exit(1)
   }
 }

@@ -74,6 +74,10 @@ cli
     "-o, --output <archive>",
     "archive path (.superbacked appended if absent)"
   )
+  .option(
+    "--allow-weak-passphrase",
+    "allow weak passphrase without confirmation (dangerous)"
+  )
   .option("-f, --force", "overwrite archive if it already exists")
   .addOption(
     new CommanderOption(
@@ -137,6 +141,10 @@ cli
     parseAddresses
   )
   .option(
+    "--allow-weak-passphrase",
+    "allow weak master passphrase without confirmation (dangerous)"
+  )
+  .option(
     "--clear <seconds>",
     "seconds before revealed secret is cleared from clipboard",
     parseClear,
@@ -185,6 +193,10 @@ cli
   .argument(
     "[label]",
     "memorized label (for example github or proton), prompted when omitted"
+  )
+  .option(
+    "--allow-weak-passphrase",
+    "allow weak master passphrase without confirmation (dangerous)"
   )
   .option(
     "--clear <seconds>",

@@ -2,18 +2,12 @@ import { InvalidArgumentError, program as cli } from "commander"
 
 import confirmYes, { CancelledError } from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
+import { gatePassphrase } from "@/src/cli/utilities/passphraseGate"
 import readPassphrase, {
   promptVisible,
   waitForEnter,
 } from "@/src/cli/utilities/readPassphrase"
 import { red } from "@/src/cli/utilities/style"
-import {
-  paranoidKdfProfile,
-  standardKdfProfile,
-} from "@/src/shared/kdfProfiles"
-import zxcvbn, {
-  minimumPassphraseStrength,
-} from "@/src/shared/utilities/zxcvbn"
 import {
   clearText,
   copyText,
@@ -54,6 +48,7 @@ export const deriveBitcoinWalletAction = async (
   label: string | undefined,
   options: {
     addresses?: number
+    allowWeakPassphrase?: boolean
     clear: number
     confirmPassphrase?: boolean
     // See src/cli/derivePassword.ts — only scheme v1 exists; the option
@@ -111,17 +106,15 @@ export const deriveBitcoinWalletAction = async (
     // know — deriving without it silently produces a different wallet,
     // which is why every derivation prints it below
     const paranoid = cli.opts().paranoid === true
-    // Matches the app’s passphrase gates, priced at the profile the
-    // derivation stretches under (see src/cli/derivePassword.ts) — and
-    // here the passphrase guards funds, not a rotatable password
-    if (
-      zxcvbn(
-        masterPassphrase,
-        paranoid === true ? paranoidKdfProfile : standardKdfProfile
-      ).strength < minimumPassphraseStrength
-    ) {
-      throw new Error("Master passphrase too weak")
-    }
+    // Matches the app’s passphrase gate and its override, priced at the
+    // profile the derivation stretches under (see
+    // src/cli/derivePassword.ts) — and here the passphrase guards funds,
+    // not a rotatable password
+    await gatePassphrase(masterPassphrase, {
+      allowWeak: options.allowWeakPassphrase === true,
+      paranoid: paranoid,
+      subject: "Master passphrase",
+    })
     const words = Number(options.words) as MnemonicWords
     const { extendedPublicKey, mnemonic } = await computeDerivedBitcoinWallet(
       masterPassphrase,

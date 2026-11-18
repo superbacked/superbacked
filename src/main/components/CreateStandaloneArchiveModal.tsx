@@ -5,11 +5,15 @@ import {
   FunctionComponent,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
 
-import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
+import PassphraseInputWithStrength, {
+  PassphraseInputWithStrengthRef,
+} from "@/src/main/components/PassphraseInputWithStrength"
+import WeakPassphraseDisclaimerModal from "@/src/main/components/WeakPassphraseDisclaimerModal"
 import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
 import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
 import { useActiveKdfProfile } from "@/src/main/utilities/useActiveKdfProfile"
@@ -39,6 +43,10 @@ const initialValues = (slot: "1" | "2") => {
     filename: "",
     passphrase: "",
     slot: slot,
+    // Passphrase allowed through the strength gate despite its weakness
+    // — bound to the exact value, so an edit re-arms the gate (see
+    // src/main/components/PassphraseInputWithStrength.tsx)
+    weakPassphraseAllowedFor: null as null | string,
     yubikey: false,
   }
 }
@@ -51,6 +59,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
   // Scales the estimator display and the passphrase gate to the profile
   // new archives will stretch under (see src/shared/utilities/zxcvbn.ts)
   const activeKdfProfile = useActiveKdfProfile()
+  const passphraseInputRef = useRef<PassphraseInputWithStrengthRef>(null)
   const form = useForm({
     initialValues: initialValues(defaultSlot),
     validate: {
@@ -60,11 +69,14 @@ const CreateStandaloneArchiveModal: FunctionComponent<
         }
         return null
       },
-      passphrase: (value) => {
+      passphrase: (value, values) => {
         const result = zxcvbn(value, activeKdfProfile)
         if (!value || value === "") {
           return t("common.passphraseRequired")
-        } else if (result.strength < minimumPassphraseStrength) {
+        } else if (
+          result.strength < minimumPassphraseStrength &&
+          values.weakPassphraseAllowedFor !== value
+        ) {
           return t("common.passphraseTooWeak")
         }
         return null
@@ -93,12 +105,41 @@ const CreateStandaloneArchiveModal: FunctionComponent<
         form.setInitialValues(initialValues(form.values.slot))
       }
       props.onSubmit(form.values)
+    } else {
+      // A weak passphrase blocks submission until allowed — the disclaimer
+      // is the decision point, requested here as well as on blur so Enter
+      // (which never blurs the field) reaches it
+      passphraseInputRef.current?.promptWeakPassphrase()
     }
   }, [form, props, setDefaultSlot])
+  // A modal over this modal — accepted until the standalone archive
+  // feature moves to a route of its own and the form becomes a page
+  const [weakPassphraseDisclaimerOpened, setWeakPassphraseDisclaimerOpened] =
+    useState(false)
+  const handleWeakPassphraseAllow = useCallback(() => {
+    form.setFieldValue("weakPassphraseAllowedFor", form.values.passphrase)
+    // Clears the too-weak error the blocked submission left behind
+    form.clearFieldError("passphrase")
+    setWeakPassphraseDisclaimerOpened(false)
+  }, [form])
+  const handleWeakPassphraseEdit = useCallback(() => {
+    setWeakPassphraseDisclaimerOpened(false)
+    // Without waiting for the close transition — the trap only scopes
+    // Tab, so it does not pull focus back while the modal fades
+    passphraseInputRef.current?.focus()
+  }, [])
+  const handleWeakPassphraseReset = useCallback(() => {
+    form.setFieldValue("weakPassphraseAllowedFor", null)
+  }, [form])
   const handleClose = useCallback(() => {
+    setWeakPassphraseDisclaimerOpened(false)
+    props.onClose()
+  }, [props])
+  // The form resets once the modal has disappeared — resetting on close
+  // would empty the fields in view while the modal animates out
+  const handleExitTransitionEnd = useCallback(() => {
     form.reset()
     props.onReset?.()
-    props.onClose()
   }, [form, props])
   const handleYubikeyChange = useCallback(
     (checked: boolean) => {
@@ -124,6 +165,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
     <Modal
       centered
       onClose={handleClose}
+      onExitTransitionEnd={handleExitTransitionEnd}
       opened={props.opened}
       title={t(
         "components.createStandaloneArchiveModal.createStandaloneArchive"
@@ -138,7 +180,13 @@ const CreateStandaloneArchiveModal: FunctionComponent<
       {touchAwaited === true && props.isLoading === true ? (
         <YubiKeyTouchPrompt />
       ) : (
-        <form onSubmit={form.onSubmit(handleSubmit)}>
+        <form
+          onSubmit={(event) => {
+            // Wrapped at event time: handleSubmit reaches the passphrase
+            // input through a ref, which render must not read
+            form.onSubmit(handleSubmit, handleSubmit)(event)
+          }}
+        >
           <TextInput
             data-autofocus
             label={t("components.createStandaloneArchiveModal.filename")}
@@ -154,6 +202,7 @@ const CreateStandaloneArchiveModal: FunctionComponent<
           <Space h="lg" />
           <PassphraseInputWithStrength
             key="standaloneArchivePassphrase"
+            ref={passphraseInputRef}
             kdfProfile={activeKdfProfile}
             label={t("common.passphrase")}
             placeholder={t("common.typePassphrase")}
@@ -163,6 +212,11 @@ const CreateStandaloneArchiveModal: FunctionComponent<
               form.setFieldValue("passphrase", passphrase)
               return passphrase
             }}
+            onWeakPassphrasePrompt={() => {
+              setWeakPassphraseDisclaimerOpened(true)
+            }}
+            onWeakPassphraseReset={handleWeakPassphraseReset}
+            weakPassphraseAllowedFor={form.values.weakPassphraseAllowedFor}
             {...form.getInputProps("passphrase", { withFocus: false })}
           />
           <Space h="lg" />
@@ -205,6 +259,11 @@ const CreateStandaloneArchiveModal: FunctionComponent<
           </Group>
         </form>
       )}
+      <WeakPassphraseDisclaimerModal
+        onAllow={handleWeakPassphraseAllow}
+        onEditPassphrase={handleWeakPassphraseEdit}
+        opened={weakPassphraseDisclaimerOpened}
+      />
     </Modal>
   )
 }

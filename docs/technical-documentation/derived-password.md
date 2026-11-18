@@ -92,10 +92,11 @@ superbacked derive-password [options] [label]
 
 Label is prompted when omitted, keeping labels out of shell history and process listings. When the passphrase is piped via stdin, the prompt reads from the controlling terminal (the sudo and ssh behavior) — passing the label as argument is only required fully non-interactively (no controlling terminal, for example cron).
 
-The master passphrase must score a strength of at least 50 (see the [passphrase strength technical documentation](passphrase-strength.md)), matching the gate everywhere else in Superbacked, with no override. The gate has been enforced since the first release of the scheme, so no derivable passphrase is stranded by it — and because derivation is deterministic and stateless, the threshold can never rise without stranding established passphrases.
+The master passphrase must score a strength of at least 50 (see the [passphrase strength technical documentation](passphrase-strength.md)) — the gate enforced everywhere else in Superbacked — unless explicitly allowed when prompted or using the `--allow-weak-passphrase` flag, in which case “Weak passphrase allowed” prints to stderr. The gate has been enforced since the first release of the scheme, so no derivable passphrase is stranded by it — and because derivation is deterministic and stateless, the threshold can never rise and the override can never be removed without stranding established passphrases.
 
 **Options:**
 
+- `--allow-weak-passphrase`: Allow weak master passphrase without confirmation prompt
 - `--clear <seconds>`: Seconds before copied password is cleared from clipboard (default `10`)
 - `--confirm-passphrase`: Prompt for master passphrase twice and require a match — catches typos when creating a password (interactive prompts only; a piped passphrase is used as-is)
 - `--derivation-version <version>`: Derivation scheme version (only `1` exists — the option gates and documents rather than branches, and every derivation states the version used)

@@ -168,7 +168,8 @@
         "billionYears_one": "{{count, number}} milliard d’années",
         "billionYears_other": "{{count, number}} milliards d’années",
         "overTrillionYears": "plus de mille milliards d’années"
-      }
+      },
+      "weakPassphraseAllowed": "Phrase de passe faible autorisée"
     },
     "passphraseModal": {
       "unlockBlock": "Déverrouiller le bloc",
@@ -207,6 +208,12 @@
       "totpUri_other": "URIs",
       "found_one": "trouvé",
       "found_other": "trouvés"
+    },
+    "weakPassphraseDisclaimerModal": {
+      "weakPassphrase": "Phrase de passe faible",
+      "weakPassphraseWarning": "Une phrase de passe faible est plus vulnérable aux attaques par force brute — n’utilisez pas cette phrase de passe pour protéger un secret à enjeux élevés.",
+      "useWeakPassphrase": "Utiliser une phrase de passe faible",
+      "edit": "Modifier"
     }
   },
   "handlers": {

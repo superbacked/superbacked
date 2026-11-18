@@ -25,7 +25,7 @@ The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to
 
 > Heads-up: a forgotten passphrase — and the standalone archive content it encrypts — is unrecoverable.
 
-Encrypt one or more files and/or folders (the `.superbacked` extension is appended automatically and the command refuses weak passphrases).
+Encrypt one or more files and/or folders (the `.superbacked` extension is appended automatically and the command refuses weak passphrases unless explicitly allowed when prompted or using the `--allow-weak-passphrase` flag).
 
 ```console
 $ superbacked create-standalone-archive ~/Documents/passport.pdf ~/Documents/wallet --output backup

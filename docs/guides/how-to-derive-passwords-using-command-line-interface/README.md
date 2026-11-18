@@ -29,7 +29,7 @@ The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to
 
 > Heads-up: on Linux, copying to the clipboard under Wayland requires wl-clipboard (`sudo apt install wl-clipboard`) — preinstalled on Superbacked OS. On GNOME, a dock icon may blink when the password is copied or cleared — cosmetic and expected.
 
-Derive a password from the master passphrase and a memorized label (the command refuses weak master passphrases, like everywhere else in Superbacked).
+Derive a password from the master passphrase and a memorized label (the command refuses weak master passphrases unless explicitly allowed when prompted or using the `--allow-weak-passphrase` flag).
 
 ```console
 $ superbacked derive-password

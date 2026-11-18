@@ -38,7 +38,9 @@ const month = year / 12
 // against a million-dollar standing attack budget, priced at the KDF
 // profile the passphrase will actually stretch under — wherever
 // Superbacked accepts one, app modals and command-line interface alike,
-// with no override, while restoration is never gated (see
+// unless explicitly allowed when prompted — or, on the command line,
+// using the --allow-weak-passphrase flag — never by a setting, while
+// restoration is never gated (see
 // docs/technical-documentation/passphrase-strength.md).
 // The requirement
 // is the attack time, not an entropy quota: a stronger profile buys real

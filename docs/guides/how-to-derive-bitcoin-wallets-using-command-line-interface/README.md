@@ -31,7 +31,7 @@ The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to
 
 > Heads-up: on macOS, opening the YubiKey may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring).
 
-By default, the command prints the wallet’s extended public key (`zpub…`) — enough to set up a watch-only wallet — without revealing the mnemonic (the command refuses weak master passphrases, like everywhere else in Superbacked).
+By default, the command prints the wallet’s extended public key (`zpub…`) — enough to set up a watch-only wallet — without revealing the mnemonic (the command refuses weak master passphrases unless explicitly allowed when prompted or using the `--allow-weak-passphrase` flag).
 
 ```console
 $ superbacked derive-bitcoin-wallet

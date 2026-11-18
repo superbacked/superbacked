@@ -26,6 +26,16 @@ const yubikeyErrorText: Record<YubiKeyErrorMessage, string> = {
 
 export const touchYubiKeyText = en.common.touchYubiKey
 
+// The weak passphrase disclaimer and the allowed notice print the words
+// the app renders (see src/main/components/WeakPassphraseDisclaimerModal.tsx
+// and src/main/components/PassphraseInputWithStrength.tsx)
+export const useWeakPassphraseText =
+  en.components.weakPassphraseDisclaimerModal.useWeakPassphrase
+export const weakPassphraseWarningText =
+  en.components.weakPassphraseDisclaimerModal.weakPassphraseWarning
+export const weakPassphraseAllowedText =
+  en.components.passphraseInputWithStrength.weakPassphraseAllowed
+
 /**
  * Resolve error into the text a command prints — YubiKey failures resolve
  * from the en locale like the app renders them

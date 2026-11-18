@@ -9,8 +9,9 @@ import {
 } from "@mantine/core"
 import { IconArrowsRandom } from "@tabler/icons-react"
 import {
-  FunctionComponent,
+  forwardRef,
   useCallback,
+  useImperativeHandle,
   useLayoutEffect,
   useRef,
   useState,
@@ -69,6 +70,15 @@ const attackTimeScenariosKey = (
   return "components.passphraseInputWithStrength.attackTimeScenarios"
 }
 
+export interface PassphraseInputWithStrengthRef {
+  // Cancelling the disclaimer returns focus to the field for editing
+  focus: () => void
+  // Requests the weak passphrase disclaimer when the current passphrase
+  // is weak and not allowed — the submit path, as Enter inside the field
+  // submits without blurring it
+  promptWeakPassphrase: () => void
+}
+
 interface PassphraseInputWithStrengthProps extends TextareaProps {
   generatePassphrase: () => Promise<string>
   // Profile the passphrase will stretch under — scales the displayed
@@ -76,11 +86,25 @@ interface PassphraseInputWithStrengthProps extends TextareaProps {
   // src/shared/utilities/zxcvbn.ts). Omitted, the creation default applies
   kdfProfile?: KdfProfile
   onPopoverChange?: (opened: boolean) => void
+  // Called at every decision point (blur and submit) while the passphrase
+  // is weak and not allowed — the enclosing form hosts the disclaimer (see
+  // src/main/components/WeakPassphraseDisclaimerModal.tsx) and records
+  // the decision
+  onWeakPassphrasePrompt: () => void
+  // Called when the passphrase moves away from the allowed one — the
+  // override covers one uninterrupted commit, so editing withdraws it
+  // for good and returning to the same text prompts again
+  onWeakPassphraseReset: () => void
+  // The gate override is bound to the exact passphrase the disclaimer was
+  // accepted for (see docs/technical-documentation/passphrase-strength.md)
+  // — the enclosing form stores it so validation reads it
+  weakPassphraseAllowedFor: null | string
 }
 
-export const PassphraseInputWithStrength: FunctionComponent<
+export const PassphraseInputWithStrength = forwardRef<
+  PassphraseInputWithStrengthRef,
   PassphraseInputWithStrengthProps
-> = (props) => {
+>((props, ref) => {
   const { t } = useTranslation()
   const textInputRef = useRef<HTMLTextAreaElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout>(null)
@@ -90,12 +114,30 @@ export const PassphraseInputWithStrength: FunctionComponent<
   const color =
     strength && strength >= minimumPassphraseStrength ? "pink" : "red"
   const {
+    error,
     generatePassphrase,
     kdfProfile,
     onChange,
     onPopoverChange,
+    onWeakPassphrasePrompt,
+    onWeakPassphraseReset,
+    weakPassphraseAllowedFor,
     ...otherProps
   } = props
+  const value = otherProps.value as string
+  // Handled where the value changes (typing, generating) rather than in
+  // an effect, which would set host state during render
+  const withdrawOverride = useCallback(
+    (passphrase: string) => {
+      if (
+        weakPassphraseAllowedFor !== null &&
+        passphrase !== weakPassphraseAllowedFor
+      ) {
+        onWeakPassphraseReset()
+      }
+    },
+    [onWeakPassphraseReset, weakPassphraseAllowedFor]
+  )
   // Keyed on the profile so toggling Paranoid mode reprices a passphrase
   // that has not changed — the effect below re-runs when the identity
   // changes
@@ -122,6 +164,38 @@ export const PassphraseInputWithStrength: FunctionComponent<
       updatePopover(otherProps.value as string)
     }, 0)
   }, [otherProps.value, updatePopover])
+  // Evaluated on demand rather than from the debounced meter state — a
+  // decision point must price the passphrase as it is at that instant.
+  // Cancelling records nothing: the disclaimer returns at every decision
+  // point until the passphrase is allowed or edited to pass
+  const promptWeakPassphrase = useCallback(() => {
+    if (
+      value === "" ||
+      zxcvbn(value, kdfProfile).strength >= minimumPassphraseStrength ||
+      weakPassphraseAllowedFor === value
+    ) {
+      return
+    }
+    onWeakPassphrasePrompt()
+  }, [kdfProfile, onWeakPassphrasePrompt, value, weakPassphraseAllowedFor])
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => {
+        textInputRef.current?.focus()
+      },
+      promptWeakPassphrase: promptWeakPassphrase,
+    }),
+    [promptWeakPassphrase]
+  )
+  // Allowed, the gate no longer blocks submission but the override stays
+  // visible as an error — the meter stays red for the same reason
+  const weakPassphraseAllowedError =
+    weakPassphraseAllowedFor === value &&
+    strength !== null &&
+    strength < minimumPassphraseStrength
+      ? t("components.passphraseInputWithStrength.weakPassphraseAllowed")
+      : undefined
   return (
     <Popover
       onOpen={() => onPopoverChange?.(true)}
@@ -178,14 +252,37 @@ export const PassphraseInputWithStrength: FunctionComponent<
         <Textarea
           ref={textInputRef}
           autosize
+          error={error ?? weakPassphraseAllowedError}
           maxRows={4}
           onFocusCapture={() => {
             if (otherProps.value !== "") {
               setPopoverOpened(true)
             }
           }}
-          onBlurCapture={() => {
+          onBlurCapture={(event) => {
             setPopoverOpened(false)
+            // Focus leaving the window (switching apps, a native dialog)
+            // is not a decision point
+            if (document.hasFocus() === false) {
+              return
+            }
+            // Neither is focus leaving the form — a modal’s close button,
+            // its overlay or the page navigation, where the disclaimer
+            // would block the dismissal. Blank space counts as staying:
+            // clicking it focuses the nearest focusable ancestor (a
+            // modal’s content panel, the create step’s container), which
+            // contains the form
+            const form = event.currentTarget.form
+            const target = event.relatedTarget
+            if (
+              form === null ||
+              target === null ||
+              (form.contains(target) === false &&
+                target.contains(form) === false)
+            ) {
+              return
+            }
+            promptWeakPassphrase()
           }}
           onKeyDown={(event) => {
             // A newline inside a passphrase would silently change the
@@ -206,6 +303,7 @@ export const PassphraseInputWithStrength: FunctionComponent<
             if (onChange) {
               onChange(event)
             }
+            withdrawOverride(event.currentTarget.value)
             if (event.currentTarget.value !== "") {
               setPopoverOpened(true)
             } else {
@@ -223,6 +321,7 @@ export const PassphraseInputWithStrength: FunctionComponent<
                   textInputRef.current.focus()
                 }
                 const passphrase = await generatePassphrase()
+                withdrawOverride(passphrase)
                 updatePopover(passphrase)
                 setPopoverOpened(true)
               }}
@@ -238,6 +337,8 @@ export const PassphraseInputWithStrength: FunctionComponent<
       </Popover.Target>
     </Popover>
   )
-}
+})
+
+PassphraseInputWithStrength.displayName = "PassphraseInputWithStrength"
 
 export default PassphraseInputWithStrength
