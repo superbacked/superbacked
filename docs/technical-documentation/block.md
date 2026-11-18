@@ -59,6 +59,8 @@ The scheme — stretching, challenge computation, response mixing and its securi
 - **Per secret**: Each secret of a block opts in independently — a block can mix YubiKey-protected and passphrase-only secrets, and plausible deniability is unaffected (the format records nothing about how any key was derived)
 - **Format unchanged**: Only the key derivation differs — YubiKey-protected blocks are byte-compatible with the [payload format](#payload-and-artifact), so a block cannot announce the mode and restoring requires enabling the YubiKey switch again while holding a YubiKey provisioned with the same secret; a missing switch or a YubiKey provisioned with a different secret fails exactly like a wrong passphrase, while an absent YubiKey or unprovisioned slot reports a specific YubiKey error
 - **Strength gate**: The passphrase strength requirement applies to the memorized passphrase — the second factor strengthens it rather than replacing it
+- **Linux**: Reading `/dev/hidraw*` requires Yubico udev rules or root
+- **macOS**: Opening the YubiKey keyboard interface requires granting the app (or the terminal, for the command-line interface) Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring)
 
 ## Payload and artifact
 

@@ -123,6 +123,21 @@ export const setMenu = () => {
         },
         { type: "separator" },
         {
+          label: t("menu.file.provisionYubiKey"),
+          accelerator: runningMacOS ? "Shift+Command+Y" : "Shift+Ctrl+Y",
+          async click() {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              sendEvent(
+                focusedWindow,
+                "menuTriggeredRoute",
+                "/provision-yubikey"
+              )
+            }
+          },
+        },
+        { type: "separator" },
+        {
           label: `${t("menu.file.newWindow")}`,
           accelerator: runningMacOS ? "Command+N" : "Ctrl+N",
           click() {

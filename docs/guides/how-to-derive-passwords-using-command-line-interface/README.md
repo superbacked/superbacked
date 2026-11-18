@@ -25,7 +25,7 @@ The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to
 
 > Heads-up: the master passphrase is never verified, so a mistyped passphrase silently derives a different password. Use `--confirm-passphrase` when deriving a password for the first time — the master passphrase is then prompted twice.
 
-> Heads-up: on macOS, opening the YubiKey may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring).
+> Heads-up: on macOS, opening the YubiKey requires granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring) — macOS prompts on first use.
 
 > Heads-up: on Linux, copying to the clipboard under Wayland requires wl-clipboard (`sudo apt install wl-clipboard`) — preinstalled on Superbacked OS. On GNOME, a dock icon may blink when the password is copied or cleared — cosmetic and expected.
 

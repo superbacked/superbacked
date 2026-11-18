@@ -16,8 +16,8 @@ import { decryptLegacyBlock } from "@/src/utilities/core/legacy/block"
 import { classifyPrefixedShare } from "@/src/utilities/core/legacy/blockset"
 import { UnsupportedVersionError } from "@/src/utilities/crypto/schemeHeader"
 import { getSenderWebContents } from "@/src/utilities/ipc/handleContext"
-import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
 import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
+import notifyYubiKeyTouchRequired from "@/src/utilities/yubikey/notifyTouchRequired"
 import {
   Slot,
   YubiKeyError,
@@ -154,7 +154,7 @@ export default async (
         profiles,
         slot === undefined
           ? undefined
-          : { onTouchRequired: broadcastYubiKeyTouchRequired, slot: slot }
+          : { onTouchRequired: notifyYubiKeyTouchRequired, slot: slot }
       )
       message = decrypted.message
       if (decrypted.share === true) {

@@ -20,8 +20,10 @@ const yubikeyErrorText: Record<YubiKeyErrorMessage, string> = {
   "common.yubiKeyConfigurationLocked": en.common.yubiKeyConfigurationLocked,
   "common.yubiKeyOtpInterfaceDisabled": en.common.yubiKeyOtpInterfaceDisabled,
   "common.yubiKeyOtpNotSupported": en.common.yubiKeyOtpNotSupported,
+  "common.yubiKeyProvisioningRejected": en.common.yubiKeyProvisioningRejected,
   "common.yubiKeySlotNotProvisioned": en.common.yubiKeySlotNotProvisioned,
   "common.yubiKeyTouchTimedOut": en.common.yubiKeyTouchTimedOut,
+  "common.yubiKeyVerificationFailed": en.common.yubiKeyVerificationFailed,
 }
 
 export const touchYubiKeyText = en.common.touchYubiKey
@@ -45,10 +47,7 @@ export const weakPassphraseAllowedText =
  */
 export const errorText = (error: unknown, fallback: string): string => {
   if (error instanceof YubiKeyError) {
-    const key = yubikeyErrorMessageKeys[error.code]
-    // Codes without an app-side key (provisioningRejected — the app never
-    // provisions) carry their only message on the error
-    return key === undefined ? error.message : yubikeyErrorText[key]
+    return yubikeyErrorText[yubikeyErrorMessageKeys[error.code]]
   }
   if (error instanceof Error) {
     return error.message

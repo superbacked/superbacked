@@ -66,6 +66,11 @@ const api: Api = {
     verifyYubiKeyChallengeResponseSecret: invoke(
       "verifyYubiKeyChallengeResponseSecret"
     ),
+    getYubiKeyStatus: invoke("getYubiKeyStatus"),
+    canEnableYubiKeyOtp: invoke("canEnableYubiKeyOtp"),
+    enableYubiKeyOtpInterface: invoke("enableYubiKeyOtpInterface"),
+    readYubiKeyModel: invoke("readYubiKeyModel"),
+    provisionYubiKey: invoke("provisionYubiKey"),
   } satisfies IpcHandlers,
   invokeSync: {
     getLocale: invokeSync("getLocale"),
@@ -82,6 +87,8 @@ const api: Api = {
     generateMasterKey: invokeSync("generateMasterKey"),
     deriveDetachedArchiveFilename: invokeSync("deriveDetachedArchiveFilename"),
     generateToken: invokeSync("generateToken"),
+    generateYubiKeySecret: invokeSync("generateYubiKeySecret"),
+    isSuperbackedOs: invokeSync("isSuperbackedOs"),
   } satisfies IpcSyncHandlers,
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file)

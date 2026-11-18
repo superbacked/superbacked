@@ -32,7 +32,7 @@ import {
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router"
+import { useLocation, useNavigate } from "react-router"
 
 import { Qr, Result, Secret } from "@/src/handlers/create"
 import ActionBadge from "@/src/main/components/ActionBadge"
@@ -54,6 +54,7 @@ import StyledLockPlusIcon from "@/src/main/components/StyledLockPlusIcon"
 import WeakPassphraseDisclaimerModal from "@/src/main/components/WeakPassphraseDisclaimerModal"
 import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
 import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
+import { YubiKeySecretHandoff } from "@/src/main/routes/ProvisionYubiKey"
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   SelectionWithElement,
@@ -154,6 +155,11 @@ type SecretFormValues = {
   // src/main/components/PassphraseInputWithStrength.tsx)
   weakPassphraseAllowedFor: null | string
   yubikey: boolean
+  // A YubiKey challenge-response secret handed over by provisioning (see
+  // src/main/routes/ProvisionYubiKey.tsx) — never YubiKey-protected, as
+  // its backup must not depend on the YubiKey it provisions. The flag
+  // belongs to the entry, so a form reset clears it like every field
+  yubikeySecret: boolean
 }
 
 // Each secret starts on the default YubiKey slot — the same default the
@@ -166,6 +172,7 @@ const initialSecretEntry = (): SecretFormValues => {
       window.api.invokeSync.getConfig("yubikey")?.challengeResponseSlot ?? "2",
     weakPassphraseAllowedFor: null,
     yubikey: false,
+    yubikeySecret: false,
   }
 }
 
@@ -194,6 +201,19 @@ type CreateProps = {
 }
 
 const Create: FunctionComponent<CreateProps> = (props) => {
+  const location = useLocation()
+  // A freshly generated YubiKey secret handed over by the provisioning
+  // route (see src/main/routes/ProvisionYubiKey.tsx) — read once at mount
+  // and consumed into the form: the setup step opens with a single block
+  // and the label preselected, so the label (the key’s model and serial
+  // number, printed on the block) can be reviewed, and the next step
+  // holds the secret, flagged on its entry
+  const [handoff] = useState<null | YubiKeySecretHandoff>(() => {
+    const state = location.state as null | {
+      yubikeySecret?: YubiKeySecretHandoff
+    }
+    return props.exportMode === true ? null : (state?.yubikeySecret ?? null)
+  })
   let initialStep: Step,
     initialQrs: Qr[] = []
   if (props.exportMode === true && props.qrs) {
@@ -204,6 +224,14 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   }
 
   const navigate = useNavigate()
+  // Consumed once — a later remount of the route (the File menu
+  // re-triggering Create) starts empty rather than refilling the secret
+  useEffect(() => {
+    if (handoff !== null) {
+      void navigate(location.pathname, { replace: true, state: null })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { i18n, t } = useTranslation()
 
@@ -220,7 +248,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   } = detachedArchivePopoverHandlers
 
   const [secrets, setSecrets] = useState<SecretsState>([
-    { secret: "", detachedArchive: null },
+    { secret: handoff?.secret ?? "", detachedArchive: null },
   ])
   const [step, setStep] = useState<Step>(initialStep)
   // Index of the secret being edited on the secrets step — the flow is
@@ -378,9 +406,15 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   // Lazy so the config read happens once at mount — an inline object here
   // would issue a blocking IPC call on every render
   const [formInitialValues] = useState<FormValues>(() => ({
-    secrets: [initialSecretEntry()],
-    backupType: null,
-    label: "",
+    secrets: [
+      {
+        ...initialSecretEntry(),
+        secret: handoff?.secret ?? "",
+        yubikeySecret: handoff !== null,
+      },
+    ],
+    backupType: handoff === null ? null : "singleBlock",
+    label: handoff?.label ?? "",
   }))
   const form = useForm<FormValues>({
     initialValues: formInitialValues,
@@ -1089,7 +1123,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             withFocus: false,
           })}
         />
-        {isBlockset === false ? (
+        {/* Hidden for blocksets (YubiKey protection is supported for single
+            blocks only) and for a YubiKey secret (its backup must not depend
+            on the YubiKey it provisions — see the entry flag) */}
+        {isBlockset === false && currentEntry?.yubikeySecret !== true ? (
           <Fragment>
             <Space h="md" />
             <YubiKeyProtection
@@ -1325,6 +1362,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           closeOnEscape={false}
           onClose={() => {}}
           opened={touchAwaited === true && isCreating === true}
+          size="sm"
           withCloseButton={false}
         >
           <YubiKeyTouchPrompt />

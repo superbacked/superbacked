@@ -96,6 +96,8 @@ The scheme — stretching, challenge computation, response mixing, probe keys an
 - **Probe at factor depth**: The probe key of a YubiKey-protected archive mixes the hardware response, so even the version check requires the YubiKey — no correctness oracle exists below the full two-factor cost
 - **Restoration**: Requires enabling YubiKey mode again (the app switch or `--yubikey`) while holding a YubiKey provisioned with the same secret — a missing switch/flag or a YubiKey provisioned with a different secret fails exactly like a wrong passphrase, while an absent YubiKey or unprovisioned slot reports a specific YubiKey error — the archive itself cannot announce the mode
 - **Strength gate**: The passphrase strength requirement applies to the memorized passphrase — the second factor strengthens it rather than replacing it
+- **Linux**: Reading `/dev/hidraw*` requires Yubico udev rules or root
+- **macOS**: Opening the YubiKey keyboard interface requires granting the app (or the terminal, for the command-line interface) Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring)
 
 ## Structure
 

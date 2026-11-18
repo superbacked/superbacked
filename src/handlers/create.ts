@@ -17,8 +17,8 @@ import {
 import { encryptBlockset } from "@/src/utilities/core/blockset"
 import { LegacyPayload } from "@/src/utilities/core/legacy/block"
 import { hash, shortHash } from "@/src/utilities/crypto/primitives"
-import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
 import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
+import notifyYubiKeyTouchRequired from "@/src/utilities/yubikey/notifyTouchRequired"
 import { YubiKeyError, YubiKeyErrorCode } from "@/src/utilities/yubikey/otp"
 
 // LegacyPayload is re-exported so renderer and consumer imports stay off
@@ -209,7 +209,7 @@ export default async function create(
             threshold as number,
             profile,
             label,
-            broadcastYubiKeyTouchRequired
+            notifyYubiKeyTouchRequired
           )
         : [
             await encryptBlock(
@@ -217,7 +217,7 @@ export default async function create(
               false,
               profile,
               label,
-              broadcastYubiKeyTouchRequired
+              notifyYubiKeyTouchRequired
             ),
           ]
     const qrs = []

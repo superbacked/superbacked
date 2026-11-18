@@ -27,6 +27,7 @@ import TitleBar from "@/src/main/components/TitleBar"
 import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
 import Duplicate from "@/src/main/routes/Duplicate"
+import ProvisionYubiKey from "@/src/main/routes/ProvisionYubiKey"
 import Restore from "@/src/main/routes/Restore"
 
 import "@fontsource/roboto-mono/latin-400.css"
@@ -517,6 +518,10 @@ const App = () => {
                       <Route
                         path="/restore"
                         element={<Restore key={context.key} />}
+                      />
+                      <Route
+                        path="/provision-yubikey"
+                        element={<ProvisionYubiKey key={context.key} />}
                       />
                     </Routes>
                     <SelectionAsQrCode />

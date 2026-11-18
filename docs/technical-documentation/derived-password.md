@@ -125,4 +125,4 @@ With `--print`, the password is written to stdout on its own so the command comp
 ### Platform notes
 
 - **Linux**: Reading `/dev/hidraw*` requires Yubico udev rules or root
-- **macOS**: Opening the YubiKey keyboard interface may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring)
+- **macOS**: Opening the YubiKey keyboard interface requires granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring)

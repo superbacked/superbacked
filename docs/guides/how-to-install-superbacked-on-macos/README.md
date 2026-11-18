@@ -39,4 +39,6 @@ $ source "$HOME/.zshrc"
 
 > Heads-up: macOS may display a security prompt. Click “Open” to proceed — release is cryptographically signed and notarized by Apple.
 
+> Heads-up: opening the YubiKey requires granting Superbacked (and the terminal, when using the command-line interface) Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring) — macOS prompts on first use.
+
 Open Superbacked from “Applications” folder or run `superbacked` in terminal to use the command-line interface (see [step 3](#step-3-optional-make-superbacked-command-available-in-terminal)).

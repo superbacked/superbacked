@@ -6,11 +6,9 @@
 // mnemonic validator and the password character classes (see
 // src/main/utilities/regexp.ts, which binds them through the bridge).
 
-export const bip39PassphraseLength = 20
+import { yubikeySecretInTextPattern } from "@/src/shared/yubikeySecret"
 
-// Hexadecimal characters of a 20-byte HMAC-SHA1 slot secret — the size
-// YubiKey provisioning programs (see src/cli/provisionYubikey.ts)
-export const yubikeyChallengeResponseSecretLength = 40
+export const bip39PassphraseLength = 20
 
 export type ExtractionType =
   | "bip39Mnemonic"
@@ -75,11 +73,11 @@ export const totpUriRegExp = new RegExp(
   /otpauth:\/\/totp\/((.+)(:|%3A))?(.+)\?secret=([a-zA-Z2-7]+)&issuer=([^&\s]+)(&algorithm=(SHA1))?(&digits=(6))?(&period=(30))?/g
 )
 
-// Exactly the provisioned secret length of hexadecimal characters,
-// bounded by non-hex on both sides — the lookarounds keep longer hex (a
-// SHA-256 for example) from matching through its substrings
+// The slot secret as it appears inside text (see
+// src/shared/yubikeySecret.ts) — global, as the loop below walks every
+// match
 export const yubikeyChallengeResponseSecretRegExp = new RegExp(
-  `(?<![0-9a-fA-F])[0-9a-fA-F]{${yubikeyChallengeResponseSecretLength}}(?![0-9a-fA-F])`,
+  yubikeySecretInTextPattern,
   "g"
 )
 

@@ -11,6 +11,7 @@
       "create": "Create",
       "duplicate": "Duplicate",
       "restore": "Restore",
+      "provisionYubiKey": "Provision YubiKey",
       "newWindow": "New window",
       "closeWindow": "Close window"
     },
@@ -260,8 +261,10 @@
     "yubiKeyConfigurationLocked": "YubiKey configuration protected by a lock code",
     "yubiKeyOtpInterfaceDisabled": "YubiKey detected but OTP interface is disabled",
     "yubiKeyOtpNotSupported": "YubiKey does not support OTP challenge-response (Bio and Security Key series)",
+    "yubiKeyProvisioningRejected": "YubiKey rejected provisioning — slot may be protected by an access code",
     "yubiKeySlotNotProvisioned": "YubiKey slot not provisioned for challenge-response",
-    "yubiKeyTouchTimedOut": "YubiKey touch timed out"
+    "yubiKeyTouchTimedOut": "YubiKey touch timed out",
+    "yubiKeyVerificationFailed": "YubiKey verification failed — slot response does not match secret"
   },
   "routes": {
     "create": {
@@ -327,6 +330,27 @@
       "blocksetSaved": "Blockset saved"
     },
     "duplicate": { "couldNotDuplicateBlock": "Could not duplicate block" },
+    "provisionYubiKey": {
+      "secretInvalid": "Secret must be 40 hexadecimal characters",
+      "couldNotProvisionYubiKey": "Could not provision YubiKey",
+      "enableOtpInterface": "Enable OTP interface",
+      "enableOtpInterfaceDescription": "YubiKey detected but OTP interface is disabled — enabling it restarts YubiKey",
+      "enable": "Enable",
+      "overwriteSlot": "Overwrite slot {{slot}}",
+      "overwriteSlotDescription": "Slot {{slot}} is already programmed — overwriting it permanently destroys current secret",
+      "overwrite": "Overwrite",
+      "slotProvisioned": "Slot {{slot}} provisioned for HMAC-SHA1 challenge-response",
+      "secretCannotBeReadBack": "Secret cannot be read back from YubiKey — use block that is not YubiKey-protected to back up secret or provision another YubiKey with the same secret. Without either, everything relying on this secret is unrecoverable if YubiKey is lost or broken.",
+      "couldNotReadYubiKeyModel": "Could not read YubiKey model ({{reason}})",
+      "backUpToBlock": "Back up to block…",
+      "provisionToAnotherYubiKey": "Provision to another YubiKey…",
+      "secret": "Secret",
+      "typeSecret": "Type secret…",
+      "slot": "Slot",
+      "provisionYubiKey": "Provision YubiKey",
+      "hostExposureWarning": "Provisioning exposes YubiKey secret to this computer — for high-stakes secrets, provision YubiKey using <anchor><bold>Superbacked OS</bold></anchor>.",
+      "continue": "Continue"
+    },
     "restore": {
       "bip32RootFingerprint": "BIP32 root fingerprint",
       "bip39Mnemonic": "BIP39 mnemonic",
@@ -342,6 +366,7 @@
       "dragAndDropArchiveToRestore": "Drag and drop {{filename}} to restore archive",
       "index": "Index",
       "notProvisionedOnYubiKey": "Not provisioned on connected YubiKey",
+      "provision": "Provision",
       "provisionedInSlot": "Provisioned in slot {{slot}}",
       "restoringDetachedArchive": "Restoring detached archive",
       "scanOrDragAndDropBlock": "Scan or drag and drop block",
