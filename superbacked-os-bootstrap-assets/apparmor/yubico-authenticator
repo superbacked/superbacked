@@ -36,6 +36,24 @@ profile yubico-authenticator /opt/yubico-authenticator/authenticator {
   deny network bluetooth,
 
   dbus (send, receive) bus=session,
+  # The accessibility bus (AT-SPI, screen readers) stays closed: a
+  # client on it publishes its widget tree (the codes this app shows
+  # would be plain text in it) and can read other same-user apps’
+  # trees. The desktop entry sets NO_AT_BRIDGE=1, the switch GTK3’s
+  # bridge reads, so nothing is probed; the denies are quiet so a stray
+  # probe (a terminal launch without the variable) stays out of
+  # enforce-mode logs.
+  deny owner @{run}/user/[0-9]*/at-spi/bus{,*} rw,
+  deny dbus (send, receive) bus=accessibility,
+  # Mutter 48 and later serve screen-reader keyboard monitoring on the
+  # session bus (org.freedesktop.a11y.KeyboardMonitor), guarded only by
+  # ownership of Orca’s bus name — which any session process can claim
+  # while Orca is not running, then read every keystroke. Absent on
+  # this Ubuntu 24.04 base (Mutter 46); closed ahead of a rebase, since
+  # the session grant above would otherwise reach it. The interface
+  # match holds however the manager is addressed.
+  deny dbus bind bus=session name=org.gnome.Orca.KeyboardMonitor,
+  deny dbus send bus=session interface=org.freedesktop.a11y.KeyboardMonitor,
 
   unix,
   # Abstract X11 socket wall (Wayland-only OS; the path-based X socket

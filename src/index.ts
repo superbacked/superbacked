@@ -57,6 +57,16 @@ if (isSuperbackedOs()) {
   // gpu/config/gpu_util.cc). The app uses no WebGPU, so nothing
   // changes but the log line
   app.commandLine.appendSwitch("use-webgpu-adapter", "opengles")
+  // The AppArmor profile denies the accessibility bus (see
+  // superbacked-os-bootstrap-assets/apparmor/superbacked for why), so
+  // Chromium’s AT-SPI bridge is switched off instead of failing the
+  // handshake with a warning on every launch. NO_AT_BRIDGE is no lever
+  // in Electron — Chromium sets it for GTK and unsets it before its
+  // own bridge — but this variable is consulted first, when the first
+  // window’s accessibility tree is created, long after this script
+  // (see ShouldEnableAccessibility in Chromium’s
+  // ui/accessibility/platform/atk_util_auralinux.cc)
+  process.env.GNOME_ACCESSIBILITY = "0"
 }
 
 app.setName("Superbacked")

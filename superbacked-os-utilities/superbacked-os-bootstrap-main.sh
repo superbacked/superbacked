@@ -907,8 +907,11 @@ if (( $# == 1 )); then
 fi
 
 # Lingering provides the browser user’s session bus. Disable portals it
-# cannot answer, and pin the private display name allowed by Firefox’s
-# profile. Not oneshot: in that mode waypipe hands the application a
+# cannot answer, switch accessibility off (the AT-SPI bus is denied by
+# every profile — GNOME_ACCESSIBILITY is the variable Firefox consults
+# before asking the session bus, so the bridge is never attempted) and
+# pin the private display name allowed by Firefox’s profile. Not
+# oneshot: in that mode waypipe hands the application a
 # pre-connected WAYLAND_SOCKET and unsets WAYLAND_DISPLAY, and Firefox
 # refuses to start without WAYLAND_DISPLAY or DISPLAY — the display
 # socket mode sets WAYLAND_DISPLAY to the pinned name instead.
@@ -920,6 +923,7 @@ exec /usr/bin/env --ignore-environment \
   PATH=/usr/bin:/bin \
   LANG=C.UTF-8 \
   DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${browser_uid}/bus" \
+  GNOME_ACCESSIBILITY=0 \
   GTK_USE_PORTAL=0 \
   MOZ_ENABLE_WAYLAND=1 \
   XDG_RUNTIME_DIR="/run/user/${browser_uid}" \

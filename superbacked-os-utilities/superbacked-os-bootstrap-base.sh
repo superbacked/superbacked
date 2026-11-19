@@ -394,8 +394,11 @@ tar --extract --gzip --strip-components 1 \
 rm /tmp/yubico-authenticator.tar.gz /tmp/yubico-authenticator.tar.gz.sig
 
 # Pinned to Wayland so authentication codes are never drawn through X11,
-# where other apps could observe them. The entry is named after the app
-# id (com.yubico.yubioath) so GNOME pairs the running window with its
+# where other apps could observe them, and kept off the accessibility
+# bus, where they would be plain text in a published widget tree
+# (NO_AT_BRIDGE is the switch GTK3’s bridge reads; the AppArmor profile
+# denies the bus as the backstop). The entry is named after the app id
+# (com.yubico.yubioath) so GNOME pairs the running window with its
 # icon. The app’s QR code scanning needs a helper this OS adds — see
 # “Configuring Yubico Authenticator QR code scanning” in
 # superbacked-os-bootstrap-main.sh.
@@ -406,7 +409,7 @@ tee /usr/local/share/applications/com.yubico.yubioath.desktop > /dev/null << 'EO
 Version=1.0
 Type=Application
 Name=Yubico Authenticator
-Exec=env GDK_BACKEND=wayland /opt/yubico-authenticator/authenticator
+Exec=env GDK_BACKEND=wayland NO_AT_BRIDGE=1 /opt/yubico-authenticator/authenticator
 Icon=/opt/yubico-authenticator/linux_support/com.yubico.yubioath.png
 StartupWMClass=com.yubico.yubioath
 StartupNotify=true
