@@ -2,6 +2,7 @@ import { resolve } from "path"
 
 import { Configuration, DefinePlugin } from "webpack"
 
+import { rendererOrigin } from "./src/utilities/rendererProtocol"
 import { createPlugins } from "./webpack.plugins"
 import { rules } from "./webpack.rules"
 
@@ -29,9 +30,15 @@ const config: Configuration = {
       // path.join normalizes the “..” — Electron cannot resolve unnormalized
       // paths inside app.asar (the block preload used to fail with ENOENT)
       MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: `require("path").join(__dirname, "preload.js")`,
-      MAIN_WINDOW_WEBPACK_ENTRY: `"file://" + require("path").join(__dirname, "../renderer/main_window/index.html")`,
       BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY: `require("path").join(__dirname, "../block/preload.js")`,
-      BLOCK_WINDOW_WEBPACK_ENTRY: `"file://" + require("path").join(__dirname, "../renderer/block_window/index.html")`,
+      // The windows load from the renderer origin the main process serves
+      // out of .webpack/renderer (see src/index.ts), never from file://
+      MAIN_WINDOW_WEBPACK_ENTRY: JSON.stringify(
+        `${rendererOrigin}/main_window/index.html`
+      ),
+      BLOCK_WINDOW_WEBPACK_ENTRY: JSON.stringify(
+        `${rendererOrigin}/block_window/index.html`
+      ),
     }),
   ],
   resolve: {

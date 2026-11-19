@@ -58,10 +58,17 @@ const config: Configuration = {
   // verifying their digests before spawn is the open follow-up. A
   // mismatch is fatal at startup, so a signed macOS build must launch
   // before release.
+  //
+  // The file protocol fuse gives file:// pages read access to the whole
+  // filesystem. The packaged renderer loads from its own scheme instead
+  // (see src/utilities/rendererProtocol.ts), so nothing needs the grant
+  // and a compromised page cannot read files even if the handler were to
+  // regress.
   electronFuses: {
     enableEmbeddedAsarIntegrityValidation: true,
     enableNodeCliInspectArguments: false,
     enableNodeOptionsEnvironmentVariable: false,
+    grantFileProtocolExtraPrivileges: false,
     onlyLoadAppFromAsar: true,
     runAsNode: false,
   },

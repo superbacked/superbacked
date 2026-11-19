@@ -1,4 +1,13 @@
-import { BrowserWindow, WebFrameMain, app, ipcMain, session } from "electron"
+import {
+  BrowserWindow,
+  WebFrameMain,
+  app,
+  ipcMain,
+  protocol,
+  session,
+} from "electron"
+import { readFile } from "fs/promises"
+import { join } from "path"
 import { URL } from "url"
 
 import { Option as CommanderOption, program as cli } from "commander"
@@ -29,10 +38,28 @@ import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"
+import {
+  isRendererUrl,
+  rendererScheme,
+  resolveRendererFile,
+} from "@/src/utilities/rendererProtocol"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
+
+// #if process.env.ENV === "production"
+// The renderer’s scheme (see src/utilities/rendererProtocol.ts) must be
+// declared before ready: standard so relative URLs in the bundle resolve
+// and the origin behaves like a web one, secure so the pages count as a
+// secure context, fetch so the pages can request their own assets.
+protocol.registerSchemesAsPrivileged([
+  {
+    privileges: { secure: true, standard: true, supportFetchAPI: true },
+    scheme: rendererScheme,
+  },
+])
+// #endif
 
 // Electron’s asar filesystem shim constructs fs.Stats (DEP0180), spilling
 // deprecation warnings into command-line interface output — suppress them
@@ -340,6 +367,8 @@ export const getMainWindow = (): null | BrowserWindow => {
 }
 
 // see https://www.electronjs.org/docs/latest/tutorial/security#17-validate-the-sender-of-all-ipc-messages
+// The packaged renderer has a real host to compare (see
+// src/utilities/rendererProtocol.ts) — a file:// frame has none
 export const validateSender = (frame: WebFrameMain) => {
   const frameHost = new URL(frame.url).host
   const mainHost = new URL(MAIN_WINDOW_WEBPACK_ENTRY).host
@@ -372,6 +401,29 @@ cli.option("--no-sandbox", "disable sandbox").action(() => {
     app.configureHostResolver({
       secureDnsMode: "off",
     })
+    // #if process.env.ENV === "production"
+    // Serve the renderer bundle (.webpack/renderer, beside this bundle in
+    // app.asar) from its own origin. Only files inside the bundle with an
+    // extension it ships are served, read through fs so no file:// request
+    // exists for a page to ride on; everything else is not found. With
+    // the file protocol fuse off (see builder.config.ts) a page from this
+    // origin cannot read the filesystem at all.
+    const rendererPath = join(__dirname, "../renderer")
+    protocol.handle(rendererScheme, async (request) => {
+      const file = resolveRendererFile(rendererPath, request.url)
+      if (file === null) {
+        return new Response(null, { status: 404 })
+      }
+      try {
+        const body = await readFile(file.path)
+        return new Response(new Uint8Array(body), {
+          headers: { "Content-Type": file.contentType },
+        })
+      } catch {
+        return new Response(null, { status: 404 })
+      }
+    })
+    // #endif
     // Limit networking to trusted URLs — registered before any window loads
     // so every page (including the main window) goes through the filter.
     session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
@@ -381,7 +433,7 @@ cli.option("--no-sandbox", "disable sandbox").action(() => {
         matchesUrlOrigin(details.url, "ws://localhost:3000") ||
         // #endif
         // #if process.env.ENV === "production"
-        /^file:\/\//.test(details.url) ||
+        isRendererUrl(details.url) ||
         // #endif
         /^devtools:\/\//.test(details.url)
       callback({ cancel: !allowed })
