@@ -3,6 +3,8 @@ import { suite, test } from "node:test"
 import { join } from "path"
 
 import {
+  buildContentSecurityPolicy,
+  contentSecurityPolicy,
   isRendererUrl,
   rendererOrigin,
   resolveRendererFile,
@@ -42,8 +44,27 @@ suite("resolveRendererFile", () => {
       )
       assert.notStrictEqual(file, null)
       assert.strictEqual(file?.path, join(rendererPath, relativePath))
-      assert.strictEqual(file?.contentType.startsWith(contentType), true)
+      assert.strictEqual(
+        file?.headers["Content-Type"]?.startsWith(contentType),
+        true
+      )
     }
+  })
+
+  test("serves the Content Security Policy on pages only", () => {
+    const page = resolveRendererFile(
+      rendererPath,
+      `${rendererOrigin}/main_window/index.html`
+    )
+    assert.strictEqual(
+      page?.headers["Content-Security-Policy"],
+      contentSecurityPolicy
+    )
+    const script = resolveRendererFile(
+      rendererPath,
+      `${rendererOrigin}/main_window/index.js`
+    )
+    assert.strictEqual(script?.headers["Content-Security-Policy"], undefined)
   })
 
   test("keeps dot segments inside the bundle", () => {
@@ -105,6 +126,32 @@ suite("resolveRendererFile", () => {
   })
 })
 
+suite("buildContentSecurityPolicy", () => {
+  test("locks every source to the origin and appends additions", () => {
+    assert.strictEqual(
+      contentSecurityPolicy.includes("default-src 'none'; "),
+      true
+    )
+    assert.strictEqual(
+      contentSecurityPolicy.includes("script-src 'self'"),
+      true
+    )
+    assert.strictEqual(contentSecurityPolicy.includes("unsafe-eval"), false)
+    const development = buildContentSecurityPolicy({
+      "connect-src": ["ws://localhost:3000"],
+      "script-src": ["'unsafe-eval'"],
+    })
+    assert.strictEqual(
+      development.includes("connect-src 'self' ws://localhost:3000"),
+      true
+    )
+    assert.strictEqual(
+      development.includes("script-src 'self' 'unsafe-eval'"),
+      true
+    )
+  })
+})
+
 suite("isRendererUrl", () => {
   test("matches the renderer origin only", () => {
     assert.strictEqual(
@@ -115,6 +162,8 @@ suite("isRendererUrl", () => {
       rendererOrigin,
       "app://superbacked.attacker.invalid/",
       "app://superbacked@attacker.invalid/",
+      "app://superbacked:80/main_window/index.html",
+      "APP://SUPERBACKED/main_window/index.html",
       "file:///opt/Superbacked/resources/app.asar/.webpack/renderer/main_window/index.html",
     ]) {
       assert.strictEqual(isRendererUrl(url), false)

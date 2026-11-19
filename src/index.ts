@@ -405,9 +405,10 @@ cli.option("--no-sandbox", "disable sandbox").action(() => {
     // Serve the renderer bundle (.webpack/renderer, beside this bundle in
     // app.asar) from its own origin. Only files inside the bundle with an
     // extension it ships are served, read through fs so no file:// request
-    // exists for a page to ride on; everything else is not found. With
-    // the file protocol fuse off (see builder.config.ts) a page from this
-    // origin cannot read the filesystem at all.
+    // exists for a page to ride on; everything else is not found. Pages
+    // carry the Content Security Policy as a header. With the file
+    // protocol fuse off (see builder.config.ts) a page from this origin
+    // cannot read the filesystem at all.
     const rendererPath = join(__dirname, "../renderer")
     protocol.handle(rendererScheme, async (request) => {
       const file = resolveRendererFile(rendererPath, request.url)
@@ -416,9 +417,7 @@ cli.option("--no-sandbox", "disable sandbox").action(() => {
       }
       try {
         const body = await readFile(file.path)
-        return new Response(new Uint8Array(body), {
-          headers: { "Content-Type": file.contentType },
-        })
+        return new Response(new Uint8Array(body), { headers: file.headers })
       } catch {
         return new Response(null, { status: 404 })
       }

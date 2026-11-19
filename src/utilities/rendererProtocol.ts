@@ -16,6 +16,61 @@ export const isRendererUrl = (value: string): boolean => {
   return value.startsWith(`${rendererOrigin}/`)
 }
 
+type ContentSecurityPolicyDirective =
+  | "base-uri"
+  | "connect-src"
+  | "default-src"
+  | "font-src"
+  | "form-action"
+  | "frame-ancestors"
+  | "img-src"
+  | "media-src"
+  | "object-src"
+  | "script-src"
+  | "style-src"
+  | "worker-src"
+
+// Everything a page may load, locked to its own origin: scripts, fonts,
+// the pdfjs worker and the audio cue. Images add data: for the QR codes
+// and thumbnails the app generates in memory. Styles allow inline
+// because Mantine sets style attributes and Emotion inserts rules at
+// runtime, neither of which a nonce can cover — inline styles run no
+// code and the request filter leaves them no network to reach. Served
+// as a header on every page (see src/index.ts); development adds what
+// its dev server needs (see webpack.renderer.development.config.ts).
+const contentSecurityPolicyDirectives: Record<
+  ContentSecurityPolicyDirective,
+  string[]
+> = {
+  "base-uri": ["'none'"],
+  "connect-src": ["'self'"],
+  "default-src": ["'none'"],
+  "font-src": ["'self'"],
+  "form-action": ["'none'"],
+  "frame-ancestors": ["'none'"],
+  "img-src": ["'self'", "data:"],
+  "media-src": ["'self'"],
+  "object-src": ["'none'"],
+  "script-src": ["'self'"],
+  "style-src": ["'self'", "'unsafe-inline'"],
+  "worker-src": ["'self'"],
+}
+
+export const buildContentSecurityPolicy = (
+  additions: Partial<Record<ContentSecurityPolicyDirective, string[]>> = {}
+): string => {
+  const directives: string[] = []
+  for (const [directive, sources] of Object.entries(
+    contentSecurityPolicyDirectives
+  )) {
+    const added = additions[directive as ContentSecurityPolicyDirective] ?? []
+    directives.push(`${directive} ${[...sources, ...added].join(" ")}`)
+  }
+  return directives.join("; ")
+}
+
+export const contentSecurityPolicy = buildContentSecurityPolicy()
+
 // Everything the renderer bundle ships — a request for any other
 // extension is refused before the filesystem is consulted.
 const contentTypes: Record<string, string> = {
@@ -29,7 +84,7 @@ const contentTypes: Record<string, string> = {
 }
 
 export interface RendererFile {
-  contentType: string
+  headers: Record<string, string>
   path: string
 }
 
@@ -78,5 +133,9 @@ export const resolveRendererFile = (
   ) {
     return null
   }
-  return { contentType: contentType, path: path }
+  const headers: Record<string, string> = { "Content-Type": contentType }
+  if (contentType.startsWith("text/html") === true) {
+    headers["Content-Security-Policy"] = contentSecurityPolicy
+  }
+  return { headers: headers, path: path }
 }
