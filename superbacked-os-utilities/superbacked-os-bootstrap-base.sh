@@ -191,13 +191,17 @@ printf "%s\n" "Installing dependencies…"
 # and verify software, dconf-cli compiles the system dconf database
 # (see “Configuring GNOME” in superbacked-os-bootstrap-main.sh),
 # exfatprogs formats exFAT USB drives, language packs complete the
-# English locale, libfuse2 runs AppImages, pcscd and scdaemon talk to
-# smartcards and YubiKeys, python3-pip downloads the pinned PyPI wheels
-# below, totem plays video with gstreamer1.0-libav decoding it (H.264
-# including the 4:2:2 profile, plus AAC — the minimal install ships no
-# video decoder), waypipe puts the browser on screen, wl-clipboard
-# copies derived passwords to the clipboard (Wayland lets only a
-# focused surface set the selection, and the command-line interface is
+# English locale, libfuse2 runs AppImages, libopengl0 supplies the
+# libOpenGL.so.0 that Qt 6 AppImages (KeePassXC 2.8.0 and later) expect
+# from the host (AppImage tooling never bundles OpenGL libraries and
+# the minimal desktop installs libgl1 and libegl1 but nothing that
+# depends on libopengl0), pcscd and scdaemon talk to smartcards and
+# YubiKeys, python3-pip downloads the pinned PyPI wheels below, totem
+# plays video with gstreamer1.0-libav decoding it (H.264 including the
+# 4:2:2 profile, plus AAC — the minimal install ships no video
+# decoder), waypipe puts the browser on screen, wl-clipboard copies
+# derived passwords to the clipboard (Wayland lets only a focused
+# surface set the selection, and the command-line interface is
 # windowless) and zenity shows error dialogs. (Firefox comes from its
 # own repository — see the install section below.)
 packages=(
@@ -214,6 +218,7 @@ packages=(
   language-pack-gnome-en
   # language-pack-gnome-fr
   libfuse2
+  libopengl0
   libpcsclite-dev
   pcscd
   pipx
