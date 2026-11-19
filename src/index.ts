@@ -329,9 +329,6 @@ export const createWindow = async (): Promise<BrowserWindow> => {
       const { x, y } = mainWindow.getBounds()
       setConfig("windowGeometry", { width, height, x, y })
     })
-    if (app.inspect === true) {
-      mainWindow.webContents.openDevTools()
-    }
   })
 }
 
@@ -352,61 +349,51 @@ export const validateSender = (frame: WebFrameMain) => {
   return false
 }
 
-interface DefaultOptions {
-  inspect: number
-}
-
 // Run Electron app
-cli
-  // See https://www.electronjs.org/docs/latest/tutorial/debugging-main-process
-  .option("--inspect", "enable debugging")
-  .option("--no-sandbox", "disable sandbox")
-  .action((options: DefaultOptions) => {
-    app.inspect = options.inspect ? true : false
+cli.option("--no-sandbox", "disable sandbox").action(() => {
+  setMenu()
 
-    setMenu()
-
-    app.on("activate", async () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        await createWindow()
-      }
-    })
-
-    app.on("ready", async () => {
-      // Disable DNS-over-HTTPS (disables extraneous bootstrap requests that trigger Little Snitch warnings)
-      app.configureHostResolver({
-        secureDnsMode: "off",
-      })
-      // Limit networking to trusted URLs — registered before any window loads
-      // so every page (including the main window) goes through the filter.
-      session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-        const allowed =
-          // #if process.env.ENV === "development"
-          matchesUrlOrigin(details.url, "http://localhost:3000") ||
-          matchesUrlOrigin(details.url, "ws://localhost:3000") ||
-          // #endif
-          // #if process.env.ENV === "production"
-          /^file:\/\//.test(details.url) ||
-          // #endif
-          /^devtools:\/\//.test(details.url)
-        callback({ cancel: !allowed })
-      })
+  app.on("activate", async () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
       await createWindow()
-    })
-
-    app.on("window-all-closed", () => {
-      if (process.platform !== "darwin") {
-        app.quit()
-      }
-    })
-
-    ipcMain.on("newWindow", async () => {
-      await createWindow()
-    })
-
-    registerSyncHandlers()
-    registerHandlers()
+    }
   })
+
+  app.on("ready", async () => {
+    // Disable DNS-over-HTTPS (disables extraneous bootstrap requests that trigger Little Snitch warnings)
+    app.configureHostResolver({
+      secureDnsMode: "off",
+    })
+    // Limit networking to trusted URLs — registered before any window loads
+    // so every page (including the main window) goes through the filter.
+    session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+      const allowed =
+        // #if process.env.ENV === "development"
+        matchesUrlOrigin(details.url, "http://localhost:3000") ||
+        matchesUrlOrigin(details.url, "ws://localhost:3000") ||
+        // #endif
+        // #if process.env.ENV === "production"
+        /^file:\/\//.test(details.url) ||
+        // #endif
+        /^devtools:\/\//.test(details.url)
+      callback({ cancel: !allowed })
+    })
+    await createWindow()
+  })
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      app.quit()
+    }
+  })
+
+  ipcMain.on("newWindow", async () => {
+    await createWindow()
+  })
+
+  registerSyncHandlers()
+  registerHandlers()
+})
 
 // Subcommands never open a window, but Electron still boots Chromium in
 // the background, whose GPU process can spill errors into interactive

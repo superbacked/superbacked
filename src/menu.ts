@@ -34,7 +34,7 @@ const enabledModes: Set<Mode> = new Set()
 
 export const setMenu = () => {
   const runningMacOS = process.platform === "darwin"
-  const debuggingModeEnabled = app.isPackaged === false || app.inspect === true
+  const debuggingModeEnabled = app.isPackaged === false
   // The language menu is commented out while English is the only locale —
   // restore this block, the imports above and the menu item below to
   // re-enable it (see src/i18n.ts for the kept example language).

@@ -49,8 +49,11 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   # and nftables blocks egress a layer below either way. UDP, packet
   # and bluetooth stay denied outright — quiet denies hold even on
   # complain-mode debug images; non-loopback TCP is default-deny, which
-  # debug images log instead of enforcing. Unix sockets (Wayland,
-  # D-Bus) and netlink (nss interface enumeration) stay.
+  # debug images log instead of enforcing. bind, listen and accept are
+  # deliberately absent, so nothing in this confinement can open a
+  # listener — the Node inspector included, which is also fused off in
+  # the binary (see builder.config.ts). Unix sockets (Wayland, D-Bus)
+  # and netlink (nss interface enumeration) stay.
   network (create, getattr, getopt, setopt) inet stream,
   network (create, getattr, getopt, setopt) inet6 stream,
   network (connect, send, receive) inet stream peer=(ip=127.0.0.1),
