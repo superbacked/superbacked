@@ -212,7 +212,7 @@
     },
     "weakPassphraseDisclaimerModal": {
       "weakPassphrase": "Weak passphrase",
-      "weakPassphraseWarning": "Weak passphrase is easier to brute-force — do not use this passphrase to protect high-stake secret.",
+      "weakPassphraseWarning": "Weak passphrase is easier to brute-force — do not use this passphrase to protect high-stakes secret.",
       "useWeakPassphrase": "Use weak passphrase",
       "edit": "Edit"
     }
