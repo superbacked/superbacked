@@ -8,17 +8,18 @@ export type YubiKeyErrorMessage = ValidateTranslationKeys<
   | "common.yubiKeyConfigurationLocked"
   | "common.yubiKeyOtpInterfaceDisabled"
   | "common.yubiKeyOtpNotSupported"
+  | "common.yubiKeyProvisioningRejected"
   | "common.yubiKeySlotNotProvisioned"
   | "common.yubiKeyTouchTimedOut"
+  | "common.yubiKeyVerificationFailed"
 >
 
 // Codes with a user-facing message in the app — the en locale is the
 // single source for these strings, rendered translated by the app and
-// verbatim by the command-line interface (see src/cli/utilities/localeText.ts).
-// provisioningRejected is absent, as the app never provisions — the
-// command-line interface falls back to the message carried by the error.
-export const yubikeyErrorMessageKeys: Partial<
-  Record<YubiKeyErrorCode, YubiKeyErrorMessage>
+// verbatim by the command-line interface (see src/cli/utilities/localeText.ts)
+export const yubikeyErrorMessageKeys: Record<
+  YubiKeyErrorCode,
+  YubiKeyErrorMessage
 > = {
   communication: "common.couldNotCommunicateWithYubiKey",
   configurationLocked: "common.yubiKeyConfigurationLocked",
@@ -27,15 +28,16 @@ export const yubikeyErrorMessageKeys: Partial<
   notProvisioned: "common.yubiKeySlotNotProvisioned",
   otpInterfaceDisabled: "common.yubiKeyOtpInterfaceDisabled",
   otpNotSupported: "common.yubiKeyOtpNotSupported",
+  provisioningRejected: "common.yubiKeyProvisioningRejected",
   touchTimeout: "common.yubiKeyTouchTimedOut",
+  verificationFailed: "common.yubiKeyVerificationFailed",
 }
 
-// User-actionable causes get their own message — low-level communication
-// failures and unmapped codes fall back to the generic one
+// User-actionable causes get their own message — low-level failures
+// arrive already collapsed into the communication code (see
+// asYubiKeyError in src/utilities/yubikey/otp.ts)
 export const yubikeyErrorMessage = (
   code: YubiKeyErrorCode
 ): YubiKeyErrorMessage => {
-  return (
-    yubikeyErrorMessageKeys[code] ?? "common.couldNotCommunicateWithYubiKey"
-  )
+  return yubikeyErrorMessageKeys[code]
 }

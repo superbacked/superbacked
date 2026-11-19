@@ -8,7 +8,9 @@ import { invokeSync } from "@/src/utilities/ipc/invokeSync"
 
 /**
  * Block window API exposed to renderer process via contextBridge.
- * Available as `window.blockApi` in renderer context.
+ * Available as `window.blockApi` in renderer context. Named functions
+ * only, never raw IPC objects or events.
+ * See https://www.electronjs.org/docs/latest/tutorial/security#20-do-not-expose-electron-apis-to-untrusted-web-content
  */
 export interface BlockApi {
   /** Subscribe to block window events. */

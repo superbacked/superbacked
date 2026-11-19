@@ -115,7 +115,7 @@ const PassphraseModal: FunctionComponent<PassphraseModalProps> = (props) => {
       {touchAwaited === true && props.isUnlocking === true ? (
         <YubiKeyTouchPrompt />
       ) : (
-        <form onSubmit={form.onSubmit(handleUnlock)}>
+        <form noValidate onSubmit={form.onSubmit(handleUnlock)}>
           <PasswordInput
             data-autofocus
             disabled={props.isUnlocking}

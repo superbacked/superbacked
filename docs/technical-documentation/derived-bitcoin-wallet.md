@@ -99,13 +99,14 @@ The two-factor security model — what each combination of leaked material allow
 superbacked derive-bitcoin-wallet [options] [label]
 ```
 
-Every derivation opens with the host-exposure warning and requires the full word `yes` to continue — never assumed, and refused without a controlling terminal. Label prompting, stdin passphrase behavior and the strength gate match [derive-password](derived-password.md); under [Paranoid mode](../../src/shared/kdfProfiles.ts) the gate is priced at the paranoid profile and the mode is a determinism input printed at every derivation.
+Every derivation opens with the host-exposure warning and requires the full word `yes` to continue — never assumed, and refused without a controlling terminal. Label prompting, stdin passphrase behavior, the strength gate and its override match [derive-password](derived-password.md); under [Paranoid mode](../../src/shared/kdfProfiles.ts) the gate is priced at the paranoid profile and the mode is a determinism input printed at every derivation.
 
 The command is public by default, secret on demand: the extended public key (and addresses, when asked) print to stdout, while the mnemonic or extended private key materialize only under `--reveal`.
 
 **Options:**
 
 - `--addresses <count>`: Print first receive addresses (maximum `100`)
+- `--allow-weak-passphrase`: Allow weak master passphrase without confirmation prompt
 - `--clear <seconds>`: Seconds before revealed secret is cleared from clipboard (default `10`)
 - `--confirm-passphrase`: Prompt for master passphrase twice and require a match — catches typos when creating a wallet (interactive prompts only; a piped passphrase is used as-is)
 - `--derivation-version <version>`: Derivation scheme version (only `1` exists — the option gates and documents rather than branches, and every derivation states the version used)
@@ -129,4 +130,4 @@ To verify a wallet before funding it, import the mnemonic into wallet software (
 ### Platform notes
 
 - **Linux**: Reading `/dev/hidraw*` requires Yubico udev rules or root
-- **macOS**: Opening the YubiKey keyboard interface may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring)
+- **macOS**: Opening the YubiKey keyboard interface requires granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring)

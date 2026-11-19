@@ -61,7 +61,7 @@ const Disclaimer: FunctionComponent = () => {
             />
           </Text>
           <Space h="lg" />
-          <form>
+          <form noValidate>
             <Switch
               checked={form.values.accept}
               label={t("components.disclaimer.agree")}

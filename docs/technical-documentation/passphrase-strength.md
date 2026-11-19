@@ -2,19 +2,20 @@
 
 ## Abstract
 
-This document specifies the design and implementation of passphrase strength estimation. Strength is a 1–100 score — estimated years of attack at a million-dollar standing budget against the [KDF profile](../../src/shared/kdfProfiles.ts) the passphrase will actually stretch under — and every point where Superbacked accepts a new passphrase requires a score of at least 50, with no override. The requirement is the attack time, not an entropy quota: a stronger profile buys real years and admits proportionally weaker passphrases. The source code ([src/shared/utilities/zxcvbn.ts](../../src/shared/utilities/zxcvbn.ts)) is the ground truth for this document, and the reference vectors in [tests/zxcvbn.test.ts](../../tests/zxcvbn.test.ts) pin the estimation scheme.
+This document specifies the design and implementation of passphrase strength estimation. Strength is a 1–100 score — estimated years of attack at a million-dollar standing budget against the [KDF profile](../../src/shared/kdfProfiles.ts) the passphrase will actually stretch under — and every point where Superbacked accepts a new passphrase requires a score of at least 50 unless explicitly allowed when prompted — or, on the command line, using the `--allow-weak-passphrase` flag. The requirement is the attack time, not an entropy quota: a stronger profile buys real years and admits proportionally weaker passphrases. The source code ([src/shared/utilities/zxcvbn.ts](../../src/shared/utilities/zxcvbn.ts)) is the ground truth for this document, and the reference vectors in [tests/zxcvbn.test.ts](../../tests/zxcvbn.test.ts) pin the estimation scheme.
 
 ## Introduction
 
 Superbacked protects secrets too important to lose and too sensitive to share — critical credentials, signing keys and digital assets. Secrets are backed up — encrypted, offline, with succession planning built in — or never stored at all: derived on demand from a master passphrase and YubiKey.
 
-Passphrases are the knowledge factor behind everything Superbacked protects — blocks, blocksets, standalone archives and derived keys — so a weak passphrase undermines guarantees no cipher or key derivation can restore. Superbacked therefore gates every new passphrase behind a single strength threshold, applied identically in the app and the command-line interface.
+Passphrases are the knowledge factor behind everything Superbacked protects — blocks, blocksets, standalone archives and derived keys — so a weak passphrase undermines guarantees no cipher or key derivation can restore. Superbacked therefore gates every new passphrase behind a single strength threshold, applied identically in the app and the command-line interface — and overridden identically, by explicitly allowing one weak passphrase when prompted.
 
 ## Terminology
 
 - **Entropy**: bits displayed alongside the attack time — the wordlist bound for passphrases matching a wordlist exactly or within one edit (exact matches alone display without a tilde), log2 of guesses otherwise.
 - **Gate**: the minimum strength required to accept a new passphrase (50).
 - **Guesses**: the number of attempts an informed attacker needs, as estimated by zxcvbn.
+- **Override**: the explicit exception that lets one weak passphrase through the gate — granted when prompted (in the app and the command-line interface alike) or using the `--allow-weak-passphrase` flag.
 - **Strength**: 1–100 score — estimated years of attack at a million-dollar standing budget, clamped.
 
 ## Estimation
@@ -56,7 +57,12 @@ New passphrases must score a strength of at least **50**, priced at the [KDF pro
 - Standalone archive creation (app modal and `create-standalone-archive`)
 - Master passphrase of `derive-password` and `derive-bitcoin-wallet`
 
-Restoration is never gated — whatever decrypts, decrypts. This is also why the gate tolerates no override: a hard gate never traps data (reading remains free), it only prevents new commitments to weak protection and the generator sits one click away in every passphrase input. An override would additionally become part of the frozen contract for derived passwords — a weak master passphrase confirmed through the gate could never be locked out later.
+Restoration is never gated — whatever decrypts, decrypts. The gate therefore never traps data — it only stops new blocks, archives and derived secrets from being protected by a weak passphrase — and in the app, the generator sits one click away in every passphrase input.
+
+A weak passphrase is accepted only when explicitly allowed when prompted or using the `--allow-weak-passphrase` flag — never by a setting, so no override outlives the passphrase it was granted for:
+
+- In the app, the “Weak passphrase” prompt opens when the passphrase field is left or the form is submitted. “Edit” returns to the field. “Use weak passphrase” allows that exact passphrase, and the field then reads “Weak passphrase allowed” — an error that no longer blocks. Any edit withdraws the override (see `weakPassphraseAllowedFor` in [src/main/components/PassphraseInputWithStrength.tsx](../../src/main/components/PassphraseInputWithStrength.tsx)).
+- In the command-line interface, the same warning prints and “Use weak passphrase (yes or no)?” requires the full word `yes` — declining cancels the command and, without a controlling terminal, the command fails with `Passphrase too weak (use --allow-weak-passphrase to proceed)` so scripts cannot hang. The `--allow-weak-passphrase` flag skips the prompt. Either way “Weak passphrase allowed” prints to stderr (see `gatePassphrase` in [src/cli/utilities/passphraseGate.ts](../../src/cli/utilities/passphraseGate.ts)).
 
 The passphrase generator ([src/utilities/crypto/passphrase.ts](../../src/utilities/crypto/passphrase.ts), pinned by [tests/passphrase.test.ts](../../tests/passphrase.test.ts)) draws uniformly random words from a chosen wordlist (by default seven EFF large wordlist words — 90 bits) — its entropy is exactly length × log2(wordlist size) by construction, so it never consults the estimator: the meter and the gate price generated passphrases like any other input and the gate applies to acceptance, not generation. Pathological draws (for example adjacent repeated words) can be rejected at acceptance — regenerating is the remedy. Under the gate floor at the standard profile, wordlist passphrases need at least five large wordlist words (about 2⁶⁵ guesses) or six short wordlist words (about 2⁶²) — five short words (about 2⁵²) fall just below it, while passing comfortably under Paranoid mode.
 
@@ -74,7 +80,7 @@ The first is the generator’s default shape (seven large wordlist words): deter
 
 ## Freeze
 
-The threshold — and the calibration that defines it — can never effectively rise. Derived passwords and wallets re-derive deterministically and statelessly, so a raised bar would strand master passphrases that legitimately passed the gate when their passwords were established. The gate was raised to the calibrated definition in the same release that first ships the derived key scheme, so no derivable passphrase predates it; from that release on, the fifty-year floor is frozen, which freezes the anchor rates and the growth constants with it. Profile pricing only ever lowers the entropy bar — appending a stronger [KDF profile](../../src/shared/kdfProfiles.ts) admits weaker passphrases, never rejects previously accepted ones — so no strengthening can strand anything. Passphrases that passed the pre-calibration gate can still restore everything they protect — restoration is never gated — but creating new blocks or archives may require a stronger passphrase.
+The threshold — and the calibration that defines it — can never effectively rise. Derived passwords and wallets re-derive deterministically and statelessly, so a raised bar would strand master passphrases that legitimately passed the gate when their passwords were established. The gate was raised to the calibrated definition in the same release that first ships the derived key scheme, so no derivable passphrase predates it; from that release on, the fifty-year floor is frozen, which freezes the anchor rates and the growth constants with it. Profile pricing only ever lowers the entropy bar — appending a stronger [KDF profile](../../src/shared/kdfProfiles.ts) admits weaker passphrases, never rejects previously accepted ones — so no strengthening can strand anything. The override is frozen for the same reason: a weak master passphrase that derived a password once must derive it again, so the override can never be removed from the derive commands. Adding it after the scheme shipped strands nothing — it only admits passphrases the gate used to refuse. Passphrases that passed the pre-calibration gate can still restore everything they protect — restoration is never gated — but creating new blocks or archives may require a stronger passphrase.
 
 **Limitations:**
 

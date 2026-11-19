@@ -90,11 +90,51 @@ suite("yubikey management", () => {
   test("parses device info", () => {
     assert.deepStrictEqual(parseDeviceInfo(deviceInfo), {
       configurationLocked: false,
+      fips: false,
       firmwareVersion: "5.7.1",
+      formFactor: null,
+      nfcSupported: false,
       otpSupported: true,
+      serialNumber: null,
       usbConfigurable: true,
       usbEnabledFlags: 0x023e,
     })
+  })
+
+  test("parses NFC support and the FIPS flag", () => {
+    // Same page with NFC supported (0x003f) and form factor 0x81 — USB-A
+    // keychain flagged FIPS
+    const info = parseDeviceInfo(
+      Buffer.from("170102033f0302023e05030507010a01000d02003f040181", "hex")
+    )
+    assert.strictEqual(info.nfcSupported, true)
+    assert.strictEqual(info.fips, true)
+    assert.strictEqual(info.formFactor, "usbAKeychain")
+  })
+
+  test("parses serial number", () => {
+    // Same page with serial 12345678 (0x00bc614e)
+    assert.strictEqual(
+      parseDeviceInfo(
+        Buffer.from("160102033f0302023e05030507010a0100020400bc614e", "hex")
+      ).serialNumber,
+      12345678
+    )
+  })
+
+  test("parses form factor from the low nibble", () => {
+    // Same page with form factor 0x84 — USB-C nano flagged FIPS
+    const info = parseDeviceInfo(
+      Buffer.from("130102033f0302023e05030507010a0100040184", "hex")
+    )
+    assert.strictEqual(info.formFactor, "usbCNano")
+    // Unknown values report null rather than throwing
+    assert.strictEqual(
+      parseDeviceInfo(
+        Buffer.from("130102033f0302023e05030507010a010004010f", "hex")
+      ).formFactor,
+      null
+    )
   })
 
   test("parses configuration lock and single-byte capability masks", () => {
@@ -105,8 +145,12 @@ suite("yubikey management", () => {
     )
     assert.deepStrictEqual(info, {
       configurationLocked: true,
+      fips: false,
       firmwareVersion: "4.3.2",
+      formFactor: null,
+      nfcSupported: false,
       otpSupported: true,
+      serialNumber: null,
       usbConfigurable: false,
       usbEnabledFlags: 0x3e,
     })

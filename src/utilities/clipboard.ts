@@ -51,7 +51,7 @@ export const copyText = async (text: string): Promise<void> => {
     // process must stay alive while the text is on the clipboard, as X11
     // drops a selection when its owner exits
     await app.whenReady()
-    clipboard.writeText(text)
+    await clipboard.writeText(text)
   }
 }
 

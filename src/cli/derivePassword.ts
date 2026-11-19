@@ -1,18 +1,13 @@
 import { InvalidArgumentError, program as cli } from "commander"
 
+import { CancelledError } from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
+import { gatePassphrase } from "@/src/cli/utilities/passphraseGate"
 import readPassphrase, {
   promptVisible,
   waitForEnter,
 } from "@/src/cli/utilities/readPassphrase"
 import { red } from "@/src/cli/utilities/style"
-import {
-  paranoidKdfProfile,
-  standardKdfProfile,
-} from "@/src/shared/kdfProfiles"
-import zxcvbn, {
-  minimumPassphraseStrength,
-} from "@/src/shared/utilities/zxcvbn"
 import {
   clearText,
   copyText,
@@ -59,6 +54,7 @@ export const parseClear = (value: string): number => {
 export const derivePasswordAction = async (
   label: string | undefined,
   options: {
+    allowWeakPassphrase?: boolean
     clear: number
     confirmPassphrase?: boolean
     // Selects the derivation scheme — derivation is stateless, so the
@@ -101,19 +97,18 @@ export const derivePasswordAction = async (
     // know — deriving without it silently produces different passwords,
     // which is why every derivation prints it below
     const paranoid = cli.opts().paranoid === true
-    // Matches the app’s passphrase gates, priced at the profile the
+    // Matches the app’s passphrase gate, priced at the profile the
     // derivation stretches under and enforced since scheme v1 so every
-    // passphrase that ever derived a password passed it — derivation is
-    // deterministic and stateless, so the threshold can never effectively
-    // rise without stranding established passphrases
-    if (
-      zxcvbn(
-        masterPassphrase,
-        paranoid === true ? paranoidKdfProfile : standardKdfProfile
-      ).strength < minimumPassphraseStrength
-    ) {
-      throw new Error("Master passphrase too weak")
-    }
+    // passphrase that ever derived a password passed it or its override —
+    // derivation is deterministic and stateless, so the threshold can
+    // never effectively rise and the override can never be removed
+    // without stranding established passphrases (the override is not a
+    // determinism input)
+    await gatePassphrase(masterPassphrase, {
+      allowWeak: options.allowWeakPassphrase === true,
+      paranoid: paranoid,
+      subject: "Master passphrase",
+    })
     const password = await computeDerivedPassword(
       masterPassphrase,
       resolvedLabel,
@@ -161,11 +156,18 @@ export const derivePasswordAction = async (
     }
     process.exit(0)
   } catch (error) {
-    console.error(
-      red(
-        errorText(await refineYubiKeyError(error), "Could not derive password")
+    if (error instanceof CancelledError) {
+      console.error(error.message)
+    } else {
+      console.error(
+        red(
+          errorText(
+            await refineYubiKeyError(error),
+            "Could not derive password"
+          )
+        )
       )
-    )
+    }
     process.exit(1)
   }
 }

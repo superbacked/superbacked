@@ -33,6 +33,47 @@ const config: Configuration = {
     "**/node_modules/node-hid/**/*",
     "**/node_modules/pkg-prebuilds/**/*",
   ],
+  // Fuses harden the packaged binary against the machine it runs on;
+  // development runs unpackaged, where they do not apply.
+  // See https://www.electronjs.org/docs/latest/tutorial/fuses and
+  // https://www.electronjs.org/docs/latest/tutorial/security#19-check-which-fuses-you-can-change
+  //
+  // The three Node fuses close the code-execution paths into the main
+  // process — the process that holds the secrets — open to anything
+  // able to launch the binary or set its environment: the inspector
+  // flags (and SIGUSR1) open a debugging socket, NODE_OPTIONS injects
+  // modules at startup and ELECTRON_RUN_AS_NODE turns the binary into a
+  // plain Node runtime. Nothing in src uses process.fork, which the
+  // runAsNode fuse would break.
+  //
+  // The asar integrity pair seals app.asar after install: the first
+  // validates it at load against a hash electron-builder embeds in the
+  // signed binary (the code signature seals the file on disk but the
+  // kernel only verifies executable pages, so a swapped asar would
+  // still launch), the second stops an unvalidated app directory from
+  // shadowing it — each is bypassable without the other. Effective on
+  // macOS; inert on Linux, where root-owned /opt/Superbacked and the
+  // AppArmor profile’s read-only grant cover the deb. asarUnpack files
+  // sit outside the check: the bundled argon2 and secret-share helpers
+  // and the guard scripts could be swapped by the same write access, and
+  // the code signature does not stop that at runtime on macOS either —
+  // verifying their digests before spawn is the open follow-up. A
+  // mismatch is fatal at startup, so a signed macOS build must launch
+  // before release.
+  //
+  // The file protocol fuse gives file:// pages read access to the whole
+  // filesystem. The packaged renderer loads from its own scheme instead
+  // (see src/utilities/rendererProtocol.ts), so nothing needs the grant
+  // and a compromised page cannot read files even if the handler were to
+  // regress.
+  electronFuses: {
+    enableEmbeddedAsarIntegrityValidation: true,
+    enableNodeCliInspectArguments: false,
+    enableNodeOptionsEnvironmentVariable: false,
+    grantFileProtocolExtraPrivileges: false,
+    onlyLoadAppFromAsar: true,
+    runAsNode: false,
+  },
   files: files,
   // node-hid ships Node-API prebuilds for every target and loads them
   // at runtime using pkg-prebuilds — a convention @electron/rebuild

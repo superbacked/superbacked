@@ -32,7 +32,7 @@ import {
   useState,
 } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router"
+import { useLocation, useNavigate } from "react-router"
 
 import { Qr, Result, Secret } from "@/src/handlers/create"
 import ActionBadge from "@/src/main/components/ActionBadge"
@@ -45,12 +45,16 @@ import FileManager, {
   FileManagerRef,
   FileWithAbsolutePath,
 } from "@/src/main/components/FileManager"
-import PassphraseInputWithStrength from "@/src/main/components/PassphraseInputWithStrength"
+import PassphraseInputWithStrength, {
+  PassphraseInputWithStrengthRef,
+} from "@/src/main/components/PassphraseInputWithStrength"
 import Scanner, { ScannerRef } from "@/src/main/components/Scanner"
 import SecretTextareaWithUsage from "@/src/main/components/SecretTextareaWithUsage"
 import StyledLockPlusIcon from "@/src/main/components/StyledLockPlusIcon"
+import WeakPassphraseDisclaimerModal from "@/src/main/components/WeakPassphraseDisclaimerModal"
 import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
 import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
+import { YubiKeySecretHandoff } from "@/src/main/routes/ProvisionYubiKey"
 import { showNotificationWithButton } from "@/src/main/utilities/notificationWithButton"
 import {
   SelectionWithElement,
@@ -146,7 +150,16 @@ type SecretFormValues = {
   secret: string
   passphrase: string
   slot: "1" | "2"
+  // Passphrase allowed through the strength gate despite its weakness —
+  // bound to the exact value, so an edit re-arms the gate (see
+  // src/main/components/PassphraseInputWithStrength.tsx)
+  weakPassphraseAllowedFor: null | string
   yubikey: boolean
+  // A YubiKey challenge-response secret handed over by provisioning (see
+  // src/main/routes/ProvisionYubiKey.tsx) — never YubiKey-protected, as
+  // its backup must not depend on the YubiKey it provisions. The flag
+  // belongs to the entry, so a form reset clears it like every field
+  yubikeySecret: boolean
 }
 
 // Each secret starts on the default YubiKey slot — the same default the
@@ -157,7 +170,9 @@ const initialSecretEntry = (): SecretFormValues => {
     passphrase: "",
     slot:
       window.api.invokeSync.getConfig("yubikey")?.challengeResponseSlot ?? "2",
+    weakPassphraseAllowedFor: null,
     yubikey: false,
+    yubikeySecret: false,
   }
 }
 
@@ -186,6 +201,19 @@ type CreateProps = {
 }
 
 const Create: FunctionComponent<CreateProps> = (props) => {
+  const location = useLocation()
+  // A freshly generated YubiKey secret handed over by the provisioning
+  // route (see src/main/routes/ProvisionYubiKey.tsx) — read once at mount
+  // and consumed into the form: the setup step opens with a single block
+  // and the label preselected, so the label (the key’s model and serial
+  // number, printed on the block) can be reviewed, and the next step
+  // holds the secret, flagged on its entry
+  const [handoff] = useState<null | YubiKeySecretHandoff>(() => {
+    const state = location.state as null | {
+      yubikeySecret?: YubiKeySecretHandoff
+    }
+    return props.exportMode === true ? null : (state?.yubikeySecret ?? null)
+  })
   let initialStep: Step,
     initialQrs: Qr[] = []
   if (props.exportMode === true && props.qrs) {
@@ -196,10 +224,19 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   }
 
   const navigate = useNavigate()
+  // Consumed once — a later remount of the route (the File menu
+  // re-triggering Create) starts empty rather than refilling the secret
+  useEffect(() => {
+    if (handoff !== null) {
+      void navigate(location.pathname, { replace: true, state: null })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { i18n, t } = useTranslation()
 
   const fileManagerRef = useRef<FileManagerRef>(null)
+  const passphraseInputRef = useRef<PassphraseInputWithStrengthRef>(null)
   const scannerRef = useRef<ScannerRef>(null)
 
   const [detachedArchivePopoverOpened, detachedArchivePopoverHandlers] =
@@ -211,7 +248,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   } = detachedArchivePopoverHandlers
 
   const [secrets, setSecrets] = useState<SecretsState>([
-    { secret: "", detachedArchive: null },
+    { secret: handoff?.secret ?? "", detachedArchive: null },
   ])
   const [step, setStep] = useState<Step>(initialStep)
   // Index of the secret being edited on the secrets step — the flow is
@@ -369,9 +406,15 @@ const Create: FunctionComponent<CreateProps> = (props) => {
   // Lazy so the config read happens once at mount — an inline object here
   // would issue a blocking IPC call on every render
   const [formInitialValues] = useState<FormValues>(() => ({
-    secrets: [initialSecretEntry()],
-    backupType: null,
-    label: "",
+    secrets: [
+      {
+        ...initialSecretEntry(),
+        secret: handoff?.secret ?? "",
+        yubikeySecret: handoff !== null,
+      },
+    ],
+    backupType: handoff === null ? null : "singleBlock",
+    label: handoff?.label ?? "",
   }))
   const form = useForm<FormValues>({
     initialValues: formInitialValues,
@@ -410,7 +453,10 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           const result = zxcvbn(value, activeKdfProfile)
           if (!value || value === "") {
             return t("common.passphraseRequired")
-          } else if (result.strength < minimumPassphraseStrength) {
+          } else if (
+            result.strength < minimumPassphraseStrength &&
+            values.secrets[index]?.weakPassphraseAllowedFor !== value
+          ) {
             return t("common.passphraseTooWeak")
           }
           if (index > 0) {
@@ -473,6 +519,32 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     },
     [form, secretIndex]
   )
+  const [weakPassphraseDisclaimerOpened, setWeakPassphraseDisclaimerOpened] =
+    useState(false)
+  const handleWeakPassphraseAllow = useCallback(() => {
+    form.setFieldValue(
+      `secrets.${secretIndex}.weakPassphraseAllowedFor`,
+      form.values.secrets[secretIndex]?.passphrase ?? null
+    )
+    // Clears the too-weak error a blocked submission left behind
+    form.clearFieldError(`secrets.${secretIndex}.passphrase`)
+    setWeakPassphraseDisclaimerOpened(false)
+  }, [form, secretIndex])
+  const handleWeakPassphraseEdit = useCallback(() => {
+    setWeakPassphraseDisclaimerOpened(false)
+    // Without waiting for the close transition — the trap only scopes
+    // Tab, so it does not pull focus back while the modal fades
+    passphraseInputRef.current?.focus()
+  }, [])
+  const handleWeakPassphraseReset = useCallback(() => {
+    form.setFieldValue(`secrets.${secretIndex}.weakPassphraseAllowedFor`, null)
+  }, [form, secretIndex])
+  // A weak passphrase blocks submission until allowed — the disclaimer is
+  // the decision point, requested here as well as on blur so Enter (which
+  // never blurs the field) reaches it
+  const promptWeakPassphrase = useCallback(() => {
+    passphraseInputRef.current?.promptWeakPassphrase()
+  }, [])
   const handleCreate = useCallback(
     async (skipDisclaimerCheck = false) => {
       const validation = form.validate()
@@ -610,9 +682,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         setQrs(result.qrs)
         setIsCreating(false)
         setStep("preview")
+      } else {
+        promptWeakPassphrase()
       }
     },
-    [form, secrets, t, resetForm, setDefaultSlot]
+    [form, secrets, t, resetForm, setDefaultSlot, promptWeakPassphrase]
   )
   // Apply persisted print settings, falling back to platform defaults and the
   // built-in per-printer default scale for statement size.
@@ -1026,6 +1100,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
         <Space h="lg" />
         <PassphraseInputWithStrength
           key={`passphrase${secretIndex}`}
+          ref={passphraseInputRef}
           disabled={isCreating}
           kdfProfile={activeKdfProfile}
           label={t("common.passphrase")}
@@ -1037,11 +1112,21 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             return passphrase
           }}
           onPopoverChange={handlePopoverChange}
+          onWeakPassphrasePrompt={() => {
+            setWeakPassphraseDisclaimerOpened(true)
+          }}
+          onWeakPassphraseReset={handleWeakPassphraseReset}
+          weakPassphraseAllowedFor={
+            currentEntry?.weakPassphraseAllowedFor ?? null
+          }
           {...form.getInputProps(`secrets.${secretIndex}.passphrase`, {
             withFocus: false,
           })}
         />
-        {isBlockset === false ? (
+        {/* Hidden for blocksets (YubiKey protection is supported for single
+            blocks only) and for a YubiKey secret (its backup must not depend
+            on the YubiKey it provisions — see the entry flag) */}
+        {isBlockset === false && currentEntry?.yubikeySecret !== true ? (
           <Fragment>
             <Space h="md" />
             <YubiKeyProtection
@@ -1111,6 +1196,8 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                 } else {
                   addSecretEntry()
                 }
+              } else {
+                promptWeakPassphrase()
               }
             }}
           >
@@ -1152,7 +1239,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
 
     return (
       <Fragment>
-        <Container>
+        {/* Focusable so a click on blank space focuses the container
+            rather than nothing — the weak passphrase disclaimer then
+            prompts on it like inside a modal (see
+            src/main/components/PassphraseInputWithStrength.tsx) */}
+        <Container tabIndex={-1}>
           <FileManager
             key={secretIndex}
             ref={fileManagerRef}
@@ -1164,7 +1255,17 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               }
             }}
           />
-          <form onSubmit={form.onSubmit(() => handleCreate())}>
+          <form
+            noValidate
+            onSubmit={(event) => {
+              // Wrapped at event time: both handlers reach the passphrase
+              // input through a ref, which render must not read
+              form.onSubmit(
+                () => handleCreate(),
+                () => promptWeakPassphrase()
+              )(event)
+            }}
+          >
             {stepFields}
             <Space h="xl" />
             {yubikeyError !== null ? (
@@ -1248,6 +1349,11 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             addSecretEntry()
           }}
         />
+        <WeakPassphraseDisclaimerModal
+          onAllow={handleWeakPassphraseAllow}
+          onEditPassphrase={handleWeakPassphraseEdit}
+          opened={weakPassphraseDisclaimerOpened}
+        />
         {/* Same touch step as the standalone archive modals — shown while
           the hardware is awaiting touch, dismissed by the touch itself (or
           its timeout), never by the user */}
@@ -1257,6 +1363,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           closeOnEscape={false}
           onClose={() => {}}
           opened={touchAwaited === true && isCreating === true}
+          size="sm"
           withCloseButton={false}
         >
           <YubiKeyTouchPrompt />

@@ -1,115 +1,78 @@
-import { randomBytes } from "crypto"
+import { program as cli } from "commander"
 
 import confirmYes, { CancelledError } from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
 import { promptHidden } from "@/src/cli/utilities/readPassphrase"
 import { bold, red } from "@/src/cli/utilities/style"
+import {
+  YubiKeyProvisioningFailure,
+  canEnableYubiKeyOtp,
+  enableYubiKeyOtpInterface,
+  getYubiKeyStatus,
+  parseYubiKeySecret,
+  provisionYubiKey,
+} from "@/src/handlers/yubikeyProvisioning"
 import { timingSafeEqualStrings } from "@/src/utilities/crypto/primitives"
-import sleep from "@/src/utilities/sleep"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
-import {
-  DeviceInfo,
-  enableOtp,
-  readDeviceInfo,
-} from "@/src/utilities/yubikey/management"
-import {
-  Slot,
-  Status,
-  YubiKeyError,
-  getStatus,
-  provisionHmacSha1,
-  verifyHmacSha1,
-} from "@/src/utilities/yubikey/otp"
+import { Slot, Status, YubiKeyError } from "@/src/utilities/yubikey/otp"
 
-// Command action (the CLI surface is declared in index.ts). Provisions a
-// slot for HMAC-SHA1 challenge-response and verifies the write end to end by
-// challenging the slot and recomputing the response locally.
+// Command action (the CLI surface is declared in index.ts). Calls the same
+// handlers as the app’s provisioning route, confirming the irreversible
+// steps on the terminal — the handlers program the slot and verify the
+// write end to end.
 
-const secretSize = 20
-
-// Whitespace is stripped so spaced hex (as displayed by some Yubico tools)
-// pastes cleanly
-const parseSecret = (value: string): Buffer => {
-  const normalized = value.replace(/\s+/g, "").toLowerCase()
-  if (/^[0-9a-f]{40}$/.test(normalized) === false) {
-    throw new Error(
-      `Secret must be ${secretSize * 2} hexadecimal characters (${secretSize} bytes)`
-    )
+// YubiKey failures travel through handler results as codes — rethrown as
+// YubiKeyError so errorText resolves them like directly-thrown ones
+const resultError = (result: YubiKeyProvisioningFailure): Error => {
+  if (result.yubikeyErrorCode === undefined) {
+    return new Error(result.error)
   }
-  return Buffer.from(normalized, "hex")
+  return new YubiKeyError(result.yubikeyErrorCode, result.error)
 }
 
 // When stdin is piped, the whole of stdin is the secret — interactively,
 // prompts twice with input hidden, as a typo would silently program a secret
 // that no other YubiKey shares
-const readSecret = async (): Promise<Buffer> => {
+const readSecret = async (): Promise<string> => {
   if (process.stdin.isTTY !== true) {
     const chunks: Buffer[] = []
     for await (const chunk of process.stdin) {
       chunks.push(chunk as Buffer)
     }
-    return parseSecret(Buffer.concat(chunks).toString("utf8"))
+    return parseYubiKeySecret(Buffer.concat(chunks).toString("utf8")).toString(
+      "hex"
+    )
   }
   const secret = await promptHidden("Secret (40-character hex): ")
   const confirmation = await promptHidden("Confirm secret: ")
   if (timingSafeEqualStrings(secret, confirmation) === false) {
     throw new Error("Secrets do not match")
   }
-  return parseSecret(secret)
+  return parseYubiKeySecret(secret).toString("hex")
 }
 
-// When detection reports the OTP interface disabled, the management
-// application remains reachable over the FIDO interface (the firmware
-// refuses to disable every interface) — offer to enable OTP in place
-// rather than sending the user to another tool. Falls back to the
-// detection error and its manual instructions whenever management is
-// unreachable (FIDO also disabled, missing permissions, pre-5 firmware)
-const enableOtpInterface = async (
-  detectionError: YubiKeyError
-): Promise<Status> => {
-  let info: DeviceInfo
-  try {
-    info = await readDeviceInfo()
-  } catch (error) {
-    if (error instanceof YubiKeyError && error.code === "multipleDevices") {
-      throw error
-    }
-    throw detectionError
-  }
-  if (info.otpSupported === false) {
-    throw new YubiKeyError(
-      "otpNotSupported",
-      "YubiKey does not support OTP challenge-response (Bio and Security Key series)"
-    )
-  }
-  if (info.configurationLocked === true) {
-    throw new YubiKeyError(
-      "configurationLocked",
-      "YubiKey configuration protected by a lock code"
-    )
-  }
-  if (info.usbConfigurable === false) {
-    throw detectionError
+// Detection may report the OTP interface disabled. Rather than sending
+// the user to another tool, the command offers to enable it in place. The
+// handler first checks whether that is possible — the Bio and Security
+// Key series lack the application, a locked configuration forbids the
+// write and pre-5 firmware cannot switch applications on — and when it is
+// not, the command reports why instead of asking
+const enableOtpInterface = async (): Promise<Status> => {
+  const probe = await canEnableYubiKeyOtp()
+  if (probe.success === false) {
+    throw resultError(probe)
   }
   await confirmYes(
     bold("YubiKey detected but OTP interface is disabled.") +
       "\nDo you wish to enable the OTP interface (yes or no)? ",
     "Enabling the OTP interface requires interactive confirmation"
   )
-  await enableOtp()
   console.error("OTP interface enabled — waiting for YubiKey to restart…")
-  // The key drops off the bus to re-enumerate with the OTP interface —
-  // poll detection until it returns (restart takes a few seconds)
-  let lastError: unknown = detectionError
-  for (let attempt = 0; attempt < 40; attempt++) {
-    await sleep(250)
-    try {
-      return await getStatus()
-    } catch (error) {
-      lastError = error
-    }
+  const result = await enableYubiKeyOtpInterface()
+  if (result.success === false) {
+    throw resultError(result)
   }
-  throw lastError
+  return result.status
 }
 
 export const provisionYubikeyAction = async (options: {
@@ -117,6 +80,13 @@ export const provisionYubikeyAction = async (options: {
   slot: "1" | "2"
   touch: boolean
 }): Promise<void> => {
+  // Provisioning derives nothing, so the root flag has no effect here —
+  // refuse it rather than discard it silently (see the root action in
+  // src/index.ts)
+  if (cli.opts().paranoid === true) {
+    console.error("Error: Unknown option: --paranoid")
+    process.exit(1)
+  }
   try {
     const slot: Slot = options.slot === "1" ? 1 : 2
     if (isSuperbackedOs() === false) {
@@ -124,24 +94,20 @@ export const provisionYubikeyAction = async (options: {
       // the host — recommend the air-gapped, amnesic environment
       await confirmYes(
         red(
-          "Provisioning a YubiKey exposes a long-lived secret to computer.\n" +
-            "When provisioning YubiKey hardware, use Superbacked OS."
+          "Provisioning exposes YubiKey secret to this computer.\n" +
+            "For high-stakes secrets, provision YubiKey using Superbacked OS (https://superbacked.com/superbacked-os)."
         ) + "\nDo you wish to continue (yes or no)? ",
         "Provisioning a YubiKey on this computer requires interactive confirmation"
       )
     }
     let status: Status
-    try {
-      status = await getStatus()
-    } catch (error) {
-      if (
-        error instanceof YubiKeyError &&
-        error.code === "otpInterfaceDisabled"
-      ) {
-        status = await enableOtpInterface(error)
-      } else {
-        throw error
-      }
+    const statusResult = await getYubiKeyStatus()
+    if (statusResult.success === true) {
+      status = statusResult.status
+    } else if (statusResult.yubikeyErrorCode === "otpInterfaceDisabled") {
+      status = await enableOtpInterface()
+    } else {
+      throw resultError(statusResult)
     }
     console.error("YubiKey detected")
     const provisioned =
@@ -154,29 +120,29 @@ export const provisionYubikeyAction = async (options: {
         `Slot ${slot} is already programmed (overwriting requires interactive confirmation)`
       )
     }
-    const secret =
-      options.generate === true ? randomBytes(secretSize) : await readSecret()
+    const secret = options.generate === true ? null : await readSecret()
     if (options.generate === true) {
       // Acknowledged before the slot is written — declining after the write
-      // would strand a provisioned slot whose secret was never displayed
+      // would strand a provisioned slot whose secret was never displayed.
+      // Red like the app’s result step: ignoring it means permanent loss
       await confirmYes(
-        bold(
+        red(
           "The generated secret is displayed once and cannot be read back from the YubiKey.\n" +
-            "Use a blockset or block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on this secret is unrecoverable if the YubiKey is lost or broken."
+            "Use a block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on this secret is unrecoverable if the YubiKey is lost or broken."
         ) + "\nDo you wish to continue (yes or no)? ",
         "Provisioning with a generated secret requires interactive confirmation"
       )
     }
-    await provisionHmacSha1(slot, secret, options.touch === true)
-    // Challenge the freshly programmed slot and recompute the response
-    // locally — proves the write end to end, not just the status update
-    const verified = await verifyHmacSha1(slot, secret, () => {
-      console.error(touchYubiKeyText)
-    })
-    if (verified === false) {
-      throw new Error(
-        "Verification failed (slot response does not match secret)"
-      )
+    const result = await provisionYubiKey(
+      slot,
+      secret,
+      options.touch === true,
+      () => {
+        console.error(touchYubiKeyText)
+      }
+    )
+    if (result.success === false) {
+      throw resultError(result)
     }
     console.error(`Slot ${slot} provisioned for HMAC-SHA1 challenge-response`)
     if (options.generate === true) {
@@ -186,7 +152,7 @@ export const provisionYubikeyAction = async (options: {
       if (process.stdout.isTTY === true) {
         process.stderr.write("Secret: ")
       }
-      process.stdout.write(`${secret.toString("hex")}\n`)
+      process.stdout.write(`${result.secret}\n`)
     }
     process.exit(0)
   } catch (error) {

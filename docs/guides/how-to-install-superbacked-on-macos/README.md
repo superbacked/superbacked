@@ -15,6 +15,10 @@ This guide walks through installing and running Superbacked on macOS. Superbacke
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
+## Requirements
+
+- macOS 13 or later
+
 ## Setup guide
 
 ### Step 1: download Superbacked
@@ -38,5 +42,7 @@ $ source "$HOME/.zshrc"
 ## Usage guide
 
 > Heads-up: macOS may display a security prompt. Click “Open” to proceed — release is cryptographically signed and notarized by Apple.
+
+> Heads-up: opening the YubiKey requires granting Superbacked (and the terminal, when using the command-line interface) Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring) — macOS prompts on first use.
 
 Open Superbacked from “Applications” folder or run `superbacked` in terminal to use the command-line interface (see [step 3](#step-3-optional-make-superbacked-command-available-in-terminal)).

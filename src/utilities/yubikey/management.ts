@@ -45,10 +45,36 @@ const initResponseSize = 17
 
 // Device configuration TLV tags
 const usbSupportedTag = 0x01
+const serialNumberTag = 0x02
 const usbEnabledTag = 0x03
+const formFactorTag = 0x04
 const versionTag = 0x05
 const configurationLockTag = 0x0a
 const rebootTag = 0x0c
+const nfcSupportedTag = 0x0d
+
+// Form factor values (FORM_FACTOR in the reference implementation) — the
+// low nibble, as later firmware flags FIPS and Security Key variants in
+// the upper bits
+export type FormFactor =
+  | "usbAKeychain"
+  | "usbANano"
+  | "usbCKeychain"
+  | "usbCNano"
+  | "usbCLightning"
+  | "usbABio"
+  | "usbCBio"
+const formFactors: Record<number, FormFactor> = {
+  1: "usbAKeychain",
+  2: "usbANano",
+  3: "usbCKeychain",
+  4: "usbCNano",
+  5: "usbCLightning",
+  6: "usbABio",
+  7: "usbCBio",
+}
+const formFactorMask = 0x0f
+const fipsFlag = 0x80
 
 // USB application capability flags (CAPABILITY in the reference
 // implementation) — only OTP is acted on here
@@ -58,7 +84,11 @@ const otpCapabilityFlag = 0x01
 // switch whole interface modes through a different command
 const usbConfigurableMajor = 5
 
-const readTimeout = 1000
+// Per-report read timeout — generous, as a READ_CONFIG issued right after
+// an OTP slot write has been seen to take over a second to answer, and
+// giving up early leaves the request in flight on the key, which then
+// reports every new channel busy
+const readTimeout = 5000
 
 const findFidoDevicePath = async (): Promise<string> => {
   const devices = await devicesAsync()
@@ -226,8 +256,15 @@ const transact = async (command: number, payload: Buffer): Promise<Buffer> => {
 
 export interface DeviceInfo {
   configurationLocked: boolean
+  fips: boolean
   firmwareVersion: string
+  // null when the key reports no form factor (older firmware) or an
+  // unknown one
+  formFactor: null | FormFactor
+  nfcSupported: boolean
   otpSupported: boolean
+  // null when the key carries no serial number (some models ship without)
+  serialNumber: null | number
   usbConfigurable: boolean
   usbEnabledFlags: number
 }
@@ -267,14 +304,26 @@ export const parseDeviceInfo = (response: Buffer): DeviceInfo => {
   if (version?.length !== 3) {
     throw new Error("Malformed device info")
   }
+  const formFactor = values.get(formFactorTag)
+  const formFactorByte =
+    formFactor === undefined || formFactor.length === 0
+      ? 0
+      : formFactor.readUInt8(0)
+  const serialNumber = values.get(serialNumberTag)
   return {
     configurationLocked: values.get(configurationLockTag)?.readUInt8(0) === 1,
+    fips: (formFactorByte & fipsFlag) !== 0,
     firmwareVersion: [0, 1, 2]
       .map((index) => version.readUInt8(index))
       .join("."),
+    formFactor: formFactors[formFactorByte & formFactorMask] ?? null,
+    // A non-zero NFC capability mask means the key has an NFC interface
+    nfcSupported: readCapabilityFlags(values.get(nfcSupportedTag)) !== 0,
     otpSupported:
       (readCapabilityFlags(values.get(usbSupportedTag)) & otpCapabilityFlag) !==
       0,
+    serialNumber:
+      serialNumber?.length !== 4 ? null : serialNumber.readUInt32BE(0),
     usbConfigurable: version.readUInt8(0) >= usbConfigurableMajor,
     usbEnabledFlags: readCapabilityFlags(values.get(usbEnabledTag)),
   }

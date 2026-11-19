@@ -1,3 +1,7 @@
+import {
+  isYubiKeySecret,
+  yubikeySecretLength,
+} from "@/src/shared/yubikeySecret"
 import { refineYubiKeyError } from "@/src/utilities/yubikey/management"
 import {
   Slot,
@@ -6,12 +10,6 @@ import {
   getStatus,
   verifyHmacSha1,
 } from "@/src/utilities/yubikey/otp"
-
-// 20-byte HMAC-SHA1 slot secret, the size provisioning programs (see
-// src/cli/provisionYubikey.ts) — rendered as hexadecimal, the format
-// the extraction pipeline recognizes (see
-// src/main/utilities/extraction.ts)
-const secretSize = 20
 
 export type VerifyYubiKeyChallengeResponseSecretResult =
   | { success: false; error: string; yubikeyErrorCode?: YubiKeyErrorCode }
@@ -31,10 +29,10 @@ export const verifyYubiKeyChallengeResponseSecret = async (
   secret: string,
   onTouchRequired?: () => void
 ): Promise<VerifyYubiKeyChallengeResponseSecretResult> => {
-  if (new RegExp(`^[0-9a-fA-F]{${secretSize * 2}}$`).test(secret) === false) {
+  if (isYubiKeySecret(secret) === false) {
     return {
       success: false,
-      error: `Secret must be ${secretSize * 2} hexadecimal characters`,
+      error: `Secret must be ${yubikeySecretLength} hexadecimal characters`,
     }
   }
   const key = Buffer.from(secret, "hex")

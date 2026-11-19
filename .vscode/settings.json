@@ -1,7 +1,11 @@
 {
   "eslint.workingDirectories": ["."],
+  "files.watcherExclude": {
+    ".webpack/**": true,
+    "dist/**": true
+  },
   "search.exclude": {
     "package-lock.json": true,
-    "package.json": true
+    "wordlists/**": true
   }
 }

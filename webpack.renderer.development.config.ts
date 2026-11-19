@@ -6,6 +6,7 @@ import HtmlWebpackPlugin from "html-webpack-plugin"
 import { Configuration } from "webpack"
 import { Configuration as DevServerConfiguration } from "webpack-dev-server"
 
+import { buildContentSecurityPolicy } from "./src/utilities/rendererProtocol"
 import { createPlugins } from "./webpack.plugins"
 import { rules } from "./webpack.rules"
 
@@ -15,6 +16,15 @@ rules.push({
 })
 
 const devServer: DevServerConfiguration = {
+  // The production policy, so violations surface in development, plus
+  // what the dev server itself needs: eval for webpack’s development
+  // source maps and React Refresh, the websocket for hot updates
+  headers: {
+    "Content-Security-Policy": buildContentSecurityPolicy({
+      "connect-src": ["ws://localhost:3000"],
+      "script-src": ["'unsafe-eval'"],
+    }),
+  },
   host: "localhost",
   hot: true,
   liveReload: false,

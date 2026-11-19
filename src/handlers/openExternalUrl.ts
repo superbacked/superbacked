@@ -13,6 +13,8 @@ import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 // utility because the process outlives the call (see spawn.ts)
 const superbackedBrowserLauncher = "/usr/local/bin/superbacked-browser"
 
+// Only exact allowlisted URLs reach the browser, never renderer input
+// See https://www.electronjs.org/docs/latest/tutorial/security#15-do-not-use-shellopenexternal-with-untrusted-content
 export default async (url: string) => {
   if (!allowedExternalUrls.includes(url)) {
     throw new Error("External URL is not allowed")

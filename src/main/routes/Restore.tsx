@@ -480,6 +480,10 @@ const Bip39PassphraseApplet: FunctionComponent<Bip39PassphraseAppletProps> = (
 
 interface YubiKeyChallengeResponseSecretAppletProps {
   onCopy: () => void
+  // A restored backup is the moment a replacement key gets programmed —
+  // hands the secret to the provisioning route (see
+  // src/main/routes/ProvisionYubiKey.tsx)
+  onProvision: () => void
   onShowAsQrCode: () => void
   secret: YubiKeyChallengeResponseSecretResult["properties"]["secret"]
 }
@@ -541,6 +545,9 @@ const YubiKeyChallengeResponseSecretApplet: FunctionComponent<
         <Button.Group>
           <Button onClick={props.onCopy} size="xs" variant="default">
             {t("common.copy")}
+          </Button>
+          <Button onClick={props.onProvision} size="xs" variant="default">
+            {t("routes.restore.provision")}
           </Button>
           <Button
             disabled={isVerifying}
@@ -922,6 +929,12 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
                       <YubiKeyChallengeResponseSecretApplet
                         onCopy={async () => {
                           await copySecretText(result.properties.secret)
+                        }}
+                        onProvision={() => {
+                          controls.close()
+                          void navigate("/provision-yubikey", {
+                            state: { yubikeySecret: result.properties.secret },
+                          })
                         }}
                         onShowAsQrCode={() => {
                           controls.close()

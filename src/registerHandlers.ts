@@ -32,6 +32,14 @@ import {
 } from "@/src/handlers/standaloneArchive"
 import toggleMaximize from "@/src/handlers/toggleMaximize"
 import { verifyYubiKeyChallengeResponseSecret } from "@/src/handlers/yubikeyChallengeResponseSecret"
+import {
+  canEnableYubiKeyOtp,
+  enableYubiKeyOtpInterface,
+  generateYubiKeySecret,
+  getYubiKeyStatus,
+  provisionYubiKey,
+  readYubiKeyModel,
+} from "@/src/handlers/yubikeyProvisioning"
 import { Locale } from "@/src/i18n"
 import { locale } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
@@ -53,7 +61,8 @@ import { characterClasses } from "@/src/utilities/crypto/derivedPassword"
 import { generateToken } from "@/src/utilities/crypto/totp"
 import { handle } from "@/src/utilities/ipc/handle"
 import { handleSync } from "@/src/utilities/ipc/handleSync"
-import broadcastYubiKeyTouchRequired from "@/src/utilities/yubikey/broadcastTouchRequired"
+import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
+import notifyYubiKeyTouchRequired from "@/src/utilities/yubikey/notifyTouchRequired"
 import { Slot } from "@/src/utilities/yubikey/otp"
 
 type InsertType = "mnemonic" | "passphrase" | "password" | "scanQrCode"
@@ -143,7 +152,7 @@ const asyncHandlers = {
       passphrase,
       getConfig("kdfProfile") === "paranoid",
       slot,
-      broadcastYubiKeyTouchRequired
+      notifyYubiKeyTouchRequired
     ),
   restoreStandaloneArchive: (
     filePath: string,
@@ -157,10 +166,20 @@ const asyncHandlers = {
       passphrase,
       getConfig("kdfProfile") === "paranoid",
       slot,
-      broadcastYubiKeyTouchRequired
+      notifyYubiKeyTouchRequired
     ),
   verifyYubiKeyChallengeResponseSecret: (secret: string) =>
-    verifyYubiKeyChallengeResponseSecret(secret, broadcastYubiKeyTouchRequired),
+    verifyYubiKeyChallengeResponseSecret(secret, notifyYubiKeyTouchRequired),
+  getYubiKeyStatus,
+  canEnableYubiKeyOtp,
+  enableYubiKeyOtpInterface,
+  readYubiKeyModel,
+  // The app programs only a secret it displayed and always requires touch
+  // — generating in the handler and the weaker no-touch configuration
+  // are the command line’s (see src/cli/provisionYubikey.ts), so neither
+  // is reachable over IPC
+  provisionYubiKey: (slot: Slot, secret: string) =>
+    provisionYubiKey(slot, secret, true, notifyYubiKeyTouchRequired),
 } as const
 
 // Derive interface from handler map
@@ -197,6 +216,11 @@ const syncHandlers = {
   generateMasterKey,
   deriveDetachedArchiveFilename,
   generateToken,
+  generateYubiKeySecret,
+  // Decides only whether recommendations show (the host-exposure warning
+  // before provisioning) — never a security boundary, as the detection is
+  // a marker file (see src/utilities/superbackedOs.ts)
+  isSuperbackedOs,
 } as const
 
 // Derive interface from sync handler map

@@ -20,11 +20,23 @@ const yubikeyErrorText: Record<YubiKeyErrorMessage, string> = {
   "common.yubiKeyConfigurationLocked": en.common.yubiKeyConfigurationLocked,
   "common.yubiKeyOtpInterfaceDisabled": en.common.yubiKeyOtpInterfaceDisabled,
   "common.yubiKeyOtpNotSupported": en.common.yubiKeyOtpNotSupported,
+  "common.yubiKeyProvisioningRejected": en.common.yubiKeyProvisioningRejected,
   "common.yubiKeySlotNotProvisioned": en.common.yubiKeySlotNotProvisioned,
   "common.yubiKeyTouchTimedOut": en.common.yubiKeyTouchTimedOut,
+  "common.yubiKeyVerificationFailed": en.common.yubiKeyVerificationFailed,
 }
 
 export const touchYubiKeyText = en.common.touchYubiKey
+
+// The weak passphrase disclaimer and the allowed notice print the words
+// the app renders (see src/main/components/WeakPassphraseDisclaimerModal.tsx
+// and src/main/components/PassphraseInputWithStrength.tsx)
+export const useWeakPassphraseText =
+  en.components.weakPassphraseDisclaimerModal.useWeakPassphrase
+export const weakPassphraseWarningText =
+  en.components.weakPassphraseDisclaimerModal.weakPassphraseWarning
+export const weakPassphraseAllowedText =
+  en.components.passphraseInputWithStrength.weakPassphraseAllowed
 
 /**
  * Resolve error into the text a command prints — YubiKey failures resolve
@@ -35,10 +47,7 @@ export const touchYubiKeyText = en.common.touchYubiKey
  */
 export const errorText = (error: unknown, fallback: string): string => {
   if (error instanceof YubiKeyError) {
-    const key = yubikeyErrorMessageKeys[error.code]
-    // Codes without an app-side key (provisioningRejected — the app never
-    // provisions) carry their only message on the error
-    return key === undefined ? error.message : yubikeyErrorText[key]
+    return yubikeyErrorText[yubikeyErrorMessageKeys[error.code]]
   }
   if (error instanceof Error) {
     return error.message

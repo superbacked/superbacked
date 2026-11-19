@@ -29,9 +29,9 @@ The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to
 
 > Heads-up: the master passphrase is never verified, so a mistyped passphrase silently derives a different wallet. Use `--confirm-passphrase` when deriving a wallet for the first time — the master passphrase is then prompted twice — and derive the wallet again to confirm the same extended public key before sending bitcoin to it.
 
-> Heads-up: on macOS, opening the YubiKey may require granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring).
+> Heads-up: on macOS, opening the YubiKey requires granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring) — macOS prompts on first use.
 
-By default, the command prints the wallet’s extended public key (`zpub…`) — enough to set up a watch-only wallet — without revealing the mnemonic (the command refuses weak master passphrases, like everywhere else in Superbacked).
+By default, the command prints the wallet’s extended public key (`zpub…`) — enough to set up a watch-only wallet — without revealing the mnemonic (the command refuses weak master passphrases unless explicitly allowed when prompted or using the `--allow-weak-passphrase` flag).
 
 ```console
 $ superbacked derive-bitcoin-wallet

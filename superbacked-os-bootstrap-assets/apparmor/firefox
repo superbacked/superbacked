@@ -136,6 +136,16 @@ profile firefox /usr/lib/firefox/firefox{,-bin} {
   # Session bus socket path (dbus-session-strict mediates the bus
   # itself).
   owner @{run}/user/[0-9]*/bus rw,
+  # The accessibility bus (AT-SPI, screen readers) stays closed: a
+  # client on it publishes its widget tree and can read other same-user
+  # apps’ trees. The helper sets GNOME_ACCESSIBILITY=0, which Firefox
+  # reads before asking the session bus, so nothing is probed; the
+  # denies are quiet so a stray probe stays out of enforce-mode logs.
+  # The keyboard monitor Mutter 48 and later serve on the session bus
+  # needs no rule here: it lives on the primary user’s bus, and this
+  # profile reaches only the browser user’s own.
+  deny owner @{run}/user/[0-9]*/at-spi/bus{,*} rw,
+  deny dbus (send, receive) bus=accessibility,
   # Media threads ask rtkit for realtime scheduling over the system
   # bus; the properties read answers from rtkit’s unique name, which a
   # peer name rule cannot match — hence the interface-scoped rule.

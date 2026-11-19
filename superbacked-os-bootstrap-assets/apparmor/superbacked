@@ -49,8 +49,11 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   # and nftables blocks egress a layer below either way. UDP, packet
   # and bluetooth stay denied outright — quiet denies hold even on
   # complain-mode debug images; non-loopback TCP is default-deny, which
-  # debug images log instead of enforcing. Unix sockets (Wayland,
-  # D-Bus) and netlink (nss interface enumeration) stay.
+  # debug images log instead of enforcing. bind, listen and accept are
+  # deliberately absent, so nothing in this confinement can open a
+  # listener — the Node inspector included, which is also fused off in
+  # the binary (see builder.config.ts). Unix sockets (Wayland, D-Bus)
+  # and netlink (nss interface enumeration) stay.
   network (create, getattr, getopt, setopt) inet stream,
   network (create, getattr, getopt, setopt) inet6 stream,
   network (connect, send, receive) inet stream peer=(ip=127.0.0.1),
@@ -117,7 +120,23 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   # ride here (denied, they block loudly under enforce while the
   # filesystem side looks fine).
   dbus (send, receive) bus=session,
-  owner @{run}/user/[0-9]*/at-spi/bus{,*} rw,
+  # The accessibility bus (AT-SPI, screen readers) stays closed: a
+  # client on it publishes its widget tree (secrets rendered on screen
+  # included) and can read other same-user apps’ trees. The app sets
+  # GNOME_ACCESSIBILITY=0 from inside (see src/index.ts), so nothing is
+  # probed; the denies are quiet so a stray probe stays out of
+  # enforce-mode logs.
+  deny owner @{run}/user/[0-9]*/at-spi/bus{,*} rw,
+  deny dbus (send, receive) bus=accessibility,
+  # Mutter 48 and later serve screen-reader keyboard monitoring on the
+  # session bus (org.freedesktop.a11y.KeyboardMonitor), guarded only by
+  # ownership of Orca’s bus name — which any session process can claim
+  # while Orca is not running, then read every keystroke. Absent on
+  # this Ubuntu 24.04 base (Mutter 46); closed ahead of a rebase, since
+  # the session grant above would otherwise reach it. The interface
+  # match holds however the manager is addressed.
+  deny dbus bind bus=session name=org.gnome.Orca.KeyboardMonitor,
+  deny dbus send bus=session interface=org.freedesktop.a11y.KeyboardMonitor,
   owner @{run}/user/[0-9]*/dconf/{,user} rw,
   /dev/ r,
   /dev/dri/ r,

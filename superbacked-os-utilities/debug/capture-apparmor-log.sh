@@ -12,6 +12,14 @@
 # Pass a profile name to narrow the capture to one app — its //null-
 # children included, and the lines stay verbatim either way.
 #
+# The kernel log holds file, network and system-bus events, not every
+# D-Bus event: user-level bus daemons (the session bus, the
+# accessibility bus) cannot write audit records, so dbus-daemon logs
+# their denials through syslog into the plain journal instead. When
+# tuning D-Bus rules, sweep that too:
+#
+#   journalctl -b --grep 'apparmor="DENIED"'
+#
 # Usage: bash capture-apparmor-log.sh [profile] > denials.txt
 
 set -o errexit

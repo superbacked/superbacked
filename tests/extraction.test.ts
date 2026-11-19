@@ -4,8 +4,8 @@ import { suite, test } from "node:test"
 import {
   bip39PassphraseLength,
   createExtractor,
-  yubikeyChallengeResponseSecretLength,
 } from "@/src/main/utilities/extraction"
+import { yubikeySecretLength } from "@/src/shared/yubikeySecret"
 import { validateMnemonic, wordlist } from "@/src/utilities/crypto/bip39"
 import { characterClasses } from "@/src/utilities/crypto/derivedPassword"
 import generatePassword from "@/src/utilities/crypto/password"
@@ -50,7 +50,7 @@ suite("extraction", () => {
   })
 
   test("freezes challenge-response secret length", () => {
-    assert.strictEqual(yubikeyChallengeResponseSecretLength, 40)
+    assert.strictEqual(yubikeySecretLength, 40)
   })
 
   test("extracts 12- and 24-word mnemonics wherever they sit", () => {

@@ -11,6 +11,7 @@
       "create": "Créer",
       "duplicate": "Dupliquer",
       "restore": "Restaurer",
+      "provisionYubiKey": "Provisionner une YubiKey",
       "newWindow": "Nouvelle fenêtre",
       "closeWindow": "Fermer la fenêtre"
     },
@@ -168,7 +169,8 @@
         "billionYears_one": "{{count, number}} milliard d’années",
         "billionYears_other": "{{count, number}} milliards d’années",
         "overTrillionYears": "plus de mille milliards d’années"
-      }
+      },
+      "weakPassphraseAllowed": "Phrase de passe faible autorisée"
     },
     "passphraseModal": {
       "unlockBlock": "Déverrouiller le bloc",
@@ -207,6 +209,12 @@
       "totpUri_other": "URIs",
       "found_one": "trouvé",
       "found_other": "trouvés"
+    },
+    "weakPassphraseDisclaimerModal": {
+      "weakPassphrase": "Phrase de passe faible",
+      "weakPassphraseWarning": "Une phrase de passe faible est plus vulnérable aux attaques par force brute — n’utilisez pas cette phrase de passe pour protéger un secret à enjeux élevés.",
+      "useWeakPassphrase": "Utiliser une phrase de passe faible",
+      "edit": "Modifier"
     }
   },
   "handlers": {
@@ -253,8 +261,10 @@
     "yubiKeyConfigurationLocked": "Configuration YubiKey protégée par un code de verrouillage",
     "yubiKeyOtpInterfaceDisabled": "YubiKey détectée mais interface OTP désactivée",
     "yubiKeyOtpNotSupported": "YubiKey non compatible avec le défi-réponse OTP (séries Bio et Security Key)",
+    "yubiKeyProvisioningRejected": "La YubiKey a refusé le provisionnement — le slot est peut-être protégé par un code d’accès",
     "yubiKeySlotNotProvisioned": "Slot YubiKey non provisionné pour le défi-réponse",
-    "yubiKeyTouchTimedOut": "YubiKey non touchée à temps"
+    "yubiKeyTouchTimedOut": "YubiKey non touchée à temps",
+    "yubiKeyVerificationFailed": "Échec de la vérification de la YubiKey — la réponse du slot ne correspond pas au secret"
   },
   "routes": {
     "create": {
@@ -322,6 +332,27 @@
     "duplicate": {
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
+    "provisionYubiKey": {
+      "secretInvalid": "Le secret doit comporter 40 caractères hexadécimaux",
+      "couldNotProvisionYubiKey": "Impossible de provisionner la YubiKey",
+      "enableOtpInterface": "Activer l’interface OTP",
+      "enableOtpInterfaceDescription": "YubiKey détectée mais l’interface OTP est désactivée — l’activer redémarre la YubiKey",
+      "enable": "Activer",
+      "overwriteSlot": "Écraser le slot {{slot}}",
+      "overwriteSlotDescription": "Le slot {{slot}} est déjà programmé — l’écraser détruit définitivement le secret actuel",
+      "overwrite": "Écraser",
+      "slotProvisioned": "Slot {{slot}} provisionné pour le défi-réponse HMAC-SHA1",
+      "secretCannotBeReadBack": "Le secret ne peut pas être relu depuis la YubiKey — utilisez un bloc non protégé par YubiKey pour sauvegarder le secret ou provisionnez une autre YubiKey avec le même secret. Sans l’un ou l’autre, tout ce qui repose sur ce secret est irrécupérable si la YubiKey est perdue ou cassée.",
+      "couldNotReadYubiKeyModel": "Impossible de lire le modèle de la YubiKey ({{reason}})",
+      "backUpToBlock": "Sauvegarder dans un bloc…",
+      "provisionToAnotherYubiKey": "Provisionner sur une autre YubiKey…",
+      "secret": "Secret",
+      "typeSecret": "Taper le secret…",
+      "slot": "Slot",
+      "provisionYubiKey": "Provisionner une YubiKey",
+      "hostExposureWarning": "Le provisionnement expose le secret YubiKey à cet ordinateur — pour les secrets à enjeux élevés, provisionnez la YubiKey en utilisant <anchor><bold>Superbacked OS</bold></anchor>.",
+      "continue": "Continuer"
+    },
     "restore": {
       "bip32RootFingerprint": "Empreinte racine BIP32",
       "bip39Mnemonic": "Mnémonique BIP39",
@@ -337,6 +368,7 @@
       "dragAndDropArchiveToRestore": "Glisser-déposer {{filename}} pour restaurer l’archive",
       "index": "Index",
       "notProvisionedOnYubiKey": "Non provisionné sur la YubiKey connectée",
+      "provision": "Provisionner",
       "provisionedInSlot": "Provisionné dans le slot {{slot}}",
       "restoringDetachedArchive": "Restauration de l’archive détachée",
       "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",

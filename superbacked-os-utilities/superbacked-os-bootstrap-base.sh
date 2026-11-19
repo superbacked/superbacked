@@ -86,12 +86,12 @@ printf "%s\n" "Starting base bootstrap…"
 # the install script and the merge tool) have no versions either, so
 # their sha256 is the pin the same way; firefox_guide_ref is the branch
 # they are fetched from.
-readonly apt_snapshot="20261116T000000Z"
+readonly apt_snapshot="20261118T000000Z"
 readonly firefox_guide_ref="main"
 readonly firefox_merge_policies_sha256="db16b6da879caa79a754c0ea2ffb1849e219d129a98cc88c94c59dce941f88fd"
 readonly firefox_policies_script_sha256="6edc806929898c14a47810d151f5bfd8a1d8b59a152851e2b60be91702b8c5e8"
 readonly firefox_policies_sha256="0c35f8d4609a613acd76f27c7f2e5b440fb8fc4c606df71f1cd2196cdc878532"
-readonly firefox_version="160.0"
+readonly firefox_version="160.0.1"
 readonly trezor_sha256="1acd67664bdc1cf389e719c91a09e6069688afa05959715955d5c1c54a2fefde"
 readonly trezor_udev_rules_sha256="f3b39b4537da6260a7b63af07710aedfab1fe87d8eeff0975d176b9b908b9d6e"
 readonly trezor_version="0.20.2"
@@ -394,8 +394,11 @@ tar --extract --gzip --strip-components 1 \
 rm /tmp/yubico-authenticator.tar.gz /tmp/yubico-authenticator.tar.gz.sig
 
 # Pinned to Wayland so authentication codes are never drawn through X11,
-# where other apps could observe them. The entry is named after the app
-# id (com.yubico.yubioath) so GNOME pairs the running window with its
+# where other apps could observe them, and kept off the accessibility
+# bus, where they would be plain text in a published widget tree
+# (NO_AT_BRIDGE is the switch GTK3’s bridge reads; the AppArmor profile
+# denies the bus as the backstop). The entry is named after the app id
+# (com.yubico.yubioath) so GNOME pairs the running window with its
 # icon. The app’s QR code scanning needs a helper this OS adds — see
 # “Configuring Yubico Authenticator QR code scanning” in
 # superbacked-os-bootstrap-main.sh.
@@ -406,7 +409,7 @@ tee /usr/local/share/applications/com.yubico.yubioath.desktop > /dev/null << 'EO
 Version=1.0
 Type=Application
 Name=Yubico Authenticator
-Exec=env GDK_BACKEND=wayland /opt/yubico-authenticator/authenticator
+Exec=env GDK_BACKEND=wayland NO_AT_BRIDGE=1 /opt/yubico-authenticator/authenticator
 Icon=/opt/yubico-authenticator/linux_support/com.yubico.yubioath.png
 StartupWMClass=com.yubico.yubioath
 StartupNotify=true

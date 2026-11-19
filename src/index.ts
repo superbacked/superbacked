@@ -1,4 +1,13 @@
-import { BrowserWindow, WebFrameMain, app, ipcMain, session } from "electron"
+import {
+  BrowserWindow,
+  WebFrameMain,
+  app,
+  ipcMain,
+  protocol,
+  session,
+} from "electron"
+import { readFile } from "fs/promises"
+import { join } from "path"
 import { URL } from "url"
 
 import { Option as CommanderOption, program as cli } from "commander"
@@ -29,10 +38,30 @@ import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"
+import { isPermissionAllowed } from "@/src/utilities/permissions"
+import {
+  isRendererUrl,
+  rendererScheme,
+  resolveRendererFile,
+} from "@/src/utilities/rendererProtocol"
 import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string
+
+// #if process.env.ENV === "production"
+// The renderer’s scheme (see src/utilities/rendererProtocol.ts) must be
+// declared before ready: standard so relative URLs in the bundle resolve
+// and the origin behaves like a web one, secure so the pages count as a
+// secure context, fetch so the pages can request their own assets.
+// See https://www.electronjs.org/docs/latest/tutorial/security#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols
+protocol.registerSchemesAsPrivileged([
+  {
+    privileges: { secure: true, standard: true, supportFetchAPI: true },
+    scheme: rendererScheme,
+  },
+])
+// #endif
 
 // Electron’s asar filesystem shim constructs fs.Stats (DEP0180), spilling
 // deprecation warnings into command-line interface output — suppress them
@@ -49,6 +78,24 @@ if (app.isPackaged) {
 // stays Chromium’s choice, as X11-only desktops must keep working)
 if (isSuperbackedOs()) {
   app.commandLine.appendSwitch("ozone-platform", "wayland")
+  // Chromium logs an error whenever native Vulkan is requested on
+  // Wayland, then carries on. The request comes from WebGPU’s
+  // Vulkan-via-GL interop — enabled by GL rendering itself, with no
+  // feature flag, and off only when WebGPU is pointed at the OpenGL ES
+  // adapter (see GetWebGPUOnVulkanViaGLInterop in Chromium’s
+  // gpu/config/gpu_util.cc). The app uses no WebGPU, so nothing
+  // changes but the log line
+  app.commandLine.appendSwitch("use-webgpu-adapter", "opengles")
+  // The AppArmor profile denies the accessibility bus (see
+  // superbacked-os-bootstrap-assets/apparmor/superbacked for why), so
+  // Chromium’s AT-SPI bridge is switched off instead of failing the
+  // handshake with a warning on every launch. NO_AT_BRIDGE is no lever
+  // in Electron — Chromium sets it for GTK and unsets it before its
+  // own bridge — but this variable is consulted first, when the first
+  // window’s accessibility tree is created, long after this script
+  // (see ShouldEnableAccessibility in Chromium’s
+  // ui/accessibility/platform/atk_util_auralinux.cc)
+  process.env.GNOME_ACCESSIBILITY = "0"
 }
 
 app.setName("Superbacked")
@@ -58,9 +105,9 @@ cli.version(app.getVersion(), "--version", "output version")
 
 cli.helpOption("-h, --help", "display help")
 
-// Root so the mode reads as app-wide, like the Settings toggle — creation
-// and derivation stretch at the paranoid profile and restoration trials
-// it (see src/shared/kdfProfiles.ts)
+// Root so one flag serves every command, the way the Settings toggle
+// serves the app — creation and derivation stretch at the paranoid
+// profile and restoration trials it (see src/shared/kdfProfiles.ts)
 cli.option(
   "--paranoid",
   "harden key derivation (requires at least 1 GiB of memory and --paranoid to restore or derive again)"
@@ -73,6 +120,10 @@ cli
   .requiredOption(
     "-o, --output <archive>",
     "archive path (.superbacked appended if absent)"
+  )
+  .option(
+    "--allow-weak-passphrase",
+    "allow weak passphrase without confirmation (dangerous)"
   )
   .option("-f, --force", "overwrite archive if it already exists")
   .addOption(
@@ -137,6 +188,10 @@ cli
     parseAddresses
   )
   .option(
+    "--allow-weak-passphrase",
+    "allow weak master passphrase without confirmation (dangerous)"
+  )
+  .option(
     "--clear <seconds>",
     "seconds before revealed secret is cleared from clipboard",
     parseClear,
@@ -187,6 +242,10 @@ cli
     "memorized label (for example github or proton), prompted when omitted"
   )
   .option(
+    "--allow-weak-passphrase",
+    "allow weak master passphrase without confirmation (dangerous)"
+  )
+  .option(
     "--clear <seconds>",
     "seconds before copied password is cleared from clipboard",
     parseClear,
@@ -216,14 +275,14 @@ cli
   )
   .action(derivePasswordAction)
 
-// see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
+// See https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
 app.on("web-contents-created", (_event, contents) => {
   contents.on("will-navigate", (event) => {
     event.preventDefault()
   })
 })
 
-// see https://www.electronjs.org/docs/latest/tutorial/security#14-disable-or-limit-creation-of-new-windows
+// See https://www.electronjs.org/docs/latest/tutorial/security#14-disable-or-limit-creation-of-new-windows
 app.on("web-contents-created", (_event, contents) => {
   contents.setWindowOpenHandler(() => {
     return { action: "deny" }
@@ -275,7 +334,7 @@ export const createWindow = async (): Promise<BrowserWindow> => {
         nodeIntegration: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
         nodeIntegrationInWorker: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-        sandbox: true,
+        sandbox: true, // default, see https://www.electronjs.org/docs/latest/tutorial/security#4-enable-process-sandboxing
       },
     })
     mainWindowId = mainWindow.id
@@ -299,9 +358,6 @@ export const createWindow = async (): Promise<BrowserWindow> => {
       const { x, y } = mainWindow.getBounds()
       setConfig("windowGeometry", { width, height, x, y })
     })
-    if (app.inspect === true) {
-      mainWindow.webContents.openDevTools()
-    }
   })
 }
 
@@ -312,7 +368,9 @@ export const getMainWindow = (): null | BrowserWindow => {
   return BrowserWindow.fromId(mainWindowId)
 }
 
-// see https://www.electronjs.org/docs/latest/tutorial/security#17-validate-the-sender-of-all-ipc-messages
+// The packaged renderer has a real host to compare (see
+// src/utilities/rendererProtocol.ts) — a file:// frame has none
+// See https://www.electronjs.org/docs/latest/tutorial/security#17-validate-the-sender-of-all-ipc-messages
 export const validateSender = (frame: WebFrameMain) => {
   const frameHost = new URL(frame.url).host
   const mainHost = new URL(MAIN_WINDOW_WEBPACK_ENTRY).host
@@ -322,68 +380,117 @@ export const validateSender = (frame: WebFrameMain) => {
   return false
 }
 
-interface DefaultOptions {
-  inspect: number
-}
-
 // Run Electron app
-cli
-  // See https://www.electronjs.org/docs/latest/tutorial/debugging-main-process
-  .option("--inspect", "enable debugging")
-  .option("--no-sandbox", "disable sandbox")
-  .action((options: DefaultOptions) => {
-    app.inspect = options.inspect ? true : false
+cli.option("--no-sandbox", "disable sandbox").action(() => {
+  // The flag belongs to the commands — the app follows the persisted
+  // kdfProfile setting (see src/utilities/config.ts) — so a launch
+  // without a command refuses it rather than discarding it silently
+  if (cli.opts().paranoid === true) {
+    console.error("Error: --paranoid requires a command")
+    process.exit(1)
+  }
 
-    setMenu()
+  setMenu()
 
-    app.on("activate", async () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        await createWindow()
-      }
-    })
-
-    app.on("ready", async () => {
-      // Disable DNS-over-HTTPS (disables extraneous bootstrap requests that trigger Little Snitch warnings)
-      app.configureHostResolver({
-        secureDnsMode: "off",
-      })
-      // Limit networking to trusted URLs — registered before any window loads
-      // so every page (including the main window) goes through the filter.
-      session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-        const allowed =
-          // #if process.env.ENV === "development"
-          matchesUrlOrigin(details.url, "http://localhost:3000") ||
-          matchesUrlOrigin(details.url, "ws://localhost:3000") ||
-          // #endif
-          // #if process.env.ENV === "production"
-          /^file:\/\//.test(details.url) ||
-          // #endif
-          /^devtools:\/\//.test(details.url)
-        callback({ cancel: !allowed })
-      })
+  app.on("activate", async () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
       await createWindow()
-    })
-
-    app.on("window-all-closed", () => {
-      if (process.platform !== "darwin") {
-        app.quit()
-      }
-    })
-
-    ipcMain.on("newWindow", async () => {
-      await createWindow()
-    })
-
-    registerSyncHandlers()
-    registerHandlers()
+    }
   })
+
+  app.on("ready", async () => {
+    // Disable DNS-over-HTTPS (disables extraneous bootstrap requests that trigger Little Snitch warnings)
+    app.configureHostResolver({
+      secureDnsMode: "off",
+    })
+    // #if process.env.ENV === "production"
+    // Serve the renderer bundle (.webpack/renderer, beside this bundle in
+    // app.asar) from its own origin. Only files inside the bundle with an
+    // extension it ships are served, read through fs so no file:// request
+    // exists for a page to ride on; everything else is not found. Pages
+    // carry the Content Security Policy as a header. With the file
+    // protocol fuse off (see builder.config.ts) a page from this origin
+    // cannot read the filesystem at all.
+    const rendererPath = join(__dirname, "../renderer")
+    protocol.handle(rendererScheme, async (request) => {
+      const file = resolveRendererFile(rendererPath, request.url)
+      if (file === null) {
+        return new Response(null, { status: 404 })
+      }
+      try {
+        const body = await readFile(file.path)
+        return new Response(new Uint8Array(body), { headers: file.headers })
+      } catch {
+        return new Response(null, { status: 404 })
+      }
+    })
+    // #endif
+    // Limit networking to trusted URLs — registered before any window loads
+    // so every page (including the main window) goes through the filter.
+    session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+      const allowed =
+        // #if process.env.ENV === "development"
+        matchesUrlOrigin(details.url, "http://localhost:3000") ||
+        matchesUrlOrigin(details.url, "ws://localhost:3000") ||
+        // #endif
+        // #if process.env.ENV === "production"
+        isRendererUrl(details.url) ||
+        // #endif
+        /^devtools:\/\//.test(details.url)
+      callback({ cancel: !allowed })
+    })
+    // Permissions default to granted for any page that asks. Only our own
+    // renderer can ask here, and it gets exactly what it uses (see
+    // src/utilities/permissions.ts); the check handler answers the
+    // synchronous queries (device enumeration, clipboard checks) from the
+    // same table.
+    // See https://www.electronjs.org/docs/latest/tutorial/security#5-handle-session-permission-requests-from-remote-content
+    session.defaultSession.setPermissionRequestHandler(
+      (webContents, permission, callback, details) => {
+        const mediaTypes =
+          "mediaTypes" in details ? (details.mediaTypes ?? []) : []
+        callback(
+          validateSender(webContents.mainFrame) === true &&
+            isPermissionAllowed(permission, mediaTypes)
+        )
+      }
+    )
+    session.defaultSession.setPermissionCheckHandler(
+      (webContents, permission, _requestingOrigin, details) => {
+        if (webContents === null) {
+          return false
+        }
+        const mediaTypes =
+          details.mediaType === undefined ? [] : [details.mediaType]
+        return (
+          validateSender(webContents.mainFrame) === true &&
+          isPermissionAllowed(permission, mediaTypes)
+        )
+      }
+    )
+    await createWindow()
+  })
+
+  app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      app.quit()
+    }
+  })
+
+  ipcMain.on("newWindow", async () => {
+    await createWindow()
+  })
+
+  registerSyncHandlers()
+  registerHandlers()
+})
 
 // Subcommands never open a window, but Electron still boots Chromium in
 // the background, whose GPU process can spill errors into interactive
-// prompts (for example a Wayland/Vulkan incompatibility complaint on
-// Superbacked OS) — drop GPU work and non-fatal Chromium logging before
-// any subcommand runs (parsing is synchronous, so the switches land
-// before Chromium is ready)
+// prompts (for example Chromium’s Wayland/Vulkan complaint, silenced
+// above on Superbacked OS but not elsewhere) — drop GPU work and
+// non-fatal Chromium logging before any subcommand runs (parsing is
+// synchronous, so the switches land before Chromium is ready)
 cli.hook("preSubcommand", () => {
   app.disableHardwareAcceleration()
   app.commandLine.appendSwitch("disable-gpu")

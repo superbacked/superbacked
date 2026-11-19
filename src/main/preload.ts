@@ -7,7 +7,9 @@ import { invokeSync } from "@/src/utilities/ipc/invokeSync"
 
 /**
  * Main window API exposed to renderer process via contextBridge.
- * Available as `window.api` in renderer context.
+ * Available as `window.api` in renderer context. Named functions only,
+ * never raw IPC objects or events.
+ * See https://www.electronjs.org/docs/latest/tutorial/security#20-do-not-expose-electron-apis-to-untrusted-web-content
  */
 export interface Api {
   /** Subscribe to main process events. */
@@ -66,6 +68,11 @@ const api: Api = {
     verifyYubiKeyChallengeResponseSecret: invoke(
       "verifyYubiKeyChallengeResponseSecret"
     ),
+    getYubiKeyStatus: invoke("getYubiKeyStatus"),
+    canEnableYubiKeyOtp: invoke("canEnableYubiKeyOtp"),
+    enableYubiKeyOtpInterface: invoke("enableYubiKeyOtpInterface"),
+    readYubiKeyModel: invoke("readYubiKeyModel"),
+    provisionYubiKey: invoke("provisionYubiKey"),
   } satisfies IpcHandlers,
   invokeSync: {
     getLocale: invokeSync("getLocale"),
@@ -82,6 +89,8 @@ const api: Api = {
     generateMasterKey: invokeSync("generateMasterKey"),
     deriveDetachedArchiveFilename: invokeSync("deriveDetachedArchiveFilename"),
     generateToken: invokeSync("generateToken"),
+    generateYubiKeySecret: invokeSync("generateYubiKeySecret"),
+    isSuperbackedOs: invokeSync("isSuperbackedOs"),
   } satisfies IpcSyncHandlers,
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file)

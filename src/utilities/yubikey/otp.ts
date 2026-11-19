@@ -126,6 +126,7 @@ export type YubiKeyErrorCode =
   | "otpNotSupported"
   | "provisioningRejected"
   | "touchTimeout"
+  | "verificationFailed"
 
 export class YubiKeyError extends Error {
   code: YubiKeyErrorCode

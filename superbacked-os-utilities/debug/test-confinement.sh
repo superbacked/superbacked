@@ -535,6 +535,7 @@ else
     expect_failure "caller’s environment does not reach Firefox" sudo grep --quiet --null-data SBTEST_CANARY "/proc/${firefox_pid}/environ"
     expect_failure "no DISPLAY, LD_*, BASH_ENV or SUDO_* in Firefox’s environment" sudo bash -c "tr '\0' '\n' < /proc/${firefox_pid}/environ | grep --quiet --extended-regexp '^(DISPLAY|LD_[A-Z_]+|BASH_ENV|SUDO_[A-Z_]+)='"
     expect_success "Firefox sees the private display name" sudo bash -c "tr '\0' '\n' < /proc/${firefox_pid}/environ | grep --quiet '^WAYLAND_DISPLAY=wayland-firefox$'"
+    expect_success "Firefox has accessibility switched off" sudo bash -c "tr '\0' '\n' < /proc/${firefox_pid}/environ | grep --quiet '^GNOME_ACCESSIBILITY=0$'"
     expect_success "Firefox’s standard input and output are /dev/null" sudo bash -c "[ \"\$(readlink /proc/${firefox_pid}/fd/0)\" = /dev/null ] && [ \"\$(readlink /proc/${firefox_pid}/fd/1)\" = /dev/null ]"
   else
     fail "Firefox process not found for environment checks"

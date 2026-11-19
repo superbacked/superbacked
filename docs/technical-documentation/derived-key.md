@@ -106,15 +106,17 @@ The response is computed inside the YubiKey using HMAC-SHA1 keyed with the slot 
 
 ### Slot provisioning
 
-The slot must be provisioned once for HMAC-SHA1 challenge-response:
+The slot must be provisioned once for HMAC-SHA1 challenge-response — in the app under File → “Provision YubiKey”, or on the command line:
 
 ```console
 superbacked provision-yubikey --generate
 ```
 
+Both call the same provisioning handler (see `provisionYubiKey` in [src/handlers/yubikeyProvisioning.ts](../../src/handlers/yubikeyProvisioning.ts)), which programs the slot and verifies the write end to end by challenging it and recomputing the response locally. The app can hand the secret straight to create mode for its backup — a single block preselected and labeled with the YubiKey’s model and serial number, without the YubiKey protection option for that secret since its backup must not depend on the YubiKey it provisions.
+
 Slot 1 ships from the factory configured for Yubico OTP — provisioning it for challenge-response overwrites that configuration permanently, which is why Superbacked defaults to slot 2, leaving the factory credential intact. Use `--slot 1` only if overwriting it is deliberate (and derive with `--slot 1`).
 
-Computing a response requires physical touch by default — add `--no-touch` to compute responses without touch (weaker). Challenge-response requires YubiKey firmware 2.2 or later. The generated secret is displayed once so it can be backed up or provisioned to another YubiKey — the secret cannot be read back from the YubiKey, so losing its only copy makes every derived key unrecoverable. Slots provisioned with other tools (for example Yubico Authenticator) remain compatible.
+Computing a response requires physical touch — the app always provisions slots that require touch, while the command line offers a `--no-touch` flag to compute responses without touch (weaker). Challenge-response requires YubiKey firmware 2.2 or later and the OTP application (which the Bio and Security Key series lack). The generated secret is displayed so it can be backed up or provisioned to another YubiKey — the secret cannot be read back from the YubiKey, so losing its only copy makes every derived key unrecoverable. Slots provisioned with other tools (for example Yubico Authenticator) remain compatible.
 
 ### Protocol
 

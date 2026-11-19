@@ -25,7 +25,9 @@ The `superbacked` command is available in terminal on [Ubuntu Desktop](../how-to
 
 > Heads-up: a forgotten passphrase — and the standalone archive content it encrypts — is unrecoverable.
 
-Encrypt one or more files and/or folders (the `.superbacked` extension is appended automatically and the command refuses weak passphrases).
+> Heads-up: on macOS, opening the YubiKey requires granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring) — macOS prompts on first use.
+
+Encrypt one or more files and/or folders (the `.superbacked` extension is appended automatically and the command refuses weak passphrases unless explicitly allowed when prompted or using the `--allow-weak-passphrase` flag).
 
 ```console
 $ superbacked create-standalone-archive ~/Documents/passport.pdf ~/Documents/wallet --output backup
@@ -43,6 +45,8 @@ Use `--yubikey` to protect the archive with YubiKey (see [how to provision YubiK
 Use `--force` to overwrite an existing archive.
 
 ### Restore standalone archive
+
+> Heads-up: on macOS, opening the YubiKey requires granting the terminal Input Monitoring permission (System Settings → Privacy & Security → Input Monitoring) — macOS prompts on first use.
 
 Restore a standalone archive to an existing directory.
 
