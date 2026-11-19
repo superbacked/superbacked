@@ -49,6 +49,14 @@ if (app.isPackaged) {
 // stays Chromium’s choice, as X11-only desktops must keep working)
 if (isSuperbackedOs()) {
   app.commandLine.appendSwitch("ozone-platform", "wayland")
+  // Chromium logs an error whenever native Vulkan is requested on
+  // Wayland, then carries on. The request comes from WebGPU’s
+  // Vulkan-via-GL interop — enabled by GL rendering itself, with no
+  // feature flag, and off only when WebGPU is pointed at the OpenGL ES
+  // adapter (see GetWebGPUOnVulkanViaGLInterop in Chromium’s
+  // gpu/config/gpu_util.cc). The app uses no WebGPU, so nothing
+  // changes but the log line
+  app.commandLine.appendSwitch("use-webgpu-adapter", "opengles")
 }
 
 app.setName("Superbacked")
@@ -392,10 +400,10 @@ cli
 
 // Subcommands never open a window, but Electron still boots Chromium in
 // the background, whose GPU process can spill errors into interactive
-// prompts (for example a Wayland/Vulkan incompatibility complaint on
-// Superbacked OS) — drop GPU work and non-fatal Chromium logging before
-// any subcommand runs (parsing is synchronous, so the switches land
-// before Chromium is ready)
+// prompts (for example Chromium’s Wayland/Vulkan complaint, silenced
+// above on Superbacked OS but not elsewhere) — drop GPU work and
+// non-fatal Chromium logging before any subcommand runs (parsing is
+// synchronous, so the switches land before Chromium is ready)
 cli.hook("preSubcommand", () => {
   app.disableHardwareAcceleration()
   app.commandLine.appendSwitch("disable-gpu")
