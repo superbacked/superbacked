@@ -7,7 +7,9 @@ import { invokeSync } from "@/src/utilities/ipc/invokeSync"
 
 /**
  * Main window API exposed to renderer process via contextBridge.
- * Available as `window.api` in renderer context.
+ * Available as `window.api` in renderer context. Named functions only,
+ * never raw IPC objects or events.
+ * See https://www.electronjs.org/docs/latest/tutorial/security#20-do-not-expose-electron-apis-to-untrusted-web-content
  */
 export interface Api {
   /** Subscribe to main process events. */

@@ -35,6 +35,8 @@ const config: Configuration = {
   ],
   // Fuses harden the packaged binary against the machine it runs on;
   // development runs unpackaged, where they do not apply.
+  // See https://www.electronjs.org/docs/latest/tutorial/fuses and
+  // https://www.electronjs.org/docs/latest/tutorial/security#19-check-which-fuses-you-can-change
   //
   // The three Node fuses close the code-execution paths into the main
   // process — the process that holds the secrets — open to anything

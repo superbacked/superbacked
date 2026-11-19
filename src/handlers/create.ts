@@ -106,7 +106,7 @@ const renderToPdf = async (
       nodeIntegrationInWorker: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
       offscreen: true,
       preload: BLOCK_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      sandbox: true,
+      sandbox: true, // default, see https://www.electronjs.org/docs/latest/tutorial/security#4-enable-process-sandboxing
     },
     show: false,
   })

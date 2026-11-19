@@ -38,6 +38,7 @@ type ContentSecurityPolicyDirective =
 // code and the request filter leaves them no network to reach. Served
 // as a header on every page (see src/index.ts); development adds what
 // its dev server needs (see webpack.renderer.development.config.ts).
+// See https://www.electronjs.org/docs/latest/tutorial/security#7-define-a-content-security-policy
 const contentSecurityPolicyDirectives: Record<
   ContentSecurityPolicyDirective,
   string[]

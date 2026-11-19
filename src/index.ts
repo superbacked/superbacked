@@ -53,6 +53,7 @@ declare const MAIN_WINDOW_WEBPACK_ENTRY: string
 // declared before ready: standard so relative URLs in the bundle resolve
 // and the origin behaves like a web one, secure so the pages count as a
 // secure context, fetch so the pages can request their own assets.
+// See https://www.electronjs.org/docs/latest/tutorial/security#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols
 protocol.registerSchemesAsPrivileged([
   {
     privileges: { secure: true, standard: true, supportFetchAPI: true },
@@ -273,14 +274,14 @@ cli
   )
   .action(derivePasswordAction)
 
-// see https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
+// See https://www.electronjs.org/docs/latest/tutorial/security#13-disable-or-limit-navigation
 app.on("web-contents-created", (_event, contents) => {
   contents.on("will-navigate", (event) => {
     event.preventDefault()
   })
 })
 
-// see https://www.electronjs.org/docs/latest/tutorial/security#14-disable-or-limit-creation-of-new-windows
+// See https://www.electronjs.org/docs/latest/tutorial/security#14-disable-or-limit-creation-of-new-windows
 app.on("web-contents-created", (_event, contents) => {
   contents.setWindowOpenHandler(() => {
     return { action: "deny" }
@@ -332,7 +333,7 @@ export const createWindow = async (): Promise<BrowserWindow> => {
         nodeIntegration: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
         nodeIntegrationInWorker: false, // default, see https://www.electronjs.org/docs/latest/tutorial/security#3-enable-context-isolation
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-        sandbox: true,
+        sandbox: true, // default, see https://www.electronjs.org/docs/latest/tutorial/security#4-enable-process-sandboxing
       },
     })
     mainWindowId = mainWindow.id
@@ -366,9 +367,9 @@ export const getMainWindow = (): null | BrowserWindow => {
   return BrowserWindow.fromId(mainWindowId)
 }
 
-// see https://www.electronjs.org/docs/latest/tutorial/security#17-validate-the-sender-of-all-ipc-messages
 // The packaged renderer has a real host to compare (see
 // src/utilities/rendererProtocol.ts) — a file:// frame has none
+// See https://www.electronjs.org/docs/latest/tutorial/security#17-validate-the-sender-of-all-ipc-messages
 export const validateSender = (frame: WebFrameMain) => {
   const frameHost = new URL(frame.url).host
   const mainHost = new URL(MAIN_WINDOW_WEBPACK_ENTRY).host
