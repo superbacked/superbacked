@@ -15,6 +15,10 @@ This guide walks through installing and running Superbacked on macOS. Superbacke
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 
+## Requirements
+
+- macOS 13 or later
+
 ## Setup guide
 
 ### Step 1: download Superbacked
