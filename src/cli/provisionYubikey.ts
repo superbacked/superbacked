@@ -1,3 +1,5 @@
+import { program as cli } from "commander"
+
 import confirmYes, { CancelledError } from "@/src/cli/utilities/confirmYes"
 import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
 import { promptHidden } from "@/src/cli/utilities/readPassphrase"
@@ -78,6 +80,13 @@ export const provisionYubikeyAction = async (options: {
   slot: "1" | "2"
   touch: boolean
 }): Promise<void> => {
+  // Provisioning derives nothing, so the root flag has no effect here —
+  // refuse it rather than discard it silently (see the root action in
+  // src/index.ts)
+  if (cli.opts().paranoid === true) {
+    console.error("Error: Unknown option: --paranoid")
+    process.exit(1)
+  }
   try {
     const slot: Slot = options.slot === "1" ? 1 : 2
     if (isSuperbackedOs() === false) {

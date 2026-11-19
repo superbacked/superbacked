@@ -76,9 +76,9 @@ cli.version(app.getVersion(), "--version", "output version")
 
 cli.helpOption("-h, --help", "display help")
 
-// Root so the mode reads as app-wide, like the Settings toggle — creation
-// and derivation stretch at the paranoid profile and restoration trials
-// it (see src/shared/kdfProfiles.ts)
+// Root so one flag serves every command, the way the Settings toggle
+// serves the app — creation and derivation stretch at the paranoid
+// profile and restoration trials it (see src/shared/kdfProfiles.ts)
 cli.option(
   "--paranoid",
   "harden key derivation (requires at least 1 GiB of memory and --paranoid to restore or derive again)"
@@ -351,6 +351,14 @@ export const validateSender = (frame: WebFrameMain) => {
 
 // Run Electron app
 cli.option("--no-sandbox", "disable sandbox").action(() => {
+  // The flag belongs to the commands — the app follows the persisted
+  // kdfProfile setting (see src/utilities/config.ts) — so a launch
+  // without a command refuses it rather than discarding it silently
+  if (cli.opts().paranoid === true) {
+    console.error("Error: --paranoid requires a command")
+    process.exit(1)
+  }
+
   setMenu()
 
   app.on("activate", async () => {
