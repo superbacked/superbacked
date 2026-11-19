@@ -38,6 +38,7 @@ import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"
+import { isPermissionAllowed } from "@/src/utilities/permissions"
 import {
   isRendererUrl,
   rendererScheme,
@@ -438,6 +439,35 @@ cli.option("--no-sandbox", "disable sandbox").action(() => {
         /^devtools:\/\//.test(details.url)
       callback({ cancel: !allowed })
     })
+    // Permissions default to granted for any page that asks. Only our own
+    // renderer can ask here, and it gets exactly what it uses (see
+    // src/utilities/permissions.ts); the check handler answers the
+    // synchronous queries (device enumeration, clipboard checks) from the
+    // same table.
+    // See https://www.electronjs.org/docs/latest/tutorial/security#5-handle-session-permission-requests-from-remote-content
+    session.defaultSession.setPermissionRequestHandler(
+      (webContents, permission, callback, details) => {
+        const mediaTypes =
+          "mediaTypes" in details ? (details.mediaTypes ?? []) : []
+        callback(
+          validateSender(webContents.mainFrame) === true &&
+            isPermissionAllowed(permission, mediaTypes)
+        )
+      }
+    )
+    session.defaultSession.setPermissionCheckHandler(
+      (webContents, permission, _requestingOrigin, details) => {
+        if (webContents === null) {
+          return false
+        }
+        const mediaTypes =
+          details.mediaType === undefined ? [] : [details.mediaType]
+        return (
+          validateSender(webContents.mainFrame) === true &&
+          isPermissionAllowed(permission, mediaTypes)
+        )
+      }
+    )
     await createWindow()
   })
 
