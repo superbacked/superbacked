@@ -4,7 +4,7 @@ import { dirname, resolve } from "path"
 import { program as cli } from "commander"
 
 import { CancelledError } from "@/src/cli/utilities/confirmYes"
-import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
+import { errorText, localeText } from "@/src/cli/utilities/localeText"
 import { gatePassphrase } from "@/src/cli/utilities/passphraseGate"
 import readPassphrase from "@/src/cli/utilities/readPassphrase"
 import { red } from "@/src/cli/utilities/style"
@@ -27,7 +27,7 @@ const parseSlot = (options: {
 }
 
 const printTouchNotice = (): void => {
-  console.error(touchYubiKeyText)
+  console.error(localeText("common.touchYubiKey"))
 }
 
 // YubiKey failures travel through handler results as codes — rethrown as
@@ -77,7 +77,7 @@ export const createStandaloneArchiveAction = async (
     // archive forever
     const passphrase = await readPassphrase(true)
     if (passphrase === "") {
-      throw new Error("Passphrase required")
+      throw new Error(localeText("common.passphraseRequired"))
     }
     // The memorized passphrase stays the knowledge factor even with
     // --yubikey (a leaked slot secret leaves its strength as the only
@@ -108,7 +108,12 @@ export const createStandaloneArchiveAction = async (
       console.error(error.message)
     } else {
       console.error(
-        red(errorText(error, "Could not create standalone archive"))
+        red(
+          errorText(
+            error,
+            localeText("components.fileManager.couldNotCreateStandaloneArchive")
+          )
+        )
       )
     }
     process.exit(1)
@@ -136,7 +141,7 @@ export const restoreStandaloneArchiveAction = async (
     }
     const passphrase = await readPassphrase(false)
     if (passphrase === "") {
-      throw new Error("Passphrase required")
+      throw new Error(localeText("common.passphraseRequired"))
     }
     const result = await restoreStandaloneArchive(
       archivePath,
@@ -152,7 +157,14 @@ export const restoreStandaloneArchiveAction = async (
     process.stdout.write(`${destination}\n`)
     process.exit(0)
   } catch (error) {
-    console.error(red(errorText(error, "Could not restore standalone archive")))
+    console.error(
+      red(
+        errorText(
+          error,
+          localeText("components.fileManager.couldNotRestoreStandaloneArchive")
+        )
+      )
+    )
     process.exit(1)
   }
 }

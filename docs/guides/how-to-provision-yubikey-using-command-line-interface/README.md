@@ -35,12 +35,10 @@ The YubiKey needs to be provisioned once with a challenge-response secret — th
 
 ```console
 $ superbacked provision-yubikey --generate
-Provisioning YubiKey exposes challenge-response secret to this computer.
-For high-stakes secrets, provision YubiKey using Superbacked OS (https://superbacked.com/superbacked-os).
+Provisioning YubiKey exposes challenge-response secret to this computer — for high-stakes secrets, provision YubiKey using Superbacked OS.
 Do you wish to continue (yes or no)? yes
 YubiKey detected
-The generated challenge-response secret is displayed once and cannot be read back from the YubiKey.
-Use a block to back up the secret or provision another YubiKey with the same secret — without either, everything relying on that secret is unrecoverable if the YubiKey is lost or broken.
+Challenge-response secret cannot be read back from YubiKey — use block to back up secret or provision another YubiKey with the same secret. Without either, everything relying on that secret is unrecoverable if YubiKey is lost or broken.
 Do you wish to continue (yes or no)? yes
 Touch YubiKey…
 Slot 2 provisioned for challenge-response
@@ -63,8 +61,7 @@ Provision another YubiKey with the same challenge-response secret so either one 
 
 ```console
 $ superbacked provision-yubikey
-Provisioning YubiKey exposes challenge-response secret to this computer.
-For high-stakes secrets, provision YubiKey using Superbacked OS (https://superbacked.com/superbacked-os).
+Provisioning YubiKey exposes challenge-response secret to this computer — for high-stakes secrets, provision YubiKey using Superbacked OS.
 Do you wish to continue (yes or no)? yes
 YubiKey detected
 Challenge-response secret (40-character hex):

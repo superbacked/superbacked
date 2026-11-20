@@ -156,7 +156,7 @@ cli
 cli
   .command("provision-yubikey")
   .description("provision YubiKey slot with challenge-response secret")
-  .option("-g, --generate", "generate secret and print it to stdout")
+  .option("-g, --generate", "generate and print challenge-response secret")
   .addOption(
     new CommanderOption("-s, --slot <slot>", "slot to provision")
       .choices(["1", "2"])
