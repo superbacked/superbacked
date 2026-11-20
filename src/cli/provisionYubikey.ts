@@ -43,10 +43,12 @@ const readSecret = async (): Promise<string> => {
       "hex"
     )
   }
-  const secret = await promptHidden("Secret (40-character hex): ")
-  const confirmation = await promptHidden("Confirm secret: ")
+  const secret = await promptHidden(
+    "Challenge-response secret (40-character hex): "
+  )
+  const confirmation = await promptHidden("Confirm challenge-response secret: ")
   if (timingSafeEqualStrings(secret, confirmation) === false) {
-    throw new Error("Secrets do not match")
+    throw new Error("Challenge-response secrets do not match")
   }
   return parseYubiKeySecret(secret).toString("hex")
 }
@@ -94,7 +96,7 @@ export const provisionYubikeyAction = async (options: {
       // the host — recommend the air-gapped, amnesic environment
       await confirmYes(
         red(
-          "Provisioning exposes YubiKey secret to this computer.\n" +
+          "Provisioning YubiKey exposes challenge-response secret to this computer.\n" +
             "For high-stakes secrets, provision YubiKey using Superbacked OS (https://superbacked.com/superbacked-os)."
         ) + "\nDo you wish to continue (yes or no)? ",
         "Provisioning a YubiKey on this computer requires interactive confirmation"
@@ -127,10 +129,10 @@ export const provisionYubikeyAction = async (options: {
       // Red like the app’s result step: ignoring it means permanent loss
       await confirmYes(
         red(
-          "The generated secret is displayed once and cannot be read back from the YubiKey.\n" +
-            "Use a block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on this secret is unrecoverable if the YubiKey is lost or broken."
+          "The generated challenge-response secret is displayed once and cannot be read back from the YubiKey.\n" +
+            "Use a block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on that secret is unrecoverable if the YubiKey is lost or broken."
         ) + "\nDo you wish to continue (yes or no)? ",
-        "Provisioning with a generated secret requires interactive confirmation"
+        "Provisioning with a generated challenge-response secret requires interactive confirmation"
       )
     }
     const result = await provisionYubiKey(
@@ -144,13 +146,13 @@ export const provisionYubikeyAction = async (options: {
     if (result.success === false) {
       throw resultError(result)
     }
-    console.error(`Slot ${slot} provisioned for HMAC-SHA1 challenge-response`)
+    console.error(`Slot ${slot} provisioned for challenge-response`)
     if (options.generate === true) {
       // The generated secret is required to program backup YubiKeys — the
       // label goes to stderr so piped stdout carries only the secret, and
       // only when the secret lands on the terminal beside it
       if (process.stdout.isTTY === true) {
-        process.stderr.write("Secret: ")
+        process.stderr.write("Challenge-response secret: ")
       }
       process.stdout.write(`${result.secret}\n`)
     }

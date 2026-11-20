@@ -27,8 +27,8 @@
     "insert": {
       "bip39Mnemonic": "BIP39 mnemonic",
       "bip39Passphrase": "BIP39 passphrase",
+      "effPassphrase": "EFF passphrase",
       "insert": "Insert",
-      "passphrase": "EFF passphrase",
       "scanQrCode": "Scan QR code"
     },
     "view": {
@@ -264,7 +264,7 @@
     "yubiKeyProvisioningRejected": "YubiKey rejected provisioning — slot may be protected by an access code",
     "yubiKeySlotNotProvisioned": "YubiKey slot not provisioned for challenge-response",
     "yubiKeyTouchTimedOut": "YubiKey touch timed out",
-    "yubiKeyVerificationFailed": "YubiKey verification failed — slot response does not match secret"
+    "yubiKeyVerificationFailed": "YubiKey verification failed — slot response does not match challenge-response secret"
   },
   "routes": {
     "create": {
@@ -331,7 +331,7 @@
     },
     "duplicate": { "couldNotDuplicateBlock": "Could not duplicate block" },
     "provisionYubiKey": {
-      "secretInvalid": "Secret must be 40 hexadecimal characters",
+      "challengeResponseSecretInvalid": "Challenge-response secret must be 40 hexadecimal characters",
       "couldNotProvisionYubiKey": "Could not provision YubiKey",
       "enableOtpInterface": "Enable OTP interface",
       "enableOtpInterfaceDescription": "YubiKey detected but OTP interface is disabled — enabling it restarts YubiKey",
@@ -339,16 +339,16 @@
       "overwriteSlot": "Overwrite slot {{slot}}",
       "overwriteSlotDescription": "Slot {{slot}} is already programmed — overwriting it permanently destroys current secret",
       "overwrite": "Overwrite",
-      "slotProvisioned": "Slot {{slot}} provisioned for HMAC-SHA1 challenge-response",
-      "secretCannotBeReadBack": "Secret cannot be read back from YubiKey — use block that is not YubiKey-protected to back up secret or provision another YubiKey with the same secret. Without either, everything relying on this secret is unrecoverable if YubiKey is lost or broken.",
+      "slotProvisioned": "Slot {{slot}} provisioned for challenge-response",
+      "challengeResponseSecretCannotBeReadBack": "Challenge-response secret cannot be read back from YubiKey — use block that is not YubiKey-protected to back up secret or provision another YubiKey with the same secret. Without either, everything relying on that secret is unrecoverable if YubiKey is lost or broken.",
       "couldNotReadYubiKeyModel": "Could not read YubiKey model ({{reason}})",
       "backUpToBlock": "Back up to block…",
       "provisionToAnotherYubiKey": "Provision to another YubiKey…",
-      "secret": "Secret",
-      "typeSecret": "Type secret…",
+      "challengeResponseSecret": "Challenge-response secret",
+      "typeChallengeResponseSecret": "Type challenge-response secret…",
       "slot": "Slot",
       "provisionYubiKey": "Provision YubiKey",
-      "hostExposureWarning": "Provisioning exposes YubiKey secret to this computer — for high-stakes secrets, provision YubiKey using <anchor><bold>Superbacked OS</bold></anchor>.",
+      "hostExposureWarning": "Provisioning YubiKey exposes challenge-response secret to this computer — for high-stakes secrets, provision YubiKey using <anchor><bold>Superbacked OS</bold></anchor>.",
       "continue": "Continue"
     },
     "restore": {

@@ -220,7 +220,7 @@ export const setMenu = () => {
         },
         {
           enabled: enabledModes.has("insert"),
-          label: t("menu.insert.passphrase"),
+          label: t("menu.insert.effPassphrase"),
           accelerator: runningMacOS ? "Shift+Command+E" : "Shift+Ctrl+E",
           click() {
             const focusedWindow = BrowserWindow.getFocusedWindow()

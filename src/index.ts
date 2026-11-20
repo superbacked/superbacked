@@ -127,10 +127,7 @@ cli
   )
   .option("-f, --force", "overwrite archive if it already exists")
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )
@@ -149,10 +146,7 @@ cli
     "directory archive is extracted to"
   )
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )
@@ -161,9 +155,7 @@ cli
 
 cli
   .command("provision-yubikey")
-  .description(
-    "provision YubiKey slot with HMAC-SHA1 challenge-response credential"
-  )
+  .description("provision YubiKey slot with challenge-response secret")
   .option("-g, --generate", "generate secret and print it to stdout")
   .addOption(
     new CommanderOption("-s, --slot <slot>", "slot to provision")
@@ -220,10 +212,7 @@ cli
     ).choices(["mnemonic", "zprv"])
   )
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )
@@ -266,10 +255,7 @@ cli
   .option("-l, --length <length>", "password length", parseLength, 16)
   .option("-p, --print", "print password instead of copying it to clipboard")
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )
