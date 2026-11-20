@@ -10,8 +10,8 @@ import {
 
 import { t } from "i18next"
 
-// Commented out with the language menu below — see src/i18n.ts.
-// import { locales, resources } from "@/src/i18n"
+// Commented out with the language menu below — see src/shared/i18n.ts.
+// import { locales, resources } from "@/src/shared/i18n"
 // import { locale, setLocale } from "@/src/index"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
@@ -37,7 +37,7 @@ export const setMenu = () => {
   const debuggingModeEnabled = app.isPackaged === false
   // The language menu is commented out while English is the only locale —
   // restore this block, the imports above and the menu item below to
-  // re-enable it (see src/i18n.ts for the kept example language).
+  // re-enable it (see src/shared/i18n.ts for the kept example language).
   // const chooseLanguageSubmenu: MenuItemConstructorOptions[] = []
   // for (const chooseLanguageSubmenuLocale of locales) {
   //   chooseLanguageSubmenu.push({

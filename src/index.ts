@@ -26,15 +26,11 @@ import {
   createStandaloneArchiveAction,
   restoreStandaloneArchiveAction,
 } from "@/src/cli/standaloneArchive"
-import {
-  Locale,
-  defaultLocale,
-  locales,
-  setLocale as setLocaleI18n,
-} from "@/src/i18n"
+import { setLocale as setLocaleI18n } from "@/src/i18n"
 import { attachContextMenu, disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
 import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds"
+import { Locale, defaultLocale, locales } from "@/src/shared/i18n"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"

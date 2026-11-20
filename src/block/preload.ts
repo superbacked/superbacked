@@ -1,7 +1,7 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron"
 
 import { Data } from "@/src/handlers/create"
-import { Locale } from "@/src/i18n"
+import { Locale } from "@/src/shared/i18n"
 import { createEventListener } from "@/src/shared/utilities/createEventListener"
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
 import { invokeSync } from "@/src/utilities/ipc/invokeSync"
