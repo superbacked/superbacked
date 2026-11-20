@@ -342,7 +342,7 @@
       "overwriteSlotDescription": "Le slot {{slot}} est déjà programmé — l’écraser détruit définitivement le secret actuel",
       "overwrite": "Écraser",
       "slotProvisioned": "Slot {{slot}} provisionné pour le défi-réponse",
-      "challengeResponseSecretCannotBeReadBack": "Le secret défi-réponse ne peut pas être relu depuis la YubiKey — utilisez un bloc non protégé par YubiKey pour sauvegarder le secret ou provisionnez une autre YubiKey avec le même secret. Sans l’un ou l’autre, tout ce qui repose sur ce secret est irrécupérable si la YubiKey est perdue ou cassée.",
+      "challengeResponseSecretCannotBeReadBack": "Le secret défi-réponse ne peut pas être relu depuis la YubiKey — utilisez un bloc pour sauvegarder le secret ou provisionnez une autre YubiKey avec le même secret. Sans l’un ou l’autre, tout ce qui repose sur ce secret est irrécupérable si la YubiKey est perdue ou cassée.",
       "couldNotReadYubiKeyModel": "Impossible de lire le modèle de la YubiKey ({{reason}})",
       "backUpToBlock": "Sauvegarder dans un bloc…",
       "provisionToAnotherYubiKey": "Provisionner sur une autre YubiKey…",

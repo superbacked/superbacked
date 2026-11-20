@@ -40,7 +40,7 @@ For high-stakes secrets, provision YubiKey using Superbacked OS (https://superba
 Do you wish to continue (yes or no)? yes
 YubiKey detected
 The generated challenge-response secret is displayed once and cannot be read back from the YubiKey.
-Use a block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on that secret is unrecoverable if the YubiKey is lost or broken.
+Use a block to back up the secret or provision another YubiKey with the same secret — without either, everything relying on that secret is unrecoverable if the YubiKey is lost or broken.
 Do you wish to continue (yes or no)? yes
 Touch YubiKey…
 Slot 2 provisioned for challenge-response

@@ -340,7 +340,7 @@
       "overwriteSlotDescription": "Slot {{slot}} is already programmed — overwriting it permanently destroys current secret",
       "overwrite": "Overwrite",
       "slotProvisioned": "Slot {{slot}} provisioned for challenge-response",
-      "challengeResponseSecretCannotBeReadBack": "Challenge-response secret cannot be read back from YubiKey — use block that is not YubiKey-protected to back up secret or provision another YubiKey with the same secret. Without either, everything relying on that secret is unrecoverable if YubiKey is lost or broken.",
+      "challengeResponseSecretCannotBeReadBack": "Challenge-response secret cannot be read back from YubiKey — use block to back up secret or provision another YubiKey with the same secret. Without either, everything relying on that secret is unrecoverable if YubiKey is lost or broken.",
       "couldNotReadYubiKeyModel": "Could not read YubiKey model ({{reason}})",
       "backUpToBlock": "Back up to block…",
       "provisionToAnotherYubiKey": "Provision to another YubiKey…",

@@ -130,7 +130,7 @@ export const provisionYubikeyAction = async (options: {
       await confirmYes(
         red(
           "The generated challenge-response secret is displayed once and cannot be read back from the YubiKey.\n" +
-            "Use a block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on that secret is unrecoverable if the YubiKey is lost or broken."
+            "Use a block to back up the secret or provision another YubiKey with the same secret — without either, everything relying on that secret is unrecoverable if the YubiKey is lost or broken."
         ) + "\nDo you wish to continue (yes or no)? ",
         "Provisioning with a generated challenge-response secret requires interactive confirmation"
       )
