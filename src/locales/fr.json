@@ -27,8 +27,8 @@
     "insert": {
       "bip39Mnemonic": "Mnémonique BIP39",
       "bip39Passphrase": "Phrase de passe BIP39",
+      "effPassphrase": "Phrase de passe EFF",
       "insert": "Insertion",
-      "passphrase": "Phrase de passe EFF",
       "scanQrCode": "Scanner le code QR"
     },
     "view": {
@@ -264,7 +264,7 @@
     "yubiKeyProvisioningRejected": "La YubiKey a refusé le provisionnement — le slot est peut-être protégé par un code d’accès",
     "yubiKeySlotNotProvisioned": "Slot YubiKey non provisionné pour le défi-réponse",
     "yubiKeyTouchTimedOut": "YubiKey non touchée à temps",
-    "yubiKeyVerificationFailed": "Échec de la vérification de la YubiKey — la réponse du slot ne correspond pas au secret"
+    "yubiKeyVerificationFailed": "Échec de la vérification de la YubiKey — la réponse du slot ne correspond pas au secret défi-réponse"
   },
   "routes": {
     "create": {
@@ -333,7 +333,7 @@
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
     "provisionYubiKey": {
-      "secretInvalid": "Le secret doit comporter 40 caractères hexadécimaux",
+      "challengeResponseSecretInvalid": "Le secret défi-réponse doit comporter 40 caractères hexadécimaux",
       "couldNotProvisionYubiKey": "Impossible de provisionner la YubiKey",
       "enableOtpInterface": "Activer l’interface OTP",
       "enableOtpInterfaceDescription": "YubiKey détectée mais l’interface OTP est désactivée — l’activer redémarre la YubiKey",
@@ -341,16 +341,16 @@
       "overwriteSlot": "Écraser le slot {{slot}}",
       "overwriteSlotDescription": "Le slot {{slot}} est déjà programmé — l’écraser détruit définitivement le secret actuel",
       "overwrite": "Écraser",
-      "slotProvisioned": "Slot {{slot}} provisionné pour le défi-réponse HMAC-SHA1",
-      "secretCannotBeReadBack": "Le secret ne peut pas être relu depuis la YubiKey — utilisez un bloc non protégé par YubiKey pour sauvegarder le secret ou provisionnez une autre YubiKey avec le même secret. Sans l’un ou l’autre, tout ce qui repose sur ce secret est irrécupérable si la YubiKey est perdue ou cassée.",
+      "slotProvisioned": "Slot {{slot}} provisionné pour le défi-réponse",
+      "challengeResponseSecretCannotBeReadBack": "Le secret défi-réponse ne peut pas être relu depuis la YubiKey — utilisez un bloc pour sauvegarder le secret ou provisionnez une autre YubiKey avec le même secret. Sans l’un ou l’autre, tout ce qui repose sur ce secret est irrécupérable si la YubiKey est perdue ou cassée.",
       "couldNotReadYubiKeyModel": "Impossible de lire le modèle de la YubiKey ({{reason}})",
       "backUpToBlock": "Sauvegarder dans un bloc…",
       "provisionToAnotherYubiKey": "Provisionner sur une autre YubiKey…",
-      "secret": "Secret",
-      "typeSecret": "Taper le secret…",
+      "challengeResponseSecret": "Secret défi-réponse",
+      "typeChallengeResponseSecret": "Taper le secret défi-réponse…",
       "slot": "Slot",
       "provisionYubiKey": "Provisionner une YubiKey",
-      "hostExposureWarning": "Le provisionnement expose le secret YubiKey à cet ordinateur — pour les secrets à enjeux élevés, provisionnez la YubiKey en utilisant <anchor><bold>Superbacked OS</bold></anchor>.",
+      "hostExposureWarning": "Le provisionnement de la YubiKey expose le secret défi-réponse à cet ordinateur — pour les secrets à enjeux élevés, provisionnez la YubiKey en utilisant <anchor><bold>Superbacked OS</bold></anchor>.",
       "continue": "Continuer"
     },
     "restore": {

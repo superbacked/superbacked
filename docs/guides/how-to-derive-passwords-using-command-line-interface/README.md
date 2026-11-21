@@ -13,7 +13,7 @@ Pinned:
 
 This guide walks through deriving strong passwords from a memorized label (for example `github` or `proton`), a master passphrase and a YubiKey using the command-line interface — the same password every time, so there is no vault to store, sync or lose.
 
-> Heads-up: a YubiKey provisioned with a challenge-response secret is required — see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md), which also covers backing up the secret.
+> Heads-up: a YubiKey provisioned with a challenge-response secret is required — see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md), which also covers backing up that secret.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 

@@ -28,7 +28,7 @@ Deniability forbids declaring any of this in plaintext — blocks and archives a
 
 Version numbers are per-scheme namespaces counting from 1 — `grep -rn "export const schemeVersion" src` lists them — and the frozen identity strings carry no version suffixes: the version lives in the carrier, so the literals only need distinctness (see the version namespace rules in [src/utilities/crypto/schemeHeader.ts](../../src/utilities/crypto/schemeHeader.ts)).
 
-Paranoid mode derives at the paranoid profile — the app Settings switch or the root `--paranoid` command-line flag — and applies to blocks, blocksets, standalone archives, derived passwords and derived Bitcoin wallets. For stored artifacts the mode also gates restoration; for derived schemes nothing is stored, so the mode is a determinism input — deriving without it silently produces different passwords and different wallets, which is why every derivation prints it.
+Paranoid mode derives at the paranoid profile — the app Settings switch or the root `--paranoid` command-line flag — and applies to blocks, blocksets, standalone archives, derived passwords and Bitcoin wallets. For stored artifacts the mode also gates restoration; for derived schemes nothing is stored, so the mode is a determinism input — deriving without it silently produces different passwords and different wallets, which is why every derivation prints it.
 
 ## Reference artifacts
 

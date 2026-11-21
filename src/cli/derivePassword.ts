@@ -1,7 +1,7 @@
 import { InvalidArgumentError, program as cli } from "commander"
 
 import { CancelledError } from "@/src/cli/utilities/confirmYes"
-import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
+import { errorText, localeText } from "@/src/cli/utilities/localeText"
 import { gatePassphrase } from "@/src/cli/utilities/passphraseGate"
 import readPassphrase, {
   promptVisible,
@@ -91,7 +91,7 @@ export const derivePasswordAction = async (
       options.confirmPassphrase === true
     )
     if (masterPassphrase === "") {
-      throw new Error("Passphrase required")
+      throw new Error(localeText("common.passphraseRequired"))
     }
     // Derivation is stateless, so the mode is part of what the user must
     // know — deriving without it silently produces different passwords,
@@ -117,7 +117,7 @@ export const derivePasswordAction = async (
         paranoid: paranoid,
         yubikey: {
           onTouchRequired: () => {
-            console.error(touchYubiKeyText)
+            console.error(localeText("common.touchYubiKey"))
           },
           slot: slot,
         },

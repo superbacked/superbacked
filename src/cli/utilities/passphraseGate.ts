@@ -1,9 +1,5 @@
 import confirmYes from "@/src/cli/utilities/confirmYes"
-import {
-  useWeakPassphraseText,
-  weakPassphraseAllowedText,
-  weakPassphraseWarningText,
-} from "@/src/cli/utilities/localeText"
+import { localeText } from "@/src/cli/utilities/localeText"
 import { red } from "@/src/cli/utilities/style"
 import {
   paranoidKdfProfile,
@@ -74,10 +70,14 @@ export const gatePassphrase = async (
     // warning — without one the gate refuses, so scripts cannot hang and
     // must state the override explicitly
     await confirmYes(
-      `${red(weakPassphraseWarningText)}\n${useWeakPassphraseText} (yes or no)? `,
+      `${red(localeText("components.weakPassphraseDisclaimerModal.weakPassphraseWarning"))}\n${localeText("components.weakPassphraseDisclaimerModal.useWeakPassphrase")} (yes or no)? `,
       passphraseTooWeakError(options.subject)
     )
   }
   // The override is never silent — the notice mirrors the app’s error
-  console.error(red(weakPassphraseAllowedText))
+  console.error(
+    red(
+      localeText("components.passphraseInputWithStrength.weakPassphraseAllowed")
+    )
+  )
 }

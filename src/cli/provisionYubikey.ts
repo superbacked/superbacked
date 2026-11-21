@@ -1,7 +1,7 @@
 import { program as cli } from "commander"
 
 import confirmYes, { CancelledError } from "@/src/cli/utilities/confirmYes"
-import { errorText, touchYubiKeyText } from "@/src/cli/utilities/localeText"
+import { errorText, localeText } from "@/src/cli/utilities/localeText"
 import { promptHidden } from "@/src/cli/utilities/readPassphrase"
 import { bold, red } from "@/src/cli/utilities/style"
 import {
@@ -43,10 +43,12 @@ const readSecret = async (): Promise<string> => {
       "hex"
     )
   }
-  const secret = await promptHidden("Secret (40-character hex): ")
-  const confirmation = await promptHidden("Confirm secret: ")
+  const secret = await promptHidden(
+    `${localeText("routes.provisionYubiKey.challengeResponseSecret")} (40-character hex): `
+  )
+  const confirmation = await promptHidden("Confirm challenge-response secret: ")
   if (timingSafeEqualStrings(secret, confirmation) === false) {
-    throw new Error("Secrets do not match")
+    throw new Error("Challenge-response secrets do not match")
   }
   return parseYubiKeySecret(secret).toString("hex")
 }
@@ -63,7 +65,7 @@ const enableOtpInterface = async (): Promise<Status> => {
     throw resultError(probe)
   }
   await confirmYes(
-    bold("YubiKey detected but OTP interface is disabled.") +
+    bold(localeText("routes.provisionYubiKey.enableOtpInterfaceDescription")) +
       "\nDo you wish to enable the OTP interface (yes or no)? ",
     "Enabling the OTP interface requires interactive confirmation"
   )
@@ -93,10 +95,8 @@ export const provisionYubikeyAction = async (options: {
       // Provisioning is the only moment the secret exists in plaintext on
       // the host — recommend the air-gapped, amnesic environment
       await confirmYes(
-        red(
-          "Provisioning exposes YubiKey secret to this computer.\n" +
-            "For high-stakes secrets, provision YubiKey using Superbacked OS (https://superbacked.com/superbacked-os)."
-        ) + "\nDo you wish to continue (yes or no)? ",
+        red(localeText("routes.provisionYubiKey.hostExposureWarning")) +
+          "\nDo you wish to continue (yes or no)? ",
         "Provisioning a YubiKey on this computer requires interactive confirmation"
       )
     }
@@ -115,7 +115,9 @@ export const provisionYubikeyAction = async (options: {
     if (provisioned === true) {
       await confirmYes(
         red(
-          `Slot ${slot} is already programmed — overwriting it permanently destroys the current secret.`
+          localeText("routes.provisionYubiKey.overwriteSlotDescription", {
+            slot: slot,
+          })
         ) + `\nDo you wish to overwrite slot ${slot} (yes or no)? `,
         `Slot ${slot} is already programmed (overwriting requires interactive confirmation)`
       )
@@ -127,10 +129,11 @@ export const provisionYubikeyAction = async (options: {
       // Red like the app’s result step: ignoring it means permanent loss
       await confirmYes(
         red(
-          "The generated secret is displayed once and cannot be read back from the YubiKey.\n" +
-            "Use a block that is not YubiKey-protected to back up the secret or provision another YubiKey with the same secret — without either, everything relying on this secret is unrecoverable if the YubiKey is lost or broken."
+          localeText(
+            "routes.provisionYubiKey.challengeResponseSecretCannotBeReadBack"
+          )
         ) + "\nDo you wish to continue (yes or no)? ",
-        "Provisioning with a generated secret requires interactive confirmation"
+        "Provisioning with a generated challenge-response secret requires interactive confirmation"
       )
     }
     const result = await provisionYubiKey(
@@ -138,19 +141,23 @@ export const provisionYubikeyAction = async (options: {
       secret,
       options.touch === true,
       () => {
-        console.error(touchYubiKeyText)
+        console.error(localeText("common.touchYubiKey"))
       }
     )
     if (result.success === false) {
       throw resultError(result)
     }
-    console.error(`Slot ${slot} provisioned for HMAC-SHA1 challenge-response`)
+    console.error(
+      localeText("routes.provisionYubiKey.slotProvisioned", { slot: slot })
+    )
     if (options.generate === true) {
       // The generated secret is required to program backup YubiKeys — the
       // label goes to stderr so piped stdout carries only the secret, and
       // only when the secret lands on the terminal beside it
       if (process.stdout.isTTY === true) {
-        process.stderr.write("Secret: ")
+        process.stderr.write(
+          `${localeText("routes.provisionYubiKey.challengeResponseSecret")}: `
+        )
       }
       process.stdout.write(`${result.secret}\n`)
     }
@@ -159,7 +166,14 @@ export const provisionYubikeyAction = async (options: {
     if (error instanceof CancelledError) {
       console.error(error.message)
     } else {
-      console.error(red(errorText(error, "Could not provision YubiKey")))
+      console.error(
+        red(
+          errorText(
+            error,
+            localeText("routes.provisionYubiKey.couldNotProvisionYubiKey")
+          )
+        )
+      )
     }
     process.exit(1)
   }

@@ -15,7 +15,7 @@ This guide walks through deriving Bitcoin wallets from a memorized label (for ex
 
 > Heads-up: deriving a Bitcoin wallet exposes its private keys to the computer running the command (unlike a signing device, which never releases its seed) and a forgotten label, forgotten passphrase or lost YubiKey secret is unrecoverable. **For amounts you are not willing to lose, use a signing device such as a Trezor.**
 
-> Heads-up: a YubiKey provisioned with a challenge-response secret is required — see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md), which also covers backing up the secret.
+> Heads-up: a YubiKey provisioned with a challenge-response secret is required — see [how to provision YubiKey using command-line interface](../how-to-provision-yubikey-using-command-line-interface/README.md), which also covers backing up that secret.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 

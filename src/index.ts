@@ -26,15 +26,11 @@ import {
   createStandaloneArchiveAction,
   restoreStandaloneArchiveAction,
 } from "@/src/cli/standaloneArchive"
-import {
-  Locale,
-  defaultLocale,
-  locales,
-  setLocale as setLocaleI18n,
-} from "@/src/i18n"
+import { setLocale as setLocaleI18n } from "@/src/i18n"
 import { attachContextMenu, disableModes, setMenu } from "@/src/menu"
 import { registerHandlers, registerSyncHandlers } from "@/src/registerHandlers"
 import { defaultClipboardClearSeconds } from "@/src/shared/clipboardClearSeconds"
+import { Locale, defaultLocale, locales } from "@/src/shared/i18n"
 import { get as getConfig, set as setConfig } from "@/src/utilities/config"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 import { matchesUrlOrigin } from "@/src/utilities/matchesUrlOrigin"
@@ -127,10 +123,7 @@ cli
   )
   .option("-f, --force", "overwrite archive if it already exists")
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )
@@ -149,10 +142,7 @@ cli
     "directory archive is extracted to"
   )
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )
@@ -161,10 +151,8 @@ cli
 
 cli
   .command("provision-yubikey")
-  .description(
-    "provision YubiKey slot with HMAC-SHA1 challenge-response credential"
-  )
-  .option("-g, --generate", "generate secret and print it to stdout")
+  .description("provision YubiKey slot with challenge-response secret")
+  .option("-g, --generate", "generate and print challenge-response secret")
   .addOption(
     new CommanderOption("-s, --slot <slot>", "slot to provision")
       .choices(["1", "2"])
@@ -220,10 +208,7 @@ cli
     ).choices(["mnemonic", "zprv"])
   )
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )
@@ -266,10 +251,7 @@ cli
   .option("-l, --length <length>", "password length", parseLength, 16)
   .option("-p, --print", "print password instead of copying it to clipboard")
   .addOption(
-    new CommanderOption(
-      "-s, --slot <slot>",
-      "HMAC-SHA1 challenge-response slot"
-    )
+    new CommanderOption("-s, --slot <slot>", "challenge-response slot")
       .choices(["1", "2"])
       .default("2")
   )

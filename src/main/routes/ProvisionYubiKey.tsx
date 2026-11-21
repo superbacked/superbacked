@@ -112,7 +112,7 @@ const ProvisionYubiKey: FunctionComponent = () => {
     validate: {
       secret: (value) => {
         if (isYubiKeySecret(normalizeYubiKeySecret(value)) === false) {
-          return t("routes.provisionYubiKey.secretInvalid")
+          return t("routes.provisionYubiKey.challengeResponseSecretInvalid")
         }
         return null
       },
@@ -327,7 +327,7 @@ const ProvisionYubiKey: FunctionComponent = () => {
         </Text>
         <Space h="lg" />
         <Text c="red" size="sm" ta="center">
-          {t("routes.provisionYubiKey.secretCannotBeReadBack")}
+          {t("routes.provisionYubiKey.challengeResponseSecretCannotBeReadBack")}
         </Text>
         {result.labelError !== null ? (
           <Fragment>
@@ -397,7 +397,7 @@ const ProvisionYubiKey: FunctionComponent = () => {
           ref={secretInputRef}
           autosize
           disabled={isProvisioning || restoredSecret !== null}
-          label={t("routes.provisionYubiKey.secret")}
+          label={t("routes.provisionYubiKey.challengeResponseSecret")}
           maxRows={2}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
@@ -405,7 +405,7 @@ const ProvisionYubiKey: FunctionComponent = () => {
               event.currentTarget.form?.requestSubmit()
             }
           }}
-          placeholder={t("routes.provisionYubiKey.typeSecret")}
+          placeholder={t("routes.provisionYubiKey.typeChallengeResponseSecret")}
           required
           rightSection={
             <ActionIcon

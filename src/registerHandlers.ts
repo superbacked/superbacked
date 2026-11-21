@@ -40,9 +40,9 @@ import {
   provisionYubiKey,
   readYubiKeyModel,
 } from "@/src/handlers/yubikeyProvisioning"
-import { Locale } from "@/src/i18n"
 import { locale } from "@/src/index"
 import { disableModes, enableModes } from "@/src/menu"
+import { Locale } from "@/src/shared/i18n"
 import { TranslationKey } from "@/src/shared/types/i18n"
 import {
   get as getConfig,
