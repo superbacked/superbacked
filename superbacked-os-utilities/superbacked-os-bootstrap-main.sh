@@ -278,10 +278,76 @@ printf "%s\n" "Configuring udev rules…"
 # Internal disks are invisible to the desktop: USB drives are the only
 # user-facing storage on Superbacked OS, and offering to mount internal
 # disks with one click would invite the persistence and exfiltration
-# risks the OS exists to prevent. udisks skips devices marked
-# UDISKS_IGNORE, which hides them from Files and the dock alike.
+# risks the OS exists to prevent. udisks republishes UDISKS_IGNORE as
+# the block’s HintIgnore and gvfs, which lists drives for Files and the
+# dock alike, shows no block carrying it — a presentation hint only,
+# udisksctl keeps working.
+#
+# “USB-attached” is decided by ancestry (SUBSYSTEMS walks the sysfs
+# parents, so a partition qualifies through its disk), not by ID_BUS:
+# udev probes a non-removable USB disk — a SATA SSD or HDD in an
+# enclosure — with ata_id before usb_id and ends up with ID_BUS=ata,
+# which a match on ID_BUS=usb mistook for an internal disk. Devices
+# udev creates rather than discovers have no ancestors: an unlocked
+# LUKS volume or an LVM volume is a device-mapper device whose only
+# link to hardware is the devices it sits on (its sysfs slaves), so a
+# helper reads the marker this file set on those and lets the mapper
+# device inherit it — all of them must be USB-attached, and gvfs hides
+# a LUKS volume whenever its unlocked side is hidden, so without this
+# unlocking from Files made the volume vanish. Device-mapper raises
+# DM_UDEV_DISABLE_OTHER_RULES_FLAG while a device is being set up or
+# is suspended (the convention foreign rules follow, see 10-dm.rules);
+# the helper is not run then and the device stays hidden until the
+# “change” event that marks it ready. Dry-run with
+# udevadm test /sys/class/block/<device>.
+mkdir --parents /usr/local/lib/superbacked
+
+tee /usr/local/lib/superbacked/superbacked-dm-on-usb > /dev/null << 'EOF'
+#! /bin/bash
+
+# Reports whether a device-mapper device sits only on USB-attached
+# devices, for 99-superbacked-ignore-internal-disks.rules. Reads the
+# SUPERBACKED_USB_BACKED marker that rule set on each underlying device
+# back from the udev database, so a mapper device stacked on another
+# (LUKS on LVM) inherits the answer. Exits 0 when every underlying
+# device is USB-attached, 1 otherwise — including when the device has
+# no table yet. Absolute paths throughout: udev spawns helpers without
+# PATH.
+# Usage: superbacked-dm-on-usb <devpath>
+
+if [ -z "${1}" ]; then
+  printf "%s\n" "Error: devpath is required" >&2
+  exit 1
+fi
+
+found=false
+
+for slave in "/sys${1}/slaves/"*; do
+  if [ ! -e "${slave}" ]; then
+    exit 1
+  fi
+  slave="$(/usr/bin/readlink --canonicalize "${slave}")"
+  if ! /usr/bin/udevadm info --path="${slave}" --query=property \
+    | /usr/bin/grep --line-regexp --quiet "SUPERBACKED_USB_BACKED=1"; then
+    exit 1
+  fi
+  found=true
+done
+
+if [ "${found}" = false ]; then
+  exit 1
+fi
+EOF
+
+chmod +x /usr/local/lib/superbacked/superbacked-dm-on-usb
+
 tee /etc/udev/rules.d/99-superbacked-ignore-internal-disks.rules > /dev/null << 'EOF'
-SUBSYSTEM=="block", ENV{ID_BUS}!="usb", ENV{UDISKS_IGNORE}="1"
+# USB-attached disks and their partitions
+SUBSYSTEM=="block", SUBSYSTEMS=="usb", ENV{SUPERBACKED_USB_BACKED}="1"
+# Device-mapper devices (unlocked LUKS volumes, LVM) inherit from the devices they sit on
+SUBSYSTEM=="block", KERNEL=="dm-*", ENV{DM_UDEV_DISABLE_OTHER_RULES_FLAG}!="1", PROGRAM="/usr/local/lib/superbacked/superbacked-dm-on-usb %p", ENV{SUPERBACKED_USB_BACKED}="1"
+# Everything else is internal
+SUBSYSTEM=="block", ENV{SUPERBACKED_USB_BACKED}!="1", ENV{UDISKS_IGNORE}="1"
 EOF
 
 # The boot drive is not user-facing storage either: its SUPERBACKED
