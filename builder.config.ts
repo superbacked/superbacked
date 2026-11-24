@@ -1,5 +1,8 @@
+import { rename } from "fs/promises"
+import { basename, dirname, extname, join } from "path"
+
 import { config as dotenvConfig } from "dotenv"
-import { Configuration } from "electron-builder"
+import { Arch, Configuration } from "electron-builder"
 
 dotenvConfig({ path: ".env.production" })
 
@@ -24,6 +27,25 @@ const files = [
 
 const config: Configuration = {
   appId: "com.superbacked.app",
+  // electron-builder expands ${arch} to the packaging convention of
+  // each target (amd64 for the x64 deb, x86_64 for the x64 AppImage) —
+  // release assets and the Superbacked OS build (which installs
+  // superbacked-x64-<version>.deb) expect the same arch names on every
+  // platform, so artifacts are renamed to the builder arch once written
+  // (a no-op where the names already agree, such as arm64).
+  artifactBuildCompleted: async (event) => {
+    if (event.arch === null) {
+      return
+    }
+    const extension = extname(event.file)
+    const file = `superbacked-${Arch[event.arch]}-${event.packager.appInfo.version}${extension}`
+    if (basename(event.file) === file) {
+      return
+    }
+    const path = join(dirname(event.file), file)
+    await rename(event.file, path)
+    event.file = path
+  },
   artifactName: "superbacked-${arch}-${version}.${ext}",
   asarUnpack: [
     "**/bin/**/*",

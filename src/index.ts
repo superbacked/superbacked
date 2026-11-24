@@ -66,6 +66,20 @@ if (app.isPackaged) {
   process.noDeprecation = true
 }
 
+// KDE Plasma’s “Application menus daemon” owns the D-Bus menu registrar
+// (com.canonical.AppMenu.Registrar), so Electron exports the menu to it
+// and drops the in-window bar — but Plasma never shows a menu exported
+// by an Xwayland window (see electron/electron#34335), leaving the app
+// with no menu and no menu shortcuts at all on a Plasma Wayland session.
+// Electron reads this variable when the menu is set (see
+// ShouldUseGlobalMenuBar in shell/browser/ui/x/x_window_utils.cc), so
+// setting it here holds on every launch path and keeps the bar in the
+// window on every Linux desktop — which is where native Wayland, having
+// no global menu path, already puts it
+if (process.platform === "linux") {
+  process.env.ELECTRON_FORCE_WINDOW_MENU_BAR = "1"
+}
+
 // Superbacked OS is Wayland-only and every bundled app pins Wayland: the
 // desktop entry sets ELECTRON_OZONE_PLATFORM_HINT, but a terminal launch
 // inherits the session’s DISPLAY and Chromium would reach for Xwayland,
