@@ -1,12 +1,13 @@
-import { Modal, NumberInput, Space, Switch, Text } from "@mantine/core"
+import { Modal, Select, Space, Switch, Text } from "@mantine/core"
+import { notifications } from "@mantine/notifications"
 import { Fragment, FunctionComponent, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import { kdfProfileChangedEvent } from "@/src/main/utilities/useActiveKdfProfile"
 import {
+  clipboardClearSecondsOptions,
   defaultClipboardClearSeconds,
-  maximumClipboardClearSeconds,
-  minimumClipboardClearSeconds,
+  nearestClipboardClearSeconds,
 } from "@/src/shared/clipboardClearSeconds"
 
 const Settings: FunctionComponent = () => {
@@ -17,13 +18,29 @@ const Settings: FunctionComponent = () => {
   const [paranoid, setParanoid] = useState(
     () => window.api.invokeSync.getConfig("kdfProfile") === "paranoid"
   )
-  const [clipboardClearSeconds, setClipboardClearSeconds] = useState<
-    number | string
-  >(
-    () =>
-      window.api.invokeSync.getConfig("clipboardClearSeconds") ??
-      defaultClipboardClearSeconds
+  // Snapped to a dropdown choice for a value the 2.2.0 config migration
+  // has not seen yet (see src/utilities/config.ts) — development builds
+  // run at the previous version, so the migration has not fired there
+  const [clipboardClearSeconds, setClipboardClearSeconds] = useState(() =>
+    String(
+      nearestClipboardClearSeconds(
+        window.api.invokeSync.getConfig("clipboardClearSeconds") ??
+          defaultClipboardClearSeconds
+      )
+    )
   )
+  const [disableBlockBranding, setDisableBlockBranding] = useState(
+    () => window.api.invokeSync.getConfig("disableBlockBranding") === true
+  )
+  // Fixed id so rapid toggles share one toast instead of stacking —
+  // Mantine ignores show while that id is visible, so the toast simply
+  // runs out its default auto-close
+  const showSaved = () => {
+    notifications.show({
+      id: "settingsSaved",
+      message: t("components.settings.saved"),
+    })
+  }
   useEffect(() => {
     const removeListener = window.api.events.menuSettings(() => {
       setOpened(true)
@@ -45,38 +62,58 @@ const Settings: FunctionComponent = () => {
       zIndex={400}
     >
       {/* Applies to app copies only — the command-line interface reads
-          its --clear flags (see src/utilities/config.ts). Clearing the
-          field restores the shared default rather than storing one */}
-      <NumberInput
-        allowDecimal={false}
-        allowNegative={false}
-        // Clamping on blur, not per keystroke — with a minimum above 9,
-        // strict clamping rejects the first digit of every entry (a
-        // lone “6” on the way to “60” is below the minimum), making the
-        // field impossible to retype
-        clampBehavior="blur"
+          its --clear flags (see src/utilities/config.ts) */}
+      <Select
+        allowDeselect={false}
+        // The dropdown portals to the body at Mantine’s popover layer
+        // (300), under this modal (400) — lifted to the notifications
+        // layer so it opens above the modal
+        comboboxProps={{ keepMounted: false, zIndex: 450 }}
+        data={clipboardClearSecondsOptions.map((seconds) => ({
+          label: `${seconds} ${t("components.settings.seconds")}`,
+          value: String(seconds),
+        }))}
         label={t("components.settings.clearClipboardAfter")}
-        max={maximumClipboardClearSeconds}
-        min={minimumClipboardClearSeconds}
-        suffix={` ${t("components.settings.seconds")}`}
         onChange={(value) => {
-          setClipboardClearSeconds(value)
-          // Persist only settled in-range values — intermediate
-          // keystrokes fall outside the bounds the config schema
-          // enforces; the blur clamp re-fires onChange with the final
-          // value
-          if (
-            typeof value === "number" &&
-            value >= minimumClipboardClearSeconds &&
-            value <= maximumClipboardClearSeconds
-          ) {
-            window.api.invokeSync.setConfig("clipboardClearSeconds", value)
-          } else if (value === "") {
-            window.api.invokeSync.unsetConfig("clipboardClearSeconds")
+          if (value === null) {
+            return
           }
+          setClipboardClearSeconds(value)
+          window.api.invokeSync.setConfig(
+            "clipboardClearSeconds",
+            Number(value)
+          )
+          showSaved()
         }}
         value={clipboardClearSeconds}
       />
+      <Space h="lg" />
+      {/* Read by the block renderer at creation, duplication and print
+          time (see src/handlers/create.ts), so the toggle applies to the
+          next block rendered — never to blocks already on screen */}
+      <Switch
+        checked={disableBlockBranding}
+        label={t("components.settings.disableBlockBranding")}
+        onChange={(event) => {
+          const checked = event.currentTarget.checked
+          setDisableBlockBranding(checked)
+          window.api.invokeSync.setConfig("disableBlockBranding", checked)
+          showSaved()
+        }}
+        withThumbIndicator={false}
+      />
+      {disableBlockBranding === true ? (
+        <Fragment>
+          <Space h="sm" />
+          <Text c="dimmed" size="xs">
+            {t("components.settings.disableBlockBrandingDescription", {
+              // Quoted from the block’s own string so the description
+              // cannot drift from what is printed
+              notice: t("block.importantDocumentDoNotDiscard"),
+            })}
+          </Text>
+        </Fragment>
+      ) : null}
       <Space h="lg" />
       <Switch
         checked={paranoid}
@@ -91,6 +128,7 @@ const Settings: FunctionComponent = () => {
           // Creation surfaces re-read the profile so the estimator and
           // gate follow the toggle immediately (see useActiveKdfProfile)
           window.dispatchEvent(new Event(kdfProfileChangedEvent))
+          showSaved()
         }}
         withThumbIndicator={false}
       />

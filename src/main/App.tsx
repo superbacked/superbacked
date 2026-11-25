@@ -593,8 +593,9 @@ const App = () => {
         {/* The width is a wrap ceiling, not a toast width — toasts fit
             their content (see the Notification theme entry), and 500
             keeps the clipboard-clearing message on one line in both
-            locales */}
-        <Notifications containerWidth={500} />
+            locales. Layered above Settings (400), which fires a saved
+            toast while open, and below Loading (500) and About (1000) */}
+        <Notifications containerWidth={500} zIndex={450} />
       </MantineProvider>
     </MantineEmotionProvider>
   )

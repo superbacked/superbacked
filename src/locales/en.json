@@ -53,8 +53,11 @@
       "settings": "Settings",
       "clearClipboardAfter": "Clear clipboard after",
       "seconds": "seconds",
+      "disableBlockBranding": "Disable Superbacked branding on blocks",
+      "saved": "Saved",
+      "disableBlockBrandingDescription": "Blocks are rendered without “{{notice}}” notice, superbacked.com/recover and Superbacked logo.",
       "paranoidMode": "Enable paranoid mode",
-      "paranoidModeDescription": "Blocks and standalone archives are created with hardened key derivation (10× standard cost). Restoring them requires paranoid mode and at least 1 GiB of free memory, and takes several seconds per attempt."
+      "paranoidModeDescription": "Restoring requires paranoid mode, at least 1 GiB of free memory and several seconds per attempt."
     },
     "addSecretDisclaimerModal": {
       "add": "Add",

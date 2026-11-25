@@ -29,7 +29,7 @@ When you create a block, the app:
 1. Takes one or more secrets — as many as fit the block — each with its own passphrase (optionally [YubiKey-protected](#yubikey-second-factor)) and an optional label.
 2. Derives a key from each passphrase (see [Key derivation](#key-derivation)), prepends the 8-byte [scheme header](../../src/utilities/crypto/schemeHeader.ts) to each secret’s message, then encrypts the secrets using [fixed-size encryption](fixed-size-encryption.md).
 3. Serializes the fixed-size encryption output as a JSON payload.
-4. Encodes the payload as a QR code and renders the block — a 4×6-inch card carrying the QR code alongside a label and a short hash — printed or saved as a JPG or PDF file.
+4. Encodes the payload as a QR code and renders the block — a 4×6-inch card carrying the QR code alongside a label and a short hash, and Superbacked branding (the “Important document, do not discard” notice, superbacked.com/recover and the logo) unless the “Disable Superbacked branding on blocks” setting is enabled — printed or saved as a JPG or PDF file.
 
 ## Encryption
 

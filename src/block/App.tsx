@@ -162,11 +162,15 @@ const BlockContent: FunctionComponent<{ data: Data; t: TFunction }> = ({
       {data.shortHash}
       {data.label ? ` ${data.label}` : null}
     </Hash>
-    <Disclaimer>{t("block.importantDocumentDoNotDiscard")}</Disclaimer>
-    <Recover>superbacked.com/recover</Recover>
-    <LogoContainer>
-      <Logo width="0.5in" height="0.5in" />
-    </LogoContainer>
+    {data.disableBranding !== true ? (
+      <>
+        <Disclaimer>{t("block.importantDocumentDoNotDiscard")}</Disclaimer>
+        <Recover>superbacked.com/recover</Recover>
+        <LogoContainer>
+          <Logo width="0.5in" height="0.5in" />
+        </LogoContainer>
+      </>
+    ) : null}
   </>
 )
 
