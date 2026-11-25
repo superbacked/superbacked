@@ -1,6 +1,7 @@
 import { Global, css } from "@emotion/react"
 import {
   ActionIcon,
+  Button,
   Input,
   MantineProvider,
   MantineTheme,
@@ -21,12 +22,14 @@ import Disclaimer from "@/src/main/components/Disclaimer"
 import MenuEvents, {
   MenuEventsContextConsumer,
 } from "@/src/main/components/MenuEvents"
+import NavigationMenu from "@/src/main/components/NavigationMenu"
 import SelectionAsQrCode from "@/src/main/components/SelectionAsQrCode"
 import Settings from "@/src/main/components/Settings"
 import TitleBar from "@/src/main/components/TitleBar"
 import { Api } from "@/src/main/preload"
 import Create from "@/src/main/routes/Create"
 import Duplicate from "@/src/main/routes/Duplicate"
+import Home from "@/src/main/routes/Home"
 import ProvisionYubiKey from "@/src/main/routes/ProvisionYubiKey"
 import Restore from "@/src/main/routes/Restore"
 
@@ -166,8 +169,35 @@ const App = () => {
                   color: "var(--mantine-color-text)",
                 },
               },
+              // The input sizes take the input heights (see the Input
+              // theme entry below), so an icon button beside a button or
+              // an input of the same size is level with it
+              vars: (_theme, props) => {
+                if (
+                  typeof props.size === "string" &&
+                  props.size.startsWith("input-")
+                ) {
+                  return {
+                    root: {
+                      "--ai-size": getSize(
+                        props.size.slice("input-".length),
+                        "sb-input-height"
+                      ),
+                    },
+                  }
+                }
+                return { root: {} }
+              },
             }),
             CloseButton: {
+              // Round like the corner button and the scanner’s floating
+              // controls, so every top-right dismiss or menu control
+              // shares one shape — visible on hover and focus only, as
+              // the button has no background at rest. Reaches modal
+              // headers, notifications and the file list alike
+              defaultProps: {
+                radius: "xl",
+              },
               styles: {
                 root: {
                   color: "var(--mantine-color-text)",
@@ -184,9 +214,25 @@ const App = () => {
                 },
               },
             },
-            Button: {
+            Button: Button.extend({
               defaultProps: {
                 loaderProps: { color: "currentColor" },
+              },
+              // Buttons take the input heights of the same size (see the
+              // Input theme entry below), so a size is a size for both —
+              // an sm button is level with the sm input every form uses.
+              // Icon buttons beside a button use the matching input size
+              // (see ActionIcon above)
+              vars: (_theme, props) => {
+                const size = props.size ?? "sm"
+                if (typeof size === "string" && size.includes("compact")) {
+                  return { root: {} }
+                }
+                return {
+                  root: {
+                    "--button-height": getSize(size, "sb-input-height"),
+                  },
+                }
               },
               styles: (theme: MantineTheme) => ({
                 root: {
@@ -217,7 +263,7 @@ const App = () => {
                   },
                 },
               }),
-            },
+            }),
             Input: Input.extend({
               // Default props.size to "sm" because Mantine’s getSize() returns
               // undefined for undefined size — leaving --input-padding-y unset
@@ -318,6 +364,11 @@ const App = () => {
                   color: "var(--mantine-color-text)",
                   borderRadius: "var(--mantine-radius-sm)",
                   "--menu-item-hover": "var(--mantine-color-dark-7)",
+                },
+                // The dropdown’s own border rather than dark-4, which
+                // reads as a rule across the dark-7 surface
+                divider: {
+                  borderColor: "var(--sb-border)",
                 },
               },
             },
@@ -510,20 +561,25 @@ const App = () => {
                 return (
                   <Fragment>
                     <Routes>
-                      <Route path="/" element={<Create key={context.key} />} />
+                      <Route path="/" element={<Home key={context.key} />} />
                       <Route
-                        path="/duplicate"
-                        element={<Duplicate key={context.key} />}
+                        path="/create"
+                        element={<Create key={context.key} />}
                       />
                       <Route
                         path="/restore"
                         element={<Restore key={context.key} />}
                       />
                       <Route
+                        path="/duplicate"
+                        element={<Duplicate key={context.key} />}
+                      />
+                      <Route
                         path="/provision-yubikey"
                         element={<ProvisionYubiKey key={context.key} />}
                       />
                     </Routes>
+                    <NavigationMenu />
                     <SelectionAsQrCode />
                     <About />
                     <Settings />

@@ -8,9 +8,10 @@
     },
     "file": {
       "file": "File",
+      "home": "Home",
       "create": "Create",
-      "duplicate": "Duplicate",
       "restore": "Restore",
+      "duplicate": "Duplicate",
       "provisionYubiKey": "Provision YubiKey",
       "newWindow": "New window",
       "closeWindow": "Close window"
@@ -141,6 +142,9 @@
       "standaloneArchiveCreated": "Standalone archive created",
       "standaloneArchiveRestored": "Standalone archive restored"
     },
+    "navigationMenu": {
+      "menu": "Menu"
+    },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Passphrase strength",
       "estimatedAttackTime": "Estimated attack time",
@@ -193,7 +197,8 @@
       "device": "Device",
       "selectDevice": "Select device",
       "source": "Source",
-      "selectSource": "Select source"
+      "selectSource": "Select source",
+      "sourceSettings": "Source settings"
     },
     "secretTextareaWithUsage": {
       "blockCapacity": "Block capacity",
@@ -282,7 +287,6 @@
       "backupType": "Backup type",
       "selectBackupType": "Select backup type…",
       "backupTypeRequired": "Backup type required",
-      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Drag and drop file to create or restore standalone archive",
       "singleBlock": "Single block",
       "singleBlockDescription": "Block and passphrase required to restore secret",
       "2of3": "Blockset (2-of-3 threshold)",
@@ -330,6 +334,13 @@
       "blocksetSaved": "Blockset saved"
     },
     "duplicate": { "couldNotDuplicateBlock": "Could not duplicate block" },
+    "home": {
+      "createDescription": "Back up secret as block or blockset",
+      "restoreDescription": "Restore secret from block or blockset",
+      "duplicateDescription": "Copy block without decrypting secret",
+      "provisionYubiKeyDescription": "Program challenge-response secret to YubiKey",
+      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Drag and drop file to create or restore standalone archive"
+    },
     "provisionYubiKey": {
       "challengeResponseSecretInvalid": "Challenge-response secret must be 40 hexadecimal characters",
       "couldNotProvisionYubiKey": "Could not provision YubiKey",
@@ -371,6 +382,8 @@
       "restoringDetachedArchive": "Restoring detached archive",
       "scanOrDragAndDropBlock": "Scan or drag and drop block",
       "scanOrDragAndDropNextBlock": "Scan or drag and drop next block",
+      "scanOrDragAndDropBlockOrPressEscToCancel": "Scan or drag and drop block or press Esc to cancel",
+      "scanOrDragAndDropNextBlockOrPressEscToCancel": "Scan or drag and drop next block or press Esc to cancel",
       "showAsQrCode": "Show as QR code",
       "showSecret": "Show secret",
       "token": "Token",

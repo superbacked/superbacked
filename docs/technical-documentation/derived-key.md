@@ -106,7 +106,7 @@ The response is computed inside the YubiKey using HMAC-SHA1 keyed with the slot 
 
 ### Slot provisioning
 
-The slot must be provisioned once for HMAC-SHA1 challenge-response — in the app under File → “Provision YubiKey”, or on the command line:
+The slot must be provisioned once for HMAC-SHA1 challenge-response — in the app from the home view or under File → “Provision YubiKey”, or on the command line:
 
 ```console
 superbacked provision-yubikey --generate

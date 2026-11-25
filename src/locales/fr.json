@@ -8,9 +8,10 @@
     },
     "file": {
       "file": "Fichier",
+      "home": "Accueil",
       "create": "Créer",
-      "duplicate": "Dupliquer",
       "restore": "Restaurer",
+      "duplicate": "Dupliquer",
       "provisionYubiKey": "Provisionner une YubiKey",
       "newWindow": "Nouvelle fenêtre",
       "closeWindow": "Fermer la fenêtre"
@@ -141,6 +142,9 @@
       "standaloneArchiveCreated": "Archive autonome créée",
       "standaloneArchiveRestored": "Archive autonome restaurée"
     },
+    "navigationMenu": {
+      "menu": "Menu"
+    },
     "passphraseInputWithStrength": {
       "passphraseStrength": "Force de la phrase de passe",
       "estimatedAttackTime": "Temps estimé d’attaque",
@@ -193,7 +197,8 @@
       "device": "Appareil",
       "selectDevice": "Sélectionner l’appareil",
       "source": "Source",
-      "selectSource": "Sélectionner la source"
+      "selectSource": "Sélectionner la source",
+      "sourceSettings": "Paramètres de la source"
     },
     "secretTextareaWithUsage": {
       "blockCapacity": "Capacité du bloc",
@@ -282,7 +287,6 @@
       "backupType": "Type de sauvegarde",
       "selectBackupType": "Sélectionner le type de sauvegarde…",
       "backupTypeRequired": "Type de sauvegarde requis",
-      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Glisser-déposer un fichier pour créer ou restaurer une archive autonome",
       "singleBlock": "Bloc unique",
       "singleBlockDescription": "Le bloc et la phrase de passe sont requis pour restaurer le secret",
       "2of3": "Ensemble de blocs (seuil 2 sur 3)",
@@ -332,6 +336,13 @@
     "duplicate": {
       "couldNotDuplicateBlock": "Impossible de dupliquer le bloc"
     },
+    "home": {
+      "createDescription": "Sauvegarder un secret sous forme de bloc ou d’ensemble de blocs",
+      "restoreDescription": "Restaurer un secret à partir d’un bloc ou d’un ensemble de blocs",
+      "duplicateDescription": "Copier un bloc sans déchiffrer le secret",
+      "provisionYubiKeyDescription": "Programmer un secret défi-réponse sur une YubiKey",
+      "dragAndDropFileToCreateOrRestoreStandaloneArchive": "Glisser-déposer un fichier pour créer ou restaurer une archive autonome"
+    },
     "provisionYubiKey": {
       "challengeResponseSecretInvalid": "Le secret défi-réponse doit comporter 40 caractères hexadécimaux",
       "couldNotProvisionYubiKey": "Impossible de provisionner la YubiKey",
@@ -373,6 +384,8 @@
       "restoringDetachedArchive": "Restauration de l’archive détachée",
       "scanOrDragAndDropBlock": "Scanner ou glisser-déposer le bloc",
       "scanOrDragAndDropNextBlock": "Scanner ou glisser-déposer le bloc suivant",
+      "scanOrDragAndDropBlockOrPressEscToCancel": "Scanner ou glisser-déposer le bloc ou appuyer sur Échap pour annuler",
+      "scanOrDragAndDropNextBlockOrPressEscToCancel": "Scanner ou glisser-déposer le bloc suivant ou appuyer sur Échap pour annuler",
       "showAsQrCode": "Afficher en code QR",
       "showSecret": "Afficher le secret",
       "token": "Jeton",

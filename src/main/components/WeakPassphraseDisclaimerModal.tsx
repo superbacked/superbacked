@@ -27,11 +27,6 @@ const WeakPassphraseDisclaimerModal: FunctionComponent<
       // return focus would land on whatever took focus from the field
       returnFocus={false}
       size="sm"
-      styles={{
-        title: {
-          fontWeight: "bold",
-        },
-      }}
       title={t("components.weakPassphraseDisclaimerModal.weakPassphrase")}
     >
       <Text size="sm">
