@@ -11,6 +11,7 @@ import {
   restoreDetachedArchive,
 } from "@/src/handlers/detachedArchive"
 import duplicate from "@/src/handlers/duplicate"
+import focusWindow from "@/src/handlers/focusWindow"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
 import generatePassword from "@/src/handlers/generatePassword"
 import getDesktopCapturerSources from "@/src/handlers/getDesktopCapturerSources"
@@ -95,6 +96,7 @@ const asyncHandlers = {
   enableModes,
   disableModes,
   toggleMaximize,
+  focusWindow,
   generatePassphrase,
   generatePassword,
   computeBip32RootFingerprint,

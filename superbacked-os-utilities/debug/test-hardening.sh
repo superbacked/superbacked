@@ -409,5 +409,12 @@ expect_failure "no Bluetooth controller registered" bash -c 'ls --almost-all /sy
 expect_success "session is Wayland" bash -c 'loginctl show-session "$(loginctl --no-legend | awk "\$3==\"superbacked\" { print \$1; exit }")" --property=Type --value | grep --quiet wayland'
 expect_failure "no X11 sessions offered" bash -c 'ls --almost-all /usr/share/xsessions/ 2> /dev/null | grep --quiet .'
 expect_failure "no Xorg server or snapd binaries" ls /usr/bin/Xorg /usr/lib/xorg/Xorg /usr/bin/snap
+# The activation extension (see “Desktop hardening” in the security
+# document) fails silently when the Shell refuses to load it — a GJS
+# error, a Shell rebase past the versions its metadata lists — and a
+# drop then simply leaves focus with the file manager. Its state is
+# the one outcome worth reading back; the focus itself is checked by
+# hand (see the tests guide).
+expect_success "activation extension loaded by the Shell" bash -c 'gnome-extensions info activation@superbacked.com 2> /dev/null | grep --quiet --line-regexp "  State: ACTIVE"'
 
 printf "\n%s\n" "== Summary: ${passed} passed, ${failed} failed, ${skipped} skipped (${mode} mode)"

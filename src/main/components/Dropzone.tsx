@@ -21,6 +21,17 @@ export const Dropzone: FunctionComponent<DropzoneProps> = (props) => {
           ? Array.from(event.dataTransfer.files)
           : []
       }
+      // A drop leaves keyboard focus with the file manager, so a field
+      // the drop handler goes on to focus would show a caret while
+      // keystrokes land elsewhere — ask for the window first, on every
+      // drop (accepted or rejected, the user is now working here; see
+      // src/handlers/focusWindow.ts for what each platform makes of it)
+      onDropAny={(files, fileRejections) => {
+        void window.api.invoke.focusWindow()
+        if (props.onDropAny !== undefined) {
+          props.onDropAny(files, fileRejections)
+        }
+      }}
       styles={{
         fullScreen: {
           padding: 0,

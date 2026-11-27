@@ -26,9 +26,8 @@ export const routes: DescribedRoute[] = sharedRoutes.map((route) => {
 const runningMacOS = window.api.platform === "darwin"
 
 // Rendered the way the File menu shows its accelerators (see
-// src/menu.ts), so the in-window menu teaches the shortcut that reaches
-// each item — buttons show no shortcuts, as a menu is where people
-// expect to learn them
+// src/menu.ts), so the in-window menu and the home view’s cards teach
+// the shortcut that reaches each item
 export const shortcut = (key: string) => {
   return runningMacOS === true ? `⇧⌘${key}` : `Shift+Ctrl+${key}`
 }

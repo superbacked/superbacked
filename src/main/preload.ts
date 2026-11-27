@@ -44,6 +44,7 @@ const api: Api = {
     enableModes: invoke("enableModes"),
     disableModes: invoke("disableModes"),
     toggleMaximize: invoke("toggleMaximize"),
+    focusWindow: invoke("focusWindow"),
     generatePassphrase: invoke("generatePassphrase"),
     generatePassword: invoke("generatePassword"),
     computeBip32RootFingerprint: invoke("computeBip32RootFingerprint"),

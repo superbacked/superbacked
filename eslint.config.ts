@@ -176,7 +176,14 @@ const eslintConfig = defineConfig([
   ...typographyConfigs.json(["**/locales/**/*.json"]),
   ...typographyConfigs.jsx,
   prettier,
-  globalIgnores([".webpack/**", "dist/**", "node_modules/**"]),
+  // GNOME Shell extensions run inside the Shell’s GJS runtime — their
+  // gi:// and resource:// module specifiers resolve nowhere else
+  globalIgnores([
+    ".webpack/**",
+    "dist/**",
+    "node_modules/**",
+    "superbacked-os-bootstrap-assets/gnome-shell-extensions/**",
+  ]),
 ])
 
 export default eslintConfig
