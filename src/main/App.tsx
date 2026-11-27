@@ -349,6 +349,19 @@ const App = () => {
                 },
               },
             },
+            Kbd: {
+              // A key cap one surface step below the card it sits on, in
+              // dimmed text — Mantine’s dark defaults (dark-6 surface,
+              // dark-0 text) would make a shortcut hint the brightest
+              // thing on the home view
+              styles: {
+                root: {
+                  backgroundColor: "var(--mantine-color-dark-8)",
+                  borderColor: "var(--sb-border)",
+                  color: "var(--mantine-color-dimmed)",
+                },
+              },
+            },
             Menu: {
               // Same surface as Popover and Combobox dropdowns — and the
               // same hover as Combobox options, whose dark-mode hover

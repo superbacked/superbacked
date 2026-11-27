@@ -1,5 +1,5 @@
 import styled from "@emotion/styled"
-import { Box, Button, Stack, Text } from "@mantine/core"
+import { Box, Card, Group, Kbd, SimpleGrid, Text } from "@mantine/core"
 import { FunctionComponent } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
@@ -7,7 +7,11 @@ import { useNavigate } from "react-router"
 import ActionBadge from "@/src/main/components/ActionBadge"
 import InfoButton from "@/src/main/components/FeatureDescriptionModal"
 import FileManager from "@/src/main/components/FileManager"
-import { routes, startsGroup } from "@/src/main/utilities/routes"
+import {
+  routes,
+  shortcut,
+  shortcutFontFamily,
+} from "@/src/main/utilities/routes"
 
 // The view the app opens on — one entry per route the File menu offers,
 // so the routes that used to live only in the menu are visible in the
@@ -50,6 +54,22 @@ const gradientSlice = (index: number, count: number) => {
   return `linear-gradient(180deg, ${stop(index)} 0%, ${stop(index + 1)} 100%)`
 }
 
+// The create card is the one most people open the app for, so it sits
+// a shade lighter than its siblings and wears the signature gradient as
+// its border — dimmed by mixing each end toward the card surface, so it
+// frames rather than shouts. The dark palette steps are wide, so the
+// shade is a third of the way to the next step rather than the step
+// itself. A 1px gradient border is painted, not drawn: the fill covers
+// the padding box and the gradient shows through the transparent border
+// around it
+const dimmedGradient =
+  "linear-gradient(135deg, color-mix(in srgb, var(--mantine-color-gradient-9) 40%, var(--mantine-color-dark-7)) 0%, color-mix(in srgb, var(--mantine-color-gradient-0) 40%, var(--mantine-color-dark-7)) 100%)"
+
+const featuredFill =
+  "color-mix(in srgb, var(--mantine-color-dark-7), var(--mantine-color-dark-6) 33%)"
+
+const featuredSurface = `linear-gradient(${featuredFill}, ${featuredFill}) padding-box, ${dimmedGradient} border-box`
+
 const Home: FunctionComponent = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -57,30 +77,56 @@ const Home: FunctionComponent = () => {
     <Container>
       <Box px="xl">
         <FileManager handleFiles={ignoreFiles} mode="standalone" />
-        <Stack gap="lg">
+        {/* One card per route, two to a row — the four routes fill a
+            2 × 2 grid, so the group boundary the menus draw with a
+            separator (see src/shared/routes.ts) is not marked here */}
+        <SimpleGrid cols={2} spacing="lg">
           {routes.map((route, index) => {
+            const featured = route.id === "create"
             return (
-              // A standard button with a description line under it — the
-              // pairing the create route’s setup step uses for its backup
-              // type select. Where a group starts, the lg gap widens to
-              // xl — the grouping the menus draw with a separator (see
-              // src/shared/routes.ts), in whitespace rather than a line
-              <Box
+              // The website’s feature card (dark-7 surface, 10px radius,
+              // 1px border), made pressable — the whole card is the
+              // button, so the description is a target too. No hover
+              // state, as the website’s cards have none — the focus ring
+              // is the one every other control draws
+              <Card
+                component="button"
                 key={route.to}
-                mt={startsGroup(index) === true ? "sm" : undefined}
+                onClick={() => {
+                  void navigate(route.to)
+                }}
+                p="xl"
+                radius={10}
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                  background:
+                    featured === true
+                      ? featuredSurface
+                      : "var(--mantine-color-dark-7)",
+                  border:
+                    featured === true
+                      ? "1px solid transparent"
+                      : "1px solid var(--sb-border)",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  "&:focus-visible": {
+                    outline: "2px solid var(--mantine-primary-color-filled)",
+                    outlineOffset: 2,
+                  },
+                }}
+                type="button"
               >
-                <Button
-                  fullWidth
-                  onClick={() => {
-                    void navigate(route.to)
-                  }}
-                  size="sm"
-                  variant="default"
-                >
+                {/* The shortcut sits top right on the label’s line as a
+                    key cap (see the Kbd theme entry in src/main/App.tsx),
+                    pairing each route with its accelerator the way the
+                    in-window menu does (see
+                    src/main/components/NavigationMenu.tsx) */}
+                <Group justify="space-between" mb="sm" wrap="nowrap">
                   <Text
                     fw="bold"
-                    size="sm"
-                    span
+                    size="md"
                     style={{
                       backgroundImage: gradientSlice(index, routes.length),
                     }}
@@ -88,14 +134,17 @@ const Home: FunctionComponent = () => {
                   >
                     {t(route.labelKey)}
                   </Text>
-                </Button>
-                <Text mt="xs" size="sm">
+                  <Kbd ff={shortcutFontFamily} size="sm">
+                    {shortcut(route.shortcutKey)}
+                  </Kbd>
+                </Group>
+                <Text c="dimmed" size="sm">
                   {t(route.descriptionKey)}
                 </Text>
-              </Box>
+              </Card>
             )
           })}
-        </Stack>
+        </SimpleGrid>
       </Box>
       {/* Discovery hint for the one feature without a route — the drop
           target is the whole window */}
