@@ -242,6 +242,11 @@ profile superbacked /opt/Superbacked/superbacked flags=(attach_disconnected) {
   /usr/bin/wl-copy mrix,
   /usr/bin/wl-paste mrix,
 
+  # Focus after a drop (see src/handlers/focusWindow.ts): gdbus asks the
+  # Shell’s activation extension over the session bus, inheriting the
+  # profile — the label the extension checks on the caller.
+  /usr/bin/gdbus mrix,
+
   # Terminal-launched command-line flows: stty hides passphrase echo,
   # the bundled guard script restores the saved terminal state should
   # the process die mid-prompt, and the controlling terminal backs the

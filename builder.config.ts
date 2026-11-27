@@ -104,6 +104,24 @@ const config: Configuration = {
   npmRebuild: false,
   productName: "Superbacked",
   deb: {
+    // electron-builder’s default list predates Chromium dropping the X
+    // screensaver and XTest libraries and libuuid — the shipped binary
+    // references none of them (a dlopen name would show up as well),
+    // and libxss1 is absent from Ubuntu Desktop’s live session, which
+    // made an offline install impossible. gbm and ALSA are linked by
+    // Chromium itself, present on every desktop. The default
+    // recommendation, libappindicator3-1, left Ubuntu’s archive with
+    // 22.04 — an empty list keeps apt from ever reaching for it.
+    depends: [
+      "libasound2",
+      "libatspi2.0-0",
+      "libgbm1",
+      "libgtk-3-0",
+      "libnotify4",
+      "libnss3",
+      "libsecret-1-0",
+      "xdg-utils",
+    ],
     // Stock Ubuntu only uaccess-tags the FIDO interface of a YubiKey
     // (systemd’s fido_id); challenge-response runs over the OTP hidraw
     // interface, and libu2f-udev has been an empty transitional
@@ -113,12 +131,19 @@ const config: Configuration = {
     fpm: [
       "build/70-superbacked-yubikey.rules=/usr/lib/udev/rules.d/70-superbacked-yubikey.rules",
     ],
+    recommends: [],
   },
   dmg: {
     title: "${productName}",
   },
   linux: {
     category: "Utility",
+    // The long text under the deb’s synopsis and the desktop entry’s
+    // Comment line, both of which electron-builder fills from this one
+    // key — the package.json tagline is the synopsis below, and the two
+    // must differ or package managers show the tagline twice
+    description:
+      "Some secrets are too important to lose and too sensitive to share.",
     desktop: {
       // Dock/launcher feedback on GNOME — the icon shows a starting
       // state until the first window maps (Chromium completes the
@@ -134,6 +159,12 @@ const config: Configuration = {
       { from: "./bin/linux", to: "./bin/linux" },
       { from: "./bin/posix", to: "./bin/posix" },
     ],
+    // Debian’s Description field opens with a mandatory one-line
+    // synopsis; without this key electron-builder leaves that line
+    // empty. The long text below it is the package description from
+    // package.json, so App Center shows the tagline twice until a
+    // distinct longer text is given through `description` here
+    synopsis: "Protect what matters most.",
     // deb is what Superbacked OS and Ubuntu Desktop install — the app
     // runs straight from /opt/Superbacked, giving AppArmor a stable
     // attachment path (no FUSE mount or AppRun shell indirection), and

@@ -132,7 +132,7 @@ Restoration discovers the version and KDF profile by trial, newest profile first
 
 ## Creation workflow
 
-With the app in create mode:
+With the app on its home view:
 
 1. Drag and drop files and/or folders.
 2. Click “Create standalone archive…”.
@@ -143,7 +143,7 @@ With the app in create mode:
 
 ## Restoration workflow
 
-With the app in create mode — standalone archives are created and restored from the same screen:
+With the app on its home view — standalone archives are created and restored from the same screen:
 
 1. Drag and drop the standalone archive.
 2. Enter the passphrase — enabling “Protected with YubiKey” for [YubiKey-protected](#yubikey-second-factor) archives.

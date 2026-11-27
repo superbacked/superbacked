@@ -2,6 +2,7 @@ import { MantineSize, Modal, Text } from "@mantine/core"
 import { FunctionComponent, useState } from "react"
 import { useTranslation } from "react-i18next"
 
+import { useTrapFocusOnceWindowFocused } from "@/src/main/utilities/windowFocus"
 import {
   TranslationKey,
   ValidateTranslationKeys,
@@ -21,6 +22,10 @@ interface ErrorModalProps {
 const ErrorModal: FunctionComponent<ErrorModalProps> = (props) => {
   const { t } = useTranslation()
   const [displayedError, setDisplayedError] = useState(props.error)
+  // Opened by a failed drop among other things — the close button takes
+  // focus only once the window has it, so Enter cannot reach the file
+  // manager instead (see src/main/utilities/windowFocus.ts)
+  const trapFocus = useTrapFocusOnceWindowFocused(props.error !== null)
 
   // Preserve error message during modal close animation
   // When error becomes null, modal starts closing but displayedError keeps the message visible
@@ -35,6 +40,7 @@ const ErrorModal: FunctionComponent<ErrorModalProps> = (props) => {
       opened={props.error !== null}
       size={props.size ?? "sm"}
       title={t("components.errorModal.headsUp")}
+      trapFocus={trapFocus}
     >
       <Text size="sm">
         {displayedError

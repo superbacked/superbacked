@@ -18,7 +18,6 @@ const About: FunctionComponent = () => {
   return (
     <Modal
       centered
-      lockScroll={false}
       opened={opened}
       onClose={() => {
         setOpened(false)

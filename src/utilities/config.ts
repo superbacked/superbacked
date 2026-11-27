@@ -3,6 +3,7 @@ import store, { Schema } from "electron-store"
 import {
   maximumClipboardClearSeconds,
   minimumClipboardClearSeconds,
+  nearestClipboardClearSeconds,
 } from "@/src/shared/clipboardClearSeconds"
 import type { PaperSize, PrintSetting } from "@/src/shared/types/print"
 
@@ -28,6 +29,10 @@ export interface Store {
   // src/shared/clipboardClearSeconds.ts); the command-line interface
   // reads its --clear flags only
   clipboardClearSeconds?: number
+  // Renders blocks without Superbacked branding (the “Important document,
+  // do not discard” notice, superbacked.com/recover and the logo) when
+  // true; the command-line interface never renders blocks
+  disableBlockBranding?: boolean
   scannerDevice?: string
   scannerSource?: string
   windowGeometry?: WindowGeometry
@@ -50,6 +55,9 @@ const schema: Schema<Store> = {
     type: "integer",
     minimum: minimumClipboardClearSeconds,
     maximum: maximumClipboardClearSeconds,
+  },
+  disableBlockBranding: {
+    type: "boolean",
   },
   scannerDevice: {
     type: "string",
@@ -113,6 +121,18 @@ const config = new store<Store>({
       // read back as a content size — on platforms with a real title bar,
       // the window grew at every launch. windowGeometry replaces it.
       configStore.delete("windowBounds" as never)
+    },
+    "2.2.0": (configStore) => {
+      // The Settings number input became a dropdown of fixed choices (see
+      // clipboardClearSecondsOptions) — a value typed into the input snaps
+      // to the nearest choice so the dropdown shows what the app does
+      const seconds = configStore.get("clipboardClearSeconds")
+      if (seconds !== undefined) {
+        const nearest = nearestClipboardClearSeconds(seconds)
+        if (nearest !== seconds) {
+          configStore.set("clipboardClearSeconds", nearest)
+        }
+      }
     },
   },
   serialize: (value: object) => {

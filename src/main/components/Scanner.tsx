@@ -2,6 +2,7 @@ import styled from "@emotion/styled"
 import {
   ActionIcon,
   Avatar,
+  Box,
   Button,
   ComboboxItem,
   Group,
@@ -9,12 +10,7 @@ import {
   Space,
   Text,
 } from "@mantine/core"
-import {
-  IconDeviceDesktop,
-  IconSettings,
-  IconVideo,
-  IconX,
-} from "@tabler/icons-react"
+import { IconDeviceDesktop, IconSettings, IconVideo } from "@tabler/icons-react"
 import decodeQR from "qr/decode.js"
 import {
   Fragment,
@@ -71,13 +67,6 @@ const CenterContainer = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 1;
-`
-
-const TopRightContainer = styled.div`
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  z-index: 2;
 `
 
 interface VideoProps {
@@ -160,6 +149,8 @@ type ScannerProps = {
   autoStop?: boolean
   dropzone?: boolean
   badge?: string
+  stopOnEscape?: boolean
+  streamingBadge?: string
 }
 
 class NoDeviceError extends Error {
@@ -178,6 +169,8 @@ class NoDeviceError extends Error {
  * @param autoStop automatically stop scanning once code is detected, defaults to `true`
  * @param dropzone enable dropzone, defaults to `false`
  * @param badge display badge (optional)
+ * @param stopOnEscape stop streaming on Escape and return to the idle state, defaults to `false` — for full-view embeddings only, as in a modal Escape already closes the modal
+ * @param streamingBadge badge displayed while streaming instead of `badge` (optional)
  *
  * @example
  * const scannerRef = useRef<ScannerRef>(null)
@@ -205,9 +198,12 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     return null
   }
   const sourceRef = useRef<null | Source>(getInitialSource())
-  // Whether the scanner was streaming when settings were opened — closing
-  // settings without selecting anything resumes only what was already running
-  const wasStreamingRef = useRef(false)
+  // Counts captures and stops, so a capture can tell it was stopped
+  // while it awaited the device list or the stream (see capture())
+  const captureIdRef = useRef(0)
+  // Settings open from the idle state only (the cog beside the button
+  // that starts a stream, or the error modal once a failed capture has
+  // returned to idle), so closing them has nothing to resume
   const [showSourceSettings, setShowSourceSettings] = useState(false)
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
   const [sources, setSources] = useState<CustomDesktopCapturerSource[]>([])
@@ -232,6 +228,7 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     autoStart = false,
     autoStop = true,
     dropzone = false,
+    stopOnEscape = false,
   } = props
 
   const updateSource = useCallback((newSource: null | Source) => {
@@ -241,6 +238,9 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
 
   const stop = useCallback(() => {
     setIsStreaming(false)
+    // A capture still awaiting its stream (the permission prompt can hold
+    // it for seconds) must not attach it once stopped — see capture()
+    captureIdRef.current++
     if (mediaStreamRef.current) {
       for (const track of mediaStreamRef.current.getTracks()) {
         if (track.readyState === "live") {
@@ -362,10 +362,19 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
   }, [])
 
   const capture = useCallback(async () => {
+    // Stopped while awaiting a device list or a stream (Escape, the
+    // cancel of the modal around the scanner, an unmount) — nothing
+    // awaited after that may reach the state or the video element
+    const captureId = ++captureIdRef.current
+    const cancelled = () => captureId !== captureIdRef.current
     try {
       setError(null)
       setIsLoading(true)
       const updatedDevices = await updateDevices()
+      if (cancelled() === true) {
+        setIsLoading(false)
+        return
+      }
       let currentSource = sourceRef.current
       if (currentSource === null) {
         if (updatedDevices[0]) {
@@ -421,8 +430,17 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
           } as MediaTrackConstraints,
         }
       }
-      mediaStreamRef.current =
-        await navigator.mediaDevices.getUserMedia(constraints)
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      if (cancelled() === true) {
+        // The stream arrived for a capture nobody wants — release the
+        // device rather than leave its light on behind the idle button
+        for (const track of stream.getTracks()) {
+          track.stop()
+        }
+        setIsLoading(false)
+        return
+      }
+      mediaStreamRef.current = stream
       setIsLoading(false)
       if (videoRef.current) {
         const metadataTimeout = setTimeout(() => {
@@ -430,7 +448,10 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
             setError({
               message: "components.scanner.pleaseAllowCameraAccess",
             })
+            // Back to idle, so closing the error (which opens the source
+            // settings) and cancelling those lands on the start button
             stop()
+            setIsUsingCamera(false)
           }
         }, 1000)
         videoRef.current.srcObject = mediaStreamRef.current
@@ -447,6 +468,14 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
       }
     } catch (captureError) {
       setIsLoading(false)
+      if (cancelled() === true) {
+        // A denied prompt after the user already gave up is not an error
+        // worth a modal
+        return
+      }
+      // A failed capture returns to idle (see the metadata timeout above)
+      stop()
+      setIsUsingCamera(false)
       if (
         captureError instanceof Error &&
         captureError.name === "NoDeviceError"
@@ -573,11 +602,42 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     }
   }, [autoStart, start])
 
+  // Escape cancels the scan — the stream stops and the idle state (the
+  // button that starts it) returns. Listening only while streaming keeps
+  // Escape free for the source settings, whose select closes its dropdown
+  // on Escape, and for the modals that open after a capture
+  useEffect(() => {
+    if (stopOnEscape === false || isStreaming === false) {
+      return
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        stop()
+        setIsUsingCamera(false)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [isStreaming, stop, stopOnEscape])
+
   useEffect(() => {
     return () => {
       stop()
     }
   }, [stop])
+
+  // The state before a stream starts — the button that starts it, with
+  // the source settings cog beside it. A source is chosen before
+  // streaming: changing it mid-stream is Escape (back to idle), then the
+  // cog
+  const isIdle =
+    autoStart === false &&
+    isLoading === false &&
+    isStreaming === false &&
+    isUsingCamera === false &&
+    imageDataUrl === null
 
   if (showSourceSettings === true) {
     const deviceData: ComboboxItem[] = []
@@ -598,78 +658,77 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
     return (
       <Fragment>
         <Container>
-          <Select
-            comboboxProps={{ keepMounted: false }}
-            data={deviceData}
-            dropdownOpened={deviceDropdownOpened}
-            leftSection={<IconVideo size={16} />}
-            label={t("components.scanner.device")}
-            maxDropdownHeight={240}
-            placeholder={`${t("components.scanner.selectDevice")}…`}
-            value={source?.type === "device" ? source.id : null}
-            onDropdownClose={() => setDeviceDropdownOpened(false)}
-            onDropdownOpen={async () => {
-              await updateDevices()
-              setDeviceDropdownOpened(true)
-            }}
-            // onOptionSubmit rather than onChange — onChange does not fire
-            // when the clicked option is already selected, and clicking the
-            // current device must still close settings and start streaming
-            onOptionSubmit={submitDevice}
-          />
-          <Space h="lg" />
-          <Select
-            comboboxProps={{ keepMounted: false }}
-            data={sourceData}
-            dropdownOpened={sourceDropdownOpened}
-            leftSection={<IconDeviceDesktop size={16} />}
-            label={t("components.scanner.source")}
-            maxDropdownHeight={240}
-            placeholder={`${t("components.scanner.selectSource")}…`}
-            renderOption={({ option }) => (
-              <Group wrap="nowrap">
-                <Avatar src={(option as CustomComboboxItem).thumbnailDataUrl} />
-                <Text>{option.label}</Text>
-              </Group>
-            )}
-            value={source?.type === "source" ? source.id : null}
-            onDropdownClose={() => setSourceDropdownOpened(false)}
-            onDropdownOpen={async () => {
-              await updateSources()
-              // On Linux, source is selected automatically
-              if (window.api.platform !== "linux") {
-                setSourceDropdownOpened(true)
-              }
-            }}
-            // onOptionSubmit rather than onChange — onChange does not fire
-            // when the clicked option is already selected, and clicking the
-            // current source must still close settings and start streaming
-            onOptionSubmit={submitSource}
-          />
+          {/* Laid out like every other form — the frame’s width minus
+              the xl side padding (see the create route’s setup step in
+              src/main/routes/Create.tsx), as the frame centers its
+              children and would otherwise shrink the selects to their
+              intrinsic width */}
+          <Box px="xl" w="100%">
+            <Select
+              comboboxProps={{ keepMounted: false }}
+              data={deviceData}
+              dropdownOpened={deviceDropdownOpened}
+              leftSection={<IconVideo size={16} />}
+              label={t("components.scanner.device")}
+              maxDropdownHeight={240}
+              placeholder={`${t("components.scanner.selectDevice")}…`}
+              value={source?.type === "device" ? source.id : null}
+              onDropdownClose={() => setDeviceDropdownOpened(false)}
+              onDropdownOpen={async () => {
+                await updateDevices()
+                setDeviceDropdownOpened(true)
+              }}
+              // onOptionSubmit rather than onChange — onChange does not
+              // fire when the clicked option is already selected, and
+              // clicking the current device must still close settings and
+              // start streaming
+              onOptionSubmit={submitDevice}
+            />
+            <Space h="lg" />
+            <Select
+              comboboxProps={{ keepMounted: false }}
+              data={sourceData}
+              dropdownOpened={sourceDropdownOpened}
+              leftSection={<IconDeviceDesktop size={16} />}
+              label={t("components.scanner.source")}
+              maxDropdownHeight={240}
+              placeholder={`${t("components.scanner.selectSource")}…`}
+              renderOption={({ option }) => (
+                <Group wrap="nowrap">
+                  <Avatar
+                    src={(option as CustomComboboxItem).thumbnailDataUrl}
+                  />
+                  <Text>{option.label}</Text>
+                </Group>
+              )}
+              value={source?.type === "source" ? source.id : null}
+              onDropdownClose={() => setSourceDropdownOpened(false)}
+              onDropdownOpen={async () => {
+                await updateSources()
+                // On Linux, source is selected automatically
+                if (window.api.platform !== "linux") {
+                  setSourceDropdownOpened(true)
+                }
+              }}
+              // onOptionSubmit rather than onChange — onChange does not
+              // fire when the clicked option is already selected, and
+              // clicking the current source must still close settings and
+              // start streaming
+              onOptionSubmit={submitSource}
+            />
+            <Space h="xl" />
+            <Button
+              fullWidth
+              onClick={() => {
+                setShowSourceSettings(false)
+              }}
+              size="sm"
+              variant="default"
+            >
+              {t("common.cancel")}
+            </Button>
+          </Box>
         </Container>
-        <TopRightContainer>
-          <ActionIcon
-            radius="xl"
-            size="sm"
-            styles={{
-              root: {
-                backgroundColor: "var(--mantine-color-dark-filled)",
-                "&:hover, &:active, &[data-active]": {
-                  backgroundColor: "var(--mantine-color-dark-filled)",
-                },
-              },
-            }}
-            variant="transparent"
-            onClick={() => {
-              setShowSourceSettings(false)
-              if (wasStreamingRef.current) {
-                start()
-              }
-            }}
-          >
-            <IconX size={16} />
-          </ActionIcon>
-        </TopRightContainer>
         <ErrorModal
           error={error}
           onClose={() => {
@@ -705,16 +764,28 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         {isLoading === true ? (
           <Loading visible={isLoading} dialog="components.scanner.loading" />
         ) : null}
-        {autoStart === false &&
-        isLoading === false &&
-        isStreaming === false &&
-        isUsingCamera === false &&
-        imageDataUrl === null ? (
+        {isIdle === true ? (
           <Fragment>
             <CenterContainer>
-              <Button size="sm" onClick={start} variant="signatureTextGradient">
-                {t("components.scanner.useCameraOrScreenRecording")}
-              </Button>
+              {/* The source settings cog beside the action it configures
+                  — the pairing the create button and its secret actions
+                  menu use (see src/main/routes/Create.tsx), the cog
+                  opening the settings view at once rather than a menu */}
+              <Group gap="xs" wrap="nowrap">
+                <Button onClick={start} size="sm" variant="default">
+                  {t("components.scanner.useCameraOrScreenRecording")}
+                </Button>
+                <ActionIcon
+                  aria-label={t("components.scanner.sourceSettings")}
+                  onClick={() => {
+                    setShowSourceSettings(true)
+                  }}
+                  size="input-sm"
+                  variant="default"
+                >
+                  <IconSettings size={18} />
+                </ActionIcon>
+              </Group>
             </CenterContainer>
           </Fragment>
         ) : null}
@@ -733,38 +804,19 @@ const Scanner = forwardRef<ScannerRef, ScannerProps>((props, ref) => {
         {/* The badge retires once a code is captured, like the other
           discovery hints — a capture always sets imageDataUrl (camera and
           dropzone alike) and clear() resets it, so the next-block badge
-          reappears when a blockset restart clears the scanner */}
+          reappears when a blockset restart clears the scanner. While
+          streaming, the streaming badge (which can mention Escape) takes
+          over when given */}
         {props.badge && error === null && imageDataUrl === null ? (
-          <ActionBadge color="dark">{props.badge}</ActionBadge>
+          <ActionBadge color="dark">
+            {isStreaming === true && props.streamingBadge !== undefined
+              ? props.streamingBadge
+              : props.badge}
+          </ActionBadge>
         ) : null}
-        <TopRightContainer>
-          <ActionIcon
-            radius="xl"
-            size="sm"
-            styles={{
-              root: {
-                backgroundColor: "var(--mantine-color-dark-filled)",
-                "&:hover, &:active, &[data-active]": {
-                  backgroundColor: "var(--mantine-color-dark-filled)",
-                },
-              },
-            }}
-            variant="transparent"
-            onClick={() => {
-              wasStreamingRef.current = isStreaming
-              setShowSourceSettings(true)
-              stop()
-            }}
-          >
-            <IconSettings size={16} />
-          </ActionIcon>
-        </TopRightContainer>
         <ErrorModal
           error={error}
           onClose={() => {
-            // Closing settings after a capture error must not retry capture
-            // automatically, which would loop back into the same error
-            wasStreamingRef.current = false
             setError(null)
             setShowSourceSettings(true)
           }}

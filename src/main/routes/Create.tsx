@@ -928,16 +928,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
     return (
       <Container>
         <Box px="xl">
-          <FileManager
-            ref={fileManagerRef}
-            mode="standalone"
-            handleFiles={(handledFiles) => {
-              updateSecretsState(form.values, { 0: handledFiles })
-              if (handledFiles.length === 0) {
-                handlePopoverChange(false)
-              }
-            }}
-          />
           <Select
             comboboxProps={{ keepMounted: false }}
             label={t("routes.create.backupType")}
@@ -970,7 +960,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           <Button
             disabled={!form.values.backupType}
             fullWidth
-            size="md"
+            size="sm"
             variant="signatureGradient"
             onClick={() => {
               if (
@@ -983,21 +973,6 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           >
             {t("common.next")}
           </Button>
-          {/* Discovery hint — shown until the form is interacted with, as
-            it advertises a different flow (the drag and drop affordance
-            itself keeps working) */}
-          {form.values.backupType === null && form.values.label === "" ? (
-            <ActionBadge>
-              {t(
-                "routes.create.dragAndDropFileToCreateOrRestoreStandaloneArchive"
-              )}{" "}
-              <InfoButton tabIndex={-1}>
-                {t(
-                  "components.featureDescriptionModal.standaloneArchiveDescription"
-                )}
-              </InfoButton>
-            </ActionBadge>
-          ) : null}
         </Box>
       </Container>
     )
@@ -1173,7 +1148,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
           <ActionIcon
             aria-label={t("routes.create.secretActions")}
             disabled={isCreating}
-            size={42}
+            size="input-sm"
             variant="default"
           >
             <StyledLockPlusIcon />
@@ -1284,7 +1259,7 @@ const Create: FunctionComponent<CreateProps> = (props) => {
                   if (shouldIgnoreClick()) return
                   void handleCreate()
                 }}
-                size="md"
+                size="sm"
                 style={{ flex: 1 }}
                 variant="signatureGradient"
               >
@@ -1301,7 +1276,26 @@ const Create: FunctionComponent<CreateProps> = (props) => {
             }}
             padding={0}
             size="md"
-            withCloseButton={false}
+            // The scanner fills the modal, so the header (which holds the
+            // close button alone) floats over it at the top-right corner,
+            // inset like the corner controls elsewhere, rather than
+            // pushing the scanner down — above the scanner’s own layers
+            // (see the containers in src/main/components/Scanner.tsx), so
+            // the button takes the click
+            styles={{
+              content: {
+                position: "relative",
+              },
+              header: {
+                backgroundColor: "transparent",
+                minHeight: 0,
+                padding: 0,
+                position: "absolute",
+                right: 24,
+                top: 24,
+                zIndex: 10,
+              },
+            }}
           >
             <ModalContainer>
               <Scanner
@@ -1489,15 +1483,12 @@ const Create: FunctionComponent<CreateProps> = (props) => {
               >
                 {t("routes.create.save")}…
               </Button>
+              {/* Done means finished with the flow — the home view, as in
+                  every other flow (another backup is one row away there) */}
               <Button
                 variant="default"
                 onClick={() => {
-                  if (props.exportMode === true) {
-                    void navigate("/")
-                  } else {
-                    setStep("setup")
-                    setQrs([])
-                  }
+                  void navigate("/")
                 }}
               >
                 {t("common.done")}

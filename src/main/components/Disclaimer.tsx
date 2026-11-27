@@ -72,7 +72,7 @@ const Disclaimer: FunctionComponent = () => {
             <Button
               disabled={!form.values.accept}
               fullWidth
-              size="md"
+              size="sm"
               variant="signatureGradient"
               onClick={() => {
                 setShow(false)

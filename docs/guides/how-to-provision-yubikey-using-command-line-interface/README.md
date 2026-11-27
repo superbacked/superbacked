@@ -11,7 +11,7 @@ Pinned: 1
 
 ## Overview
 
-This guide walks through provisioning a YubiKey with a challenge-response secret using the command-line interface — the secret that YubiKey-protected blocks and standalone archives rely on, as do derived passwords and Bitcoin wallets. That secret is generated once and can be backed up or provisioned to as many YubiKeys as needed, so a lost or broken YubiKey can be replaced. The app offers the same workflow under File → Provision YubiKey, which can hand the generated secret straight to a block backup.
+This guide walks through provisioning a YubiKey with a challenge-response secret using the command-line interface — the secret that YubiKey-protected blocks and standalone archives rely on, as do derived passwords and Bitcoin wallets. That secret is generated once and can be backed up or provisioned to as many YubiKeys as needed, so a lost or broken YubiKey can be replaced. The app offers the same workflow from its home view and under File → Provision YubiKey, which can hand the generated secret straight to a block backup.
 
 > Heads-up: for high-stakes secrets, use [Superbacked OS](https://superbacked.com/superbacked-os) — a hardened operating system that runs offline and persists nothing to disk.
 

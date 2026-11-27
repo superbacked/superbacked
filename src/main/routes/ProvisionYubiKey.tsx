@@ -279,13 +279,13 @@ const ProvisionYubiKey: FunctionComponent = () => {
       label: result.label ?? "",
       secret: result.secret,
     }
-    void navigate("/", { state: { yubikeySecret: handoff } })
+    void navigate("/create", { state: { yubikeySecret: handoff } })
   }, [navigate, result])
-  // Cancelling returns to wherever the File menu was used from
+  // Cancelling returns to wherever the flow was entered from
   const cancel = useCallback(() => {
     void navigate(-1)
   }, [navigate])
-  // Done leaves for create mode, the app’s home
+  // Done leaves for the home view
   const done = useCallback(() => {
     void navigate("/")
   }, [navigate])
@@ -452,7 +452,7 @@ const ProvisionYubiKey: FunctionComponent = () => {
           disabled={isProvisioning}
           fullWidth
           loading={isProvisioning}
-          size="md"
+          size="sm"
           type="submit"
           variant="signatureGradient"
         >
@@ -533,11 +533,6 @@ const ProvisionYubiKey: FunctionComponent = () => {
         onClose={() => answerConfirmation(false)}
         opened={confirmation !== null}
         size="sm"
-        styles={{
-          title: {
-            fontWeight: "bold",
-          },
-        }}
         title={
           confirmation === null ? "" : confirmationCopy[confirmation].title
         }

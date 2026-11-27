@@ -32,6 +32,7 @@ const InfoButton: FunctionComponent<InfoButtonProps> = (props) => {
         centered
         onClose={() => setOpened(false)}
         opened={opened}
+        size="sm"
         title={t("components.featureDescriptionModal.learnMore")}
       >
         <Text size="sm">{children}</Text>

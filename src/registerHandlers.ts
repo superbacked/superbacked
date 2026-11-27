@@ -11,9 +11,11 @@ import {
   restoreDetachedArchive,
 } from "@/src/handlers/detachedArchive"
 import duplicate from "@/src/handlers/duplicate"
+import focusWindow from "@/src/handlers/focusWindow"
 import generatePassphrase from "@/src/handlers/generatePassphrase"
 import generatePassword from "@/src/handlers/generatePassword"
 import getDesktopCapturerSources from "@/src/handlers/getDesktopCapturerSources"
+import isWindowFocused from "@/src/handlers/isWindowFocused"
 import openExternalUrl from "@/src/handlers/openExternalUrl"
 import openPath from "@/src/handlers/openPath"
 import {
@@ -83,6 +85,7 @@ export interface IpcEvents {
   menuShowSelectionAsQrCode: EventListener<() => void>
   windowEnteredFullScreen: EventListener<() => void>
   windowLeftFullScreen: EventListener<() => void>
+  windowFocusChange: EventListener<(focused: boolean) => void>
   appLoading: EventListener<(visible: boolean, dialog?: TranslationKey) => void>
   yubikeyTouchRequired: EventListener<() => void>
 }
@@ -95,6 +98,7 @@ const asyncHandlers = {
   enableModes,
   disableModes,
   toggleMaximize,
+  focusWindow,
   generatePassphrase,
   generatePassword,
   computeBip32RootFingerprint,
@@ -221,6 +225,7 @@ const syncHandlers = {
   // before provisioning) — never a security boundary, as the detection is
   // a marker file (see src/utilities/superbackedOs.ts)
   isSuperbackedOs,
+  isWindowFocused,
 } as const
 
 // Derive interface from sync handler map

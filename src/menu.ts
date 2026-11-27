@@ -13,6 +13,7 @@ import { t } from "i18next"
 // Commented out with the language menu below — see src/shared/i18n.ts.
 // import { locales, resources } from "@/src/shared/i18n"
 // import { locale, setLocale } from "@/src/index"
+import { Destination, home, routes, startsGroup } from "@/src/shared/routes"
 import { sendEvent } from "@/src/utilities/ipc/sendEvent"
 
 if (process.platform === "darwin") {
@@ -35,6 +36,23 @@ const enabledModes: Set<Mode> = new Set()
 export const setMenu = () => {
   const runningMacOS = process.platform === "darwin"
   const debuggingModeEnabled = app.isPackaged === false
+  // A File menu item that takes the window to a destination — Home and
+  // the routes alike, with the shared shortcut letter under the Shift
+  // and Command (or Control) modifiers
+  const routeItem = (destination: Destination): MenuItemConstructorOptions => {
+    return {
+      label: t(destination.labelKey),
+      accelerator: runningMacOS
+        ? `Shift+Command+${destination.shortcutKey}`
+        : `Shift+Ctrl+${destination.shortcutKey}`,
+      async click() {
+        const focusedWindow = BrowserWindow.getFocusedWindow()
+        if (focusedWindow) {
+          sendEvent(focusedWindow, "menuTriggeredRoute", destination.to)
+        }
+      },
+    }
+  }
   // The language menu is commented out while English is the only locale —
   // restore this block, the imports above and the menu item below to
   // re-enable it (see src/shared/i18n.ts for the kept example language).
@@ -91,51 +109,19 @@ export const setMenu = () => {
     {
       label: t("menu.file.file"),
       submenu: [
-        {
-          label: t("menu.file.create"),
-          accelerator: runningMacOS ? "Shift+Command+C" : "Shift+Ctrl+C",
-          async click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              sendEvent(focusedWindow, "menuTriggeredRoute", "/")
-            }
-          },
-        },
-        {
-          label: t("menu.file.duplicate"),
-          accelerator: runningMacOS ? "Shift+Command+D" : "Shift+Ctrl+D",
-          async click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              sendEvent(focusedWindow, "menuTriggeredRoute", "/duplicate")
-            }
-          },
-        },
-        {
-          label: t("menu.file.restore"),
-          accelerator: runningMacOS ? "Shift+Command+R" : "Shift+Ctrl+R",
-          async click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              sendEvent(focusedWindow, "menuTriggeredRoute", "/restore")
-            }
-          },
-        },
+        // Home (set apart) first, then the routes in their groups — all
+        // from the shared list (see src/shared/routes.ts), which the home
+        // view and the in-window menu render too
+        routeItem(home),
         { type: "separator" },
-        {
-          label: t("menu.file.provisionYubiKey"),
-          accelerator: runningMacOS ? "Shift+Command+Y" : "Shift+Ctrl+Y",
-          async click() {
-            const focusedWindow = BrowserWindow.getFocusedWindow()
-            if (focusedWindow) {
-              sendEvent(
-                focusedWindow,
-                "menuTriggeredRoute",
-                "/provision-yubikey"
-              )
-            }
-          },
-        },
+        ...routes.flatMap((route, index) => {
+          const items: MenuItemConstructorOptions[] = []
+          if (startsGroup(index) === true) {
+            items.push({ type: "separator" })
+          }
+          items.push(routeItem(route))
+          return items
+        }),
         { type: "separator" },
         {
           label: `${t("menu.file.newWindow")}`,

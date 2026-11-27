@@ -98,6 +98,7 @@ send-software-usage-stats=false
 center-new-windows=true
 
 [org/gnome/shell]
+enabled-extensions=['activation@superbacked.com']
 favorite-apps=['superbacked.desktop', 'com.yubico.yubioath.desktop', 'firefox.desktop', 'org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop']
 
 [org/gnome/shell/extensions/dash-to-dock]
@@ -197,6 +198,55 @@ if [ "$(grep --count 'startsWith("window:")' "${dock_dash}")" != "1" ]; then
   printf "%s\n" "Error: DING filter failed to apply to ${dock_dash}" >&2
   exit 1
 fi
+
+printf "%s\n" "Installing activation extension…"
+
+# Dropping a block onto the Superbacked app hands it the file, not
+# keyboard focus — Files keeps it, so keystrokes meant for the
+# passphrase field land in the file manager (superbacked/superbacked#42)
+# and Mutter refuses the app’s own request for focus. The extension
+# grants it from the compositor side instead — when Mutter flags the
+# refused window as demanding attention (“Superbacked is ready”, only
+# when the window is obscured) and when the app asks over the session
+# bus through gdbus (the profile grants it) — both bound to the
+# caller’s AppArmor label; its header is the full account. Shipped as a
+# system extension and enabled through dconf (see “Configuring GNOME”
+# above) — the stock extensions are enabled by the Ubuntu session mode,
+# not by that key, which the first assertions check so a rebase moving
+# them cannot silently drop the dock or the desktop icons. The Shell
+# loads an extension only for the versions its metadata lists, which
+# the last assertion checks against the installed Shell.
+extension_uuid=activation@superbacked.com
+extension_source="/run/superbacked-os-bootstrap-assets/gnome-shell-extensions/${extension_uuid}"
+extension_target="/usr/share/gnome-shell/extensions/${extension_uuid}"
+
+for stock_extension in ubuntu-dock@ubuntu.com ding@rastersoft.com; do
+  if [ "$(grep --count "${stock_extension}" /usr/share/gnome-shell/modes/ubuntu.json)" != "1" ]; then
+    printf "%s\n" "Error: Ubuntu session mode no longer enables ${stock_extension} — enabled-extensions must list the stock extensions" >&2
+    exit 1
+  fi
+done
+
+if [ ! -x /usr/bin/gdbus ]; then
+  printf "%s\n" "Error: /usr/bin/gdbus not found — the app asks the activation extension through it" >&2
+  exit 1
+fi
+
+shell_version="$(dpkg-query --showformat='${Version}' --show gnome-shell)"
+shell_major="${shell_version%%.*}"
+
+if [ "$(grep --count "\"${shell_major}\"" "${extension_source}/metadata.json")" != "1" ]; then
+  printf "%s\n" "Error: ${extension_uuid} does not list GNOME Shell ${shell_major} (installed: ${shell_version})" >&2
+  exit 1
+fi
+
+mkdir --parents "${extension_target}"
+
+cp \
+  "${extension_source}/extension.js" \
+  "${extension_source}/metadata.json" \
+  "${extension_target}/"
+chmod 644 "${extension_target}/extension.js" "${extension_target}/metadata.json"
 
 printf "%s\n" "Disabling Xorg login sessions…"
 

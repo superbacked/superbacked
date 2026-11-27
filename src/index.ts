@@ -348,6 +348,14 @@ export const createWindow = async (): Promise<BrowserWindow> => {
     mainWindow.on("leave-full-screen", () => {
       sendEvent(mainWindow, "windowLeftFullScreen")
     })
+    // The compositor’s view of keyboard focus, which the renderer cannot
+    // read for itself (see src/main/utilities/windowFocus.ts)
+    mainWindow.on("focus", () => {
+      sendEvent(mainWindow, "windowFocusChange", true)
+    })
+    mainWindow.on("blur", () => {
+      sendEvent(mainWindow, "windowFocusChange", false)
+    })
     mainWindow.on("close", () => {
       disableModes(["insert", "select"])
       const { width, height } = mainWindow.getContentBounds()

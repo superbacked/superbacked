@@ -1127,6 +1127,12 @@ const Restore: FunctionComponent<RestoreProps> = (props) => {
               ? t("routes.restore.scanOrDragAndDropNextBlock")
               : t("routes.restore.scanOrDragAndDropBlock")
           }
+          stopOnEscape={true}
+          streamingBadge={
+            showScanNextBlockBadge === true
+              ? t("routes.restore.scanOrDragAndDropNextBlockOrPressEscToCancel")
+              : t("routes.restore.scanOrDragAndDropBlockOrPressEscToCancel")
+          }
         />
         <PassphraseModal
           error={passphraseError}

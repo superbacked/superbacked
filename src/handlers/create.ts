@@ -7,6 +7,7 @@ import {
   standardKdfProfile,
 } from "@/src/shared/kdfProfiles"
 import { PdfToJpegResult } from "@/src/shared/utilities/pdfToJpeg"
+import { get as getConfig } from "@/src/utilities/config"
 import {
   Metadata,
   Payload,
@@ -45,6 +46,8 @@ export interface Data {
   ecc: ErrorCorrection
   shortHash: string
   label?: string
+  /** When true, omit Superbacked branding (notice, superbacked.com/recover and logo). */
+  disableBranding?: boolean
   /** When set, render the print layout (block + trim marks) scaled by this factor. */
   printScale?: number
   /** When set, pad the print page to this media size (inches) and center the block. */
@@ -132,6 +135,7 @@ export const compute = async (
     ecc: qrCodeEcc,
     shortHash: payloadShortHash,
     label: label,
+    disableBranding: getConfig("disableBlockBranding") === true,
   }
   const { blockWindow, pdfBuffer } = await renderToPdf(data, blockWindowSize)
   const pdf = pdfBuffer.toString("base64")
@@ -164,6 +168,7 @@ export const renderCarrierPdf = async (
     ecc: qrCodeEcc,
     shortHash: shortHash(payloadText),
     label: label,
+    disableBranding: getConfig("disableBlockBranding") === true,
     printScale: scale,
     printMedia: mediaSize,
   }

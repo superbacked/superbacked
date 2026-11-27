@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next"
 import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
 import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
 import { useDefaultYubiKeySlot } from "@/src/main/utilities/useDefaultYubiKeySlot"
+import { useTrapFocusOnceWindowFocused } from "@/src/main/utilities/windowFocus"
 import { TranslationKey } from "@/src/shared/types/i18n"
 
 interface PassphraseModalProps {
@@ -39,6 +40,9 @@ const initialValues = (slot: "1" | "2") => {
 const PassphraseModal: FunctionComponent<PassphraseModalProps> = (props) => {
   const { i18n, t } = useTranslation()
   const { defaultSlot, setDefaultSlot } = useDefaultYubiKeySlot()
+  // Opened by a drop as often as by a scan — the field takes focus only
+  // once the window has it (see src/main/utilities/windowFocus.ts)
+  const trapFocus = useTrapFocusOnceWindowFocused(props.opened)
   const form = useForm({
     initialValues: initialValues(defaultSlot),
     validate: {
@@ -111,6 +115,7 @@ const PassphraseModal: FunctionComponent<PassphraseModalProps> = (props) => {
           fontWeight: "bold",
         },
       }}
+      trapFocus={trapFocus}
     >
       {touchAwaited === true && props.isUnlocking === true ? (
         <YubiKeyTouchPrompt />

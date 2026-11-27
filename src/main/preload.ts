@@ -34,6 +34,7 @@ const api: Api = {
     menuShowSelectionAsQrCode: createEventListener("menuShowSelectionAsQrCode"),
     windowEnteredFullScreen: createEventListener("windowEnteredFullScreen"),
     windowLeftFullScreen: createEventListener("windowLeftFullScreen"),
+    windowFocusChange: createEventListener("windowFocusChange"),
     appLoading: createEventListener("appLoading"),
     yubikeyTouchRequired: createEventListener("yubikeyTouchRequired"),
   } satisfies IpcEvents,
@@ -44,6 +45,7 @@ const api: Api = {
     enableModes: invoke("enableModes"),
     disableModes: invoke("disableModes"),
     toggleMaximize: invoke("toggleMaximize"),
+    focusWindow: invoke("focusWindow"),
     generatePassphrase: invoke("generatePassphrase"),
     generatePassword: invoke("generatePassword"),
     computeBip32RootFingerprint: invoke("computeBip32RootFingerprint"),
@@ -91,6 +93,7 @@ const api: Api = {
     generateToken: invokeSync("generateToken"),
     generateYubiKeySecret: invokeSync("generateYubiKeySecret"),
     isSuperbackedOs: invokeSync("isSuperbackedOs"),
+    isWindowFocused: invokeSync("isWindowFocused"),
   } satisfies IpcSyncHandlers,
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file)

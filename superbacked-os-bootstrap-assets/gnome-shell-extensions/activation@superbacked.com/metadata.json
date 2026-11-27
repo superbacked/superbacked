@@ -1,0 +1,7 @@
+{
+  "description": "Grants Superbacked app focus when the compositor refuses its activation request",
+  "name": "Superbacked activation",
+  "shell-version": ["46"],
+  "url": "https://github.com/superbacked/superbacked",
+  "uuid": "activation@superbacked.com"
+}
