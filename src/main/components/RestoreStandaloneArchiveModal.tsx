@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next"
 import YubiKeyProtection from "@/src/main/components/YubiKeyProtection"
 import YubiKeyTouchPrompt from "@/src/main/components/YubiKeyTouchPrompt"
 import { useDefaultYubiKeySlot } from "@/src/main/utilities/useDefaultYubiKeySlot"
+import { useTrapFocusOnceWindowFocused } from "@/src/main/utilities/windowFocus"
 import { TranslationKey } from "@/src/shared/types/i18n"
 
 interface RestoreStandaloneArchiveModalProps {
@@ -41,6 +42,9 @@ const RestoreStandaloneArchiveModal: FunctionComponent<
 > = (props) => {
   const { i18n, t } = useTranslation()
   const { defaultSlot, setDefaultSlot } = useDefaultYubiKeySlot()
+  // Opened by a drop — the field takes focus only once the window has it
+  // (see src/main/utilities/windowFocus.ts)
+  const trapFocus = useTrapFocusOnceWindowFocused(props.opened)
   const form = useForm({
     initialValues: initialValues(defaultSlot),
     validate: {
@@ -120,6 +124,7 @@ const RestoreStandaloneArchiveModal: FunctionComponent<
           fontWeight: "bold",
         },
       }}
+      trapFocus={trapFocus}
     >
       {touchAwaited === true && props.isUnlocking === true ? (
         <YubiKeyTouchPrompt />

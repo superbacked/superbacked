@@ -16,8 +16,9 @@ import { isSuperbackedOs } from "@/src/utilities/superbackedOs"
 // gnome-shell-extensions/activation@superbacked.com/extension.js),
 // which grants focus from the compositor side when asked over the
 // session bus. Elsewhere on native Wayland the user clicks the window.
-// Nothing awaits the outcome: the renderer has no use for it, and a
-// handler that returns before focus arrives costs nothing
+// Nothing awaits the outcome: the renderer follows the window’s focus
+// through its own event (see src/main/utilities/windowFocus.ts) and
+// holds a prompt’s autofocus until focus has actually arrived
 
 // gdbus inherits the app’s AppArmor profile, which is the credential
 // the extension checks on the caller. The timeout bounds the wait
